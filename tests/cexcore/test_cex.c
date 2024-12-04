@@ -74,7 +74,6 @@ test$case(test_sysfunc)
         nit++;
     }
     tassert_eqi(nit, 0);
-    tassert_eqi(errno, 0); // errno is reset before except_errno() starts!
     tassert_eqi(ret, 100);
     return EOK;
 }

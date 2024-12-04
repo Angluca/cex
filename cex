@@ -699,7 +699,6 @@ class CEXBuilder:
         # return os.path.join(, "build", test_src + ".test")
 
     def action_build(self, target, app_name, out_name, cc_args, ld_args):
-
         if target == "debug":
             compiler_args = [
                 "-O0",
@@ -738,7 +737,7 @@ class CEXBuilder:
         self.compiler.compile_app(main_path, app_exe, compiler_args)
 
     def action_run(self):
-        assert False
+        assert False, "TODO: fix it"
         test_exe_list = []
 
         # Rebuild new before run
@@ -832,7 +831,7 @@ class CEXProcessor:
     RE_COMMENT_ML_START = re.compile(r"^\s*\/\*", re.MULTILINE)
     RE_COMMENT_ML_END = re.compile(r".*\*\/", re.MULTILINE)
     RE_CODE_START_LINE = re.compile(r"^[a-zA-Z_0-9\*]+\s+", re.MULTILINE)
-    RE_FUNC = re.compile(r"(.*)\s+(\w+)\({1}([\w,\[\]\(\)\s\*\.]+)\)", re.MULTILINE)
+    RE_FUNC = re.compile(r"(.*)\s+(\w+)\({1}([\w,\[\]\(\)\s\*\.]*)\)", re.MULTILINE)
     RE_STATIC = re.compile(r"(^static\s|\sstatic\s|\sstatic$)", re.MULTILINE)
     RE_INLINE = re.compile(r"(^inline\s|\sinline\s|\sinline$)", re.MULTILINE)
 
@@ -1087,7 +1086,7 @@ class CEXProcessor:
         def __init__(self, decl: str, ifc_prefix: str):
             g = CEXProcessor.RE_FUNC.match(decl)
             assert ifc_prefix, "empty ifc_prefix"
-            assert g, f"Function regex not matched: {decl}"
+            assert g, f"Function regex not matched: '{decl}'"
             self.is_static = False
             self.is_inline = False
             typedef = g.group(1)

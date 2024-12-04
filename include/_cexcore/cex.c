@@ -15,4 +15,5 @@ const struct _CEX_Error_struct Error = {
     .argsparse = "ProgramArgsError", // program arguments empty or incorrect
     .runtime = "RuntimeError",       // generic runtime error
     .assert = "AssertError",         // generic runtime check
+    .os = "OSError",                 // generic OS check
 };

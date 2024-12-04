@@ -61,10 +61,8 @@ extern const struct _CEX_Error_struct
     Exc argsparse;
     Exc runtime;
     Exc assert;
+    Exc os;
 } Error;
-
-/// Strips full path of __FILENAME__ to the file basename
-#define __FILENAME__ (strrchr("/" __FILE__, '/') + 1)
 
 
 #ifndef __cex__fprintf
@@ -82,7 +80,7 @@ extern const struct _CEX_Error_struct
     (__cex__fprintf(                                                                               \
          stdout,                                                                                   \
          "[^STCK] ( %s:%d %s() ) ^^^^^ [%s] in %s\n",                                              \
-         __FILENAME__,                                                                             \
+         __FILE_NAME__,                                                                            \
          __LINE__,                                                                                 \
          __func__,                                                                                 \
          uerr,                                                                                     \
@@ -94,7 +92,7 @@ extern const struct _CEX_Error_struct
     (__cex__fprintf(                                                                               \
         stdout,                                                                                    \
         "[ERROR] ( %s:%d %s() ) " format,                                                          \
-        __FILENAME__,                                                                              \
+        __FILE_NAME__,                                                                             \
         __LINE__,                                                                                  \
         __func__,                                                                                  \
         ##__VA_ARGS__                                                                              \
@@ -115,7 +113,7 @@ extern const struct _CEX_Error_struct
     (__cex__fprintf(                                                                               \
         stdout,                                                                                    \
         "[TRACE] ( %s:%d %s() ) " format,                                                          \
-        __FILENAME__,                                                                              \
+        __FILE_NAME__,                                                                             \
         __LINE__,                                                                                  \
         __func__,                                                                                  \
         ##__VA_ARGS__                                                                              \
@@ -137,7 +135,7 @@ void __sanitizer_print_stack_trace();
                 __cex__fprintf(                                                                    \
                     stderr,                                                                        \
                     "[ASSERT] ( %s:%d %s() ) %s\n",                                                \
-                    __FILENAME__,                                                                  \
+                    __FILE_NAME__,                                                                 \
                     __LINE__,                                                                      \
                     __func__,                                                                      \
                     #A                                                                             \
@@ -155,7 +153,7 @@ void __sanitizer_print_stack_trace();
                 __cex__fprintf(                                                                    \
                     stderr,                                                                        \
                     "[ASSERT] ( %s:%d %s() ) " format "\n",                                        \
-                    __FILENAME__,                                                                  \
+                    __FILE_NAME__,                                                                 \
                     __LINE__,                                                                      \
                     __func__,                                                                      \
                     ##__VA_ARGS__                                                                  \
@@ -209,10 +207,10 @@ _cex_e_raise_check_assert_if_enabled(Exc e)
 
 // WARNING: DO NOT USE break/continue inside except* {scope!}
 #define except_silent(_var_name, _func)                                                            \
-    for (Exc _var_name = _func; unlikely(_var_name != NULL); _var_name = EOK)
+    for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
 
 #define except(_var_name, _func)                                                                   \
-    for (Exc _var_name = _func; unlikely((_var_name != NULL) && (uptraceback(_var_name, #_func))); \
+    for (Exc _var_name = _func; unlikely((_var_name != EOK) && (uptraceback(_var_name, #_func)));  \
          _var_name = EOK)
 
 #define e$ret(_func)                                                                               \
@@ -231,14 +229,10 @@ _cex_e_raise_check_assert_if_enabled(Exc e)
          __CEX_TMPNAME(__cex_err_traceback_) = EOK)                                                \
     goto _label
 
+
 #define except_errno(_expression)                                                                  \
-    errno = 0;                                                                                     \
-    for (int __CEX_TMPNAME(__cex_errno_traceback_ctr) = 0,                                         \
-             __CEX_TMPNAME(__cex_errno_traceback_) = (_expression);                                \
-         __CEX_TMPNAME(__cex_errno_traceback_ctr) == 0 &&                                          \
-         __CEX_TMPNAME(__cex_errno_traceback_) == -1 &&                                            \
-         uperrorf("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno));       \
-         __CEX_TMPNAME(__cex_errno_traceback_ctr)++)
+    if (((_expression) == -1) &&                                                                   \
+        uperrorf("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno)))
 
 #define except_null(_expression)                                                                   \
     if (((_expression) == NULL) && uperrorf("`%s` returned NULL\n", #_expression))
@@ -252,12 +246,12 @@ _cex_e_raise_check_assert_if_enabled(Exc e)
             __cex__fprintf(                                                                        \
                 stdout,                                                                            \
                 "[ASSERT] ( %s:%d %s() ) %s\n",                                                    \
-                __FILENAME__,                                                                      \
+                __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
                 __func__,                                                                          \
                 #A                                                                                 \
             );                                                                                     \
-            return Error.assert;                                                                  \
+            return Error.assert;                                                                   \
         }                                                                                          \
     } while (0)
 
@@ -268,13 +262,13 @@ _cex_e_raise_check_assert_if_enabled(Exc e)
             __cex__fprintf(                                                                        \
                 stdout,                                                                            \
                 "[ASSERT] ( %s:%d %s() ) %s " format "\n",                                         \
-                __FILENAME__,                                                                      \
+                __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
                 __func__,                                                                          \
                 #A,                                                                                \
                 ##__VA_ARGS__                                                                      \
             );                                                                                     \
-            return Error.assert;                                                                  \
+            return Error.assert;                                                                   \
         }                                                                                          \
     } while (0)
 
