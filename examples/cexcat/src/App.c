@@ -1,5 +1,9 @@
 #include "App.h"
-#include <cex.h>
+#include <cex/cex.h>
+#include <cex/argparse.h>
+#include <cex/io.h>
+#include <cex/dict.h>
+#include <cex/sbuf.h>
 
 Exception
 App_create(App_c* app, i32 argc, char* argv[], const Allocator_i* allocator)
@@ -128,7 +132,7 @@ App__process_csv(App_c* app, io_c* file)
                     "column width mismatch",
                     "header len=%ld col=%ld\n",
                     dict.len(&csvmap),
-                    tok.idx.key
+                    tok.idx.ikey
                 );
                 goto fail;
             }
