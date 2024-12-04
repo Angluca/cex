@@ -328,7 +328,7 @@ dict_tolist(dict_c* self, void* listptr, const Allocator_i* allocator)
 
     struct hashmap* hm = self->hashmap;
 
-    except(err, list.create((list_c*)listptr, hm->count, hm->elsize, alignof(size_t), allocator)){
+    e$except(err, list.create((list_c*)listptr, hm->count, hm->elsize, alignof(size_t), allocator)){
         return err;
     }
 
@@ -336,7 +336,7 @@ dict_tolist(dict_c* self, void* listptr, const Allocator_i* allocator)
     void* item = NULL;
     
     while(hashmap_iter(self->hashmap, &hm_cursor, &item)) {
-        except(err, list.append(listptr, item)){
+        e$except(err, list.append(listptr, item)){
             return err;
         }
     };

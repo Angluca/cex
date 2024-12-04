@@ -53,7 +53,7 @@ test$case(testlist_new)
 {
     list$define(int) a;
 
-    except(err, list$new(&a, 5, allocator))
+    e$except(err, list$new(&a, 5, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -79,7 +79,7 @@ test$case(testlist_new_as_typedef)
 
     my_int_list a;
 
-    except(err, list$new(&a, 5, allocator))
+    e$except(err, list$new(&a, 5, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -106,7 +106,7 @@ test$case(testlist_new_as_struct_member)
     } mystruct = {0};
 
 
-    except(err, list$new(&mystruct.a, 5, allocator))
+    e$except(err, list$new(&mystruct.a, 5, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -130,7 +130,7 @@ test$case(testlist_append)
 {
     list$define(int) a;
 
-    except(err, list$new(&a, 4, allocator))
+    e$except(err, list$new(&a, 4, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -173,7 +173,7 @@ test$case(testlist_insert)
 {
     list$define(int) a;
 
-    except(err, list$new(&a, 4, allocator))
+    e$except(err, list$new(&a, 4, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -227,7 +227,7 @@ test$case(testlist_del)
 {
     list$define(int) a;
 
-    except(err, list$new(&a, 4, allocator))
+    e$except(err, list$new(&a, 4, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -296,7 +296,7 @@ test$case(testlist_sort)
 {
     list$define(int) a;
 
-    except(err, list$new(&a, 4, allocator))
+    e$except(err, list$new(&a, 4, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -329,7 +329,7 @@ test$case(testlist_extend)
 {
 
     list$define(int) a;
-    except(err, list$new(&a, 4, allocator))
+    e$except(err, list$new(&a, 4, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -372,7 +372,7 @@ test$case(testlist_iterator)
 {
 
     list$define(int) a;
-    except(err, list$new(&a,  4, allocator))
+    e$except(err, list$new(&a,  4, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -459,7 +459,7 @@ test$case(testlist_align256)
 
     list$define(struct foo64) a;
 
-    except(err, list$new(&a, 4, allocator))
+    e$except(err, list$new(&a, 4, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -516,7 +516,7 @@ test$case(testlist_align64)
 
     list$define(struct foo64) a;
 
-    except(err, list$new(&a, 4, allocator))
+    e$except(err, list$new(&a, 4, allocator))
     {
         tassert(false && "list$new fail");
     }
@@ -573,7 +573,7 @@ test$case(testlist_align16)
 
     list$define(struct foo64) a;
 
-    except(err, list$new(&a, 4, allocator))
+    e$except(err, list$new(&a, 4, allocator))
     {
         tassert(false && "list$new fail");
     }

@@ -415,7 +415,7 @@ argparse_parse(argparse_c* self, int argc, char** argv)
     self->_ctx.argv = argv + 1;
     self->_ctx.out = argv;
 
-    except_silent(err, argparse__options_check(self, true))
+    e$except_silent(err, argparse__options_check(self, true))
     {
         return err;
     }
@@ -441,12 +441,12 @@ argparse_parse(argparse_c* self, int argc, char** argv)
 
             self->_ctx.optvalue = arg + 1;
             self->_ctx.cpidx++;
-            except_silent(err, argparse__short_opt(self, self->options))
+            e$except_silent(err, argparse__short_opt(self, self->options))
             {
                 return argparse__report_error(self, err);
             }
             while (self->_ctx.optvalue) {
-                except_silent(err, argparse__short_opt(self, self->options))
+                e$except_silent(err, argparse__short_opt(self, self->options))
                 {
                     return argparse__report_error(self, err);
                 }
@@ -465,7 +465,7 @@ argparse_parse(argparse_c* self, int argc, char** argv)
             // options are not allowed after arguments
             return argparse__report_error(self, Error.integrity);
         }
-        except_silent(err, argparse__long_opt(self, self->options))
+        e$except_silent(err, argparse__long_opt(self, self->options))
         {
             return argparse__report_error(self, err);
         }
@@ -473,7 +473,7 @@ argparse_parse(argparse_c* self, int argc, char** argv)
         continue;
     }
 
-    except_silent(err, argparse__options_check(self, false))
+    e$except_silent(err, argparse__options_check(self, false))
     {
         return err;
     }

@@ -73,7 +73,7 @@ os__getcwd_(sbuf_c* out)
 {
     uassert(sbuf.isvalid(out) && "out is not valid sbuf_c (or missing initialization)");
 
-    except_silent(err, sbuf.grow(out, PATH_MAX + 1))
+    e$except_silent(err, sbuf.grow(out, PATH_MAX + 1))
     {
         return err;
     }
@@ -100,7 +100,7 @@ os__path__exists_(str_c path)
     if (path.buf[path.len] != '\0') {
         // it's non null term path!
         char path_buf[PATH_MAX + 1];
-        except_silent(err, str.copy(path, path_buf, arr$len(path_buf)))
+        e$except_silent(err, str.copy(path, path_buf, arr$len(path_buf)))
         {
             return err;
         }

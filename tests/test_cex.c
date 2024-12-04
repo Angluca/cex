@@ -1,6 +1,6 @@
-#include <cex/test.h>
 #include <cex/all.c>
 #include <cex/fff.h>
+#include <cex/test.h>
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -9,11 +9,13 @@
 /*
  * SUITE INIT / SHUTDOWN
  */
-test$teardown(){
+test$teardown()
+{
     return EOK;
 }
 
-test$setup(){
+test$setup()
+{
     uassert_enable();
     return EOK;
 }
@@ -23,10 +25,11 @@ test$NOOPT Exception
 foo(int condition)
 {
     if (condition == 0) {
-        return raise_exc(Error.io, "condition == 0\n");
+        return e$raise(Error.io, "condition == 0\n");
     }
-    if (condition == 2)
+    if (condition == 2) {
         return Error.memory;
+    }
 
     return EOK;
 }
@@ -57,7 +60,7 @@ test$case(test_sysfunc)
 
     errno = 777;
     u32 nit = 0;
-    except_errno(ret = sys_func(-1))
+    e$except_errno(ret = sys_func(-1))
     {
         printf("Except: ret=%d errno=%d\n", ret, errno);
         tassert_eqi(errno, 999);
@@ -68,7 +71,7 @@ test$case(test_sysfunc)
 
     errno = 777;
     nit = 0;
-    except_errno(ret = sys_func(100))
+    e$except_errno(ret = sys_func(100))
     {
         tassert(false && "not expected");
         nit++;
@@ -81,7 +84,7 @@ test$case(test_sysfunc)
 Exception
 check(int condition)
 {
-    if (condition == -1){
+    if (condition == -1) {
         return Error.memory;
     }
     return EOK;
@@ -102,13 +105,15 @@ check_with_assert(int condition)
     return EOK;
 }
 
-Exception check_optimized(int e){
+Exception
+check_optimized(int e)
+{
 
     int ret = 0;
 
     errno = 777;
     u32 nit = 0;
-    except_errno(ret = sys_func(-1))
+    e$except_errno(ret = sys_func(-1))
     {
         return Error.io;
     }
@@ -141,33 +146,7 @@ setresult:
     // we can explicitly set result value to the error of the call
     e$goto(result = check_with_dollar(-1), fail);
     tassert(false && "unreacheble, the above must fail");
-    
-fail:
-    tassert_eqe(Error.memory, result);
 
-    return EOK;
-}
-
-test$case(test_e_dollar_macro_assert)
-{
-    Exc result = EOK;
-    tassert_eqi(e$raise_is_ok(), 1);
-    e$raise_enable();
-    tassert_eqi(e$raise_is_ok(), 0);
-    e$raise_disable();
-    tassert_eqi(e$raise_is_ok(), 1);
-
-    // On fail jumps to 'fail' label + sets the result to returned by check_with_dollar()
-    e$goto(check_with_dollar(-1), setresult);
-
-setresult:
-    // e$goto() - previous jump didn't change result
-    tassert_eqe(Error.ok, result);
-
-    // we can explicitly set result value to the error of the call
-    e$goto(result = check_with_dollar(-1), fail);
-    tassert(false && "unreacheble, the above must fail");
-    
 fail:
     tassert_eqe(Error.memory, result);
 
@@ -178,19 +157,19 @@ fail:
 test$case(test_null_ptr)
 {
     void* res = NULL;
-    except_null(res = void_ptr_func(1))
+    e$except_null(res = void_ptr_func(1))
     {
         tassert(false && "not expected");
     }
     tassert(res != NULL);
 
-    except_null(res = void_ptr_func(-1))
+    e$except_null(res = void_ptr_func(-1))
     {
         tassert(res == NULL);
     }
     tassert(res == NULL);
 
-    except_null(void_ptr_func(-1))
+    e$except_null(void_ptr_func(-1))
     {
         tassert(res == NULL);
     }
@@ -201,10 +180,12 @@ test$case(test_null_ptr)
 test$case(test_nested_excepts)
 {
 
-    except_silent(err, foo(0)){
+    e$except_silent(err, foo(0))
+    {
         tassert_eqe(err, Error.io);
 
-        except_silent(err, foo(2)){
+        e$except_silent(err, foo(2))
+        {
             tassert_eqe(err, Error.memory);
         }
 
@@ -217,6 +198,7 @@ test$case(test_nested_excepts)
     return EOK;
 }
 
+
 test$case(test_all_errors_set)
 {
     const Exc* e = &Error.ok;
@@ -224,9 +206,9 @@ test$case(test_all_errors_set)
     tassert(EOK == NULL);
     tassert(e[0] == NULL && "EOK!");
 
-    for(u32 i = 1; i< sizeof(Error)/sizeof(Error.ok); i++){
+    for (u32 i = 1; i < sizeof(Error) / sizeof(Error.ok); i++) {
         tassertf(e[i] != NULL, "Error. %d-th member is NULL", i); // Empty error
-        tassertf(strlen(e[i]) > 2, "Exception is empty or too short: [%d]: %s", i, e[i] );
+        tassertf(strlen(e[i]) > 2, "Exception is empty or too short: [%d]: %s", i, e[i]);
     }
 
     return EOK;
@@ -259,7 +241,6 @@ main(int argc, char* argv[])
     test$run(test_sysfunc);
     test$run(test_e_dollar_macro);
     test$run(test_e_dollar_macro_goto);
-    test$run(test_e_dollar_macro_assert);
     test$run(test_null_ptr);
     test$run(test_nested_excepts);
     test$run(test_all_errors_set);

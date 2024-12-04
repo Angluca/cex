@@ -78,7 +78,7 @@ fsm_super(fsm_c* self, const fsm_event_s* e)
     FsmStateHandler_f prev_super = self->_handler_super;
     self->_handler_super = NULL;
 
-    except(err, prev_super(self, e))
+    e$except(err, prev_super(self, e))
     {
         self->_handler_super = prev_super;
         return err;

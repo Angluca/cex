@@ -159,19 +159,19 @@ io_size(io_c* self)
     if (self->_fsize == 0) {
         // Do some caching
         size_t old_pos = 0;
-        except_silent(err, io_tell(self, &old_pos))
+        e$except_silent(err, io_tell(self, &old_pos))
         {
             return 0;
         }
-        except_silent(err, io_seek(self, 0, SEEK_END))
+        e$except_silent(err, io_seek(self, 0, SEEK_END))
         {
             return 0;
         }
-        except_silent(err, io_tell(self, &self->_fsize))
+        e$except_silent(err, io_tell(self, &self->_fsize))
         {
             return 0;
         }
-        except_silent(err, io_seek(self, old_pos, SEEK_SET))
+        e$except_silent(err, io_seek(self, old_pos, SEEK_SET))
         {
             return 0;
         }
@@ -237,7 +237,7 @@ io_readall(io_c* self, str_c* s)
             .buf = "",
             .len = 0,
         };
-        except(err, io_seek(self, 0, SEEK_END))
+        e$except(err, io_seek(self, 0, SEEK_END))
         {
             ;
         }
@@ -262,7 +262,7 @@ io_readall(io_c* self, str_c* s)
     }
 
     size_t read_size = self->_fbuf_size;
-    except_silent(err, io_read(self, self->_fbuf, sizeof(char), &read_size))
+    e$except_silent(err, io_read(self, self->_fbuf, sizeof(char), &read_size))
     {
         return err;
     }

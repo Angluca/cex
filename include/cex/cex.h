@@ -19,6 +19,8 @@ typedef int64_t i64;
 typedef uint64_t u64;
 typedef float f32;
 typedef double f64;
+typedef size_t usize;
+typedef ssize_t isize;
 
 #define var __auto_type
 
@@ -41,7 +43,6 @@ typedef double f64;
 typedef const char* Exc;
 
 #define Exception Exc __attribute__((warn_unused_result))
-#define ExceptionSkip Exc __attribute__((warn_unused_result))
 
 
 #define EOK (Exc) NULL
@@ -176,46 +177,34 @@ int __cex_test_uassert_enabled = 1;
 #define uassert_is_enabled() (__cex_test_uassert_enabled)
 #else
 #define uassert_disable()                                                                          \
-    uassert(false && "uassert_disable() allowed only when compiled with -DCEXTEST")
+    _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEXTEST")
 #define uassert_enable() (void)0
 #define uassert_is_enabled() true
 #define CEXERRORF_OUT__ stderr
 #endif
 
 
-#ifndef DNDEBUG
-int __cex_eraise_assert__should_pass = 1;
-#define e$raise_disable() __cex_eraise_assert__should_pass = 1
-#define e$raise_enable() __cex_eraise_assert__should_pass = 0
-#define e$raise_is_ok() (__cex_eraise_assert__should_pass)
-#else
-#define e$raise_disable() (void)0
-#define e$raise_enable() (void)0
-#define e$raise_is_ok() (true)
-#endif
+#define e$raise(return_uerr, error_msg, ...)                                                       \
+    (uperrorf("[%s] " error_msg, return_uerr, ##__VA_ARGS__), (return_uerr))
 
-static inline bool
-_cex_e_raise_check_assert_if_enabled(Exc e)
-{
-    if (unlikely(e != NULL)) {
-        uassert(e$raise_is_ok() && "failed because e$raise_enable()");
-        return true; // error, pass to the trace back
-    } else {
-        return false; // OK! No error path
-    }
-}
-
-// WARNING: DO NOT USE break/continue inside except* {scope!}
-#define except_silent(_var_name, _func)                                                            \
-    for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
-
-#define except(_var_name, _func)                                                                   \
+// WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
+#define e$except(_var_name, _func)                                                                 \
     for (Exc _var_name = _func; unlikely((_var_name != EOK) && (uptraceback(_var_name, #_func)));  \
          _var_name = EOK)
 
+#define e$except_silent(_var_name, _func)                                                          \
+    for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
+
+#define e$except_errno(_expression)                                                                \
+    if (((_expression) == -1) &&                                                                   \
+        uperrorf("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno)))
+
+#define e$except_null(_expression)                                                                 \
+    if (((_expression) == NULL) && uperrorf("`%s` returned NULL\n", #_expression))
+
 #define e$ret(_func)                                                                               \
     for (Exc __CEX_TMPNAME(__cex_err_traceback_) = _func; unlikely(                                \
-             _cex_e_raise_check_assert_if_enabled(__CEX_TMPNAME(__cex_err_traceback_)) &&          \
+             (__CEX_TMPNAME(__cex_err_traceback_) != EOK) &&                                       \
              (uptraceback(__CEX_TMPNAME(__cex_err_traceback_), #_func))                            \
          );                                                                                        \
          __CEX_TMPNAME(__cex_err_traceback_) = EOK)                                                \
@@ -223,22 +212,12 @@ _cex_e_raise_check_assert_if_enabled(Exc e)
 
 #define e$goto(_func, _label)                                                                      \
     for (Exc __CEX_TMPNAME(__cex_err_traceback_) = _func; unlikely(                                \
-             _cex_e_raise_check_assert_if_enabled(__CEX_TMPNAME(__cex_err_traceback_)) &&          \
+             (__CEX_TMPNAME(__cex_err_traceback_) != EOK) &&                                       \
              (uptraceback(__CEX_TMPNAME(__cex_err_traceback_), #_func))                            \
          );                                                                                        \
          __CEX_TMPNAME(__cex_err_traceback_) = EOK)                                                \
     goto _label
 
-
-#define except_errno(_expression)                                                                  \
-    if (((_expression) == -1) &&                                                                   \
-        uperrorf("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno)))
-
-#define except_null(_expression)                                                                   \
-    if (((_expression) == NULL) && uperrorf("`%s` returned NULL\n", #_expression))
-
-#define raise_exc(return_uerr, error_msg, ...)                                                     \
-    (uperrorf("[%s] " error_msg, return_uerr, ##__VA_ARGS__), (return_uerr))
 
 #define e$assert(A)                                                                                \
     do {                                                                                           \

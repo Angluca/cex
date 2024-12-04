@@ -5,7 +5,7 @@ MyClass_create(MyClass_c** self, u32 x, u32 y, const Allocator_i* allc)
 {
     uassert(self != NULL);
 
-    except_null(*self = allc->calloc(1, sizeof(*self)))
+    e$except_null(*self = allc->calloc(1, sizeof(*self)))
     {
         return Error.memory;
     }
