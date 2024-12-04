@@ -61,10 +61,8 @@ extern const struct _CEX_Error_struct
     Exc argsparse;
     Exc runtime;
     Exc assert;
+    Exc os;
 } Error;
-
-/// Strips full path of __FILENAME__ to the file basename
-#define __FILENAME__ (strrchr("/" __FILE__, '/') + 1)
 
 
 #ifndef __cex__fprintf
@@ -82,7 +80,7 @@ extern const struct _CEX_Error_struct
     (__cex__fprintf(                                                                               \
          stdout,                                                                                   \
          "[^STCK] ( %s:%d %s() ) ^^^^^ [%s] in %s\n",                                              \
-         __FILENAME__,                                                                             \
+         __FILE_NAME__,                                                                             \
          __LINE__,                                                                                 \
          __func__,                                                                                 \
          uerr,                                                                                     \
@@ -94,7 +92,7 @@ extern const struct _CEX_Error_struct
     (__cex__fprintf(                                                                               \
         stdout,                                                                                    \
         "[ERROR] ( %s:%d %s() ) " format,                                                          \
-        __FILENAME__,                                                                              \
+        __FILE_NAME__,                                                                              \
         __LINE__,                                                                                  \
         __func__,                                                                                  \
         ##__VA_ARGS__                                                                              \
@@ -115,7 +113,7 @@ extern const struct _CEX_Error_struct
     (__cex__fprintf(                                                                               \
         stdout,                                                                                    \
         "[TRACE] ( %s:%d %s() ) " format,                                                          \
-        __FILENAME__,                                                                              \
+        __FILE_NAME__,                                                                              \
         __LINE__,                                                                                  \
         __func__,                                                                                  \
         ##__VA_ARGS__                                                                              \
@@ -137,7 +135,7 @@ void __sanitizer_print_stack_trace();
                 __cex__fprintf(                                                                    \
                     stderr,                                                                        \
                     "[ASSERT] ( %s:%d %s() ) %s\n",                                                \
-                    __FILENAME__,                                                                  \
+                    __FILE_NAME__,                                                                  \
                     __LINE__,                                                                      \
                     __func__,                                                                      \
                     #A                                                                             \
@@ -155,7 +153,7 @@ void __sanitizer_print_stack_trace();
                 __cex__fprintf(                                                                    \
                     stderr,                                                                        \
                     "[ASSERT] ( %s:%d %s() ) " format "\n",                                        \
-                    __FILENAME__,                                                                  \
+                    __FILE_NAME__,                                                                  \
                     __LINE__,                                                                      \
                     __func__,                                                                      \
                     ##__VA_ARGS__                                                                  \
@@ -252,7 +250,7 @@ _cex_e_raise_check_assert_if_enabled(Exc e)
             __cex__fprintf(                                                                        \
                 stdout,                                                                            \
                 "[ASSERT] ( %s:%d %s() ) %s\n",                                                    \
-                __FILENAME__,                                                                      \
+                __FILE_NAME__,                                                                      \
                 __LINE__,                                                                          \
                 __func__,                                                                          \
                 #A                                                                                 \
@@ -268,7 +266,7 @@ _cex_e_raise_check_assert_if_enabled(Exc e)
             __cex__fprintf(                                                                        \
                 stdout,                                                                            \
                 "[ASSERT] ( %s:%d %s() ) %s " format "\n",                                         \
-                __FILENAME__,                                                                      \
+                __FILE_NAME__,                                                                      \
                 __LINE__,                                                                          \
                 __func__,                                                                          \
                 #A,                                                                                \
