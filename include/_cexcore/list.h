@@ -7,7 +7,7 @@
  */
 typedef struct
 {
-    // NOTE: do not assign this pointer to local variables, is can become dangling after dlist
+    // NOTE: do not assign this pointer to local variables, is can become dangling after list
     // operations (e.g. after realloc()). So local pointers can be pointing to invalid area!
     void* arr;
     size_t len;
