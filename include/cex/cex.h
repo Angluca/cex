@@ -29,19 +29,19 @@ typedef ssize_t isize;
 #define var __auto_type
 
 /*
-*                 BRANCH MANAGEMENT
-* `if(unlikely(condition)) {...}` is helpful for error management, to let compiler
-*  know that the scope inside in if() is less likely to occur (or exceptionally unlikely)
-*  this allows compiler to organize code with less failed branch predictions and faster
-*  performance overall.
-*
-*  Example:
-*  char* s = malloc(128);
-*  if(unlikely(s == NULL)) {
-*      printf("Memory error\n");
-*      abort();
-*  }
-*/
+ *                 BRANCH MANAGEMENT
+ * `if(unlikely(condition)) {...}` is helpful for error management, to let compiler
+ *  know that the scope inside in if() is less likely to occur (or exceptionally unlikely)
+ *  this allows compiler to organize code with less failed branch predictions and faster
+ *  performance overall.
+ *
+ *  Example:
+ *  char* s = malloc(128);
+ *  if(unlikely(s == NULL)) {
+ *      printf("Memory error\n");
+ *      abort();
+ *  }
+ */
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
 #define likely(expr) __builtin_expect(!!(expr), 1)
 
@@ -59,7 +59,7 @@ typedef const char* Exc;
 
 
 /**
- * @brief Generic errors list, used as constant pointers, errors must be checked as 
+ * @brief Generic errors list, used as constant pointers, errors must be checked as
  * pointer comparison, not as strcmp() !!!
  */
 extern const struct _CEX_Error_struct
@@ -84,38 +84,21 @@ extern const struct _CEX_Error_struct
 
 #ifndef __cex__fprintf
 
-static inline bool
-__cex__fprintf_impl(
-    FILE* stream,
-    const char* prefix,
-    const char* filename,
-    int line,
-    const char* func,
-    const char* format,
-    ...
-)
-{
-    fprintf(stream, "%s ( %s:%d %s() ) ", prefix, filename, line, func);
-
-    va_list va;
-    va_start(va, format);
-    vfprintf(stream, format, va);
-    va_end(va);
-
-    return true; // WARN: must always return true!
-}
+// NOTE: you may try to define our own fprintf
+#define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                     \
+    (                                                                                              \
+        ({                                                                                          \
+            fprintf(stream, "%s ( %s:%d %s() ) ", prefix, filename, line, func);                   \
+            fprintf(stream, format, ##__VA_ARGS__);                                                \
+            true; \
+        })                                                                                         \
+    )
 
 static inline bool
 __cex__fprintf_dummy(void)
 {
     return true; // WARN: must always return true!
 }
-
-// NOTE: you may try to define our own fprintf
-#define __cex__fprintf __cex__fprintf_impl
-
-// If you define this macro it will turn off all debug printing
-// #define __cex__fprintf(stream, format, ...) (true)
 
 #endif
 
@@ -366,9 +349,9 @@ int __cex_test_uassert_enabled = 1;
     struct __CEX_TMPNAME(__cex_arriter_)                                                           \
     {                                                                                              \
         typeof(*array)* val;                                                                       \
-        usize idx;                                                                                \
+        usize idx;                                                                                 \
     };                                                                                             \
-    usize __CEX_TMPNAME(__cex_arriter__length) = (length); /* prevents multi call of (length)*/   \
+    usize __CEX_TMPNAME(__cex_arriter__length) = (length); /* prevents multi call of (length)*/    \
     for (struct __CEX_TMPNAME(__cex_arriter_) it = { .val = array, .idx = 0 };                     \
          it.idx < __CEX_TMPNAME(__cex_arriter__length);                                            \
          it.val++, it.idx++)
@@ -416,7 +399,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
             {                                                                                      \
                 union                                                                              \
                 {                                                                                  \
-                    usize i;                                                                      \
+                    usize i;                                                                       \
                     u64 ikey;                                                                      \
                     char* skey;                                                                    \
                     void* pkey;                                                                    \
