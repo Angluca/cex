@@ -786,30 +786,57 @@ class CEXBuilder:
             if os.path.exists(test_exe):
                 os.unlink(test_exe)
 
-    def action_create(self):
-        assert False
-        assert self.src_path != "all", "all not supported for `create` action"
-        assert not os.path.exists(self.src_path), f"path already exist: {self.src_path}"
-        assert self.src_path.endswith(".c"), "path must end with .c"
-        assert os.path.basename(self.src_path).startswith(
-            "test_"
-        ), "test file name must start with test_ prefix"
+    def action_create(self, proj_name):
+        assert os.path.exists(self.project_root)
+        assert re.match(r"\w+", proj_name), f"{proj_name=} must be alphanumeric"
 
-        test_file = self.src_path
+        src_path = os.path.join(self.project_root, "src")
+        os.makedirs(src_path, exist_ok=True)
 
-        if not self.src_path.startswith(self.test_dir):
-            test_file = os.path.join(self.test_dir, test_file)
+        app_dir = os.path.join(src_path, proj_name)
+        assert not os.path.exists(app_dir), f"Already exists: {app_dir}"
+        os.makedirs(app_dir)
 
-        print(f"making: {test_file}")
+        template_dir = os.path.join(self.env.root, "cli", "project_template")
 
-        os.makedirs(os.path.dirname(test_file), exist_ok=True)
+        with open(os.path.join(template_dir, "src", "App.h"), "r") as fh:
+            contents = fh.read()
+            contents = contents.replace("App", proj_name)
+            with open(os.path.join(app_dir, f"{proj_name}.h"), "w") as fh_out:
+                fh_out.write(contents)
 
-        with open(test_file, "w") as fh:
-            fh.write(dedent(CEXTestBuilder.TEMPLATE))
+        with open(os.path.join(template_dir, "src", "App.c"), "r") as fh:
+            contents = fh.read()
+            contents = contents.replace("App", proj_name)
+            with open(os.path.join(app_dir, f"{proj_name}.c"), "w") as fh_out:
+                fh_out.write(contents)
+
+        with open(os.path.join(template_dir, "src", "main.c"), "r") as fh:
+            contents = fh.read()
+            contents = contents.replace("App", proj_name)
+            with open(os.path.join(app_dir, "main.c"), "w") as fh_out:
+                fh_out.write(contents)
+
+        test_dir = os.path.join(self.project_root, "tests")
+        if os.path.exists(test_dir):
+            test_dir_app = os.path.join(test_dir, f"app_{proj_name}")
+            assert not os.path.exists(
+                test_dir_app
+            ), f"test dir already exists: {test_dir_app}"
+
+            os.makedirs(test_dir_app)
+
+            with open(os.path.join(template_dir, "tests", "test_App.c"), "r") as fh:
+                contents = fh.read()
+                contents = contents.replace("App", proj_name)
+                contents = contents.replace(f"src/{proj_name}", f"src/{proj_name}/{proj_name}")
+                test_fn = os.path.join(test_dir_app, f"test_{proj_name}.c")
+                with open(test_fn, "w") as fh_out:
+                    fh_out.write(contents)
 
     def build(self):
         if self.action == "create":
-            self.action_create()
+            self.action_create(self.app_name)
         elif self.action == "build":
             self.action_build(
                 target=self.target,
@@ -993,7 +1020,6 @@ class CEXProcessor:
                 if self._is_signature:
                     # Decide definition type based on signature
                     if c in self._brackets:
-
                         if c == "(":
                             self.code_type = "func"
                         elif c == "{":
@@ -1035,7 +1061,6 @@ class CEXProcessor:
                             self.process_brackets(c)
 
                         if len(self._brstack) == 0:
-
                             # Handle last closing bracket of a function
                             if self.code_type == "func":
                                 if c == "}":
@@ -1286,7 +1311,6 @@ class CEXProcessor:
         ifc_contents.append("    // clang-format off\n")
         functions: dict[str | None, list[CEXProcessor.Func]] = {}
         for i, b in enumerate(blocks):
-
             # print(repr(b))
             if isinstance(b, CEXProcessor.Code):
                 if self.is_func_code(b):
@@ -1622,7 +1646,7 @@ def action_env(args):
     print(repr(env))
 
 
-def action_build(args):
+def action_app(args):
     builder = CEXBuilder(
         args.action,
         app_name=args.app_name,
@@ -1632,6 +1656,15 @@ def action_build(args):
         out_name=args.outname,
     )
     builder.build()
+
+
+def action_proj(args):
+    proj_name = args.proj_name
+    assert not os.path.exists(proj_name), f"project path already exist: {proj_name}"
+
+    print(f"making new CEX project: {proj_name}")
+    env = CEXEnv()
+    shutil.copytree(os.path.join(env.root, "cli", "project_template"), proj_name)
 
 
 def action_process(args):
@@ -1771,7 +1804,14 @@ if __name__ == "__main__":
     )
     build_parser.add_argument("--ccargs", help="compiler arguments", default="")
     build_parser.add_argument("--ldargs", help="linker arguments", default="")
-    build_parser.set_defaults(func=action_build)
+    build_parser.set_defaults(func=action_app)
+
+    proj_parser = subparsers.add_parser("project", help="Creates new CEX project")
+    proj_parser.add_argument(
+        "proj_name",
+        help="Project directory name",
+    )
+    proj_parser.set_defaults(func=action_proj)
 
     cli_arguments = global_parser.parse_args()
     cli_arguments.func(cli_arguments)
