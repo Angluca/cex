@@ -1,3 +1,4 @@
+#define CEX_LOG_LVL 0
 #include <cex/all.c>
 #include <cex/fff.h>
 #include <cex/test.h>
@@ -25,7 +26,7 @@ test$NOOPT Exception
 foo(int condition)
 {
     if (condition == 0) {
-        return e$raise(Error.io, "condition == 0");
+        return e$raise(Error.io, "condition == 0\n");
     }
     if (condition == 2) {
         return Error.memory;
@@ -62,7 +63,7 @@ test$case(test_sysfunc)
     u32 nit = 0;
     e$except_errno(ret = sys_func(-1))
     {
-        log$error("Except: ret=%d errno=%d\n", ret, errno);
+        printf("Except: ret=%d errno=%d\n", ret, errno);
         tassert_eqi(errno, 999);
         tassert_eqi(ret, -1);
         nit++;
@@ -237,6 +238,7 @@ test$case(test_log)
 
     return EOK;
 }
+
 /*
  *
  * MAIN (AUTO GENERATED)
