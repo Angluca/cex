@@ -6,13 +6,13 @@
 #include <_cexcore/list.h>
 
 // IMPORTANT: wrapping works only with gcc  `-Wl,--wrap=Shmem_new,--wrap=Protocol_event_emitter_new`  flag
-FAKE_VALUE_FUNC(Exc, __wrap_list_create, list_c*, size_t, size_t, size_t, const Allocator_i*)Exception __real_list_create(list_c*, size_t, size_t, size_t, const Allocator_i*);
+FAKE_VALUE_FUNC(Exc, __wrap_list_create, list_c*, usize, usize, usize, const Allocator_i*)Exception __real_list_create(list_c*, usize, usize, usize, const Allocator_i*);
 
-FAKE_VALUE_FUNC(Exc, __wrap_list_create_static, list_c*, void*, size_t, size_t, size_t)Exception __real_list_create_static(list_c*, void*, size_t, size_t, size_t);
+FAKE_VALUE_FUNC(Exc, __wrap_list_create_static, list_c*, void*, usize, usize, usize)Exception __real_list_create_static(list_c*, void*, usize, usize, usize);
 
-FAKE_VALUE_FUNC(Exc, __wrap_list_insert, void*, void*, size_t)Exception __real_list_insert(void*, void*, size_t);
+FAKE_VALUE_FUNC(Exc, __wrap_list_insert, void*, void*, usize)Exception __real_list_insert(void*, void*, usize);
 
-FAKE_VALUE_FUNC(Exc, __wrap_list_del, void*, size_t)Exception __real_list_del(void*, size_t);
+FAKE_VALUE_FUNC(Exc, __wrap_list_del, void*, usize)Exception __real_list_del(void*, usize);
 
 FAKE_VOID_FUNC(__wrap_list_sort, void*, int (*comp)(const, const)void __real_list_sort(void*, int (*comp)(const, const);
 
@@ -20,11 +20,11 @@ FAKE_VALUE_FUNC(Exc, __wrap_list_append, void*, void*)Exception __real_list_appe
 
 FAKE_VOID_FUNC(__wrap_list_clear, void*)void __real_list_clear(void*);
 
-FAKE_VALUE_FUNC(Exc, __wrap_list_extend, void*, void*, size_t)Exception __real_list_extend(void*, void*, size_t);
+FAKE_VALUE_FUNC(Exc, __wrap_list_extend, void*, void*, usize)Exception __real_list_extend(void*, void*, usize);
 
-FAKE_VALUE_FUNC(size_t, __wrap_list_len, void*)size_t __real_list_len(void*);
+FAKE_VALUE_FUNC(usize, __wrap_list_len, void*)usize __real_list_len(void*);
 
-FAKE_VALUE_FUNC(size_t, __wrap_list_capacity, void*)size_t __real_list_capacity(void*);
+FAKE_VALUE_FUNC(usize, __wrap_list_capacity, void*)usize __real_list_capacity(void*);
 
 FAKE_VALUE_FUNC(void*, __wrap_list_destroy, void*)void* __real_list_destroy(void*);
 

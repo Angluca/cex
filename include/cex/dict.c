@@ -29,8 +29,8 @@ dict__hashfunc__u64_cmp(const void* a, const void* b, void* udata)
     uassert(a != NULL && "must be set");
     uassert(b != NULL && "must be set");
 
-    uassert((size_t)a % alignof(u64) == 0 && "a operand not aligned to u64");
-    uassert((size_t)b % alignof(u64) == 0 && "b operand not aligned to u64");
+    uassert((usize)a % alignof(u64) == 0 && "a operand not aligned to u64");
+    uassert((usize)b % alignof(u64) == 0 && "b operand not aligned to u64");
 
     return (*(u64*)a) - (*(u64*)b);
 }
@@ -87,10 +87,10 @@ dict__hashfunc__str_hash(const void* item, u64 seed0, u64 seed1)
 Exception
 dict_create(
     dict_c* self,
-    size_t item_size,
-    size_t item_align,
-    size_t item_key_offsetof,
-    size_t capacity,
+    usize item_size,
+    usize item_align,
+    usize item_key_offsetof,
+    usize capacity,
     dict_hash_func_f hash_func,
     dict_compare_func_f compare_func,
     const Allocator_i* allocator,
@@ -107,8 +107,8 @@ dict_create(
         return Error.integrity;
     }
 
-    if (item_align > alignof(size_t)) {
-        uassert(item_align <= alignof(size_t) && "item alignment exceed regular pointer alignment");
+    if (item_align > alignof(usize)) {
+        uassert(item_align <= alignof(usize) && "item alignment exceed regular pointer alignment");
         return Error.argument;
     }
 
@@ -196,7 +196,7 @@ dict_get(dict_c* self, const void* key)
  * @param self  dict() instance
  * @return number
  */
-size_t
+usize
 dict_len(dict_c* self)
 {
     uassert(self != NULL);
@@ -279,13 +279,13 @@ dict_iter(dict_c* self, cex_iterator_s* iterator)
     // temporary struct based on _ctxbuffer
     struct iter_ctx
     {
-        size_t nbuckets;
-        size_t count;
-        size_t cursor;
-        size_t counter;
+        usize nbuckets;
+        usize count;
+        usize cursor;
+        usize counter;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) == alignof(size_t), "ctx alignment mismatch");
+    _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
 
     if (unlikely(iterator->val == NULL)) {
         if (hm->count == 0) {
@@ -328,11 +328,11 @@ dict_tolist(dict_c* self, void* listptr, const Allocator_i* allocator)
 
     struct hashmap* hm = self->hashmap;
 
-    e$except(err, list.create((list_c*)listptr, hm->count, hm->elsize, alignof(size_t), allocator)){
+    e$except(err, list.create((list_c*)listptr, hm->count, hm->elsize, alignof(usize), allocator)){
         return err;
     }
 
-    size_t hm_cursor = 0;
+    usize hm_cursor = 0;
     void* item = NULL;
     
     while(hashmap_iter(self->hashmap, &hm_cursor, &item)) {

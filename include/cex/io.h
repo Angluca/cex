@@ -7,9 +7,9 @@
 typedef struct io_c
 {
     FILE* _fh;
-    size_t _fsize;
+    usize _fsize;
     char* _fbuf;
-    size_t _fbuf_size;
+    usize _fbuf_size;
     const Allocator_i* _allocator;
     struct
     {
@@ -46,13 +46,13 @@ void
 (*rewind)(io_c* self);
 
 Exception
-(*tell)(io_c* self, size_t* size);
+(*tell)(io_c* self, usize* size);
 
-size_t
+usize
 (*size)(io_c* self);
 
 Exception
-(*read)(io_c* self, void* obj_buffer, size_t obj_el_size, size_t* obj_count);
+(*read)(io_c* self, void* obj_buffer, usize obj_el_size, usize* obj_count);
 
 Exception
 (*readall)(io_c* self, str_c* s);
@@ -67,7 +67,7 @@ void
 (*printf)(const char* format, ...);
 
 Exception
-(*write)(io_c* self, void* obj_buffer, size_t obj_el_size, size_t obj_count);
+(*write)(io_c* self, void* obj_buffer, usize obj_el_size, usize obj_count);
 
 void
 (*close)(io_c* self);

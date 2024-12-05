@@ -8,21 +8,21 @@
 // IMPORTANT: wrapping works only with gcc  `-Wl,--wrap=Shmem_new,--wrap=Protocol_event_emitter_new`  flag
 FAKE_VALUE_FUNC(str_c, __wrap_str_cstr, const char*)str_c __real_str_cstr(const char*);
 
-FAKE_VALUE_FUNC(str_c, __wrap_str_cbuf, char*, size_t)str_c __real_str_cbuf(char*, size_t);
+FAKE_VALUE_FUNC(str_c, __wrap_str_cbuf, char*, usize)str_c __real_str_cbuf(char*, usize);
 
-FAKE_VALUE_FUNC(str_c, __wrap_str_sub, str_c, ssize_t, ssize_t)str_c __real_str_sub(str_c, ssize_t, ssize_t);
+FAKE_VALUE_FUNC(str_c, __wrap_str_sub, str_c, isize, isize)str_c __real_str_sub(str_c, isize, isize);
 
-FAKE_VALUE_FUNC(Exc, __wrap_str_copy, str_c, char*, size_t)Exception __real_str_copy(str_c, char*, size_t);
+FAKE_VALUE_FUNC(Exc, __wrap_str_copy, str_c, char*, usize)Exception __real_str_copy(str_c, char*, usize);
 
-FAKE_VALUE_FUNC(size_t, __wrap_str_len, str_c)size_t __real_str_len(str_c);
+FAKE_VALUE_FUNC(usize, __wrap_str_len, str_c)usize __real_str_len(str_c);
 
 FAKE_VALUE_FUNC(bool, __wrap_str_is_valid, str_c)bool __real_str_is_valid(str_c);
 
 FAKE_VALUE_FUNC(char*, __wrap_str_iter, str_c, cex_iterator_s*)char* __real_str_iter(str_c, cex_iterator_s*);
 
-FAKE_VALUE_FUNC(ssize_t, __wrap_str_find, str_c, str_c, size_t, size_t)ssize_t __real_str_find(str_c, str_c, size_t, size_t);
+FAKE_VALUE_FUNC(isize, __wrap_str_find, str_c, str_c, usize, usize)isize __real_str_find(str_c, str_c, usize, usize);
 
-FAKE_VALUE_FUNC(ssize_t, __wrap_str_rfind, str_c, str_c, size_t, size_t)ssize_t __real_str_rfind(str_c, str_c, size_t, size_t);
+FAKE_VALUE_FUNC(isize, __wrap_str_rfind, str_c, str_c, usize, usize)isize __real_str_rfind(str_c, str_c, usize, usize);
 
 FAKE_VALUE_FUNC(bool, __wrap_str_contains, str_c, str_c)bool __real_str_contains(str_c, str_c);
 

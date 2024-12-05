@@ -8,7 +8,7 @@
 // IMPORTANT: wrapping works only with gcc  `-Wl,--wrap=Shmem_new,--wrap=Protocol_event_emitter_new`  flag
 FAKE_VALUE_FUNC(Exc, __wrap_sbuf_create, sbuf_c*, u32, const Allocator_i*)Exception __real_sbuf_create(sbuf_c*, u32, const Allocator_i*);
 
-FAKE_VALUE_FUNC(Exc, __wrap_sbuf_create_static, sbuf_c*, char*, size_t)Exception __real_sbuf_create_static(sbuf_c*, char*, size_t);
+FAKE_VALUE_FUNC(Exc, __wrap_sbuf_create_static, sbuf_c*, char*, usize)Exception __real_sbuf_create_static(sbuf_c*, char*, usize);
 
 FAKE_VALUE_FUNC(Exc, __wrap_sbuf_grow, sbuf_c*, u32)Exception __real_sbuf_grow(sbuf_c*, u32);
 

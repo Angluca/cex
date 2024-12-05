@@ -14,7 +14,7 @@ FAKE_VALUE_FUNC(int, __wrap_hm_str_static_compare, const void*, const void*, voi
 
 FAKE_VALUE_FUNC(u64, __wrap_hm_str_static_hash, const void*, u64, u64)u64 __real_hm_str_static_hash(const void*, u64, u64);
 
-FAKE_VALUE_FUNC(Exc, __wrap_dict_create, dict_c*, size_t, size_t, size_t, size_t, dict_hash_func_f, dict_compare_func_f, const Allocator_i*, dict_elfree_func_f, void*)Exception __real_dict_create(dict_c*, size_t, size_t, size_t, size_t, dict_hash_func_f, dict_compare_func_f, const Allocator_i*, dict_elfree_func_f, void*);
+FAKE_VALUE_FUNC(Exc, __wrap_dict_create, dict_c*, usize, usize, usize, usize, dict_hash_func_f, dict_compare_func_f, const Allocator_i*, dict_elfree_func_f, void*)Exception __real_dict_create(dict_c*, usize, usize, usize, usize, dict_hash_func_f, dict_compare_func_f, const Allocator_i*, dict_elfree_func_f, void*);
 
 FAKE_VALUE_FUNC(Exc, __wrap_dict_set, dict_c*, const void*)Exception __real_dict_set(dict_c*, const void*);
 
@@ -22,7 +22,7 @@ FAKE_VALUE_FUNC(void*, __wrap_dict_geti, dict_c*, u64)void* __real_dict_geti(dic
 
 FAKE_VALUE_FUNC(void*, __wrap_dict_get, dict_c*, const void*)void* __real_dict_get(dict_c*, const void*);
 
-FAKE_VALUE_FUNC(size_t, __wrap_dict_len, dict_c*)size_t __real_dict_len(dict_c*);
+FAKE_VALUE_FUNC(usize, __wrap_dict_len, dict_c*)usize __real_dict_len(dict_c*);
 
 FAKE_VOID_FUNC(__wrap_dict_destroy, dict_c*)void __real_dict_destroy(dict_c*);
 

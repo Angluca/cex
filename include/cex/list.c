@@ -13,8 +13,8 @@ list__head(list_c* self)
 
     return head;
 }
-static inline size_t
-list__alloc_capacity(size_t capacity)
+static inline usize
+list__alloc_capacity(usize capacity)
 {
     uassert(capacity > 0);
 
@@ -33,54 +33,54 @@ list__alloc_capacity(size_t capacity)
 }
 
 static inline void*
-list__elidx(list_head_s* head, size_t idx)
+list__elidx(list_head_s* head, usize idx)
 {
     // Memory alignment
     // |-----|head|--el1--|--el2--|--elN--|
     //  ^^^^ - head can moved to el1, because of el1 alignment
     void* result = (char*)head + _CEX_LIST_BUF + (head->header.elsize * idx);
 
-    uassert((size_t)result % head->header.elalign == 0 && "misaligned array index pointer");
+    uassert((usize)result % head->header.elalign == 0 && "misaligned array index pointer");
 
     return result;
 }
 
 static inline list_head_s*
-list__realloc(list_head_s* head, size_t alloc_size)
+list__realloc(list_head_s* head, usize alloc_size)
 {
     // Memory alignment
     // |-----|head|--el1--|--el2--|--elN--|
     //  ^^^^ - head can moved to el1, because of el1 alignment
     uassert(head->header.magic == 0x1eed && "not a dlist / bad pointer");
-    size_t offset = 0;
-    size_t align = alignof(list_head_s);
+    usize offset = 0;
+    usize align = alignof(list_head_s);
     if (head->header.elalign > _CEX_LIST_BUF) {
         align = head->header.elalign;
         offset = head->header.elalign - _CEX_LIST_BUF;
     }
     uassert(head->header.magic == 0x1eed && "not a dlist / bad pointer");
     void* mptr = (char*)head - offset;
-    uassert((size_t)mptr % alignof(size_t) == 0 && "misaligned malloc pointer");
+    uassert((usize)mptr % alignof(usize) == 0 && "misaligned malloc pointer");
     uassert(head->header.magic == 0x1eed && "not a dlist / bad pointer");
     uassert(alloc_size % head->header.elalign == 0 && "misaligned size");
 
     void* result = head->allocator->realloc_aligned(mptr, align, alloc_size);
-    uassert((size_t)result % align == 0 && "misaligned after realloc");
+    uassert((usize)result % align == 0 && "misaligned after realloc");
 
     head = (list_head_s*)((char*)result + offset);
     uassert(head->header.magic == 0x1eed && "not a dlist / bad pointer");
     return head;
 }
 
-static inline size_t
-list__alloc_size(size_t capacity, size_t elsize, size_t elalign)
+static inline usize
+list__alloc_size(usize capacity, usize elsize, usize elalign)
 {
     uassert(capacity > 0 && "zero capacity");
     uassert(elsize > 0 && "zero element size");
     uassert(elalign > 0 && "zero element align");
     uassert(elsize % elalign == 0 && "element size has to be rounded to elalign");
 
-    size_t result = (capacity * elsize) +
+    usize result = (capacity * elsize) +
                     (elalign > _CEX_LIST_BUF ? elalign : _CEX_LIST_BUF);
     uassert(result % elalign == 0 && "alloc_size is unaligned");
     return result;
@@ -89,9 +89,9 @@ list__alloc_size(size_t capacity, size_t elsize, size_t elalign)
 Exception
 list_create(
     list_c* self,
-    size_t capacity,
-    size_t elsize,
-    size_t elalign,
+    usize capacity,
+    usize elsize,
+    usize elalign,
     const Allocator_i* allocator
 )
 {
@@ -121,7 +121,7 @@ list_create(
     memset(self, 0, sizeof(list_c));
 
     capacity = list__alloc_capacity(capacity);
-    size_t alloc_size = list__alloc_size(capacity, elsize, elalign);
+    usize alloc_size = list__alloc_size(capacity, elsize, elalign);
     char* buf = allocator->malloc_aligned(elalign, alloc_size);
 
     if (buf == NULL) {
@@ -152,7 +152,7 @@ list_create(
 }
 
 Exception
-list_create_static(list_c* self, void* buf, size_t buf_len, size_t elsize, size_t elalign)
+list_create_static(list_c* self, void* buf, usize buf_len, usize elsize, usize elalign)
 {
     if (self == NULL) {
         uassert(self != NULL && "must not be NULL");
@@ -175,7 +175,7 @@ list_create_static(list_c* self, void* buf, size_t buf_len, size_t elsize, size_
     // Clear dlist pointer
     memset(self, 0, sizeof(list_c));
 
-    size_t offset = ((size_t)buf + _CEX_LIST_BUF) % elalign;
+    usize offset = ((usize)buf + _CEX_LIST_BUF) % elalign;
     if (offset != 0) {
         offset = elalign - offset;
     }
@@ -183,7 +183,7 @@ list_create_static(list_c* self, void* buf, size_t buf_len, size_t elsize, size_
     if (buf_len < _CEX_LIST_BUF + offset + elsize) {
         return Error.overflow;
     }
-    size_t max_capacity = (buf_len - _CEX_LIST_BUF - offset) / elsize;
+    usize max_capacity = (buf_len - _CEX_LIST_BUF - offset) / elsize;
 
     list_head_s* head = (list_head_s*)((char*)buf + offset);
     *head = (list_head_s){
@@ -206,7 +206,7 @@ list_create_static(list_c* self, void* buf, size_t buf_len, size_t elsize, size_
 
 
 Exception
-list_insert(void* self, void* item, size_t index)
+list_insert(void* self, void* item, usize index)
 {
     uassert(self != NULL);
     list_c* d = (list_c*)self;
@@ -220,8 +220,8 @@ list_insert(void* self, void* item, size_t index)
         if (head->allocator == NULL) {
             return Error.overflow;
         }
-        size_t new_cap = list__alloc_capacity(head->capacity + 1);
-        size_t alloc_size = list__alloc_size(new_cap, head->header.elsize, head->header.elalign);
+        usize new_cap = list__alloc_capacity(head->capacity + 1);
+        usize alloc_size = list__alloc_size(new_cap, head->header.elsize, head->header.elalign);
         head = list__realloc(head, alloc_size);
         uassert(head->header.magic == 0x1eed && "head missing after realloc");
 
@@ -251,7 +251,7 @@ list_insert(void* self, void* item, size_t index)
 }
 
 Exception
-list_del(void* self, size_t index)
+list_del(void* self, usize index)
 {
     uassert(self != NULL);
     list_c* d = (list_c*)self;
@@ -306,7 +306,7 @@ list_clear(void* self)
 }
 
 Exception
-list_extend(void* self, void* items, size_t nitems)
+list_extend(void* self, void* items, usize nitems)
 {
     uassert(self != NULL);
 
@@ -322,9 +322,9 @@ list_extend(void* self, void* items, size_t nitems)
             return Error.overflow;
         }
 
-        size_t new_cap = list__alloc_capacity(head->capacity + nitems);
+        usize new_cap = list__alloc_capacity(head->capacity + nitems);
 
-        size_t alloc_size = list__alloc_size(new_cap, head->header.elsize, head->header.elalign);
+        usize alloc_size = list__alloc_size(new_cap, head->header.elsize, head->header.elalign);
         head = list__realloc(head, alloc_size);
         uassert(head->header.magic == 0x1eed && "head missing after realloc");
 
@@ -343,7 +343,7 @@ list_extend(void* self, void* items, size_t nitems)
     return Error.ok;
 }
 
-size_t
+usize
 list_len(void* self)
 {
     list_c* d = (list_c*)self;
@@ -352,7 +352,7 @@ list_len(void* self)
     return head->count;
 }
 
-size_t
+usize
 list_capacity(void* self)
 {
     list_head_s* head = list__head(self);
@@ -368,7 +368,7 @@ list_destroy(void* self)
         if (d->arr != NULL) {
             list_head_s* head = list__head(self);
 
-            size_t offset = 0;
+            usize offset = 0;
             if (head->header.elalign > _CEX_LIST_BUF) {
                 offset = head->header.elalign - _CEX_LIST_BUF;
             }
@@ -401,10 +401,10 @@ list_iter(void* self, cex_iterator_s* iterator)
     // temporary struct based on _ctxbuffer
     struct iter_ctx
     {
-        size_t cursor;
+        usize cursor;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) == alignof(size_t), "ctx alignment mismatch");
+    _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
 
     if (unlikely(iterator->val == NULL)) {
         ctx->cursor = 0;

@@ -70,10 +70,10 @@ os__path__splitext(str_c path, bool return_ext)
         return s$("");
     }
 
-    size_t last_char_idx = path.len;
-    size_t last_dot_idx = path.len;
+    usize last_char_idx = path.len;
+    usize last_dot_idx = path.len;
 
-    for (size_t i = path.len; i-- > 0;) {
+    for (usize i = path.len; i-- > 0;) {
         if (path.buf[i] == '.') {
             if (last_dot_idx == path.len) {
                 last_dot_idx = i;

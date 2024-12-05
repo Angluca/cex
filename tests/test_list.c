@@ -452,7 +452,7 @@ test$case(testlist_align256)
 
     struct foo64
     {
-        alignas(256) size_t foo;
+        alignas(256) usize foo;
     };
     _Static_assert(sizeof(struct foo64) == 256, "size");
     _Static_assert(alignof(struct foo64) == 256, "align");
@@ -476,7 +476,7 @@ test$case(testlist_align256)
     tassert_eqi(head->header.elalign, 256);
 
     // pointer is aligned!
-    tassert_eqi(0, (size_t)&a.arr[0] % head->header.elalign);
+    tassert_eqi(0, (usize)&a.arr[0] % head->header.elalign);
 
     // validate appended values
     for (u32 i = 0; i < a.len; i++) {
@@ -509,7 +509,7 @@ test$case(testlist_align64)
 
     struct foo64
     {
-        alignas(64) size_t foo;
+        alignas(64) usize foo;
     };
     _Static_assert(sizeof(struct foo64) == 64, "size");
     _Static_assert(alignof(struct foo64) == 64, "align");
@@ -533,7 +533,7 @@ test$case(testlist_align64)
     tassert_eqi(head->header.elalign, 64);
 
     // pointer is aligned!
-    tassert_eqi(0, (size_t)&a.arr[0] % head->header.elalign);
+    tassert_eqi(0, (usize)&a.arr[0] % head->header.elalign);
 
     // validate appended values
     for (u32 i = 0; i < a.len; i++) {
@@ -566,7 +566,7 @@ test$case(testlist_align16)
 
     struct foo64
     {
-        alignas(16) size_t foo;
+        alignas(16) usize foo;
     };
     _Static_assert(sizeof(struct foo64) == 16, "size");
     _Static_assert(alignof(struct foo64) == 16, "align");
@@ -675,7 +675,7 @@ test$case(testlist_static_with_alignment)
 {
     struct foo64
     {
-        alignas(64) size_t foo;
+        alignas(64) usize foo;
     };
     _Static_assert(sizeof(struct foo64) == 64, "size");
     _Static_assert(alignof(struct foo64) == 64, "align");
@@ -683,7 +683,7 @@ test$case(testlist_static_with_alignment)
     list$define(struct foo64) a;
 
     alignas(64) char buf[sizeof(list_head_s) + 64*2];
-    size_t unalign = 1;
+    usize unalign = 1;
     char* unaligned = buf + unalign;
 
     tassert_eqs(EOK, list$new_static(&a, unaligned, arr$len(buf)-unalign));
@@ -695,7 +695,7 @@ test$case(testlist_static_with_alignment)
     }
 
     // Address is aligned to 64
-    tassert_eqi(0, (size_t)(a.arr) % _Alignof(struct foo64));
+    tassert_eqi(0, (usize)(a.arr) % _Alignof(struct foo64));
 
     tassert_eqi(a.len, 1);
     list_head_s* head = list__head((list_c*)&a);

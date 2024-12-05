@@ -76,7 +76,7 @@ test$case(test_element_alignment_16)
 
     struct foo16
     {
-        alignas(16) size_t foo;
+        alignas(16) usize foo;
     };
     _Static_assert(sizeof(struct foo16) == 16, "size");
     _Static_assert(alignof(struct foo16) == 16, "align");
@@ -125,14 +125,14 @@ test$case(test_element_alignment_64)
 
     struct foo64
     {
-        alignas(64) size_t foo;
+        alignas(64) usize foo;
     };
     _Static_assert(sizeof(struct foo64) == 64, "size");
     _Static_assert(alignof(struct foo64) == 64, "align");
 
     struct foo128
     {
-        alignas(128) size_t foo;
+        alignas(128) usize foo;
     };
 
     e$except(err, deque$new(&a, struct foo64, 0, false, allocator))

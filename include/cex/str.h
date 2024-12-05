@@ -9,12 +9,12 @@ typedef struct
     // NOTE: len comes first which prevents bad casting of str_c to char*
     // stb_sprintf() has special case of you accidentally pass str_c to
     // %s format specifier (it will show -> (str_c->%S))
-    size_t len;
+    usize len;
     char* buf;
 } str_c;
 
-_Static_assert(alignof(str_c) == alignof(size_t), "align");
-_Static_assert(sizeof(str_c) == sizeof(size_t)*2, "size");
+_Static_assert(alignof(str_c) == alignof(usize), "align");
+_Static_assert(sizeof(str_c) == sizeof(usize)*2, "size");
 
 static inline str_c
 _str__propagate_inline_small_func(str_c s)
@@ -43,21 +43,21 @@ str_c
 (*cstr)(const char* ccharptr);
 
 str_c
-(*cbuf)(char* s, size_t length);
+(*cbuf)(char* s, usize length);
 
 str_c
-(*sub)(str_c s, ssize_t start, ssize_t end);
+(*sub)(str_c s, isize start, isize end);
 
 Exception
-(*copy)(str_c s, char* dest, size_t destlen);
+(*copy)(str_c s, char* dest, usize destlen);
 
 str_c
-(*vsprintf)(char* dest, size_t dest_len, const char* format, va_list va);
+(*vsprintf)(char* dest, usize dest_len, const char* format, va_list va);
 
 str_c
-(*sprintf)(char* dest, size_t dest_len, const char* format, ...);
+(*sprintf)(char* dest, usize dest_len, const char* format, ...);
 
-size_t
+usize
 (*len)(str_c s);
 
 bool
@@ -66,11 +66,11 @@ bool
 char*
 (*iter)(str_c s, cex_iterator_s* iterator);
 
-ssize_t
-(*find)(str_c s, str_c needle, size_t start, size_t end);
+isize
+(*find)(str_c s, str_c needle, usize start, usize end);
 
-ssize_t
-(*rfind)(str_c s, str_c needle, size_t start, size_t end);
+isize
+(*rfind)(str_c s, str_c needle, usize start, usize end);
 
 bool
 (*contains)(str_c s, str_c needle);

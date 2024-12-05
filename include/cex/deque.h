@@ -5,16 +5,16 @@ typedef struct
 {
     alignas(64) struct
     {
-        size_t magic : 16;             // deque magic number for sanity checks
-        size_t elsize : 16;            // element size
-        size_t elalign : 8;            // align of element type
-        size_t eloffset : 8;           // offset in bytes to the 1st element array
-        size_t rewrite_overflowed : 8; // allow rewriting old unread values if que overflowed
+        usize magic : 16;             // deque magic number for sanity checks
+        usize elsize : 16;            // element size
+        usize elalign : 8;            // align of element type
+        usize eloffset : 8;           // offset in bytes to the 1st element array
+        usize rewrite_overflowed : 8; // allow rewriting old unread values if que overflowed
     } header;
-    size_t idx_head;
-    size_t idx_tail;
-    size_t max_capacity; // maximum capacity when deque stops growing (must be pow of 2!)
-    size_t capacity;
+    usize idx_head;
+    usize idx_tail;
+    usize max_capacity; // maximum capacity when deque stops growing (must be pow of 2!)
+    usize capacity;
     const Allocator_i* allocator; // can be NULL for static deque
 } deque_head_s;
 _Static_assert(sizeof(deque_head_s) == 64, "size");
@@ -50,10 +50,10 @@ Exception
 (*validate)(deque_c *self);
 
 Exception
-(*create)(deque_c* self, size_t max_capacity, bool rewrite_overflowed, size_t elsize, size_t elalign, const Allocator_i* allocator);
+(*create)(deque_c* self, usize max_capacity, bool rewrite_overflowed, usize elsize, usize elalign, const Allocator_i* allocator);
 
 Exception
-(*create_static)(deque_c* self, void* buf, size_t buf_len, bool rewrite_overflowed, size_t elsize, size_t elalign);
+(*create_static)(deque_c* self, void* buf, usize buf_len, bool rewrite_overflowed, usize elsize, usize elalign);
 
 Exception
 (*append)(deque_c* self, const void* item);
@@ -71,9 +71,9 @@ void*
 (*pop)(deque_c* self);
 
 void*
-(*get)(deque_c* self, size_t index);
+(*get)(deque_c* self, usize index);
 
-size_t
+usize
 (*len)(const deque_c* self);
 
 void

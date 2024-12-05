@@ -364,15 +364,15 @@ int __cex_test_uassert_enabled = 1;
 #define arr$len(arr) (sizeof(arr) / sizeof(arr[0]))
 
 /**
- * @brief Iterates through array: itvar is struct {eltype* val, size_t index}
+ * @brief Iterates through array: itvar is struct {eltype* val, usize index}
  */
 #define for$array(it, array, length)                                                               \
     struct __CEX_TMPNAME(__cex_arriter_)                                                           \
     {                                                                                              \
         typeof(*array)* val;                                                                       \
-        size_t idx;                                                                                \
+        usize idx;                                                                                \
     };                                                                                             \
-    size_t __CEX_TMPNAME(__cex_arriter__length) = (length); /* prevents multi call of (length)*/   \
+    usize __CEX_TMPNAME(__cex_arriter__length) = (length); /* prevents multi call of (length)*/   \
     for (struct __CEX_TMPNAME(__cex_arriter_) it = { .val = array, .idx = 0 };                     \
          it.idx < __CEX_TMPNAME(__cex_arriter__length);                                            \
          it.val++, it.idx++)
@@ -388,7 +388,7 @@ typedef struct
     {
         union
         {
-            size_t i;
+            usize i;
             u64 ikey;
             char* skey;
             void* pkey;
@@ -396,8 +396,8 @@ typedef struct
     } idx;
     char _ctx[48];
 } cex_iterator_s;
-_Static_assert(sizeof(size_t) == sizeof(void*), "size_t expected as sizeof ptr");
-_Static_assert(alignof(size_t) == alignof(void*), "alignof pointer != alignof size_t");
+_Static_assert(sizeof(usize) == sizeof(void*), "usize expected as sizeof ptr");
+_Static_assert(alignof(usize) == alignof(void*), "alignof pointer != alignof usize");
 // _Static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
 _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 
@@ -420,7 +420,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
             {                                                                                      \
                 union                                                                              \
                 {                                                                                  \
-                    size_t i;                                                                      \
+                    usize i;                                                                      \
                     u64 ikey;                                                                      \
                     char* skey;                                                                    \
                     void* pkey;                                                                    \
@@ -440,11 +440,11 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 typedef struct Allocator_i
 {
     // >>> cacheline
-    void* (*malloc)(size_t size);
-    void* (*calloc)(size_t nmemb, size_t size);
-    void* (*realloc)(void* ptr, size_t new_size);
-    void* (*malloc_aligned)(size_t alignment, size_t size);
-    void* (*realloc_aligned)(void* ptr, size_t alignment, size_t new_size);
+    void* (*malloc)(usize size);
+    void* (*calloc)(usize nmemb, usize size);
+    void* (*realloc)(void* ptr, usize new_size);
+    void* (*malloc_aligned)(usize alignment, usize size);
+    void* (*realloc_aligned)(void* ptr, usize alignment, usize new_size);
     void (*free)(void* ptr);
     FILE* (*fopen)(const char* filename, const char* mode);
     int (*open)(const char* pathname, int flags, unsigned int mode);
@@ -452,8 +452,8 @@ typedef struct Allocator_i
     int (*fclose)(FILE* stream);
     int (*close)(int fd);
 } Allocator_i;
-_Static_assert(alignof(Allocator_i) == alignof(size_t), "size");
-_Static_assert(sizeof(Allocator_i) == sizeof(size_t) * 10, "size");
+_Static_assert(alignof(Allocator_i) == alignof(usize), "size");
+_Static_assert(sizeof(Allocator_i) == sizeof(usize) * 10, "size");
 
 
 // Check windows

@@ -18,8 +18,8 @@ deque__head(deque_c self)
     return head;
 }
 
-static inline size_t
-deque__alloc_capacity(size_t capacity)
+static inline usize
+deque__alloc_capacity(usize capacity)
 {
     if (capacity < 16) {
         return 16;
@@ -34,16 +34,16 @@ deque__alloc_capacity(size_t capacity)
 }
 
 static inline void*
-deque__get_byindex(deque_head_s* head, size_t index)
+deque__get_byindex(deque_head_s* head, usize index)
 {
-    size_t _idx = head->idx_head + index;
+    usize _idx = head->idx_head + index;
     // _idx = _idx % head->capacity;
     _idx = _idx & (head->capacity - 1);
     return ((char*)head) + head->header.eloffset + head->header.elsize * _idx;
 }
 
-static inline size_t
-deque__alloc_size(size_t capacity, size_t elsize, size_t elalign)
+static inline usize
+deque__alloc_size(usize capacity, usize elsize, usize elalign)
 {
     uassert(capacity > 0 && "zero capacity");
     uassert(elsize > 0 && "zero element size");
@@ -52,7 +52,7 @@ deque__alloc_size(size_t capacity, size_t elsize, size_t elalign)
     uassert((elalign & (elalign - 1)) == 0 && "elalign must be power of 2");
     uassert(elalign <= alignof(deque_head_s) && "elalign exceeds alignof(deque_head_s)");
 
-    size_t result = (capacity * elsize) +
+    usize result = (capacity * elsize) +
                     (elalign > sizeof(deque_head_s) ? elalign : sizeof(deque_head_s));
 
     uassert(result % elalign == 0 && "alloc_size is unaligned to elalign");
@@ -71,7 +71,7 @@ deque_validate(deque_c *self)
     }
 
     deque_head_s* head = (deque_head_s*)*self;
-    if ((size_t)head % alignof(deque_head_s) != 0) {
+    if ((usize)head % alignof(deque_head_s) != 0) {
         return Error.memory;
     }
 
@@ -103,10 +103,10 @@ deque_validate(deque_c *self)
 Exception
 deque_create(
     deque_c* self,
-    size_t max_capacity,
+    usize max_capacity,
     bool rewrite_overflowed,
-    size_t elsize,
-    size_t elalign,
+    usize elsize,
+    usize elalign,
     const Allocator_i* allocator
 )
 {
@@ -141,8 +141,8 @@ deque_create(
         return Error.argument;
     }
 
-    size_t capacity = deque__alloc_capacity(max_capacity);
-    size_t alloc_size = deque__alloc_size(capacity, elsize, elalign);
+    usize capacity = deque__alloc_capacity(max_capacity);
+    usize alloc_size = deque__alloc_size(capacity, elsize, elalign);
 
     _Static_assert(alignof(deque_head_s) == 64, "align");
     deque_head_s* que = allocator->malloc_aligned(alignof(deque_head_s), alloc_size);
@@ -150,7 +150,7 @@ deque_create(
     if (que == NULL) {
         return Error.memory;
     }
-    if (((size_t)que) % alignof(deque_head_s) != 0) {
+    if (((usize)que) % alignof(deque_head_s) != 0) {
         uassert(false && "memory pointer address must be aligned to 64 bytes");
         return Error.integrity;
     }
@@ -179,10 +179,10 @@ Exception
 deque_create_static(
     deque_c* self,
     void* buf,
-    size_t buf_len,
+    usize buf_len,
     bool rewrite_overflowed,
-    size_t elsize,
-    size_t elalign
+    usize elsize,
+    usize elalign
 )
 {
     if (self == NULL) {
@@ -209,16 +209,16 @@ deque_create_static(
         return Error.overflow;
     }
 
-    if (((size_t)buf) % alignof(deque_head_s) != 0) {
+    if (((usize)buf) % alignof(deque_head_s) != 0) {
         uassert(false && "memory buffer address must be aligned to 64 bytes");
         return Error.integrity;
     }
 
     // buffer size might not contain exact pow of 2 number, just round it down
-    size_t max_capacity = (buf_len - sizeof(deque_head_s)) / elsize / 2;
+    usize max_capacity = (buf_len - sizeof(deque_head_s)) / elsize / 2;
 
-    size_t capacity = deque__alloc_capacity(max_capacity);
-    size_t alloc_size = deque__alloc_size(capacity, elsize, elalign);
+    usize capacity = deque__alloc_capacity(max_capacity);
+    usize alloc_size = deque__alloc_size(capacity, elsize, elalign);
     if (alloc_size > buf_len) {
         uassert(alloc_size > buf_len && "deque_c expected allocation exceeds buf_len");
         return Error.overflow;
@@ -260,7 +260,7 @@ deque_append(deque_c* self, const void* item)
         head->idx_head = 0;
         head->idx_tail = 0;
     } else if (unlikely(head->idx_tail == head->capacity)) {
-        size_t new_cap = deque__alloc_capacity(head->capacity + 1);
+        usize new_cap = deque__alloc_capacity(head->capacity + 1);
 
         // We've reached the end of the buffer, let's decide to wrap or expand
         if (head->allocator == NULL || (head->max_capacity > 0 && new_cap > head->max_capacity)) {
@@ -273,7 +273,7 @@ deque_append(deque_c* self, const void* item)
                 }
             }
         } else {
-            size_t alloc_size = deque__alloc_size(
+            usize alloc_size = deque__alloc_size(
                 new_cap,
                 head->header.elsize,
                 head->header.elalign
@@ -283,7 +283,7 @@ deque_append(deque_c* self, const void* item)
                 return Error.memory;
             }
             uassert(head->header.magic == 0xdef0 && "head missing after realloc");
-            uassert((size_t)head % alignof(deque_head_s) == 0 && "misaligned after realloc");
+            uassert((usize)head % alignof(deque_head_s) == 0 && "misaligned after realloc");
             head->capacity = new_cap;
             *self = (void*)head;
         }
@@ -295,8 +295,8 @@ deque_append(deque_c* self, const void* item)
         }
     }
 
-    // size_t idx = head->idx_tail % head->capacity;
-    size_t idx = head->idx_tail & (head->capacity - 1);
+    // usize idx = head->idx_tail % head->capacity;
+    usize idx = head->idx_tail & (head->capacity - 1);
     void* elptr = (char*)(*self) + head->header.eloffset + head->header.elsize * idx;
 
     memcpy(elptr, item, head->header.elsize);
@@ -327,8 +327,8 @@ deque_dequeue(deque_c* self)
         return NULL;
     }
 
-    // size_t idx = head->idx_head % head->capacity;
-    size_t idx = head->idx_head & (head->capacity - 1);
+    // usize idx = head->idx_head % head->capacity;
+    usize idx = head->idx_head & (head->capacity - 1);
     void* elptr = ((char*)*self) + head->header.eloffset + head->header.elsize * idx;
 
     head->idx_head++;
@@ -344,8 +344,8 @@ deque_pop(deque_c* self)
         return NULL;
     }
 
-    // size_t idx = (head->idx_tail - 1) % head->capacity;
-    size_t idx = (head->idx_tail - 1) & (head->capacity - 1);
+    // usize idx = (head->idx_tail - 1) % head->capacity;
+    usize idx = (head->idx_tail - 1) & (head->capacity - 1);
     void* elptr = ((char*)*self) + head->header.eloffset + head->header.elsize * idx;
 
     head->idx_tail--;
@@ -353,7 +353,7 @@ deque_pop(deque_c* self)
 }
 
 void*
-deque_get(deque_c* self, size_t index)
+deque_get(deque_c* self, usize index)
 {
     deque_head_s* head = deque__head(*self);
 
@@ -365,7 +365,7 @@ deque_get(deque_c* self, size_t index)
     return deque__get_byindex(head, index);
 }
 
-size_t
+usize
 deque_len(const deque_c* self)
 {
     deque_head_s* head = deque__head(*self);
@@ -403,19 +403,19 @@ deque_iter_get(deque_c* self, i32 direction, cex_iterator_s* iterator)
     // temporary struct based on _ctxbuffer
     struct iter_ctx
     {
-        size_t cursor;
+        usize cursor;
         i32 direction;
-        size_t max_count;
-        size_t cnt;
+        usize max_count;
+        usize cnt;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) == alignof(size_t), "ctx alignment mismatch");
+    _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
 
     if (unlikely(iterator->val == NULL)) {
         // iterator first run/initialization
         deque_head_s* head = deque__head(*self);
 
-        size_t cnt = head->idx_tail - head->idx_head;
+        usize cnt = head->idx_tail - head->idx_head;
         if (unlikely(cnt == 0)) {
             // Empty deque, early exit
             return NULL;
@@ -454,19 +454,19 @@ deque_iter_fetch(deque_c* self, i32 direction, cex_iterator_s* iterator)
     // temporary struct based on _ctxbuffer
     struct iter_ctx
     {
-        size_t capacity;
-        size_t max_count;
-        size_t cnt;
+        usize capacity;
+        usize max_count;
+        usize cnt;
         i32 direction;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) == alignof(size_t), "ctx alignment mismatch");
+    _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
 
     if (unlikely(iterator->val == NULL)) {
         // iterator first run/initialization
         deque_head_s* head = deque__head(*self);
 
-        size_t cnt = head->idx_tail - head->idx_head;
+        usize cnt = head->idx_tail - head->idx_head;
         if (unlikely(cnt == 0)) {
             // Empty deque, early exit
             return NULL;

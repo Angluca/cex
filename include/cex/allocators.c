@@ -10,22 +10,22 @@
 #define ALLOCATOR_STACK_MAGIC 0xFEED0002U
 #define ALLOCATOR_STATIC_ARENA_MAGIC 0xFEED0003U
 
-static void* allocator_heap__malloc(size_t size);
-static void* allocator_heap__calloc(size_t nmemb, size_t size);
-static void* allocator_heap__aligned_malloc(size_t alignment, size_t size);
-static void* allocator_heap__realloc(void* ptr, size_t size);
-static void* allocator_heap__aligned_realloc(void* ptr, size_t alignment, size_t size);
+static void* allocator_heap__malloc(usize size);
+static void* allocator_heap__calloc(usize nmemb, usize size);
+static void* allocator_heap__aligned_malloc(usize alignment, usize size);
+static void* allocator_heap__realloc(void* ptr, usize size);
+static void* allocator_heap__aligned_realloc(void* ptr, usize alignment, usize size);
 static void allocator_heap__free(void* ptr);
 static FILE* allocator_heap__fopen(const char* filename, const char* mode);
 static int allocator_heap__fclose(FILE* f);
 static int allocator_heap__open(const char* pathname, int flags, unsigned int mode);
 static int allocator_heap__close(int fd);
 
-static void* allocator_staticarena__malloc(size_t size);
-static void* allocator_staticarena__calloc(size_t nmemb, size_t size);
-static void* allocator_staticarena__aligned_malloc(size_t alignment, size_t size);
-static void* allocator_staticarena__realloc(void* ptr, size_t size);
-static void* allocator_staticarena__aligned_realloc(void* ptr, size_t alignment, size_t size);
+static void* allocator_staticarena__malloc(usize size);
+static void* allocator_staticarena__calloc(usize nmemb, usize size);
+static void* allocator_staticarena__aligned_malloc(usize alignment, usize size);
+static void* allocator_staticarena__realloc(void* ptr, usize size);
+static void* allocator_staticarena__aligned_realloc(void* ptr, usize alignment, usize size);
 static void allocator_staticarena__free(void* ptr);
 static FILE* allocator_staticarena__fopen(const char* filename, const char* mode);
 static int allocator_staticarena__fclose(FILE* f);
@@ -120,7 +120,7 @@ allocators__heap__destroy(void)
 }
 
 static void*
-allocator_heap__malloc(size_t size)
+allocator_heap__malloc(usize size)
 {
     uassert(allocator__heap_data.magic != 0 && "Allocator not initialized");
     uassert(allocator__heap_data.magic == ALLOCATOR_HEAP_MAGIC && "Allocator type!");
@@ -133,7 +133,7 @@ allocator_heap__malloc(size_t size)
 }
 
 static void*
-allocator_heap__calloc(size_t nmemb, size_t size)
+allocator_heap__calloc(usize nmemb, usize size)
 {
     uassert(allocator__heap_data.magic != 0 && "Allocator not initialized");
     uassert(allocator__heap_data.magic == ALLOCATOR_HEAP_MAGIC && "Allocator type!");
@@ -146,7 +146,7 @@ allocator_heap__calloc(size_t nmemb, size_t size)
 }
 
 static void*
-allocator_heap__aligned_malloc(size_t alignment, size_t size)
+allocator_heap__aligned_malloc(usize alignment, usize size)
 {
     uassert(allocator__heap_data.magic != 0 && "Allocator not initialized");
     uassert(allocator__heap_data.magic == ALLOCATOR_HEAP_MAGIC && "Allocator type!");
@@ -166,7 +166,7 @@ allocator_heap__aligned_malloc(size_t alignment, size_t size)
 }
 
 static void*
-allocator_heap__realloc(void* ptr, size_t size)
+allocator_heap__realloc(void* ptr, usize size)
 {
     uassert(allocator__heap_data.magic != 0 && "Allocator not initialized");
     uassert(allocator__heap_data.magic == ALLOCATOR_HEAP_MAGIC && "Allocator type!");
@@ -179,13 +179,13 @@ allocator_heap__realloc(void* ptr, size_t size)
 }
 
 static void*
-allocator_heap__aligned_realloc(void* ptr, size_t alignment, size_t size)
+allocator_heap__aligned_realloc(void* ptr, usize alignment, usize size)
 {
     uassert(allocator__heap_data.magic != 0 && "Allocator not initialized");
     uassert(allocator__heap_data.magic == ALLOCATOR_HEAP_MAGIC && "Allocator type!");
     uassert(alignment > 0 && "alignment == 0");
     uassert((alignment & (alignment - 1)) == 0 && "alignment must be power of 2");
-    uassert(((size_t)ptr % alignment) == 0 && "aligned_realloc existing pointer unaligned");
+    uassert(((usize)ptr % alignment) == 0 && "aligned_realloc existing pointer unaligned");
     uassert(size % alignment == 0 && "size must be rounded to align");
 
 #ifndef NDEBUG
@@ -199,11 +199,11 @@ allocator_heap__aligned_realloc(void* ptr, size_t alignment, size_t size)
     // Check if we have available space for realloc'ing new size
     //
 #ifdef _WIN32
-    size_t new_size = _msize(ptr);
+    usize new_size = _msize(ptr);
 #else
     // NOTE: malloc_usable_size() returns a value no less than the size of
     // the block of allocated memory pointed to by ptr.
-    size_t new_size = malloc_usable_size(ptr);
+    usize new_size = malloc_usable_size(ptr);
 #endif
 
     if (new_size >= size) {
@@ -213,7 +213,7 @@ allocator_heap__aligned_realloc(void* ptr, size_t alignment, size_t size)
             // memory error
             return NULL;
         }
-        if (result != ptr || (size_t)result % alignment != 0) {
+        if (result != ptr || (usize)result % alignment != 0) {
             // very rare case, when some thread acquired space or returned unaligned result
             // Pessimistic case
 #ifdef _WIN32
@@ -350,7 +350,7 @@ allocator_heap__fclose(FILE* f)
  * @return  allocator instance
  */
 const Allocator_i*
-allocators__staticarena__create(char* buffer, size_t capacity)
+allocators__staticarena__create(char* buffer, usize capacity)
 {
     uassert(allocator__staticarena_data.magic == 0 && "Already initialized");
 
@@ -372,10 +372,10 @@ allocators__staticarena__create(char* buffer, size_t capacity)
     a->max = (char*)a->mem + capacity;
     a->next = a->mem;
 
-    size_t offset = ((size_t)a->next % sizeof(size_t));
-    a->next = (char*)a->next + (offset ? sizeof(size_t) - offset : 0);
+    usize offset = ((usize)a->next % sizeof(usize));
+    a->next = (char*)a->next + (offset ? sizeof(usize) - offset : 0);
 
-    uassert(((size_t)a->next % sizeof(size_t) == 0) && "alloca/malloc() returned non word aligned ptr");
+    uassert(((usize)a->next % sizeof(usize) == 0) && "alloca/malloc() returned non word aligned ptr");
 
     return &a->base;
 }
@@ -424,7 +424,7 @@ allocators__staticarena__destroy(void)
 
 
 static void*
-allocator_staticarena__aligned_realloc(void* ptr, size_t alignment, size_t size)
+allocator_staticarena__aligned_realloc(void* ptr, usize alignment, usize size)
 {
     (void)ptr;
     (void)size;
@@ -436,7 +436,7 @@ allocator_staticarena__aligned_realloc(void* ptr, size_t alignment, size_t size)
     return NULL;
 }
 static void*
-allocator_staticarena__realloc(void* ptr, size_t size)
+allocator_staticarena__realloc(void* ptr, usize size)
 {
     (void)ptr;
     (void)size;
@@ -463,7 +463,7 @@ allocator_staticarena__free(void* ptr)
 }
 
 static void*
-allocator_staticarena__aligned_malloc(size_t alignment, size_t size)
+allocator_staticarena__aligned_malloc(usize alignment, usize size)
 {
     uassert(allocator__staticarena_data.magic != 0 && "not initialized");
     uassert(allocator__staticarena_data.magic == ALLOCATOR_STATIC_ARENA_MAGIC && "Allocator type!");
@@ -482,7 +482,7 @@ allocator_staticarena__aligned_malloc(size_t alignment, size_t size)
         return NULL;
     }
 
-    size_t offset = ((size_t)a->next % alignment);
+    usize offset = ((usize)a->next % alignment);
 
     alignment = (offset ? alignment - offset : 0);
 
@@ -502,7 +502,7 @@ allocator_staticarena__aligned_malloc(size_t alignment, size_t size)
 }
 
 static void*
-allocator_staticarena__malloc(size_t size)
+allocator_staticarena__malloc(usize size)
 {
     uassert(allocator__staticarena_data.magic != 0 && "not initialized");
     uassert(allocator__staticarena_data.magic == ALLOCATOR_STATIC_ARENA_MAGIC && "Allocator type!");
@@ -520,8 +520,8 @@ allocator_staticarena__malloc(size_t size)
         return NULL;
     }
 
-    u32 offset = (size % sizeof(size_t));
-    a->next = (char*)a->next + size + (offset ? sizeof(size_t) - offset : 0);
+    u32 offset = (size % sizeof(usize));
+    a->next = (char*)a->next + size + (offset ? sizeof(usize) - offset : 0);
 
 #ifndef NDEBUG
     a->stats.n_allocs++;
@@ -531,14 +531,14 @@ allocator_staticarena__malloc(size_t size)
 }
 
 static void*
-allocator_staticarena__calloc(size_t nmemb, size_t size)
+allocator_staticarena__calloc(usize nmemb, usize size)
 {
     uassert(allocator__staticarena_data.magic != 0 && "not initialized");
     uassert(allocator__staticarena_data.magic == ALLOCATOR_STATIC_ARENA_MAGIC && "Allocator type!");
 
     allocator_staticarena_s* a = &allocator__staticarena_data;
 
-    size_t alloc_size = nmemb * size;
+    usize alloc_size = nmemb * size;
     if (nmemb != 0 && alloc_size / nmemb != size) {
         // overflow handling
         return NULL;
@@ -555,8 +555,8 @@ allocator_staticarena__calloc(size_t nmemb, size_t size)
         return NULL;
     }
 
-    u32 offset = (alloc_size % sizeof(size_t));
-    a->next = (char*)a->next + alloc_size + (offset ? sizeof(size_t) - offset : 0);
+    u32 offset = (alloc_size % sizeof(usize));
+    a->next = (char*)a->next + alloc_size + (offset ? sizeof(usize) - offset : 0);
 
     memset(ptr, 0, alloc_size);
 

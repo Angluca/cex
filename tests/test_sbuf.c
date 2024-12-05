@@ -33,7 +33,7 @@ append_to_cap(sbuf_c* s){
         .len = 1,
     };
 
-    for(size_t i = sbuf.len(s); i < sbuf.capacity(s); i++){
+    for(usize i = sbuf.len(s); i < sbuf.capacity(s); i++){
         c = 'A' + i;
         tassert_eqs(EOK, sbuf.append(s, s1));
     }
@@ -45,7 +45,7 @@ Exception
 sprintf_to_cap(sbuf_c* s){
     tassert(s != NULL);
     u8 c = 'A';
-    for(size_t i = sbuf.len(s); i < sbuf.capacity(s); i++){
+    for(usize i = sbuf.len(s); i < sbuf.capacity(s); i++){
         c = 'A' + i;
         e$except_silent(err, sbuf.sprintf(s, "%c", c)) {
             return err;
@@ -278,7 +278,7 @@ test$case(test_sbuf_replace_resize)
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
     tassert_eqi(sbuf.len(&s), sbuf.capacity(&s));
 
-    size_t prev_len = sbuf.len(&s);
+    usize prev_len = sbuf.len(&s);
     tassert_eqs(EOK, sbuf.replace(&s, str.cstr("A"), str.cstr("AB")));
     tassert_eqi(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
     tassert_eqi(sbuf.len(&s), prev_len+1);
@@ -344,7 +344,7 @@ test$case(test_sbuf_sprintf)
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     sbuf.clear(&s);
-    size_t prev_cap = sbuf.capacity(&s);
+    usize prev_cap = sbuf.capacity(&s);
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
     tassert_eqe(EOK, append_to_cap(&s));
     tassert_eqs(EOK, sbuf.sprintf(&s, "%s", "B"));

@@ -6,7 +6,7 @@
 
 DEFINE_FFF_GLOBALS
 
-FAKE_VALUE_FUNC(void*, my_alloc, size_t)
+FAKE_VALUE_FUNC(void*, my_alloc, usize)
 
 const Allocator_i* allocator;
 

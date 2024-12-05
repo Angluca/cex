@@ -10,7 +10,7 @@ typedef struct
     // NOTE: do not assign this pointer to local variables, is can become dangling after list
     // operations (e.g. after realloc()). So local pointers can be pointing to invalid area!
     void* arr;
-    size_t len;
+    usize len;
 } list_c;
 
 #define list$define(eltype)                                                                        \
@@ -19,7 +19,7 @@ typedef struct
     struct  \
     {                                                                                              \
         eltype* const arr;                                                                         \
-        const size_t len;                                                                          \
+        const usize len;                                                                          \
     }
 
 #define list$new(list_c_ptr, capacity, allocator)                                                        \
@@ -48,8 +48,8 @@ typedef struct
         u16 elsize;
         u16 elalign;
     } header;
-    size_t count;
-    size_t capacity;
+    usize count;
+    usize capacity;
     const Allocator_i* allocator;
     // NOTE: we must use packed struct, because elements of the list my have absolutely different
     // alignment, so the list_head_s takes place at (void*)1st_el - sizeof(list_head_s)
@@ -66,16 +66,16 @@ struct __module__list
     // clang-format off
 
 Exception
-(*create)(list_c* self, size_t capacity, size_t elsize, size_t elalign, const Allocator_i* allocator);
+(*create)(list_c* self, usize capacity, usize elsize, usize elalign, const Allocator_i* allocator);
 
 Exception
-(*create_static)(list_c* self, void* buf, size_t buf_len, size_t elsize, size_t elalign);
+(*create_static)(list_c* self, void* buf, usize buf_len, usize elsize, usize elalign);
 
 Exception
-(*insert)(void* self, void* item, size_t index);
+(*insert)(void* self, void* item, usize index);
 
 Exception
-(*del)(void* self, size_t index);
+(*del)(void* self, usize index);
 
 void
 (*sort)(void* self, int (*comp)(const void*, const void*));
@@ -87,12 +87,12 @@ void
 (*clear)(void* self);
 
 Exception
-(*extend)(void* self, void* items, size_t nitems);
+(*extend)(void* self, void* items, usize nitems);
 
-size_t
+usize
 (*len)(void* self);
 
-size_t
+usize
 (*capacity)(void* self);
 
 void*

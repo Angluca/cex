@@ -28,7 +28,7 @@ const u32 ARGPARSE_OPT_LONG = (1 << 1);
 static const char*
 argparse__prefix_skip(const char* str, const char* prefix)
 {
-    size_t len = strlen(prefix);
+    usize len = strlen(prefix);
     return strncmp(str, prefix, len) ? NULL : str + len;
 }
 
@@ -98,8 +98,8 @@ argparse_usage(argparse_c* self)
     const argparse_opt_s* options;
 
     // figure out best width
-    size_t usage_opts_width = 0;
-    size_t len;
+    usize usage_opts_width = 0;
+    usize len;
     options = self->options;
     for (u32 i = 0; i < self->options_len; i++, options++) {
         len = 0;
@@ -129,8 +129,8 @@ argparse_usage(argparse_c* self)
 
     options = self->options;
     for (u32 i = 0; i < self->options_len; i++, options++) {
-        size_t pos = 0;
-        size_t pad = 0;
+        usize pos = 0;
+        usize pad = 0;
         if (options->type == 1 /*ARGPARSE_OPT_GROUP*/) {
             fputc('\n', stdout);
             fprintf(stdout, "%s", options->help);

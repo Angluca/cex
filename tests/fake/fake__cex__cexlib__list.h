@@ -6,16 +6,16 @@
 #include <_cexcore/list.h>
 
 
-FAKE_VALUE_FUNC(Exc, list_create, list_c*, size_t, size_t, size_t, const Allocator_i*)
-FAKE_VALUE_FUNC(Exc, list_create_static, list_c*, void*, size_t, size_t, size_t)
-FAKE_VALUE_FUNC(Exc, list_insert, void*, void*, size_t)
-FAKE_VALUE_FUNC(Exc, list_del, void*, size_t)
+FAKE_VALUE_FUNC(Exc, list_create, list_c*, usize, usize, usize, const Allocator_i*)
+FAKE_VALUE_FUNC(Exc, list_create_static, list_c*, void*, usize, usize, usize)
+FAKE_VALUE_FUNC(Exc, list_insert, void*, void*, usize)
+FAKE_VALUE_FUNC(Exc, list_del, void*, usize)
 FAKE_VOID_FUNC(list_sort, void*, int (*comp)(const, const)
 FAKE_VALUE_FUNC(Exc, list_append, void*, void*)
 FAKE_VOID_FUNC(list_clear, void*)
-FAKE_VALUE_FUNC(Exc, list_extend, void*, void*, size_t)
-FAKE_VALUE_FUNC(size_t, list_len, void*)
-FAKE_VALUE_FUNC(size_t, list_capacity, void*)
+FAKE_VALUE_FUNC(Exc, list_extend, void*, void*, usize)
+FAKE_VALUE_FUNC(usize, list_len, void*)
+FAKE_VALUE_FUNC(usize, list_capacity, void*)
 FAKE_VALUE_FUNC(void*, list_destroy, void*)
 FAKE_VALUE_FUNC(void*, list_iter, void*, cex_iterator_s*)
 

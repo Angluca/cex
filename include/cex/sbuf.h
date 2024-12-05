@@ -30,7 +30,7 @@ Exception
 (*create)(sbuf_c* self, u32 capacity, const Allocator_i* allocator);
 
 Exception
-(*create_static)(sbuf_c* self, char* buf, size_t buf_size);
+(*create_static)(sbuf_c* self, char* buf, usize buf_size);
 
 Exception
 (*grow)(sbuf_c* self, u32 capacity);

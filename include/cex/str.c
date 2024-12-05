@@ -13,10 +13,10 @@ str__isvalid(const str_c* s)
     return s->buf != NULL;
 }
 
-static inline ssize_t
+static inline isize
 str__index(str_c* s, const char* c, u8 clen)
 {
-    ssize_t result = -1;
+    isize result = -1;
 
     if (!str__isvalid(s)) {
         return -1;
@@ -27,7 +27,7 @@ str__index(str_c* s, const char* c, u8 clen)
         split_by_idx[(u8)c[i]] = 1;
     }
 
-    for (size_t i = 0; i < s->len; i++) {
+    for (usize i = 0; i < s->len; i++) {
         if (split_by_idx[(u8)s->buf[i]]) {
             result = i;
             break;
@@ -51,7 +51,7 @@ str_cstr(const char* ccharptr)
 }
 
 str_c
-str_cbuf(char* s, size_t length)
+str_cbuf(char* s, usize length)
 {
     if (unlikely(s == NULL)) {
         return (str_c){ 0 };
@@ -64,7 +64,7 @@ str_cbuf(char* s, size_t length)
 }
 
 str_c
-str_sub(str_c s, ssize_t start, ssize_t end)
+str_sub(str_c s, isize start, isize end)
 {
     if (unlikely(s.len == 0)) {
         if (start == 0 && end == 0) {
@@ -87,18 +87,18 @@ str_sub(str_c s, ssize_t start, ssize_t end)
         end += s.len;
     }
 
-    if (unlikely((size_t)start >= s.len || end > (ssize_t)s.len || end < start)) {
+    if (unlikely((usize)start >= s.len || end > (isize)s.len || end < start)) {
         return (str_c){ 0 };
     }
 
     return (str_c){
         .buf = s.buf + start,
-        .len = (size_t)(end - start),
+        .len = (usize)(end - start),
     };
 }
 
 Exception
-str_copy(str_c s, char* dest, size_t destlen)
+str_copy(str_c s, char* dest, usize destlen)
 {
     uassert(dest != s.buf && "self copy is not allowed");
 
@@ -113,8 +113,8 @@ str_copy(str_c s, char* dest, size_t destlen)
         return Error.argument;
     }
 
-    size_t slen = s.len;
-    size_t len_to_copy = (destlen - 1 < slen) ? destlen - 1 : slen;
+    usize slen = s.len;
+    usize len_to_copy = (destlen - 1 < slen) ? destlen - 1 : slen;
     memcpy(dest, s.buf, len_to_copy);
 
     // Null terminate end of buffer
@@ -128,7 +128,7 @@ str_copy(str_c s, char* dest, size_t destlen)
 }
 
 str_c
-str_vsprintf(char* dest, size_t dest_len, const char* format, va_list va)
+str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
 {
     str_c out = { .buf = NULL, .len = 0 };
 
@@ -144,7 +144,7 @@ str_vsprintf(char* dest, size_t dest_len, const char* format, va_list va)
 }
 
 str_c
-str_sprintf(char* dest, size_t dest_len, const char* format, ...)
+str_sprintf(char* dest, usize dest_len, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -154,7 +154,7 @@ str_sprintf(char* dest, size_t dest_len, const char* format, ...)
 }
 
 
-size_t
+usize
 str_len(str_c s)
 {
     return s.len;
@@ -174,10 +174,10 @@ str_iter(str_c s, cex_iterator_s* iterator)
     // temporary struct based on _ctxbuffer
     struct iter_ctx
     {
-        size_t cursor;
+        usize cursor;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) == alignof(size_t), "ctx alignment mismatch");
+    _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
 
     if (unlikely(iterator->val == NULL)) {
         // Iterator is not initialized set to 1st item
@@ -199,8 +199,8 @@ str_iter(str_c s, cex_iterator_s* iterator)
     return iterator->val;
 }
 
-ssize_t
-str_find(str_c s, str_c needle, size_t start, size_t end)
+isize
+str_find(str_c s, str_c needle, usize start, usize end)
 {
     if (needle.len == 0 || needle.len > s.len) {
         return -1;
@@ -213,7 +213,7 @@ str_find(str_c s, str_c needle, size_t start, size_t end)
         end = s.len;
     }
 
-    for (size_t i = start; i < end - needle.len + 1; i++) {
+    for (usize i = start; i < end - needle.len + 1; i++) {
         // check the 1st letter
         if (s.buf[i] == needle.buf[0]) {
             // 1 char
@@ -230,8 +230,8 @@ str_find(str_c s, str_c needle, size_t start, size_t end)
     return -1;
 }
 
-ssize_t
-str_rfind(str_c s, str_c needle, size_t start, size_t end)
+isize
+str_rfind(str_c s, str_c needle, usize start, usize end)
 {
     if (needle.len == 0 || needle.len > s.len) {
         return -1;
@@ -244,7 +244,7 @@ str_rfind(str_c s, str_c needle, size_t start, size_t end)
         end = s.len;
     }
 
-    for (size_t i = end - needle.len + 1; i-- > start;) {
+    for (usize i = end - needle.len + 1; i-- > start;) {
         // check the 1st letter
         if (s.buf[i] == needle.buf[0]) {
             // 1 char
@@ -286,7 +286,7 @@ str_ends_with(str_c s, str_c needle)
 str_c
 str_remove_prefix(str_c s, str_c prefix)
 {
-    ssize_t idx = str_find(s, prefix, 0, prefix.len);
+    isize idx = str_find(s, prefix, 0, prefix.len);
     if (idx == -1) {
         return s;
     }
@@ -304,7 +304,7 @@ str_remove_suffix(str_c s, str_c suffix)
         return s;
     }
 
-    ssize_t idx = str_find(s, suffix, s.len - suffix.len, 0);
+    isize idx = str_find(s, suffix, s.len - suffix.len, 0);
 
     if (idx == -1) {
         return s;
@@ -452,7 +452,7 @@ str_cmp(str_c self, str_c other)
         }
     }
 
-    size_t min_len = self.len < other.len ? self.len : other.len;
+    usize min_len = self.len < other.len ? self.len : other.len;
     int cmp = memcmp(self.buf, other.buf, min_len);
 
     if (cmp == 0 && self.len != other.len) {
@@ -486,12 +486,12 @@ str_cmpi(str_c self, str_c other)
         }
     }
 
-    size_t min_len = self.len < other.len ? self.len : other.len;
+    usize min_len = self.len < other.len ? self.len : other.len;
 
     int cmp = 0;
     char* s = self.buf;
     char* o = other.buf;
-    for (size_t i = 0; i < min_len; i++) {
+    for (usize i = 0; i < min_len; i++) {
         cmp = tolower(*s) - tolower(*o);
         if (cmp != 0) {
             return cmp;
@@ -519,12 +519,12 @@ str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
     // temporary struct based on _ctxbuffer
     struct iter_ctx
     {
-        size_t cursor;
-        size_t split_by_len;
+        usize cursor;
+        usize split_by_len;
         str_c str;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) <= alignof(size_t), "cex_iterator_s _ctx misalign");
+    _Static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
 
     if (unlikely(iterator->val == NULL)) {
         // First run handling
@@ -538,7 +538,7 @@ str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
         }
         uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
-        ssize_t idx = str__index(&s, split_by, ctx->split_by_len);
+        isize idx = str__index(&s, split_by, ctx->split_by_len);
         if (idx < 0) {
             idx = s.len;
         }
@@ -565,7 +565,7 @@ str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
 
         // Get remaining string after prev split_by char
         str_c tok = str.sub(s, ctx->cursor, 0);
-        ssize_t idx = str__index(&tok, split_by, ctx->split_by_len);
+        isize idx = str__index(&tok, split_by, ctx->split_by_len);
 
         iterator->idx.i++;
 
@@ -600,8 +600,8 @@ str__to_signed_num(str_c self, i64* num, i64 num_min, i64 num_max)
     }
 
     char* s = self.buf;
-    size_t len = self.len;
-    size_t i = 0;
+    usize len = self.len;
+    usize i = 0;
 
     for (; s[i] == ' ' && i < self.len; i++) {
     }
@@ -683,8 +683,8 @@ str__to_unsigned_num(str_c self, u64* num, u64 num_max)
     }
 
     char* s = self.buf;
-    size_t len = self.len;
-    size_t i = 0;
+    usize len = self.len;
+    usize i = 0;
 
     for (; s[i] == ' ' && i < self.len; i++) {
     }
@@ -762,8 +762,8 @@ str__to_double(str_c self, double* num, i32 exp_min, i32 exp_max)
     }
 
     char* s = self.buf;
-    size_t len = self.len;
-    size_t i = 0;
+    usize len = self.len;
+    usize i = 0;
     double number = 0.0;
 
     for (; s[i] == ' ' && i < self.len; i++) {

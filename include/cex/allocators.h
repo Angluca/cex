@@ -86,7 +86,7 @@ struct {  // sub-module .staticarena >>>
      * @return  allocator instance
      */
     const Allocator_i*
-    (*create)(char* buffer, size_t capacity);
+    (*create)(char* buffer, usize capacity);
 
     const Allocator_i*
     (*destroy)(void);

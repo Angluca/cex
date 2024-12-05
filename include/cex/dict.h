@@ -96,7 +96,7 @@ struct {  // sub-module .hashfunc >>>
 
 } hashfunc;  // sub-module .hashfunc <<<
 Exception
-(*create)(dict_c* self, size_t item_size, size_t item_align, size_t item_key_offsetof, size_t capacity, dict_hash_func_f hash_func, dict_compare_func_f compare_func, const Allocator_i* allocator, dict_elfree_func_f elfree, void* udata);
+(*create)(dict_c* self, usize item_size, usize item_align, usize item_key_offsetof, usize capacity, dict_hash_func_f hash_func, dict_compare_func_f compare_func, const Allocator_i* allocator, dict_elfree_func_f elfree, void* udata);
 
 /**
  * @brief Set or replace dict item
@@ -132,7 +132,7 @@ void*
  * @param self  dict() instance
  * @return number
  */
-size_t
+usize
 (*len)(dict_c* self);
 
 /**

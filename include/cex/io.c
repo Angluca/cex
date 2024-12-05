@@ -131,7 +131,7 @@ io_rewind(io_c* self)
 }
 
 Exception
-io_tell(io_c* self, size_t* size)
+io_tell(io_c* self, usize* size)
 {
     uassert(self != NULL);
     uassert(self->_fh != NULL);
@@ -150,7 +150,7 @@ io_tell(io_c* self, size_t* size)
     }
 }
 
-size_t
+usize
 io_size(io_c* self)
 {
     uassert(self != NULL);
@@ -158,7 +158,7 @@ io_size(io_c* self)
 
     if (self->_fsize == 0) {
         // Do some caching
-        size_t old_pos = 0;
+        usize old_pos = 0;
         e$except_silent(err, io_tell(self, &old_pos))
         {
             return 0;
@@ -181,7 +181,7 @@ io_size(io_c* self)
 }
 
 Exception
-io_read(io_c* self, void* restrict obj_buffer, size_t obj_el_size, size_t* obj_count)
+io_read(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
 {
     uassert(self != NULL);
     uassert(self->_fh != NULL);
@@ -196,7 +196,7 @@ io_read(io_c* self, void* restrict obj_buffer, size_t obj_el_size, size_t* obj_c
         return Error.argument;
     }
 
-    const size_t ret_count = fread(obj_buffer, obj_el_size, *obj_count, self->_fh);
+    const usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, self->_fh);
 
     if (ret_count != *obj_count) {
         if (ferror(self->_fh)) {
@@ -245,7 +245,7 @@ io_readall(io_c* self, str_c* s)
     }
     // allocate extra 16 bytes, to catch condition when file size grows
     // this may be indication we are trying to read stream
-    size_t exp_size = self->_fsize + 1 + 15;
+    usize exp_size = self->_fsize + 1 + 15;
 
     if (self->_fbuf == NULL) {
         self->_fbuf = self->_allocator->malloc(exp_size);
@@ -261,7 +261,7 @@ io_readall(io_c* self, str_c* s)
         return Error.memory;
     }
 
-    size_t read_size = self->_fbuf_size;
+    usize read_size = self->_fbuf_size;
     e$except_silent(err, io_read(self, self->_fbuf, sizeof(char), &read_size))
     {
         return err;
@@ -291,10 +291,10 @@ io_readline(io_c* self, str_c* s)
 
 
     Exc result = Error.ok;
-    size_t cursor = 0;
+    usize cursor = 0;
     FILE* fh = self->_fh;
     char* buf = self->_fbuf;
-    size_t buf_size = self->_fbuf_size;
+    usize buf_size = self->_fbuf_size;
 
     int c = EOF;
     while ((c = fgetc(fh)) != EOF) {
@@ -410,7 +410,7 @@ io_printf(const char* format, ...)
 }
 
 Exception
-io_write(io_c* self, void* restrict obj_buffer, size_t obj_el_size, size_t obj_count)
+io_write(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize obj_count)
 {
     uassert(self != NULL);
     uassert(self->_fh != NULL);
@@ -425,7 +425,7 @@ io_write(io_c* self, void* restrict obj_buffer, size_t obj_el_size, size_t obj_c
         return Error.argument;
     }
 
-    const size_t ret_count = fwrite(obj_buffer, obj_el_size, obj_count, self->_fh);
+    const usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, self->_fh);
 
     if (ret_count != obj_count) {
         return Error.io;

@@ -355,7 +355,7 @@ test$case(test_read)
     char buf[128];
     memset(buf, 'z', arr$len(buf));
 
-    size_t read_len = 4;
+    usize read_len = 4;
     tassert_eqs(Error.ok, io.read(&file, buf, 2, &read_len));
     tassert_eqi(memcmp(buf, "40950000", 8), 0);
     tassert_eqi(read_len, 4);
@@ -373,7 +373,7 @@ test$case(test_read_empty)
     char buf[128];
     memset(buf, 'z', arr$len(buf));
 
-    size_t read_len = 4;
+    usize read_len = 4;
     tassert_eqs(Error.eof, io.read(&file, buf, 2, &read_len));
     tassert_eqi(memcmp(buf, "zzzzzzzz", 8), 0); // untouched!
     tassert_eqi(read_len, 0);
@@ -390,7 +390,7 @@ test$case(test_read_not_all)
     char buf[128];
     memset(buf, 'z', arr$len(buf));
 
-    size_t read_len = 100;
+    usize read_len = 100;
     tassert_eqs(Error.ok, io.read(&file, buf, 1, &read_len));
     tassert_eqi(read_len, 50);
 

@@ -71,7 +71,7 @@ test$case(stb_sprintf_str)
     str_c sv_sub = str.sub(sv, 1, 3);
     tassert_eqi(str.cmp(sv_sub, s$("56")), 0);
 
-    _Static_assert(sizeof(char*) == sizeof(size_t), "size");
+    _Static_assert(sizeof(char*) == sizeof(usize), "size");
 
 
     // WARNING: dangerous trick, sprintf(), tries to distinguish
@@ -119,7 +119,7 @@ test$case(stb_sprintf_orig)
 #endif
 
     #ifndef CEX_ENV32BIT
-    CHECK4("-1 2 -3", "%ji %zi %ti", (intmax_t)-1, (ssize_t)2, (ptrdiff_t)-3);
+    CHECK4("-1 2 -3", "%ji %zi %ti", (intmax_t)-1, (isize)2, (ptrdiff_t)-3);
     #endif
 
     // floating-point numbers

@@ -28,8 +28,8 @@ sbuf__head(sbuf_c self)
 
     return head;
 }
-static inline size_t
-sbuf__alloc_capacity(size_t capacity)
+static inline usize
+sbuf__alloc_capacity(usize capacity)
 {
     uassert(capacity < INT32_MAX && "requested capacity exceeds 2gb, maybe overflow?");
 
@@ -106,7 +106,7 @@ sbuf_create(sbuf_c* self, u32 capacity, const Allocator_i* allocator)
 }
 
 Exception
-sbuf_create_static(sbuf_c* self, char* buf, size_t buf_size)
+sbuf_create_static(sbuf_c* self, char* buf, usize buf_size)
 {
 
     if (unlikely(self == NULL)) {
@@ -188,7 +188,7 @@ sbuf_replace(sbuf_c* self, const str_c oldstr, const str_c newstr)
 
     u32 capacity = head->capacity;
 
-    ssize_t idx = -1;
+    isize idx = -1;
     while ((idx = str.find(s, oldstr, idx + 1, 0)) != -1) {
         // pointer to start of the found `old`
 
@@ -458,17 +458,17 @@ sbuf_isvalid(sbuf_c* self)
 }
 
 
-static inline ssize_t
-sbuf__index(const char* self, size_t self_len, const char* c, u8 clen)
+static inline isize
+sbuf__index(const char* self, usize self_len, const char* c, u8 clen)
 {
-    ssize_t result = -1;
+    isize result = -1;
 
     u8 split_by_idx[UINT8_MAX] = { 0 };
     for (u8 i = 0; i < clen; i++) {
         split_by_idx[(u8)c[i]] = 1;
     }
 
-    for (size_t i = 0; i < self_len; i++) {
+    for (usize i = 0; i < self_len; i++) {
         if (split_by_idx[(u8)self[i]]) {
             result = i;
             break;
@@ -490,8 +490,8 @@ sbuf_iter_split(sbuf_c* self, const char* split_by, cex_iterator_s* iterator)
     {
         str_c base_str;
         str_c str;
-        size_t split_by_len;
-        size_t cursor;
+        usize split_by_len;
+        usize cursor;
     }* ctx = (void*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
 
@@ -505,7 +505,7 @@ sbuf_iter_split(sbuf_c* self, const char* split_by, cex_iterator_s* iterator)
 
         ctx->base_str = sbuf_to_str(self);
 
-        ssize_t idx = sbuf__index(ctx->base_str.buf, ctx->base_str.len, split_by, ctx->split_by_len);
+        isize idx = sbuf__index(ctx->base_str.buf, ctx->base_str.len, split_by, ctx->split_by_len);
         if (idx < 0) {
             idx = ctx->base_str.len;
         }
@@ -533,7 +533,7 @@ sbuf_iter_split(sbuf_c* self, const char* split_by, cex_iterator_s* iterator)
 
         // Get remaining string after prev split_by char
         str_c tok = str.sub(ctx->base_str, ctx->cursor, 0);
-        ssize_t idx = sbuf__index(tok.buf, tok.len, split_by, ctx->split_by_len);
+        isize idx = sbuf__index(tok.buf, tok.len, split_by, ctx->split_by_len);
 
         iterator->idx.i++;
 
