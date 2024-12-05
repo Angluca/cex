@@ -9,6 +9,9 @@
 #include <string.h>
 
 
+/*
+ *                 CORE TYPES
+ */
 typedef int8_t i8;
 typedef uint8_t u8;
 typedef int16_t i16;
@@ -22,30 +25,43 @@ typedef double f64;
 typedef size_t usize;
 typedef ssize_t isize;
 
+/// automatic variable type, supported by GCC/Clang
 #define var __auto_type
 
+/*
+*                 BRANCH MANAGEMENT
+* `if(unlikely(condition)) {...}` is helpful for error management, to let compiler
+*  know that the scope inside in if() is less likely to occur (or exceptionally unlikely)
+*  this allows compiler to organize code with less failed branch predictions and faster
+*  performance overall.
+*
+*  Example:
+*  char* s = malloc(128);
+*  if(unlikely(s == NULL)) {
+*      printf("Memory error\n");
+*      abort();
+*  }
+*/
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
 #define likely(expr) __builtin_expect(!!(expr), 1)
-
-// __CEX_TMPNAME - internal macro for generating temporary variable names (unique__line_num)
-#define __CEX_CONCAT_INNER(a, b) a##b
-#define __CEX_CONCAT(a, b) __CEX_CONCAT_INNER(a, b)
-#define __CEX_TMPNAME(base) __CEX_CONCAT(base, __LINE__)
-
-// TODO: decide what to do with it
-#define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
-#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 
 /*
  *                 ERRORS
  */
 
+/// Generic CEX error is a char*, where NULL means success(no error)
 typedef const char* Exc;
+#define EOK (Exc) NULL
 
+/// Use `Exception` in function signatures, to force developer to check return value
+/// of the function.
 #define Exception Exc __attribute__((warn_unused_result))
 
 
-#define EOK (Exc) NULL
+/**
+ * @brief Generic errors list, used as constant pointers, errors must be checked as 
+ * pointer comparison, not as strcmp() !!!
+ */
 extern const struct _CEX_Error_struct
 {
     Exc ok; // NOTE: must be the 1st, same as EOK
@@ -88,6 +104,7 @@ __cex__fprintf_impl(
 
     return true; // WARN: must always return true!
 }
+
 static inline bool
 __cex__fprintf_dummy(void)
 {
@@ -104,6 +121,7 @@ __cex__fprintf_dummy(void)
 
 
 #ifndef CEX_LOG_LVL
+// NOTE: you may override this level to manage log$* verbosity
 #define CEX_LOG_LVL 5
 #endif
 
@@ -205,7 +223,7 @@ __cex__fprintf_dummy(void)
             return Error.assert;                                                                   \
         }                                                                                          \
     } while (0)
-#else
+#else // #if CEX_LOG_LVL > 0
 #define __cex__traceback(uerr, fail_func) __cex__fprintf_dummy()
 #define e$assert(A)                                                                                \
     do {                                                                                           \
@@ -221,7 +239,7 @@ __cex__fprintf_dummy(void)
             return Error.assert;                                                                   \
         }                                                                                          \
     } while (0)
-#endif
+#endif // #if CEX_LOG_LVL > 0
 
 #define uperrorf log$error
 
@@ -295,6 +313,11 @@ int __cex_test_uassert_enabled = 1;
 #define CEXERRORF_OUT__ stderr
 #endif
 
+
+// __CEX_TMPNAME - internal macro for generating temporary variable names (unique__line_num)
+#define __CEX_CONCAT_INNER(a, b) a##b
+#define __CEX_CONCAT(a, b) __CEX_CONCAT_INNER(a, b)
+#define __CEX_TMPNAME(base) __CEX_CONCAT(base, __LINE__)
 
 #define e$raise(return_uerr, error_msg, ...)                                                       \
     (log$error("[%s] " error_msg, return_uerr, ##__VA_ARGS__), (return_uerr))

@@ -1,5 +1,5 @@
 #pragma once
-#include <cex.h>
+#include <cex/cex.h>
 
 typedef struct MyClass_c
 {

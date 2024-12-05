@@ -1,7 +1,8 @@
 // WARNING: CEX advocates #include.c principle, for small projects
+
+// #define CEX_LOG_LVL 1
 #include "../include/mylib.c"
-#include "cex.h"
-#include <cex.c>
+#include <cex/all.c>
 
 Exception
 read_number(i32* num){
@@ -29,6 +30,7 @@ main(int argc, char** argv)
     (void)argc;
     (void)argv;
 
+    log$debug("new run");
 
     while (true) {
 

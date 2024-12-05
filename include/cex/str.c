@@ -114,7 +114,7 @@ str_copy(str_c s, char* dest, size_t destlen)
     }
 
     size_t slen = s.len;
-    size_t len_to_copy = MIN(destlen - 1, slen);
+    size_t len_to_copy = (destlen - 1 < slen) ? destlen - 1 : slen;
     memcpy(dest, s.buf, len_to_copy);
 
     // Null terminate end of buffer
@@ -452,7 +452,7 @@ str_cmp(str_c self, str_c other)
         }
     }
 
-    size_t min_len = MIN(self.len, other.len);
+    size_t min_len = self.len < other.len ? self.len : other.len;
     int cmp = memcmp(self.buf, other.buf, min_len);
 
     if (cmp == 0 && self.len != other.len) {
@@ -486,7 +486,7 @@ str_cmpi(str_c self, str_c other)
         }
     }
 
-    size_t min_len = MIN(self.len, other.len);
+    size_t min_len = self.len < other.len ? self.len : other.len;
 
     int cmp = 0;
     char* s = self.buf;
