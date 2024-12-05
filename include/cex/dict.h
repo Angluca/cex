@@ -1,7 +1,7 @@
 #pragma once
 #include "cex.h"
-#include "str.h"
 #include <string.h>
+#include <stddef.h>
 
 typedef struct dict_c
 {

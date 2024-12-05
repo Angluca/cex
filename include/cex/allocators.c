@@ -92,21 +92,21 @@ allocators__heap__destroy(void)
     allocator_heap_s* a = &allocator__heap_data;
     // NOTE: this message only shown if no DNDEBUG
     if (a->stats.n_allocs != a->stats.n_free) {
-        utracef(
+        log$debug(
             "Allocator: Possible memory leaks/double free: memory allocator->allocs() [%u] != allocator->free() [%u] count! \n",
             a->stats.n_allocs,
             a->stats.n_free
         );
     }
     if (a->stats.n_fopen != a->stats.n_fclose) {
-        utracef(
+        log$debug(
             "Allocator: Possible FILE* leaks: allocator->fopen() [%u] != allocator->fclose() [%u]!\n",
             a->stats.n_fopen,
             a->stats.n_fclose
         );
     }
     if (a->stats.n_open != a->stats.n_close) {
-        utracef(
+        log$debug(
             "Allocator: Possible file descriptor leaks: allocator->open() [%u] != allocator->close() [%u]!\n",
             a->stats.n_open,
             a->stats.n_close
@@ -395,21 +395,21 @@ allocators__staticarena__destroy(void)
 
 #ifndef NDEBUG
     if (a->stats.n_allocs != a->stats.n_free) {
-        utracef(
+        log$debug(
             "Allocator: Possible memory leaks/double free: memory allocator->allocs() [%u] != allocator->free() [%u] count! \n",
             a->stats.n_allocs,
             a->stats.n_free
         );
     }
     if (a->stats.n_fopen != a->stats.n_fclose) {
-        utracef(
+        log$debug(
             "Allocator: Possible FILE* leaks: allocator->fopen() [%u] != allocator->fclose() [%u]!\n",
             a->stats.n_fopen,
             a->stats.n_fclose
         );
     }
     if (a->stats.n_open != a->stats.n_close) {
-        utracef(
+        log$debug(
             "Allocator: Possible file descriptor leaks: allocator->open() [%u] != allocator->close() [%u]!\n",
             a->stats.n_open,
             a->stats.n_close

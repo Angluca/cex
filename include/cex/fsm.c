@@ -113,13 +113,6 @@ const struct __module__fsm fsm = {
     .dispatch = fsm_dispatch,
     .init = fsm_init,
     .super = fsm_super,
-    /**
-     * @brief sdfoosjflsjfdl;k
-     *
-     * @param self 
-     * @param new_state 
-     * @return 
-     */
     .trans = fsm_trans,
     // clang-format on
 };

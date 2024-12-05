@@ -241,8 +241,6 @@ __cex__fprintf_dummy(void)
     } while (0)
 #endif // #if CEX_LOG_LVL > 0
 
-#define uperrorf log$error
-
 
 /**
  *                 ASSERTIONS MACROS
@@ -250,11 +248,9 @@ __cex__fprintf_dummy(void)
 
 
 #ifdef NDEBUG
-#define utracef(format, ...) ((void)(0))
 #define uassertf(cond, format, ...) ((void)(0))
 #define uassert(cond) ((void)(0))
 #else
-#define utracef log$debug
 
 
 #ifdef __SANITIZE_ADDRESS__
