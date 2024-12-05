@@ -85,14 +85,12 @@ extern const struct _CEX_Error_struct
 #ifndef __cex__fprintf
 
 // NOTE: you may try to define our own fprintf
-#define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                     \
-    (                                                                                              \
-        ({                                                                                          \
-            fprintf(stream, "%s ( %s:%d %s() ) ", prefix, filename, line, func);                   \
-            fprintf(stream, format, ##__VA_ARGS__);                                                \
-            true; \
-        })                                                                                         \
-    )
+#define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                          \
+    (({                                                                                            \
+        fprintf(stream, "%s ( %s:%d %s() ) ", prefix, filename, line, func);                       \
+        fprintf(stream, format, ##__VA_ARGS__);                                                    \
+        true;                                                                                      \
+    }))
 
 static inline bool
 __cex__fprintf_dummy(void)
