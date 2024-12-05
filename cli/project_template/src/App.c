@@ -55,8 +55,9 @@ App_main(App_c* app, const Allocator_i* allocator)
     log$info("Str Arg: %s", app->name_arg);
 
     log$info("You passed %d args", app->args_count);
+
     for$array(it, app->args, app->args_count) {
-        log$debug("Arg #%ld: %s\n", it.idx, *it.val);
+        log$debug("Arg #%ld: %s", it.idx, *it.val);
     }
 
     return EOK;

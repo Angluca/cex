@@ -89,7 +89,6 @@ extern const struct _CEX_Error_struct
     (({                                                                                            \
         fprintf(stream, "%s ( %s:%d %s() ) ", prefix, filename, line, func);                       \
         fprintf(stream, format, ##__VA_ARGS__);                                                    \
-        true;                                                                                      \
     }))
 
 static inline bool
