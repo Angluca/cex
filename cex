@@ -267,7 +267,9 @@ class CEXCompiler:
 
 class CEXTestBuilder:
     TEMPLATE = r"""
-    #include <cex.c>
+    #include <cex/all.c>
+    #include <cex/fff.h>
+    #include <cex/test.h>
 
     const Allocator_i* allocator;
 
