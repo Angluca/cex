@@ -1,5 +1,6 @@
 #include "App.h"
 #include <cex/argparse.h>
+#include "lib/mylib.h"
 #include <cex/cex.h>
 
 Exception
@@ -55,6 +56,10 @@ App_main(App_c* app, const Allocator_i* allocator)
     log$info("Str Arg: %s", app->name_arg);
 
     log$info("You passed %d args", app->args_count);
+
+    // NOTE: something weird with mylib.mul() results
+    // try to run tests `cex test run all` and see if it's correct
+    log$info("Num Arg * 3 = %u", mylib.mul(app->num_arg, 3));
 
     for$array(it, app->args, app->args_count) {
         log$debug("Arg #%ld: %s", it.idx, *it.val);

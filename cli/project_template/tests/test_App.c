@@ -1,7 +1,8 @@
 #include <cex/all.c>
 #include <cex/fff.h>
 #include <cex/test.h>
-#include "../src/App.c"
+#include "src/App.c"
+#include "lib/mylib.c"
 
 const Allocator_i* allocator;
 

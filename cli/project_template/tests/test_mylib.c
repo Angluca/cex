@@ -1,7 +1,7 @@
 #include <cex/all.c>
 #include <cex/test.h>
 #include <cex/fff.h>
-#include "../include/mylib.c"
+#include "lib/mylib.c"
 
 const Allocator_i* allocator;
 
@@ -26,13 +26,12 @@ test$case(my_test_add)
     return EOK;
 }
 
-// TODO: uncomment this test, it will be automatically added
-//       by CEX to the main() at the bottom of this file
-// test$case(my_test_mul)
-// {
-//     tassert_eqi(6, mylib.mul(2, 3));
-//     return EOK;
-// }
+test$case(my_test_mul)
+{
+    // Oops, it looks like there is a bug in mylib.mul() ;) 
+    tassert_eqi(6, mylib.mul(2, 3));
+    return EOK;
+}
 
 int
 main(int argc, char* argv[])
