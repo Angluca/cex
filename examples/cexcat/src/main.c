@@ -1,5 +1,5 @@
+#include <cex/all.c>
 #include "App.c"
-#include "cex.c"
 #include <stdlib.h>
 
 int
@@ -12,7 +12,7 @@ main(int argc, char* argv[])
   e$except_silent(err, App.create(&app, argc, argv, allocator))
   {
     if (err != Error.argsparse){
-      uptraceback(err, "App.create(&app, argc, argv, allocator))");
+      log$error("App.create(&app, argc, argv, allocator)) %s", err);
     }
     ret_code = EXIT_FAILURE;
     goto shutdown;

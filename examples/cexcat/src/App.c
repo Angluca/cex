@@ -24,7 +24,7 @@ App_create(App_c* app, i32 argc, char* argv[], const Allocator_i* allocator)
                         .description = "Basic cat utility with convert csv->json function",
                         .epilog = "\nIt has intentional bugs, try to fix them :)" };
 
-    e$e$except_silent(err, argparse.parse(&args, argc, argv))
+    e$except_silent(err, argparse.parse(&args, argc, argv))
     {
         return err;
     }
@@ -127,7 +127,7 @@ App__process_csv(App_c* app, io_c* file)
         for$iter(str_c, tok, str.iter_split(line, ",", &tok.iterator))
         {
             struct csvcols* rec;
-            e$e$except_null(rec = dict.geti(&csvmap, tok.idx.i)) {
+            e$except_null(rec = dict.geti(&csvmap, tok.idx.i)) {
                 result = e$raise(
                     "column width mismatch",
                     "header len=%ld col=%ld\n",
@@ -166,7 +166,7 @@ App_main(App_c* app, const Allocator_i* allocator)
             uassert(false && "TODO: implement");
             e$goto(App__process_csv(app, &f), fail);
         } else {
-            e$e$except(err, App__process_plain(app, &f))
+            e$except(err, App__process_plain(app, &f))
             {
                 io.close(&f);
                 return err;
@@ -185,7 +185,7 @@ App_destroy(App_c* app, const Allocator_i* allocator)
 {
     (void)app;
     (void)allocator;
-    utracef("App is shutting down\n");
+    log$debug("App is shutting down\n");
 }
 
 const struct __class__App App = {
