@@ -1,3 +1,9 @@
+/**
+ * @file cex/cex.h
+ * @brief CEX core file
+ */
+
+
 #pragma once
 #include <errno.h>
 #include <stdalign.h>
@@ -51,6 +57,8 @@ typedef ssize_t isize;
 
 /// Generic CEX error is a char*, where NULL means success(no error)
 typedef const char* Exc;
+
+/// Equivalent of Error.ok, execution success
 #define EOK (Exc) NULL
 
 /// Use `Exception` in function signatures, to force developer to check return value
@@ -78,9 +86,8 @@ extern const struct _CEX_Error_struct
     Exc argsparse;
     Exc runtime;
     Exc assert;
-    Exc os;
+    Exc os; /**< Generic OS error */
 } Error;
-
 
 #ifndef __cex__fprintf
 
@@ -99,6 +106,10 @@ __cex__fprintf_dummy(void)
 
 #endif
 
+#if __INTELLISENSE__
+// VS code linter doesn't support __FILE_NAME__ builtin macro
+#define __FILE_NAME__ __FILE__
+#endif
 
 #ifndef CEX_LOG_LVL
 // NOTE: you may override this level to manage log$* verbosity
@@ -179,6 +190,10 @@ __cex__fprintf_dummy(void)
          fail_func                                                                                 \
      ),                                                                                            \
      1)
+
+/**
+ * @brief Non disposable assert, returns Error.assert CEX exception when failed
+ */
 #define e$assert(A)                                                                                \
     do {                                                                                           \
         if (unlikely(!((A)))) {                                                                    \
@@ -241,13 +256,24 @@ void __sanitizer_print_stack_trace();
 #define sanitizer_stack_trace() ((void)(0))
 #endif
 
+#ifndef __cex__assert
+#define __cex__assert()                                                                            \
+    do {                                                                                           \
+        sanitizer_stack_trace();                                                                   \
+        abort();                                                                                   \
+    } while (0);
+#endif
+
+/**
+ * @def uassert(A)
+ * @brief Custom assertion, with support of sanitizer call stack printout at failure.
+ */
 #define uassert(A)                                                                                  \
     do {                                                                                            \
         if (unlikely(!((A)))) {                                                                     \
             if (uassert_is_enabled()) {                                                             \
                 __cex__fprintf(stderr, "[ASSERT] ", __FILE_NAME__, __LINE__, __func__, "%s\n", #A); \
-                sanitizer_stack_trace();                                                            \
-                abort();                                                                            \
+                __cex__assert();                                                                    \
             }                                                                                       \
         }                                                                                           \
     } while (0)
@@ -265,8 +291,7 @@ void __sanitizer_print_stack_trace();
                     format "\n",                                                                   \
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
-                sanitizer_stack_trace();                                                           \
-                abort();                                                                           \
+                __cex__assert();                                                                   \
             }                                                                                      \
         }                                                                                          \
     } while (0)

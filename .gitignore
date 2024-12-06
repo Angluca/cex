@@ -66,3 +66,4 @@ tmux_run.sh
 .gdb_history
 compile_commands.json
 .cache
+docs/html/
