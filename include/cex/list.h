@@ -13,33 +13,6 @@ typedef struct
     usize len;
 } list_c;
 
-#define list$define(eltype)                                                                        \
-    /* NOTE: shadow struct the same as list_c, only used for type safety. const  prevents user to  \
-     * overwrite struct arr.arr pointer (elements are ok), and also arr.count */                   \
-    struct  \
-    {                                                                                              \
-        eltype* const arr;                                                                         \
-        const usize len;                                                                          \
-    }
-
-#define list$new(list_c_ptr, capacity, allocator)                                                        \
-    (list.create(                                                                                  \
-        (list_c*)list_c_ptr,                                                                             \
-        capacity,                                                                                  \
-        sizeof(typeof(*(((list_c_ptr))->arr))),                                                          \
-        alignof(typeof(*(((list_c_ptr))->arr))),                                                         \
-        allocator                                                                                  \
-    ))
-
-#define list$new_static(list_c_ptr, buf, buf_len)                                                        \
-    (list.create_static(                                                                           \
-        (list_c*)list_c_ptr,                                                                             \
-        buf,                                                                                       \
-        buf_len,                                                                                   \
-        sizeof(typeof(*(((list_c_ptr))->arr))),                                                          \
-        alignof(typeof(*(((list_c_ptr))->arr)))                                                          \
-    ))
-
 typedef struct
 {
     struct
@@ -60,6 +33,170 @@ typedef struct
 _Static_assert(sizeof(list_head_s) <= _CEX_LIST_BUF, "size");
 _Static_assert(alignof(list_head_s) == 1, "align");
 
+#define list$define(eltype)                                                                        \
+    /* NOTE: shadow struct the same as list_c, only used for type safety. const  prevents user to  \
+     * overwrite struct arr.arr pointer (elements are ok), and also arr.count */                   \
+    union                                                                                          \
+    {                                                                                              \
+        list_c base;                                                                               \
+        struct                                                                                     \
+        {                                                                                          \
+            eltype* const arr;                                                                     \
+            const usize len;                                                                       \
+        };                                                                                         \
+    }
+
+#define list$define_static_buf(var_name, eltype, capacity)                                         \
+    alignas(32) char var_name[_CEX_LIST_BUF + sizeof(eltype) * capacity] = {0};                          \
+    _Static_assert(alignof(eltype) <= 32, "list$define_static_buf alignment is too high"); \
+    _Static_assert(capacity > 0, "list$define_static_buf zero capacity")
+
+#define list$new(list_c_ptr, capacity, allocator)                                                  \
+    (list.create(                                                                                  \
+        &((list_c_ptr)->base),                                                                     \
+        capacity,                                                                                  \
+        sizeof(typeof(*(((list_c_ptr))->arr))),                                                    \
+        alignof(typeof(*(((list_c_ptr))->arr))),                                                   \
+        allocator                                                                                  \
+    ))
+
+#define list$new_static(list_c_ptr, buf, buf_len)                                                  \
+    (list.create_static(                                                                           \
+        &((list_c_ptr)->base),                                                                     \
+        buf,                                                                                       \
+        buf_len,                                                                                   \
+        sizeof(typeof(*(((list_c_ptr))->arr))),                                                    \
+        alignof(typeof(*(((list_c_ptr))->arr)))                                                    \
+    ))
+
+#define _list$head(self) ((list_head_s*)((char*)self->arr - _CEX_LIST_BUF))
+
+#define list$cast(list_base_ptr, cast_to_list)                                                     \
+    (void*)(&((list_base_ptr)->arr));                                                              \
+    _Static_assert(                                                                                \
+        _Generic(list_base_ptr, list_c *: 1, default: 0),                                          \
+        "first argument expected list_c* pointer (or try .base ) "                                 \
+    );                                                                                             \
+    _Static_assert(                                                                                \
+        _Generic((&(cast_to_list)->base), list_c *: 1, default: 0),                                \
+        "second argument expected to be derivative i.e. list$define()"                             \
+    );                                                                                             \
+    uassertf(                                                                                      \
+        (_list$head((list_base_ptr)))->header.elalign ==                                           \
+            alignof(typeof(*(((cast_to_list))->arr))),                                             \
+        "list$cast: element align mismatch, incompatible types?"                                   \
+    );                                                                                             \
+    uassertf(                                                                                      \
+        (_list$head((list_base_ptr)))->header.elsize == sizeof(typeof(*(((cast_to_list))->arr))),  \
+        "list$cast: element size mismatch, incompatible types?"                                    \
+    )
+
+#define _CEX_TYPE_MATCH(X, Y)                                                                      \
+    _Generic((Y), __typeof__(X): _Generic((X), __typeof__(Y): 1, default: 0), default: 0)
+
+
+#define list$insert(list_instance, item, index)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            _CEX_TYPE_MATCH(*(list_instance)->arr, *item),                                         \
+            "list$insert incompatible item type, or double pointer passed"                                                   \
+        );                                                                                         \
+        list.insert(&(list_instance)->base, (item), (index));                                               \
+    })
+
+#define list$del(list_instance, index)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        list.del(&(list_instance)->base, (index));                                               \
+    })
+
+#define list$sort(list_instance, comp)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        list.sort(&(list_instance)->base, (comp));                                               \
+    })
+
+#define list$append(list_instance, item)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            _CEX_TYPE_MATCH(*(list_instance)->arr, *item),                                         \
+            "list$append incompatible item type, or double pointer passed"                                                   \
+        );                                                                                         \
+        list.append(&(list_instance)->base, (item));                                               \
+    })
+
+#define list$clear(list_instance)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        list.clear(&(list_instance)->base);                                               \
+    })
+
+#define list$extend(list_instance, items, nitems)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            _CEX_TYPE_MATCH(*(list_instance)->arr, *items),                                         \
+            "list$append incompatible item type, or double pointer passed"                                                   \
+        );                                                                                         \
+        list.extend(&(list_instance)->base, (items), nitems);                                               \
+    })
+
+#define list$len(list_instance)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        list.len(&(list_instance)->base);                                               \
+    })
+
+#define list$capacity(list_instance)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        list.capacity(&(list_instance)->base);                                               \
+    })
+
+#define list$destroy(list_instance)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        list.destroy(&(list_instance)->base);                                               \
+    })
+
+#define list$iter(list_instance, iterator)                                                           \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        list.iter(&(list_instance)->base, iterator);                                               \
+    })
+
 struct __module__list
 {
     // Autogenerated by CEX
@@ -72,34 +209,34 @@ Exception
 (*create_static)(list_c* self, void* buf, usize buf_len, usize elsize, usize elalign);
 
 Exception
-(*insert)(void* self, void* item, usize index);
+(*insert)(list_c* self, void* item, usize index);
 
 Exception
-(*del)(void* self, usize index);
+(*del)(list_c* self, usize index);
 
 void
-(*sort)(void* self, int (*comp)(const void*, const void*));
+(*sort)(list_c* self, int (*comp)(const void*, const void*));
 
 Exception
-(*append)(void* self, void* item);
+(*append)(list_c* self, void* item);
 
 void
-(*clear)(void* self);
+(*clear)(list_c* self);
 
 Exception
-(*extend)(void* self, void* items, usize nitems);
+(*extend)(list_c* self, void* items, usize nitems);
 
 usize
-(*len)(void* self);
+(*len)(list_c* self);
 
 usize
-(*capacity)(void* self);
+(*capacity)(list_c* self);
 
 void*
-(*destroy)(void* self);
+(*destroy)(list_c* self);
 
 void*
-(*iter)(void* self, cex_iterator_s* iterator);
+(*iter)(list_c* self, cex_iterator_s* iterator);
 
     // clang-format on
 };

@@ -42,7 +42,7 @@ struct __module__fsm
     // clang-format off
 
 /**
- * @brief Initialized new Finite State Machine class
+ * @brief Initialize new Finite State Machine class
  *
  * @param self FSM instance (may be stack based) 
  * @param fsm_type type

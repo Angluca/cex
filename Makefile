@@ -6,7 +6,6 @@ all: cex tests
 
 cex:
 	cex process .
-	./cli/cex_bundler
 
 clean:
 	cex test clean all

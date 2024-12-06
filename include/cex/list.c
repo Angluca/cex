@@ -6,7 +6,7 @@ list__head(list_c* self)
 {
     uassert(self != NULL);
     uassert(self->arr != NULL && "array is not initialized");
-    list_head_s* head = (list_head_s*)((char*)self->arr - _CEX_LIST_BUF);
+    list_head_s* head = _list$head(self);
     uassert(head->header.magic == 0x1eed && "not a list / bad pointer");
     uassert(head->capacity > 0 && "zero capacity or memory corruption");
     uassert(head->count <= head->capacity && "count > capacity");
@@ -206,7 +206,7 @@ list_create_static(list_c* self, void* buf, usize buf_len, usize elsize, usize e
 
 
 Exception
-list_insert(void* self, void* item, usize index)
+list_insert(list_c* self, void* item, usize index)
 {
     uassert(self != NULL);
     list_c* d = (list_c*)self;
@@ -251,7 +251,7 @@ list_insert(void* self, void* item, usize index)
 }
 
 Exception
-list_del(void* self, usize index)
+list_del(list_c* self, usize index)
 {
     uassert(self != NULL);
     list_c* d = (list_c*)self;
@@ -276,7 +276,7 @@ list_del(void* self, usize index)
 }
 
 void
-list_sort(void* self, int (*comp)(const void*, const void*))
+list_sort(list_c* self, int (*comp)(const void*, const void*))
 {
     uassert(self != NULL);
     uassert(comp != NULL);
@@ -287,7 +287,7 @@ list_sort(void* self, int (*comp)(const void*, const void*))
 
 
 Exception
-list_append(void* self, void* item)
+list_append(list_c* self, void* item)
 {
     uassert(self != NULL);
     list_head_s* head = list__head(self);
@@ -295,7 +295,7 @@ list_append(void* self, void* item)
 }
 
 void
-list_clear(void* self)
+list_clear(list_c* self)
 {
     uassert(self != NULL);
 
@@ -306,7 +306,7 @@ list_clear(void* self)
 }
 
 Exception
-list_extend(void* self, void* items, usize nitems)
+list_extend(list_c* self, void* items, usize nitems)
 {
     uassert(self != NULL);
 
@@ -344,7 +344,7 @@ list_extend(void* self, void* items, usize nitems)
 }
 
 usize
-list_len(void* self)
+list_len(list_c* self)
 {
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
@@ -353,14 +353,14 @@ list_len(void* self)
 }
 
 usize
-list_capacity(void* self)
+list_capacity(list_c* self)
 {
     list_head_s* head = list__head(self);
     return head->capacity;
 }
 
 void*
-list_destroy(void* self)
+list_destroy(list_c* self)
 {
     list_c* d = (list_c*)self;
 
@@ -390,7 +390,7 @@ list_destroy(void* self)
 }
 
 void*
-list_iter(void* self, cex_iterator_s* iterator)
+list_iter(list_c* self, cex_iterator_s* iterator)
 {
     uassert(self != NULL && "self == NULL");
     uassert(iterator != NULL && "null iterator");

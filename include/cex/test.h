@@ -322,7 +322,7 @@ struct __CexTestContext_s
         Exc err = cextest_setup_func();                                                            \
         if (err != EOK) {                                                                          \
             fprintf(                                                                               \
-                __atest_stream,                                                                    \
+                __CEX_TEST_STREAM,                                                                 \
                 "[%s] %s in test$setup() before %s (suite %s stopped)\n",                          \
                 CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
                 err,                                                                               \
@@ -338,10 +338,10 @@ struct __CexTestContext_s
         if (err == EOK) {                                                                          \
             if (__CexTestContext.verbosity > 0) {                                                  \
                 if (__CexTestContext.verbosity == 1) {                                             \
-                    fprintf(__atest_stream, ".");                                                  \
+                    fprintf(__CEX_TEST_STREAM, ".");                                               \
                 } else {                                                                           \
                     fprintf(                                                                       \
-                        __atest_stream,                                                            \
+                        __CEX_TEST_STREAM,                                                         \
                         "[%s] %s\n",                                                               \
                         CEXTEST_CGREEN "PASS" CEXTEST_CNONE,                                       \
                         #test_case_name                                                            \
@@ -350,7 +350,7 @@ struct __CexTestContext_s
             }                                                                                      \
         } else {                                                                                   \
             fprintf(                                                                               \
-                __atest_stream,                                                                    \
+                __CEX_TEST_STREAM,                                                                 \
                 "[%s] %s %s\n",                                                                    \
                 CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
                 err,                                                                               \
@@ -361,7 +361,7 @@ struct __CexTestContext_s
         err = cextest_teardown_func();                                                             \
         if (err != EOK) {                                                                          \
             fprintf(                                                                               \
-                __atest_stream,                                                                    \
+                __CEX_TEST_STREAM,                                                                 \
                 "[%s] %s in test$teardown() after %s\n",                                           \
                 CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
                 err,                                                                               \
@@ -369,7 +369,7 @@ struct __CexTestContext_s
             );                                                                                     \
         }                                                                                          \
         __CexTestContext.in_test = NULL;                                                           \
-        fflush(__atest_stream);                                                                    \
+        fflush(__CEX_TEST_STREAM);                                                                 \
         fflush(stdout);                                                                            \
         fflush(stderr);                                                                            \
     } while (0)
@@ -379,11 +379,11 @@ struct __CexTestContext_s
 //
 #define test$print_header()                                                                        \
     do {                                                                                           \
-        setbuf(__atest_stream, NULL);                                                              \
+        setbuf(__CEX_TEST_STREAM, NULL);                                                           \
         if (__CexTestContext.verbosity > 0) {                                                      \
-            fprintf(__atest_stream, "-------------------------------------\n");                    \
-            fprintf(__atest_stream, "Running Tests: %s\n", __FILE__);                              \
-            fprintf(__atest_stream, "-------------------------------------\n\n");                  \
+            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n");                 \
+            fprintf(__CEX_TEST_STREAM, "Running Tests: %s\n", __FILE__);                           \
+            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n\n");               \
         }                                                                                          \
         fflush(stdout);                                                                            \
         fflush(stderr);                                                                            \
@@ -395,18 +395,18 @@ struct __CexTestContext_s
 #define test$print_footer()                                                                        \
     do {                                                                                           \
         if (__CexTestContext.verbosity > 0) {                                                      \
-            fprintf(__atest_stream, "\n-------------------------------------\n");                  \
+            fprintf(__CEX_TEST_STREAM, "\n-------------------------------------\n");               \
             fprintf(                                                                               \
-                __atest_stream,                                                                    \
+                __CEX_TEST_STREAM,                                                                 \
                 "Total: %d Passed: %d Failed: %d\n",                                               \
                 __CexTestContext.tests_run,                                                        \
                 __CexTestContext.tests_run - __CexTestContext.tests_failed,                        \
                 __CexTestContext.tests_failed                                                      \
             );                                                                                     \
-            fprintf(__atest_stream, "-------------------------------------\n");                    \
+            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n");                 \
         } else {                                                                                   \
             fprintf(                                                                               \
-                __atest_stream,                                                                    \
+                __CEX_TEST_STREAM,                                                                 \
                 "[%s] %-70s [%2d/%2d]\n",                                                          \
                 __CexTestContext.tests_failed == 0 ? CEXTEST_CGREEN "PASS" CEXTEST_CNONE           \
                                                    : CEXTEST_CRED "FAIL" CEXTEST_CNONE,            \
@@ -415,7 +415,7 @@ struct __CexTestContext_s
                 __CexTestContext.tests_run                                                         \
             );                                                                                     \
         }                                                                                          \
-        fflush(__atest_stream);                                                                    \
+        fflush(__CEX_TEST_STREAM);                                                                 \
         fflush(stdout);                                                                            \
         fflush(stderr);                                                                            \
     } while (0)
@@ -430,7 +430,7 @@ struct __CexTestContext_s
             break;                                                                                 \
         if (argc > 3) {                                                                            \
             fprintf(                                                                               \
-                __atest_stream,                                                                    \
+                __CEX_TEST_STREAM,                                                                 \
                 "Too many arguments: use test_name_exec vvv|q test_case_name\n"                    \
             );                                                                                     \
             return 1;                                                                              \
@@ -459,7 +459,8 @@ struct __CexTestContext_s
  * Utility non public macros
  *
  */
-#define __atest_stream (__CexTestContext.out_stream == NULL ? stderr : __CexTestContext.out_stream)
+#define __CEX_TEST_STREAM                                                                          \
+    (__CexTestContext.out_stream == NULL ? stderr : __CexTestContext.out_stream)
 #define __STRINGIZE_DETAIL(x) #x
 #define __STRINGIZE(x) __STRINGIZE_DETAIL(x)
 #define __CEXTEST_LOG_ERR(msg) (__FILE__ ":" __STRINGIZE(__LINE__) " -> " msg)
