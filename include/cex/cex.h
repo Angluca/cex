@@ -259,48 +259,16 @@ void __sanitizer_print_stack_trace();
 #ifndef __cex__assert
 #define __cex__assert()                                                                            \
     do {                                                                                           \
+        fflush(stdout);                                                                            \
+        fflush(stderr);                                                                            \
         sanitizer_stack_trace();                                                                   \
         abort();                                                                                   \
     } while (0);
 #endif
 
-/**
- * @def uassert(A)
- * @brief Custom assertion, with support of sanitizer call stack printout at failure.
- */
-#define uassert(A)                                                                                  \
-    do {                                                                                            \
-        if (unlikely(!((A)))) {                                                                     \
-            if (uassert_is_enabled()) {                                                             \
-                __cex__fprintf(stderr, "[ASSERT] ", __FILE_NAME__, __LINE__, __func__, "%s\n", #A); \
-                __cex__assert();                                                                    \
-            }                                                                                       \
-        }                                                                                           \
-    } while (0)
-
-#define uassertf(A, format, ...)                                                                   \
-    do {                                                                                           \
-        if (unlikely(!((A)))) {                                                                    \
-            if (uassert_is_enabled()) {                                                            \
-                __cex__fprintf(                                                                    \
-                    stderr,                                                                        \
-                    "[ASSERT] ",                                                                   \
-                    __FILE_NAME__,                                                                 \
-                    __LINE__,                                                                      \
-                    __func__,                                                                      \
-                    format "\n",                                                                   \
-                    ##__VA_ARGS__                                                                  \
-                );                                                                                 \
-                __cex__assert();                                                                   \
-            }                                                                                      \
-        }                                                                                          \
-    } while (0)
-#endif
-
-
 #ifdef CEXTEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
-#define CEXERRORF_OUT__ stdout
+#define __CEX_OUT_STREAM stdout
 
 int __cex_test_uassert_enabled = 1;
 #define uassert_disable() __cex_test_uassert_enabled = 0
@@ -311,7 +279,48 @@ int __cex_test_uassert_enabled = 1;
     _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEXTEST")
 #define uassert_enable() (void)0
 #define uassert_is_enabled() true
-#define CEXERRORF_OUT__ stderr
+#define __CEX_OUT_STREAM stderr
+#endif
+
+/**
+ * @def uassert(A)
+ * @brief Custom assertion, with support of sanitizer call stack printout at failure.
+ */
+#define uassert(A)                                                                                 \
+    do {                                                                                           \
+        if (unlikely(!((A)))) {                                                                    \
+            __cex__fprintf(                                                                        \
+                __CEX_OUT_STREAM,                                                                  \
+                "[ASSERT] ",                                                                       \
+                __FILE_NAME__,                                                                     \
+                __LINE__,                                                                          \
+                __func__,                                                                          \
+                "%s\n",                                                                            \
+                #A                                                                                 \
+            );                                                                                     \
+            if (uassert_is_enabled()) {                                                            \
+                __cex__assert();                                                                   \
+            }                                                                                      \
+        }                                                                                          \
+    } while (0)
+
+#define uassertf(A, format, ...)                                                                   \
+    do {                                                                                           \
+        if (unlikely(!((A)))) {                                                                    \
+            __cex__fprintf(                                                                        \
+                __CEX_OUT_STREAM,                                                                  \
+                "[ASSERT] ",                                                                       \
+                __FILE_NAME__,                                                                     \
+                __LINE__,                                                                          \
+                __func__,                                                                          \
+                format "\n",                                                                       \
+                ##__VA_ARGS__                                                                      \
+            );                                                                                     \
+            if (uassert_is_enabled()) {                                                            \
+                __cex__assert();                                                                   \
+            }                                                                                      \
+        }                                                                                          \
+    } while (0)
 #endif
 
 
