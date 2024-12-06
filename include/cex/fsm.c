@@ -2,6 +2,15 @@
 #include "fsm.h"
 
 
+/**
+ * @brief Initialize new Finite State Machine class
+ *
+ * @param self FSM instance (may be stack based) 
+ * @param fsm_type type
+ * @param initial_handler starting state handler
+ * @param super_handler super state handler
+ * @return 
+ */
 static Exception
 fsm_create(
     fsm_c* self,
