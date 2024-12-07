@@ -370,27 +370,15 @@ int __cex_test_uassert_enabled = 1;
 /*
  *                  ARRAYS / SLICES / ITERATORS INTERFACE
  */
-typedef struct
-{
-    void* arr;
-    usize len;
-} slice_generic_s;
-_Static_assert(sizeof(slice_generic_s) == sizeof(usize) * 2, "sizeof");
-
 #define slice$define(eltype)                                                                       \
-    union                                                                                          \
+    struct                                                                                         \
     {                                                                                              \
-        struct                                                                                     \
-        {                                                                                          \
-            typeof(eltype)* arr;                                                                   \
-            usize len;                                                                             \
-        };                                                                                         \
-        slice_generic_s base;                                                                      \
+        typeof(eltype)* arr;                                                                       \
+        usize len;                                                                                 \
     }
 
 #define _arr$slice_get(slice, array, array_len, start, end)                                        \
     {                                                                                              \
-        uassert(array != NULL);                                                                    \
         isize _start = start;                                                                      \
         isize _end = end;                                                                          \
         isize _len = array_len;                                                                    \
@@ -403,7 +391,7 @@ _Static_assert(sizeof(slice_generic_s) == sizeof(usize) * 2, "sizeof");
         _end = _end < _len ? _end : _len;                                                          \
         _start = _start > 0 ? _start : 0;                                                          \
         /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld", start, end, _start, _end); */  \
-        if (_start < _end) {                                                                       \
+        if (_start < _end && array != NULL) {                                                      \
             slice.arr = &((array)[_start]);                                                        \
             slice.len = (usize)(_end - _start);                                                    \
         }                                                                                          \

@@ -975,11 +975,6 @@ test$case(testlist_slice)
     tassert_eqi(c.arr[2], 3);
     tassert_eqi(c.len, 3);
 
-    c.base = list$slice(&a, 2, 0).base;
-    tassert_eqi(c.arr[0], 2);
-    tassert_eqi(c.arr[1], 3);
-    tassert_eqi(c.len, 2);
-
     // possible to access slice in line (but it will call a function each time)
     tassert_eqi(list$slice(&il, 2, 0).arr[0], 2);
 

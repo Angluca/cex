@@ -262,7 +262,13 @@ test$case(test_sub_negative_start)
     tassert_eqi(s.len, 6);
     tassert_eqi(str.is_valid(s), true);
 
-    var sub = str.sub(s, -3, -1);
+    str_c s_empty = {0};
+    var sub = str.sub(s_empty, 0, 2);
+    tassert_eqi(sub.len, 0);
+    tassert(sub.buf == NULL);
+    tassert_eqi(str.is_valid(sub), false);
+
+    sub = str.sub(s, -3, -1);
     tassert_eqi(str.is_valid(sub), true);
     tassert_eqi(sub.len, 2);
     tassert_eqi(s.len, 6);

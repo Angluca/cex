@@ -250,7 +250,6 @@ test$case(test_arrays_and_slices)
 
     slice$define(i32) s;
     _Static_assert(sizeof(s) == sizeof(usize) * 2, "sizeof");
-    _Static_assert(sizeof(s) == sizeof(slice_generic_s), "sizeof");
 
     // slice$define(*a) s2 = (typeof(s2)){.arr = a, .len = 3};
 
@@ -263,11 +262,6 @@ test$case(test_arrays_and_slices)
     // GOOD: _start is used in arr$slice as temp var, no conflict!
     isize _start = 2;
     (void)_start;
-    s2.base = arr$slice(a, 1, 3).base;
-    tassert_eqi(s2.len, 2);
-    tassert_eqi(s2.arr[0], 2);
-    tassert_eqi(s2.arr[1], 3);
-
     tassert_eqi(arr$slice(a, 1, 3).arr[1], 3);
 
     var s3 = arr$slice(a, 1, 3);
