@@ -368,8 +368,54 @@ int __cex_test_uassert_enabled = 1;
 
 
 /*
- *                  ARRAY / ITERATORS INTERFACE
+ *                  ARRAYS / SLICES / ITERATORS INTERFACE
  */
+typedef struct
+{
+    void* arr;
+    usize len;
+} slice_generic_s;
+_Static_assert(sizeof(slice_generic_s) == sizeof(usize) * 2, "sizeof");
+
+#define slice$define(eltype)                                                                       \
+    union                                                                                          \
+    {                                                                                              \
+        struct                                                                                     \
+        {                                                                                          \
+            typeof(eltype)* arr;                                                                   \
+            usize len;                                                                             \
+        };                                                                                         \
+        slice_generic_s base;                                                                      \
+    }
+
+#define _arr$slice_get(slice, array, array_len, start, end)                                        \
+    {                                                                                              \
+        uassert(array != NULL);                                                                    \
+        isize _start = start;                                                                      \
+        isize _end = end;                                                                          \
+        isize _len = array_len;                                                                    \
+        if (unlikely(_start < 0))                                                                  \
+            _start += _len;                                                                        \
+        if (_end == 0) /* _end=0 equivalent of python's arr[_star:] */                             \
+            _end = _len;                                                                           \
+        else if (unlikely(_end < 0))                                                               \
+            _end += _len;                                                                          \
+        _end = _end < _len ? _end : _len;                                                          \
+        _start = _start > 0 ? _start : 0;                                                          \
+        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld", start, end, _start, _end); */  \
+        if (_start < _end) {                                                                       \
+            slice.arr = &((array)[_start]);                                                        \
+            slice.len = (usize)(_end - _start);                                                    \
+        }                                                                                          \
+    }
+
+
+#define arr$slice(array, start, end)                                                               \
+    ({                                                                                             \
+        slice$define(*array) s = { .arr = NULL, .len = 0 };                                        \
+        _arr$slice_get(s, array, arr$len(array), start, end);                                      \
+        s;                                                                                         \
+    })
 
 #define arr$len(arr) (sizeof(arr) / sizeof(arr[0]))
 

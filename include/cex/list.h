@@ -38,17 +38,17 @@ _Static_assert(alignof(list_head_s) == 1, "align");
      * overwrite struct arr.arr pointer (elements are ok), and also arr.count */                   \
     union                                                                                          \
     {                                                                                              \
-        list_c base;                                                                               \
         struct                                                                                     \
         {                                                                                          \
             eltype* const arr;                                                                     \
             const usize len;                                                                       \
         };                                                                                         \
+        list_c base;                                                                               \
     }
 
 #define list$define_static_buf(var_name, eltype, capacity)                                         \
-    alignas(32) char var_name[_CEX_LIST_BUF + sizeof(eltype) * capacity] = {0};                          \
-    _Static_assert(alignof(eltype) <= 32, "list$define_static_buf alignment is too high"); \
+    alignas(32) char var_name[_CEX_LIST_BUF + sizeof(eltype) * capacity] = { 0 };                  \
+    _Static_assert(alignof(eltype) <= 32, "list$define_static_buf alignment is too high");         \
     _Static_assert(capacity > 0, "list$define_static_buf zero capacity")
 
 #define list$new(list_c_ptr, capacity, allocator)                                                  \
@@ -95,7 +95,7 @@ _Static_assert(alignof(list_head_s) == 1, "align");
     _Generic((Y), __typeof__(X): _Generic((X), __typeof__(Y): 1, default: 0), default: 0)
 
 
-#define list$insert(list_instance, item, index)                                                           \
+#define list$insert(list_instance, item, index)                                                    \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
@@ -103,27 +103,27 @@ _Static_assert(alignof(list_head_s) == 1, "align");
         );                                                                                         \
         _Static_assert(                                                                            \
             _CEX_TYPE_MATCH(*(list_instance)->arr, *item),                                         \
-            "list$insert incompatible item type, or double pointer passed"                                                   \
+            "list$insert incompatible item type, or double pointer passed"                         \
         );                                                                                         \
-        list.insert(&(list_instance)->base, (item), (index));                                               \
+        list.insert(&(list_instance)->base, (item), (index));                                      \
     })
 
-#define list$del(list_instance, index)                                                           \
+#define list$del(list_instance, index)                                                             \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \
         );                                                                                         \
-        list.del(&(list_instance)->base, (index));                                               \
+        list.del(&(list_instance)->base, (index));                                                 \
     })
 
-#define list$sort(list_instance, comp)                                                           \
+#define list$sort(list_instance, comp)                                                             \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \
         );                                                                                         \
-        list.sort(&(list_instance)->base, (comp));                                               \
+        list.sort(&(list_instance)->base, (comp));                                                 \
     })
 
 #define list$append(list_instance, item)                                                           \
@@ -134,67 +134,78 @@ _Static_assert(alignof(list_head_s) == 1, "align");
         );                                                                                         \
         _Static_assert(                                                                            \
             _CEX_TYPE_MATCH(*(list_instance)->arr, *item),                                         \
-            "list$append incompatible item type, or double pointer passed"                                                   \
+            "list$append incompatible item type, or double pointer passed"                         \
         );                                                                                         \
         list.append(&(list_instance)->base, (item));                                               \
     })
 
-#define list$clear(list_instance)                                                           \
+#define list$clear(list_instance)                                                                  \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \
         );                                                                                         \
-        list.clear(&(list_instance)->base);                                               \
+        list.clear(&(list_instance)->base);                                                        \
     })
 
-#define list$extend(list_instance, items, nitems)                                                           \
+#define list$extend(list_instance, items, nitems)                                                  \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \
         );                                                                                         \
         _Static_assert(                                                                            \
-            _CEX_TYPE_MATCH(*(list_instance)->arr, *items),                                         \
-            "list$append incompatible item type, or double pointer passed"                                                   \
+            _CEX_TYPE_MATCH(*(list_instance)->arr, *items),                                        \
+            "list$append incompatible item type, or double pointer passed"                         \
         );                                                                                         \
-        list.extend(&(list_instance)->base, (items), nitems);                                               \
+        list.extend(&(list_instance)->base, (items), nitems);                                      \
     })
 
-#define list$len(list_instance)                                                           \
+#define list$len(list_instance)                                                                    \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \
         );                                                                                         \
-        list.len(&(list_instance)->base);                                               \
+        list.len(&(list_instance)->base);                                                          \
     })
 
-#define list$capacity(list_instance)                                                           \
+#define list$capacity(list_instance)                                                               \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \
         );                                                                                         \
-        list.capacity(&(list_instance)->base);                                               \
+        list.capacity(&(list_instance)->base);                                                     \
     })
 
-#define list$destroy(list_instance)                                                           \
+#define list$destroy(list_instance)                                                                \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \
         );                                                                                         \
-        list.destroy(&(list_instance)->base);                                               \
+        list.destroy(&(list_instance)->base);                                                      \
     })
 
-#define list$iter(list_instance, iterator)                                                           \
+#define list$iter(list_instance, iterator)                                                         \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \
         );                                                                                         \
         list.iter(&(list_instance)->base, iterator);                                               \
+    })
+
+#define list$slice(list_instance, start, end)                                                      \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
+            "list_instance argument expected to be derivative i.e. list$define()"                  \
+        );                                                                                         \
+        slice$define(*((list_instance)->arr)) s = { .arr = NULL, .len = 0 };                       \
+        _arr$slice_get(s, (list_instance)->arr, (list_instance)->len, start, end);                 \
+        s;                                                                                         \
     })
 
 struct __module__list

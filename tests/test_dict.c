@@ -285,7 +285,7 @@ test$case(test_dict_tolist)
 
     list$define(struct s) a;
     tassert_eqs(EOK, dict.tolist(&hm, &a, allocator));
-    tassert_eqi(list.len(&a), 4);
+    tassert_eqi(list.len(&a.base), 4);
 
     tassert_eqs(Error.argument, dict.tolist(NULL, &a, allocator));
     tassert_eqs(Error.argument, dict.tolist(&hm, NULL, allocator));
@@ -301,7 +301,7 @@ test$case(test_dict_tolist)
     dict.destroy(&hm);
     tassert_eqs(Error.integrity, dict.tolist(&hm, &a, allocator));
 
-    list.destroy(&a);
+    list.destroy(&a.base);
 
     return EOK;
 }

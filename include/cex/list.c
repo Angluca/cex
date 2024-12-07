@@ -7,7 +7,10 @@ list__head(list_c* self)
     uassert(self != NULL);
     uassert(self->arr != NULL && "array is not initialized");
     list_head_s* head = _list$head(self);
-    uassert(head->header.magic == 0x1eed && "not a list / bad pointer");
+    if (head->header.magic != 0x1eed) {
+        uassertf(false, "list: bad header - not a list / used on slice / bad pointer");
+        return NULL;
+    }
     uassert(head->capacity > 0 && "zero capacity or memory corruption");
     uassert(head->count <= head->capacity && "count > capacity");
 
@@ -80,20 +83,13 @@ list__alloc_size(usize capacity, usize elsize, usize elalign)
     uassert(elalign > 0 && "zero element align");
     uassert(elsize % elalign == 0 && "element size has to be rounded to elalign");
 
-    usize result = (capacity * elsize) +
-                    (elalign > _CEX_LIST_BUF ? elalign : _CEX_LIST_BUF);
+    usize result = (capacity * elsize) + (elalign > _CEX_LIST_BUF ? elalign : _CEX_LIST_BUF);
     uassert(result % elalign == 0 && "alloc_size is unaligned");
     return result;
 }
 
 Exception
-list_create(
-    list_c* self,
-    usize capacity,
-    usize elsize,
-    usize elalign,
-    const Allocator_i* allocator
-)
+list_create(list_c* self, usize capacity, usize elsize, usize elalign, const Allocator_i* allocator)
 {
     if (self == NULL) {
         uassert(self != NULL && "must not be NULL");
@@ -211,12 +207,15 @@ list_insert(list_c* self, void* item, usize index)
     uassert(self != NULL);
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
+    if (unlikely(head == NULL)) {
+        return Error.integrity;
+    }
 
-    if (index > head->count) {
+    if (unlikely(index > head->count)) {
         return Error.argument;
     }
 
-    if (head->count == head->capacity) {
+    if (unlikely(head->count == head->capacity)) {
         if (head->allocator == NULL) {
             return Error.overflow;
         }
@@ -234,7 +233,7 @@ list_insert(list_c* self, void* item, usize index)
         head->capacity = new_cap;
     }
 
-    if (index < head->count) {
+    if (unlikely(index < head->count)) {
         memmove(
             list__elidx(head, index + 1),
             list__elidx(head, index),
@@ -256,12 +255,15 @@ list_del(list_c* self, usize index)
     uassert(self != NULL);
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
+    if (unlikely(head == NULL)) {
+        return Error.integrity;
+    }
 
-    if (index >= head->count) {
+    if (unlikely(index >= head->count)) {
         return Error.argument;
     }
 
-    if (index < head->count) {
+    if (unlikely(index < head->count)) {
         memmove(
             list__elidx(head, index),
             list__elidx(head, index + 1),
@@ -282,7 +284,9 @@ list_sort(list_c* self, int (*comp)(const void*, const void*))
     uassert(comp != NULL);
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
-    qsort(d->arr, head->count, head->header.elsize, comp);
+    if (head != NULL) {
+        qsort(d->arr, head->count, head->header.elsize, comp);
+    }
 }
 
 
@@ -301,8 +305,10 @@ list_clear(list_c* self)
 
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
-    head->count = 0;
-    d->len = 0;
+    if (head != NULL) {
+        head->count = 0;
+        d->len = 0;
+    }
 }
 
 Exception
@@ -312,13 +318,16 @@ list_extend(list_c* self, void* items, usize nitems)
 
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
+    if (unlikely(head == NULL)) {
+        return Error.integrity;
+    }
 
     if (unlikely(items == NULL || nitems == 0)) {
         return Error.argument;
     }
 
-    if (head->count + nitems > head->capacity) {
-        if (head->allocator == NULL) {
+    if (unlikely(head->count + nitems > head->capacity)) {
+        if (unlikely(head->allocator == NULL)) {
             return Error.overflow;
         }
 
@@ -328,7 +337,7 @@ list_extend(list_c* self, void* items, usize nitems)
         head = list__realloc(head, alloc_size);
         uassert(head->header.magic == 0x1eed && "head missing after realloc");
 
-        if (d->arr == NULL) {
+        if (unlikely(d->arr == NULL)) {
             d->len = 0;
             return Error.memory;
         }
@@ -348,6 +357,9 @@ list_len(list_c* self)
 {
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
+    if (unlikely(head == NULL)) {
+        return 0;                
+    }
     d->len = head->count;
     return head->count;
 }
@@ -356,6 +368,9 @@ usize
 list_capacity(list_c* self)
 {
     list_head_s* head = list__head(self);
+    if (unlikely(head == NULL)) {
+        return 0;                
+    }
     return head->capacity;
 }
 
@@ -367,6 +382,9 @@ list_destroy(list_c* self)
     if (self != NULL) {
         if (d->arr != NULL) {
             list_head_s* head = list__head(self);
+            if (unlikely(head == NULL)) {
+                goto end;
+            }
 
             usize offset = 0;
             if (head->header.elalign > _CEX_LIST_BUF) {
@@ -381,11 +399,12 @@ list_destroy(list_c* self)
                 // in static list reset head
                 memset(head, 0, sizeof(*head));
             }
-            d->arr = NULL;
-            d->len = 0;
         }
     }
 
+end:
+    d->arr = NULL;
+    d->len = 0;
     return NULL;
 }
 
@@ -397,6 +416,9 @@ list_iter(list_c* self, cex_iterator_s* iterator)
 
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
+    if (unlikely(head == NULL)) {
+        return NULL;
+    }
 
     // temporary struct based on _ctxbuffer
     struct iter_ctx
