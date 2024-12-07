@@ -199,6 +199,7 @@ _Static_assert(alignof(list_head_s) == 1, "align");
 
 #define list$slice(list_instance, start, end)                                                      \
     ({                                                                                             \
+        uassert(list_instance != NULL && "list$slice");                                            \
         _Static_assert(                                                                            \
             _Generic((&(list_instance)->base), list_c *: 1, default: 0),                           \
             "list_instance argument expected to be derivative i.e. list$define()"                  \

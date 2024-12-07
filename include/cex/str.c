@@ -66,34 +66,14 @@ str_cbuf(char* s, usize length)
 str_c
 str_sub(str_c s, isize start, isize end)
 {
-    if (unlikely(s.len == 0)) {
-        if (start == 0 && end == 0) {
-            return s;
-        } else {
-            return (str_c){ 0 };
-        }
-    }
-
-    if (start < 0) {
-        // negative start uses offset from the end (-1 - last char)
-        start += s.len;
-    }
-
-    if (end == 0) {
-        // if end is zero, uses remainder
-        end = s.len;
-    } else if (end < 0) {
-        // negative end, uses offset from the end
-        end += s.len;
-    }
-
-    if (unlikely((usize)start >= s.len || end > (isize)s.len || end < start)) {
-        return (str_c){ 0 };
+    slice$define(*s.buf) slice = {0};
+    if (s.buf != NULL){
+        _arr$slice_get(slice, s.buf, s.len, start, end); 
     }
 
     return (str_c){
-        .buf = s.buf + start,
-        .len = (usize)(end - start),
+        .buf = slice.arr,
+        .len = slice.len,
     };
 }
 

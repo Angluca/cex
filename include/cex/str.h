@@ -14,7 +14,7 @@ typedef struct
 } str_c;
 
 _Static_assert(alignof(str_c) == alignof(usize), "align");
-_Static_assert(sizeof(str_c) == sizeof(usize)*2, "size");
+_Static_assert(sizeof(str_c) == sizeof(usize) * 2, "size");
 
 static inline str_c
 _str__propagate_inline_small_func(str_c s)
@@ -33,6 +33,12 @@ _str__propagate_inline_small_func(str_c s)
 // clang-format on
 
 
+#define str$slice(str_self, start, end)                                                            \
+    ({                                                                                             \
+        slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                               \
+        _arr$slice_get(__slice, str_self.buf, str_self.len, start, end);                                 \
+        __slice;                                                                                         \
+    })
 
 struct __module__str
 {

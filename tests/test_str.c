@@ -1,4 +1,5 @@
 #include <cex/test.h>
+#include <cex/str.c>
 #include <cex/all.c>
 #include <cex/fff.h>
 #include <stdio.h>
@@ -213,7 +214,7 @@ test$case(test_sub_positive_start)
     tassert(memcmp(sub.buf, "3456", sub.len) == 0);
 
     sub = str.sub(s, 0, s.len + 1);
-    tassert_eqi(str.is_valid(sub), false);
+    tassert_eqi(str.is_valid(sub), true);
 
     sub = str.sub(s, 2, 1);
     tassert_eqi(str.is_valid(sub), false);
@@ -229,9 +230,9 @@ test$case(test_sub_positive_start)
     tassert_eqi(str.is_valid(s), true);
 
     sub = str.sub(s, 0, 0);
-    tassert_eqi(str.is_valid(sub), true);
+    tassert_eqi(str.is_valid(sub), false);
     tassert_eqi(sub.len, 0);
-    tassert_eqs("", sub.buf);
+    tassert_eqs(NULL, sub.buf);
 
     sub = str.sub(s, 1, 2);
     tassert_eqi(str.is_valid(sub), false);
@@ -242,7 +243,9 @@ test$case(test_sub_positive_start)
 
     s = str.cstr("A");
     sub = str.sub(s, 0, 2);
-    tassert_eqi(str.is_valid(sub), false);
+    tassert_eqi(str.is_valid(sub), true);
+    tassert_eqi(sub.len, 1);
+    tassert(memcmp(sub.buf, "A", sub.len) == 0);
 
     s = str.cstr("A");
     sub = str.sub(s, 0, 0);
@@ -284,12 +287,16 @@ test$case(test_sub_negative_start)
     tassert_eqi(s.len, 6);
     tassert(memcmp(sub.buf, "45", sub.len) == 0);
 
+    var slice = str$slice(s, -3, -1);
+    tassert_eqi(slice.len, 2);
+    tassert(memcmp(slice.arr, "45", slice.len) == 0);
+
     sub = str.sub(s, -3, -400);
     tassert_eqi(str.is_valid(sub), false);
 
     s = str.cstr("");
     sub = str.sub(s, 0, 0);
-    tassert_eqi(str.is_valid(sub), true);
+    tassert_eqi(str.is_valid(sub), false);
     tassert_eqi(sub.len, 0);
 
     s = str.cstr("");
@@ -312,7 +319,9 @@ test$case(test_sub_negative_start)
 
     s = str.cstr("123456");
     sub = str.sub(s, -7, 0);
-    tassert_eqi(str.is_valid(sub), false);
+    tassert_eqi(str.is_valid(sub), true);
+    tassert_eqi(s.len, 6);
+    tassert(memcmp(sub.buf, "123456", sub.len) == 0);
 
     return EOK;
 }
