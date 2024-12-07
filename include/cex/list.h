@@ -13,6 +13,19 @@ typedef struct
     usize len;
 } list_c;
 
+#define list$define(eltype)                                                                        \
+    /* NOTE: shadow struct the same as list_c, only used for type safety. const  prevents user to  \
+     * overwrite struct arr.arr pointer (elements are ok), and also arr.count */                   \
+    union                                                                                          \
+    {                                                                                              \
+        struct                                                                                     \
+        {                                                                                          \
+            typeof(eltype)* const arr;                                                                     \
+            const usize len;                                                                       \
+        };                                                                                         \
+        list_c base;                                                                               \
+    }
+
 typedef struct
 {
     struct
@@ -32,19 +45,6 @@ typedef struct
 // _Static_assert(sizeof(list_head_s) == 32, "size"); // platform dependent
 _Static_assert(sizeof(list_head_s) <= _CEX_LIST_BUF, "size");
 _Static_assert(alignof(list_head_s) == 1, "align");
-
-#define list$define(eltype)                                                                        \
-    /* NOTE: shadow struct the same as list_c, only used for type safety. const  prevents user to  \
-     * overwrite struct arr.arr pointer (elements are ok), and also arr.count */                   \
-    union                                                                                          \
-    {                                                                                              \
-        struct                                                                                     \
-        {                                                                                          \
-            eltype* const arr;                                                                     \
-            const usize len;                                                                       \
-        };                                                                                         \
-        list_c base;                                                                               \
-    }
 
 #define list$define_static_buf(var_name, eltype, capacity)                                         \
     alignas(32) char var_name[_CEX_LIST_BUF + sizeof(eltype) * capacity] = { 0 };                  \
