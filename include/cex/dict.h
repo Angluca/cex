@@ -12,55 +12,107 @@ typedef u64 (*dict_hash_func_f)(const void* item, u64 seed0, u64 seed1);
 typedef int (*dict_compare_func_f)(const void* a, const void* b, void* udata);
 typedef void (*dict_elfree_func_f)(void* item);
 
+typedef struct dict_new_kwargs_s
+{
+    usize capacity;
+    dict_hash_func_f hash_func;
+    dict_compare_func_f cmp_func;
+    dict_elfree_func_f elfree_func;
+    void* cmp_func_udata;
+    u64 seed0;
+    u64 seed1;
+} dict_new_kwargs_s;
+
 
 // Hack for getting hash/cmp functions by a type of key field
 // https://gustedt.wordpress.com/2015/05/11/the-controlling-expression-of-_generic/
 #define _dict$hashfunc_field(strucfield)                                                           \
-    _Generic(&(strucfield), u64 *: dict.hashfunc.u64_hash, char(*)[]: dict.hashfunc.str_hash)
+    _Generic(                                                                                      \
+        &(strucfield),                                                                             \
+        const u64*: dict.hashfunc.u64_hash,                                                        \
+        u64*: dict.hashfunc.u64_hash,                                                              \
+        char(*)[]: dict.hashfunc.str_hash,                                                         \
+        const char(*)[]: dict.hashfunc.str_hash,                                                   \
+        default: NULL /* This will force dict.create() to raise assert */                          \
+    )
 
 #define _dict$cmpfunc_field(strucfield)                                                            \
-    _Generic(&(strucfield), u64 *: dict.hashfunc.u64_cmp, char(*)[]: dict.hashfunc.str_cmp)
+    _Generic(                                                                                      \
+        &(strucfield),                                                                             \
+        const u64*: dict.hashfunc.u64_cmp,                                                         \
+        u64*: dict.hashfunc.u64_cmp,                                                               \
+        char(*)[]: dict.hashfunc.str_cmp,                                                          \
+        const char(*)[]: dict.hashfunc.str_cmp,                                                    \
+        default: NULL /* This will force dict.create() to raise assert */                          \
+    )
 
 #define _dict$hashfunc(struct, field) _dict$hashfunc_field(((struct){ 0 }.field))
 
 #define _dict$cmpfunc(struct, field) _dict$cmpfunc_field(((struct){ 0 }.field))
 
 
-#define dict$define(eltype)                                                                        \
+#define dict$define(eltype, key_field_name)                                                        \
     union                                                                                          \
     {                                                                                              \
         dict_c base;                                                                               \
-        typeof(eltype)* const _dtype; /* (!) always undefined, used by macro type checking */      \
+        typeof(eltype) const* const _dtype; /* virtual field, only for type checks*/               \
+        typeof(((eltype){ 0 }.key_field_name)) const* const _ktype; /* virtual field */            \
     }
 
-#define dict$new(self, struct_type, key_field_name, allocator)                                     \
+#define dict$new(self, allocator, ...)                                                             \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic(((self)), dict_c *: 0, default: 1),                                           \
-            "self argument expected to be dict$define(eltype)"                                     \
+            "self argument expected to be dict$define()"                                           \
         );                                                                                         \
         _Static_assert(                                                                            \
             _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
-            "self argument expected to be dict$define(eltype)"                                     \
+            "self argument expected to be dict$define()"                                           \
         );                                                                                         \
         _Static_assert(                                                                            \
-            offsetof(typeof(*((self)->_dtype)), key_field_name) == 0,                              \
-            "key_field_name must be 1st element in dict `eltype` struct"                           \
+            _Alignof(typeof(*((self)->_dtype))) <= _Alignof(void*),                                \
+            "dict item alignment must be not greater than generic pointer"                         \
         );                                                                                         \
-        dict.create(                                                                               \
-            &((self)->base),                                                                       \
-            sizeof(*((self)->_dtype)),                                                             \
-            _Alignof(typeof(*((self)->_dtype))),                                                   \
-            offsetof(struct_type, key_field_name),                                                 \
-            0, /* capacity = 0, default is 16 */                                                   \
-            _dict$hashfunc(typeof(*((self)->_dtype)), key_field_name),                             \
-            _dict$cmpfunc(typeof(*((self)->_dtype)), key_field_name),                              \
-            allocator,                                                                             \
-            NULL, /* elfree - function for clearing elements */                                    \
-            NULL  /* udata - passed as a context for cmp funcs */                                  \
-        );                                                                                         \
+        dict_new_kwargs_s kwargs = { __VA_ARGS__ };                                                \
+        if (kwargs.cmp_func == NULL) {                                                             \
+            kwargs.cmp_func = _dict$cmpfunc_field(*((self)->_ktype));                              \
+        }                                                                                          \
+        if (kwargs.hash_func == NULL) {                                                            \
+            kwargs.hash_func = _dict$hashfunc_field(*((self)->_ktype));                            \
+        }                                                                                          \
+        dict.create(&((self)->base), sizeof(*((self)->_dtype)), allocator, &kwargs);               \
     })
 
+
+#define dict$set(self, ...)                                                                        \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic(((self)), dict_c *: 0, default: 1),                                           \
+            "self argument expected to be dict$define()"                                           \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
+            "self argument xpected to be dict$define()"                                            \
+        );                                                                                         \
+        /*__VA_ARGS__ to support inline struct initialization &(struct s){.key = 1}*/              \
+        typeof(((self)->_dtype)) _value = (__VA_ARGS__); /*dict type safety check */               \
+        dict.set(&((self)->base), _value);                                                         \
+    })
+
+#define dict$get(self, key)                                                                        \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic(((self)), dict_c *: 0, default: 1),                                           \
+            "self argument expected to be dict$define(eltype) 1"                                   \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
+            "self argument xpected to be dict$define(eltype)"                                      \
+        );                                                                                         \
+        /* NOTE: init only key's type variable, instead of full struct to limit memory usage */    \
+        typeof(*((self)->_ktype)) _key = (key); /* dict key type safety check */                   \
+        (typeof(((self)->_dtype)))dict.get(&((self)->base), &_key);                                \
+    })
 
 struct __module__dict
 {
@@ -115,7 +167,7 @@ struct {  // sub-module .hashfunc >>>
 
 } hashfunc;  // sub-module .hashfunc <<<
 Exception
-(*create)(dict_c* self, usize item_size, usize item_align, usize item_key_offsetof, usize capacity, dict_hash_func_f hash_func, dict_compare_func_f compare_func, const Allocator_i* allocator, dict_elfree_func_f elfree, void* udata);
+(*create)(dict_c* self, usize item_size, const Allocator_i* allocator, dict_new_kwargs_s* kwargs);
 
 /**
  * @brief Set or replace dict item

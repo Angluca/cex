@@ -1,9 +1,9 @@
 #pragma once
 #include "dict.h"
 #include "_hashmap.c"
+#include "list.h"
 #include <stdarg.h>
 #include <time.h>
-#include "list.h"
 
 static inline u64
 hm_int_hash_simple(u64 x)
@@ -85,52 +85,39 @@ dict__hashfunc__str_hash(const void* item, u64 seed0, u64 seed1)
 
 
 Exception
-dict_create(
-    dict_c* self,
-    usize item_size,
-    usize item_align,
-    usize item_key_offsetof,
-    usize capacity,
-    dict_hash_func_f hash_func,
-    dict_compare_func_f compare_func,
-    const Allocator_i* allocator,
-    dict_elfree_func_f elfree,
-    void* udata
-)
+dict_create(dict_c* self, usize item_size, const Allocator_i* allocator, dict_new_kwargs_s* kwargs)
 {
-
-    if (item_key_offsetof != 0) {
-        uassert(
-            item_key_offsetof != 0 &&
-            "hashtable key offset must be 1st in struct, or set item_key_offsetof to 0 and custom hash/compare funcs"
-        );
-        return Error.integrity;
-    }
-
-    if (item_align > alignof(usize)) {
-        uassert(item_align <= alignof(usize) && "item alignment exceed regular pointer alignment");
-        return Error.argument;
-    }
-
     if (item_size < sizeof(u64)) {
         uassert(item_size >= sizeof(u64) && "item_size is too small");
         return Error.argument;
     }
-
-    time_t now = time(NULL);
+    if (kwargs->cmp_func == NULL) {
+        uassert(
+            kwargs->cmp_func != NULL &&
+            "cmp_func is not set or dict$define key type is not supported"
+        );
+        return Error.argument;
+    }
+    if (kwargs->hash_func == NULL) {
+        uassert(
+            kwargs->hash_func != NULL &&
+            "hash_func is not set or dict$define key type is not supported"
+        );
+        return Error.argument;
+    }
 
     self->hashmap = hashmap_new_with_allocator(
         allocator->malloc,
         allocator->realloc,
         allocator->free,
         item_size,
-        capacity,
-        now,                     // seed0
-        hm_int_hash_simple(now), // seed1
-        hash_func,
-        compare_func,
-        elfree,
-        udata
+        kwargs->capacity,
+        kwargs->seed0,
+        kwargs->seed1,
+        kwargs->hash_func,
+        kwargs->cmp_func,
+        kwargs->elfree_func,
+        kwargs->cmp_func_udata
     );
     if (self->hashmap == NULL) {
         return Error.memory;
@@ -316,11 +303,11 @@ dict_iter(dict_c* self, cex_iterator_s* iterator)
 Exception
 dict_tolist(dict_c* self, void* listptr, const Allocator_i* allocator)
 {
-    if(self == NULL || listptr == NULL || allocator == NULL) {
+    if (self == NULL || listptr == NULL || allocator == NULL) {
         return Error.argument;
     }
 
-    if(self->hashmap == NULL){
+    if (self->hashmap == NULL) {
         uassert(self->hashmap == NULL);
         return Error.integrity;
     }
@@ -328,15 +315,17 @@ dict_tolist(dict_c* self, void* listptr, const Allocator_i* allocator)
 
     struct hashmap* hm = self->hashmap;
 
-    e$except(err, list.create((list_c*)listptr, hm->count, hm->elsize, alignof(usize), allocator)){
+    e$except(err, list.create((list_c*)listptr, hm->count, hm->elsize, alignof(usize), allocator))
+    {
         return err;
     }
 
     usize hm_cursor = 0;
     void* item = NULL;
-    
-    while(hashmap_iter(self->hashmap, &hm_cursor, &item)) {
-        e$except(err, list.append(listptr, item)){
+
+    while (hashmap_iter(self->hashmap, &hm_cursor, &item)) {
+        e$except(err, list.append(listptr, item))
+        {
             return err;
         }
     };

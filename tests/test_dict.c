@@ -1,4 +1,5 @@
 #include <cex/all.c>
+#include <cex/dict.c>
 #include <cex/fff.h>
 #include <cex/test.h>
 #include <stdalign.h>
@@ -62,14 +63,17 @@ test$case(test_dict_int64)
     {
         u64 key;
         char val;
-    } rec;
+    } rec = {0};
+    (void)rec;
 
-    // dict_c hm;
+    dict$define(struct s, key) hm;
+    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
+     
+    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
 
-    dict$define(struct s) hm;
-    tassert_eqs(EOK, dict$new(&hm, typeof(rec), key, allocator));
+    // dict$set(&hm, &rec);
 
-    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = 123, .val = 'z' }), EOK);
+    tassert_eqs(dict$set(&hm, (&(struct s){ .key = 123, .val = 'z' })), EOK);
 
     e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = 123, .val = 'z' }))
     {
@@ -80,6 +84,7 @@ test$case(test_dict_int64)
     {
         tassert(false && "unexpected");
     }
+
 
     u64 key = 9890080;
 
@@ -98,6 +103,10 @@ test$case(test_dict_int64)
     var res3 = (struct s*)dict.get(&hm.base, &(struct s){ .key = 133 });
     tassert(res3 != NULL);
     tassert_eqi(res3->key, 133);
+
+    var res4 = dict$get(&hm, 123);
+    tassert(res4 != NULL);
+    tassert_eqi(res4->key, 123);
 
     tassert_eqi(dict.len(&hm.base), 2);
 
@@ -124,10 +133,10 @@ test$case(test_dict_string)
         char val;
     };
 
-    dict$define(struct s) hm;
-    tassert_eqs(EOK, dict$new(&hm, struct s, key, allocator));
+    dict$define(struct s, key) hm;
+    tassert_eqs(EOK, dict$new(&hm, allocator));
 
-    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "abcd", .val = 'z' }), EOK);
+    tassert_eqs(dict$set(&hm, &(struct s){ .key = "abcd", .val = 'z' }), EOK);
 
     e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = "abcd", .val = 'z' }))
     {
@@ -157,6 +166,11 @@ test$case(test_dict_string)
 
     tassert_eqi(dict.len(&hm.base), 2);
 
+    var res4 = dict$get(&hm, "xyz");
+    // var res4 = dict$get(&hm, 2); // GOOD type check works, compile error
+    tassert(res4 != NULL);
+    tassert_eqs(res4->key, "xyz");
+
     tassert(dict.del(&hm.base, "xyznotexisting") == NULL);
 
     tassert(dict.del(&hm.base, &(struct s){ .key = "abcd" }) != NULL);
@@ -170,7 +184,6 @@ test$case(test_dict_string)
     return EOK;
 }
 
-
 test$case(test_dict_create_generic)
 {
     struct s
@@ -178,14 +191,14 @@ test$case(test_dict_create_generic)
         char struct_first_key[30];
         u64 another_key;
         char val;
-    } rec;
+    };
 
-    dict$define(struct s) hm;
+    dict$define(struct s, struct_first_key) hm;
     // WARNING: default dict_c forces keys to be at the beginning of the struct,
     //  if such key passed -> Error.integrity
     // tassert_eqs(Error.integrity, dict$new(&hm, typeof(rec), another_key, allocator));
 
-    tassert_eqs(EOK, dict$new(&hm, typeof(rec), struct_first_key, allocator));
+    tassert_eqs(EOK, dict$new(&hm, allocator));
 
     tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "abcd", .val = 'a' }), EOK);
     tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "xyz", .val = 'z' }), EOK);
@@ -233,8 +246,8 @@ test$case(test_dict_iter)
         char val;
     } rec;
 
-    dict$define(struct s) hm;
-    tassert_eqs(EOK, dict$new(&hm, typeof(rec), struct_first_key, allocator));
+    dict$define(struct s, struct_first_key) hm;
+    tassert_eqs(EOK, dict$new(&hm, allocator));
 
     tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "foo", .val = 'a' }), EOK);
     tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "abcd", .val = 'b' }), EOK);
@@ -275,8 +288,8 @@ test$case(test_dict_tolist)
         char val;
     };
 
-    dict$define(struct s) hm;
-    tassert_eqs(EOK, dict$new(&hm, struct s, struct_first_key, allocator));
+    dict$define(struct s, struct_first_key) hm;
+    tassert_eqs(EOK, dict$new(&hm, allocator));
 
     tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "foo", .val = 'a' }), EOK);
     tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "abcd", .val = 'b' }), EOK);
@@ -307,6 +320,7 @@ test$case(test_dict_tolist)
 
     return EOK;
 }
+
 /*
  *
  * MAIN (AUTO GENERATED)
