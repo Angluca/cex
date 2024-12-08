@@ -1,6 +1,6 @@
-#include <cex/test.h>
 #include <cex/all.c>
 #include <cex/fff.h>
+#include <cex/test.h>
 #include <stdalign.h>
 #include <stdio.h>
 
@@ -11,9 +11,10 @@ FAKE_VALUE_FUNC(void*, my_alloc, usize)
 const Allocator_i* allocator;
 
 /*
-* SUITE INIT / SHUTDOWN
-*/
-test$teardown(){
+ * SUITE INIT / SHUTDOWN
+ */
+test$teardown()
+{
     allocator = allocators.heap.destroy();
     return EOK;
 }
@@ -63,17 +64,19 @@ test$case(test_dict_int64)
         char val;
     } rec;
 
-    dict_c hm;
+    // dict_c hm;
+
+    dict$define(struct s) hm;
     tassert_eqs(EOK, dict$new(&hm, typeof(rec), key, allocator));
 
-    tassert_eqs(dict.set(&hm, &(struct s){ .key = 123, .val = 'z' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = 123, .val = 'z' }), EOK);
 
-    e$except_silent(err, dict.set(&hm, &(struct s){ .key = 123, .val = 'z' }))
+    e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = 123, .val = 'z' }))
     {
         tassert(false && "unexpected");
     }
 
-    e$except_silent(err, dict.set(&hm, &(struct s){ .key = 133, .val = 'z' }))
+    e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = 133, .val = 'z' }))
     {
         tassert(false && "unexpected");
     }
@@ -81,34 +84,34 @@ test$case(test_dict_int64)
     u64 key = 9890080;
 
     key = 123;
-    const struct s* res = dict.get(&hm, &key);
+    const struct s* res = dict.get(&hm.base, &key);
     tassert(res != NULL);
     tassert(res->key == 123);
 
-    res = dict.geti(&hm, 133);
+    res = dict.geti(&hm.base, 133);
     tassert(res != NULL);
     tassert(res->key == 133);
 
-    const struct s* res2 = dict.get(&hm, &(struct s){ .key = 222 });
+    const struct s* res2 = dict.get(&hm.base, &(struct s){ .key = 222 });
     tassert(res2 == NULL);
 
-    var res3 = (struct s*)dict.get(&hm, &(struct s){ .key = 133 });
+    var res3 = (struct s*)dict.get(&hm.base, &(struct s){ .key = 133 });
     tassert(res3 != NULL);
     tassert_eqi(res3->key, 133);
 
-    tassert_eqi(dict.len(&hm), 2);
+    tassert_eqi(dict.len(&hm.base), 2);
 
-    tassert(dict.deli(&hm, 133) != NULL);
-    tassert(dict.geti(&hm, 133) == NULL);
+    tassert(dict.deli(&hm.base, 133) != NULL);
+    tassert(dict.geti(&hm.base, 133) == NULL);
 
-    tassert(dict.del(&hm, &(struct s){ .key = 123 }) != NULL);
-    tassert(dict.geti(&hm, 123) == NULL);
+    tassert(dict.del(&hm.base, &(struct s){ .key = 123 }) != NULL);
+    tassert(dict.geti(&hm.base, 123) == NULL);
 
-    tassert(dict.deli(&hm, 12029381038) == NULL);
+    tassert(dict.deli(&hm.base, 12029381038) == NULL);
 
-    tassert_eqi(dict.len(&hm), 0);
+    tassert_eqi(dict.len(&hm.base), 0);
 
-    dict.destroy(&hm);
+    dict.destroy(&hm.base);
 
     return EOK;
 }
@@ -121,48 +124,48 @@ test$case(test_dict_string)
         char val;
     };
 
-    dict_c hm;
+    dict$define(struct s) hm;
     tassert_eqs(EOK, dict$new(&hm, struct s, key, allocator));
 
-    tassert_eqs(dict.set(&hm, &(struct s){ .key = "abcd", .val = 'z' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "abcd", .val = 'z' }), EOK);
 
-    e$except_silent(err, dict.set(&hm, &(struct s){ .key = "abcd", .val = 'z' }))
+    e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = "abcd", .val = 'z' }))
     {
         tassert(false && "unexpected");
     }
 
-    e$except_silent(err, dict.set(&hm, &(struct s){ .key = "xyz", .val = 'z' }))
+    e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = "xyz", .val = 'z' }))
     {
         tassert(false && "unexpected");
     }
 
-    const struct s* res = dict.get(&hm, "abcd");
+    const struct s* res = dict.get(&hm.base, "abcd");
     tassert(res != NULL);
     tassert_eqs(res->key, "abcd");
 
-    res = dict.get(&hm, "xyz");
+    res = dict.get(&hm.base, "xyz");
     tassert(res != NULL);
     tassert_eqs(res->key, "xyz");
 
-    const struct s* res2 = dict.get(&hm, &(struct s){ .key = "ffff" });
+    const struct s* res2 = dict.get(&hm.base, &(struct s){ .key = "ffff" });
     tassert(res2 == NULL);
 
 
-    var res3 = (struct s*)dict.get(&hm, &(struct s){ .key = "abcd" });
+    var res3 = (struct s*)dict.get(&hm.base, &(struct s){ .key = "abcd" });
     tassert(res3 != NULL);
     tassert_eqs(res3->key, "abcd");
 
-    tassert_eqi(dict.len(&hm), 2);
+    tassert_eqi(dict.len(&hm.base), 2);
 
-    tassert(dict.del(&hm, "xyznotexisting") == NULL);
+    tassert(dict.del(&hm.base, "xyznotexisting") == NULL);
 
-    tassert(dict.del(&hm, &(struct s){ .key = "abcd" }) != NULL);
-    tassert(dict.get(&hm, "abcd") == NULL);
-    tassert(dict.del(&hm, "xyz") != NULL);
-    tassert(dict.get(&hm, "xyz") == NULL);
-    tassert_eqi(dict.len(&hm), 0);
+    tassert(dict.del(&hm.base, &(struct s){ .key = "abcd" }) != NULL);
+    tassert(dict.get(&hm.base, "abcd") == NULL);
+    tassert(dict.del(&hm.base, "xyz") != NULL);
+    tassert(dict.get(&hm.base, "xyz") == NULL);
+    tassert_eqi(dict.len(&hm.base), 0);
 
-    dict.destroy(&hm);
+    dict.destroy(&hm.base);
 
     return EOK;
 }
@@ -177,19 +180,19 @@ test$case(test_dict_create_generic)
         char val;
     } rec;
 
-    dict_c hm;
+    dict$define(struct s) hm;
     // WARNING: default dict_c forces keys to be at the beginning of the struct,
     //  if such key passed -> Error.integrity
-    tassert_eqs(Error.integrity, dict$new(&hm, typeof(rec), another_key, allocator));
+    // tassert_eqs(Error.integrity, dict$new(&hm, typeof(rec), another_key, allocator));
 
     tassert_eqs(EOK, dict$new(&hm, typeof(rec), struct_first_key, allocator));
 
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "abcd", .val = 'a' }), EOK);
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "xyz", .val = 'z' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "abcd", .val = 'a' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "xyz", .val = 'z' }), EOK);
 
-    tassert_eqi(dict.len(&hm), 2);
+    tassert_eqi(dict.len(&hm.base), 2);
 
-    const struct s* result = dict.get(&hm, "xyz");
+    const struct s* result = dict.get(&hm.base, "xyz");
     tassert(result != NULL);
     tassert_eqs(result->struct_first_key, "xyz");
     tassert_eqi(result->val, 'z');
@@ -199,7 +202,7 @@ test$case(test_dict_create_generic)
     // NOTE: it's possible to edit data in dict, as long as you don't touch key!
     res->val = 'f';
 
-    result = dict.get(&hm, "xyz");
+    result = dict.get(&hm.base, "xyz");
     tassert(result != NULL);
     tassert_eqs(result->struct_first_key, "xyz");
     tassert_eqi(result->val, 'f');
@@ -207,20 +210,18 @@ test$case(test_dict_create_generic)
     // WARNING: If you try to edit the key it will be lost
     strcpy(res->struct_first_key, "foo");
 
-    result = dict.get(&hm, "foo");
+    result = dict.get(&hm.base, "foo");
     tassert(result == NULL);
     // WARNING: old key is also lost!
-    result = dict.get(&hm, "xyz");
+    result = dict.get(&hm.base, "xyz");
     tassert(result == NULL);
 
-    tassert_eqi(dict.len(&hm), 2);
+    tassert_eqi(dict.len(&hm.base), 2);
 
-    dict.destroy(&hm);
-    tassert(hm.hashmap == NULL);
+    dict.destroy(&hm.base);
+    tassert(hm.base.hashmap == NULL);
     return EOK;
 }
-
-
 
 
 test$case(test_dict_iter)
@@ -232,19 +233,19 @@ test$case(test_dict_iter)
         char val;
     } rec;
 
-    dict_c hm;
+    dict$define(struct s) hm;
     tassert_eqs(EOK, dict$new(&hm, typeof(rec), struct_first_key, allocator));
 
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "foo", .val = 'a' }), EOK);
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "abcd", .val = 'b' }), EOK);
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "xyz", .val = 'c' }), EOK);
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "bar", .val = 'd' }), EOK);
-    tassert_eqi(dict.len(&hm), 4);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "foo", .val = 'a' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "abcd", .val = 'b' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "xyz", .val = 'c' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "bar", .val = 'd' }), EOK);
+    tassert_eqi(dict.len(&hm.base), 4);
 
     u32 nit = 0;
-    for$iter(typeof(rec), it, dict.iter(&hm, &it.iterator))
+    for$iter(typeof(rec), it, dict.iter(&hm.base, &it.iterator))
     {
-        struct s* r = dict.get(&hm, it.val->struct_first_key);
+        struct s* r = dict.get(&hm.base, it.val->struct_first_key);
         tassert(r != NULL);
         tassert_eqi(it.idx.i, nit);
         nit++;
@@ -253,15 +254,15 @@ test$case(test_dict_iter)
 
     nit = 0;
     uassert_disable();
-    for$iter(typeof(rec), it, dict.iter(&hm, &it.iterator))
+    for$iter(typeof(rec), it, dict.iter(&hm.base, &it.iterator))
     {
         // WARNING: changing of dict during iterator is not allowed, you'll get assert
-        dict.clear(&hm);
+        dict.clear(&hm.base);
         nit++;
     }
     tassert_eqi(nit, 1);
 
-    dict.destroy(&hm);
+    dict.destroy(&hm.base);
     return EOK;
 }
 
@@ -274,32 +275,33 @@ test$case(test_dict_tolist)
         char val;
     };
 
-    dict_c hm;
+    dict$define(struct s) hm;
     tassert_eqs(EOK, dict$new(&hm, struct s, struct_first_key, allocator));
 
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "foo", .val = 'a' }), EOK);
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "abcd", .val = 'b' }), EOK);
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "xyz", .val = 'c' }), EOK);
-    tassert_eqs(dict.set(&hm, &(struct s){ .struct_first_key = "bar", .val = 'd' }), EOK);
-    tassert_eqi(dict.len(&hm), 4);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "foo", .val = 'a' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "abcd", .val = 'b' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "xyz", .val = 'c' }), EOK);
+    tassert_eqs(dict.set(&hm.base, &(struct s){ .struct_first_key = "bar", .val = 'd' }), EOK);
+    tassert_eqi(dict.len(&hm.base), 4);
 
     list$define(struct s) a;
-    tassert_eqs(EOK, dict.tolist(&hm, &a, allocator));
+    tassert_eqs(EOK, dict.tolist(&hm.base, &a, allocator));
     tassert_eqi(list.len(&a.base), 4);
 
     tassert_eqs(Error.argument, dict.tolist(NULL, &a, allocator));
-    tassert_eqs(Error.argument, dict.tolist(&hm, NULL, allocator));
-    tassert_eqs(Error.argument, dict.tolist(&hm, &a, NULL));
+    tassert_eqs(Error.argument, dict.tolist(&hm.base, NULL, allocator));
+    tassert_eqs(Error.argument, dict.tolist(&hm.base, &a, NULL));
 
-    for$array(it, a.arr, a.len) {
-        tassert(dict.get(&hm, it.val) != NULL);
-        tassert(dict.get(&hm, it.val->struct_first_key) != NULL);
+    for$array(it, a.arr, a.len)
+    {
+        tassert(dict.get(&hm.base, it.val) != NULL);
+        tassert(dict.get(&hm.base, it.val->struct_first_key) != NULL);
         // same elements buf different pointer - means copy!
-        tassert(dict.get(&hm, it.val->struct_first_key) != it.val);
+        tassert(dict.get(&hm.base, it.val->struct_first_key) != it.val);
     }
 
-    dict.destroy(&hm);
-    tassert_eqs(Error.integrity, dict.tolist(&hm, &a, allocator));
+    dict.destroy(&hm.base);
+    tassert_eqs(Error.integrity, dict.tolist(&hm.base, &a, allocator));
 
     list.destroy(&a.base);
 

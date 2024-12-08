@@ -1,7 +1,7 @@
 #pragma once
 #include "cex.h"
-#include <string.h>
 #include <stddef.h>
+#include <string.h>
 
 typedef struct dict_c
 {
@@ -15,7 +15,6 @@ typedef void (*dict_elfree_func_f)(void* item);
 
 // Hack for getting hash/cmp functions by a type of key field
 // https://gustedt.wordpress.com/2015/05/11/the-controlling-expression-of-_generic/
-// FIX: this is not compatible with MSVC
 #define _dict$hashfunc_field(strucfield)                                                           \
     _Generic(&(strucfield), u64 *: dict.hashfunc.u64_hash, char(*)[]: dict.hashfunc.str_hash)
 
@@ -27,20 +26,40 @@ typedef void (*dict_elfree_func_f)(void* item);
 #define _dict$cmpfunc(struct, field) _dict$cmpfunc_field(((struct){ 0 }.field))
 
 
+#define dict$define(eltype)                                                                        \
+    union                                                                                          \
+    {                                                                                              \
+        dict_c base;                                                                               \
+        typeof(eltype)* const _dtype; /* (!) always undefined, used by macro type checking */      \
+    }
 
 #define dict$new(self, struct_type, key_field_name, allocator)                                     \
-    dict.create(                                                                                   \
-        self,                                                                                      \
-        sizeof(struct_type),                                                                       \
-        _Alignof(struct_type),                                                                     \
-        offsetof(struct_type, key_field_name),                                                     \
-        0, /* capacity = 0, default is 16 */                                                       \
-        _dict$hashfunc(struct_type, key_field_name),                                               \
-        _dict$cmpfunc(struct_type, key_field_name),                                                \
-        allocator,                                                                                 \
-        NULL, /* elfree - function for clearing elements */                                        \
-        NULL  /* udata - passed as a context for cmp funcs */                                      \
-    )
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic(((self)), dict_c *: 0, default: 1),                                           \
+            "self argument expected to be dict$define(eltype)"                                     \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
+            "self argument expected to be dict$define(eltype)"                                     \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            offsetof(typeof(*((self)->_dtype)), key_field_name) == 0,                              \
+            "key_field_name must be 1st element in dict `eltype` struct"                           \
+        );                                                                                         \
+        dict.create(                                                                               \
+            &((self)->base),                                                                       \
+            sizeof(*((self)->_dtype)),                                                             \
+            _Alignof(typeof(*((self)->_dtype))),                                                   \
+            offsetof(struct_type, key_field_name),                                                 \
+            0, /* capacity = 0, default is 16 */                                                   \
+            _dict$hashfunc(typeof(*((self)->_dtype)), key_field_name),                             \
+            _dict$cmpfunc(typeof(*((self)->_dtype)), key_field_name),                              \
+            allocator,                                                                             \
+            NULL, /* elfree - function for clearing elements */                                    \
+            NULL  /* udata - passed as a context for cmp funcs */                                  \
+        );                                                                                         \
+    })
 
 
 struct __module__dict
