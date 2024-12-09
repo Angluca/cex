@@ -1,6 +1,6 @@
 #include <cex/all.c>
-#include <cex/fff.h>
-#include <cex/test.h>
+#include <cex/test/fff.h>
+#include <cex/test/test.h>
 #include "src/App.c"
 #include "lib/mylib.c"
 

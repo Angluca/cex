@@ -1,6 +1,6 @@
 #include <cex/all.c>
-#include <cex/test.h>
-#include <cex/fff.h>
+#include <cex/test/test.h>
+#include <cex/test/fff.h>
 #include "lib/mylib.c"
 
 const Allocator_i* allocator;

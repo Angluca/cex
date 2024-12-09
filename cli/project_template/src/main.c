@@ -1,5 +1,6 @@
 // #define CEX_LOG_LVL 1
 #include <cex/all.c>
+#include <cex/argparse/argparse.c>
 #include <stdlib.h>
 #include "lib/mylib.c"
 #include "App.c"

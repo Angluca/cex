@@ -2,7 +2,7 @@
 // functions for testing, and making test build process trivial, i.e. "gcc test_name.c"
 #include "../src/App.c"
 #include <cex/all.c>
-#include <cex/test.h>
+#include <cex/test/test.h>
 
 const Allocator_i* allocator;
 

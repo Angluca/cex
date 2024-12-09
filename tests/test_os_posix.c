@@ -1,9 +1,9 @@
-#include <cex/os.c>
+#include <cex/os/os.c>
+#include <cex/io.c>
 #include <limits.h>
 #include <cex/all.c>
-#include <cex/fsm.c>
-#include <cex/fff.h>
-#include <cex/test.h>
+#include <cex/test/fff.h>
+#include <cex/test/test.h>
 
 const Allocator_i* allocator;
 

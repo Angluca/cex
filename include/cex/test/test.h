@@ -63,7 +63,7 @@ main(int argc, char* argv[])
 ```
  */
 #pragma once
-#include "cex.h"
+#include "cex/cex.h"
 #include <float.h>
 #include <math.h>
 #include <stdio.h>

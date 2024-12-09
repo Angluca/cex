@@ -1,6 +1,6 @@
 #include "App.h"
 #include <cex/cex.h>
-#include <cex/argparse.h>
+#include <cex/argparse/argparse.h>
 #include <cex/io.h>
 #include <cex/dict.h>
 #include <cex/sbuf.h>

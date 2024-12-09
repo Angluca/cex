@@ -4,7 +4,7 @@
  */
 
 #pragma once
-#include "cex.h"
+#include <cex/cex.h>
 
 typedef struct fsm_c fsm_c;             // forward declaration
 typedef struct fsm_event_s fsm_event_s; // forward declaration

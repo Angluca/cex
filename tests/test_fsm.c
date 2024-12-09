@@ -1,7 +1,7 @@
 #include <cex/all.c>
-#include <cex/fsm.c>
-#include <cex/fff.h>
-#include <cex/test.h>
+#include <cex/fsm/fsm.c>
+#include <cex/test/fff.h>
+#include <cex/test/test.h>
 
 const Allocator_i* allocator;
 

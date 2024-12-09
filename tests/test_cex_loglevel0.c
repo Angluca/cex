@@ -1,7 +1,7 @@
 #define CEX_LOG_LVL 0
 #include <cex/all.c>
-#include <cex/fff.h>
-#include <cex/test.h>
+#include <cex/test/fff.h>
+#include <cex/test/test.h>
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>

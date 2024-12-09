@@ -1,6 +1,7 @@
-#include <cex/test.h>
+#include <cex/test/test.h>
 #include <cex/all.c>
-#include <cex/fff.h>
+#include <cex/deque/deque.c>
+#include <cex/test/fff.h>
 #include <stdalign.h>
 #include <stdio.h>
 

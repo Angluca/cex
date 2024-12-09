@@ -1,4 +1,4 @@
-#include <cex/test.h>
+#include <cex/test/test.h>
 #include <cex/all.c>
 #include <stdio.h>
 

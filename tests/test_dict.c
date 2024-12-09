@@ -1,7 +1,7 @@
 #include <cex/all.c>
 #include <cex/dict.c>
-#include <cex/fff.h>
-#include <cex/test.h>
+#include <cex/test/fff.h>
+#include <cex/test/test.h>
 #include <stdalign.h>
 #include <stdio.h>
 

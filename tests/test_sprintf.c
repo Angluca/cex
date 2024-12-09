@@ -1,6 +1,6 @@
-#include <cex/test.h>
+#include <cex/test/test.h>
 #include <cex/all.c>
-#include <cex/fff.h>
+#include <cex/test/fff.h>
 
 #define USE_STB 1
 

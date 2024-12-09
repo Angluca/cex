@@ -1,6 +1,6 @@
 #include <cex/cex.c>
-#include <cex/fff.h>
-#include <cex/test.h>
+#include <cex/test/fff.h>
+#include <cex/test/test.h>
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
