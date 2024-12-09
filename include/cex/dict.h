@@ -154,6 +154,58 @@ typedef struct dict_new_kwargs_s
         /* clang-format on */                                                                      \
     })
 
+#define dict$del(self, dictkey)                                                                    \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic(((self)), dict_c *: 0, default: 1),                                           \
+            "self argument expected to be dict$define(eltype) 1"                                   \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
+            "self argument expected to be dict$define(eltype)"                                     \
+        );                                                                                         \
+        _Static_assert(                                                                            \
+            _Generic(/* Validate if `dictkey` match dict.key type */                               \
+                     (&(((typeof(*((self)->_dtype))){ 0 }).key)),                                  \
+                u64 *: _Generic(/* STANDARD u64 keys, we may pass literals and type of _dtype */   \
+                                (dictkey),                                                         \
+                        i8: 1,                                                                     \
+                        u8: 1,                                                                     \
+                        i16: 1,                                                                    \
+                        u16: 1,                                                                    \
+                        i32: 1,                                                                    \
+                        u32: 1,                                                                    \
+                        u64: 1,                                                                    \
+                        i64: 1,                                                                    \
+                        typeof((*(self)->_dtype))*: 1, /* only full record type*/                  \
+                        default: 0                     /* assert failure */                        \
+                     ),                                                                            \
+                char(*)[]: _Generic(/* STANDARD char array keys */                                 \
+                                    (dictkey),                                                     \
+                    const char*: 1,                                                                \
+                    char*: 1,                                                                      \
+                    typeof((*(self)->_dtype))*: 1, /* only full record type*/                      \
+                    default: 0                     /* assert failure */                            \
+                ),                                                                                 \
+                default: _Generic(/* CUSTOM keys must be exact key type or full record pointer*/   \
+                                  (dictkey),                                                       \
+                    typeof((*(self)->_dtype))*: 1,                    /* only full record type*/   \
+                    typeof(((typeof(*(self)->_dtype)){ 0 }).key)*: 1, /* only full key type */     \
+                    default: 0                                        /* assert failure */         \
+                )                                                                                  \
+            ),                                                                                     \
+            "dict$get() `dictkey` arg and expected dict `key` field type mismatch"                 \
+        );                                                                                         \
+        /* clang-format off */ \
+        (typeof(*((self)->_dtype))* /* return as dict type */ )_Generic(                           \
+            /* NOTE: picking appropriate function based on dictkey type (supporting literals) */   \
+            (dictkey), \
+            /* number literals */ i8: dict.deli, u8: dict.deli,i16: dict.deli, u16: dict.deli, i32: dict.deli, u32: dict.deli, i64: dict.deli, u64: dict.deli, \
+            /* all other cases */ default: dict.del                           \
+         )(&((self)->base), (dictkey));                                                                   \
+        /* clang-format on */                                                                      \
+    })
+
 
 #define dict$destroy(self)                                                                         \
     ({                                                                                             \

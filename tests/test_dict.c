@@ -551,6 +551,214 @@ test$case(test_custom_type_key)
     dict.destroy(&hm.base);
     return EOK;
 }
+
+test$case(test_dict_int64_del_multitype_macro)
+{
+    struct s
+    {
+        u64 key;
+        char val;
+    } rec = { 0 };
+    (void)rec;
+
+    dict$define(struct s) hm;
+    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
+
+    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
+
+
+    rec.key = 123;
+    rec.val = 'z';
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    var item = dict$get(&hm, &rec);
+    tassert(item != NULL);
+    tassert_eqi(item->key, 123);
+    tassert_eqi(item->val, 'z');
+
+    item = dict$del(&hm, &rec);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    item = dict$get(&hm, 123);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+
+    item = dict$del(&hm, 123);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    item = dict$get(&hm, 123UL);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+    tassert_eqi(item->key, 123);
+
+    item = dict$del(&hm, 123UL);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    item = dict$get(&hm, 123L);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+    tassert_eqi(item->key, 123);
+
+    item = dict$del(&hm, 123L);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    // item = dict$get(&hm, 123LL); // HM... incompatible
+
+    i32 key = -123;
+    item = dict$get(&hm, key * -1);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+    tassert_eqi(item->key, 123);
+
+    item = dict$del(&hm, -key);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    i16 key16 = -123;
+    item = dict$get(&hm, key16 * -1);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+    tassert_eqi(item->key, 123);
+
+    item = dict$del(&hm, -key16);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    i8 key8 = -123;
+    item = dict$get(&hm, key8 * -1);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+    tassert_eqi(item->key, 123);
+
+    item = dict$del(&hm, -key8);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    u32 keyu32 = 123;
+    item = dict$get(&hm, keyu32);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+    tassert_eqi(item->key, 123);
+
+    item = dict$del(&hm, keyu32);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    u16 keyu16 = 123;
+    item = dict$get(&hm, keyu16);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+    tassert_eqi(item->key, 123);
+    
+    item = dict$del(&hm, keyu16);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    u8 keyu8 = 123;
+    item = dict$get(&hm, keyu8);
+    tassert(item != NULL);
+    tassert_eqi(item->val, 'z');
+    tassert_eqi(item->key, 123);
+    item = dict$del(&hm, keyu8);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+
+    dict.destroy(&hm.base);
+
+    return EOK;
+}
+
+test$case(test_dict_string_del_multitype_macro)
+{
+    struct s
+    {
+        char key[10];
+        char val;
+    } rec = { .key = "999", .val = 'a' };
+    (void)rec;
+
+    dict$define(struct s) hm;
+    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
+
+    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
+
+
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+
+    var item = dict$get(&hm, "999");
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    item = dict$del(&hm, "999");
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    item = dict$get(&hm, &rec);
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    item = dict$del(&hm, &rec);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    char* k1 = rec.key;
+    item = dict$get(&hm, k1);
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    item = dict$del(&hm, k1);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+
+    char const* k2 = rec.key;
+    item = dict$get(&hm, k2);
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    item = dict$del(&hm, k2);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    char const* const k3 = rec.key;
+    item = dict$get(&hm, k3);
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    char karr[10] = { "999" };
+    item = dict$get(&hm, karr);
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    item = dict$del(&hm, karr);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    str_c s = s$(rec.key);
+    item = dict$get(&hm, s.buf);
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    item = dict$del(&hm, s.buf);
+    tassert(dict$get(&hm, &rec) == NULL);
+    tassert_eqs(dict$set(&hm, &rec), EOK);
+
+    dict.destroy(&hm.base);
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -571,6 +779,8 @@ main(int argc, char* argv[])
     test$run(test_dict_int64_get_multitype_macro);
     test$run(test_dict_string_get_multitype_macro);
     test$run(test_custom_type_key);
+    test$run(test_dict_int64_del_multitype_macro);
+    test$run(test_dict_string_del_multitype_macro);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
