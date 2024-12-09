@@ -204,6 +204,7 @@ class CEXCompiler:
             "-Wall",
             "-Wextra",
             "-Werror",
+            "-fmax-errors=2",
             # "-fwhole-program",
             f"-I{self.env.include_path}",
         ]
