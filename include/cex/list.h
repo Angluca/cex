@@ -20,7 +20,7 @@ typedef struct
     {                                                                                              \
         struct                                                                                     \
         {                                                                                          \
-            typeof(eltype)* const arr;                                                                     \
+            typeof(eltype)* const arr;                                                             \
             const usize len;                                                                       \
         };                                                                                         \
         list_c base;                                                                               \
@@ -95,121 +95,121 @@ _Static_assert(alignof(list_head_s) == 1, "align");
     _Generic((Y), __typeof__(X): _Generic((X), __typeof__(Y): 1, default: 0), default: 0)
 
 
-#define list$insert(self, item, index)                                                    \
+#define list$insert(self, item, index)                                                             \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
         _Static_assert(                                                                            \
-            _CEX_TYPE_MATCH(*(self)->arr, *item),                                         \
+            _CEX_TYPE_MATCH(*(self)->arr, *item),                                                  \
             "list$insert incompatible item type, or double pointer passed"                         \
         );                                                                                         \
-        list.insert(&(self)->base, (item), (index));                                      \
+        list.insert(&(self)->base, (item), (index));                                               \
     })
 
-#define list$del(self, index)                                                             \
+#define list$del(self, index)                                                                      \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
-        list.del(&(self)->base, (index));                                                 \
+        list.del(&(self)->base, (index));                                                          \
     })
 
-#define list$sort(self, comp)                                                             \
+#define list$sort(self, comp)                                                                      \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
-        list.sort(&(self)->base, (comp));                                                 \
+        list.sort(&(self)->base, (comp));                                                          \
     })
 
-#define list$append(self, item)                                                           \
+#define list$append(self, item)                                                                    \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
         _Static_assert(                                                                            \
-            _CEX_TYPE_MATCH(*(self)->arr, *item),                                         \
+            _CEX_TYPE_MATCH(*(self)->arr, *item),                                                  \
             "list$append incompatible item type, or double pointer passed"                         \
         );                                                                                         \
-        list.append(&(self)->base, (item));                                               \
+        list.append(&(self)->base, (item));                                                        \
     })
 
-#define list$clear(self)                                                                  \
+#define list$clear(self)                                                                           \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
-        list.clear(&(self)->base);                                                        \
+        list.clear(&(self)->base);                                                                 \
     })
 
-#define list$extend(self, items, nitems)                                                  \
+#define list$extend(self, items, nitems)                                                           \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
         _Static_assert(                                                                            \
-            _CEX_TYPE_MATCH(*(self)->arr, *items),                                        \
+            _CEX_TYPE_MATCH(*(self)->arr, *items),                                                 \
             "list$append incompatible item type, or double pointer passed"                         \
         );                                                                                         \
-        list.extend(&(self)->base, (items), nitems);                                      \
+        list.extend(&(self)->base, (items), nitems);                                               \
     })
 
-#define list$len(self)                                                                    \
+#define list$len(self)                                                                             \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
-        list.len(&(self)->base);                                                          \
+        list.len(&(self)->base);                                                                   \
     })
 
-#define list$capacity(self)                                                               \
+#define list$capacity(self)                                                                        \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
-        list.capacity(&(self)->base);                                                     \
+        list.capacity(&(self)->base);                                                              \
     })
 
-#define list$destroy(self)                                                                \
+#define list$destroy(self)                                                                         \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
-        list.destroy(&(self)->base);                                                      \
+        list.destroy(&(self)->base);                                                               \
     })
 
-#define list$iter(self, iterator)                                                         \
+#define list$iter(self, iterator)                                                                  \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
         _Static_assert(                                                                            \
-            _Generic((iterator), cex_iterator_s *: 1, default: 0),                                    \
-            "expected cex_iterator_s pointer, i.e. `&it.iterator`"                                      \
+            _Generic((iterator), cex_iterator_s *: 1, default: 0),                                 \
+            "expected cex_iterator_s pointer, i.e. `&it.iterator`"                                 \
         );                                                                                         \
-        (typeof((self)->arr))list.iter(&(self)->base, iterator);                                               \
+        (typeof((self)->arr))list.iter(&(self)->base, iterator);                                   \
     })
 
-#define list$slice(self, start, end)                                                      \
+#define list$slice(self, start, end)                                                               \
     ({                                                                                             \
-        uassert(self != NULL && "list$slice");                                            \
+        uassert(self != NULL && "list$slice");                                                     \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                           \
-            "self argument expected to be derivative i.e. list$define()"                  \
+            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
-        slice$define(*((self)->arr)) s = { .arr = NULL, .len = 0 };                       \
-        _arr$slice_get(s, (self)->arr, (self)->len, start, end);                 \
+        slice$define(*((self)->arr)) s = { .arr = NULL, .len = 0 };                                \
+        _arr$slice_get(s, (self)->arr, (self)->len, start, end);                                   \
         s;                                                                                         \
     })
 
