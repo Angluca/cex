@@ -374,7 +374,7 @@ list_capacity(list_c* self)
     return head->capacity;
 }
 
-void*
+void
 list_destroy(list_c* self)
 {
     list_c* d = (list_c*)self;
@@ -405,7 +405,6 @@ list_destroy(list_c* self)
 end:
     d->arr = NULL;
     d->len = 0;
-    return NULL;
 }
 
 void*

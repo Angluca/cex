@@ -248,7 +248,7 @@ usize
 usize
 (*capacity)(list_c* self);
 
-void*
+void
 (*destroy)(list_c* self);
 
 void*
