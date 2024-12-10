@@ -459,7 +459,22 @@ test$case(testlist_iterator)
     tassert_eqi(a.len, 4);
 
     nit = 0;
+    for$iter(int, it, list$iter(&a, &it.iterator))
+    {
+        tassert_eqi(it.idx.i, nit);
+        tassert_eqi(*it.val, arr[nit]);
+        nit++;
+    }
+    nit = 0;
     for$iter(*a.arr, it, list$iter(&a, &it.iterator))
+    {
+        tassert_eqi(it.idx.i, nit);
+        tassert_eqi(*it.val, arr[nit]);
+        nit++;
+    }
+    tassert_eqi(nit, 4);
+    nit = 0;
+    for$iter(typeof(*a.arr), it, list$iter(&a, &it.iterator))
     {
         tassert_eqi(it.idx.i, nit);
         tassert_eqi(*it.val, arr[nit]);
@@ -501,7 +516,7 @@ test$case(testlist_align256)
     // adding new elements into the end
     for (u32 i = 0; i < 4; i++) {
         struct foo64 f = { .foo = i };
-        tassert_eqs(EOK, list.append(&a.base, &f));
+        tassert_eqs(EOK, list$append(&a, &f));
     }
     tassert_eqi(a.len, 4);
     list_head_s* head = list__head((list_c*)&a.base);
@@ -516,6 +531,14 @@ test$case(testlist_align256)
     for (u32 i = 0; i < a.len; i++) {
         tassert_eqi(a.arr[i].foo, i);
     }
+    u32 nit = 0;
+    for$iter(struct foo64, it, list$iter(&a, &it.iterator))
+    {
+        tassert_eqi(it.idx.i, nit);
+        tassert_eqi(it.val->foo, a.arr[it.idx.i].foo);
+        nit++;
+    }
+    tassert_eqi(nit, a.len);
 
     // check if array got resized
     for (u32 i = 4; i < 8; i++) {
