@@ -390,7 +390,7 @@ test$case(test_sbuf_sprintf_long_growth)
         str_c sub1 = str.sub(sv, i*4, i*4+4);
 
         tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
-        tassertf(str.cmp(sub1, s$(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
+        tassertf(str.cmp(sub1, str.cstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }
 
     sbuf.destroy(&s);
@@ -429,7 +429,7 @@ test$case(test_sbuf_sprintf_long_growth_prebuild_buffer)
         snprintf(buf, arr$len(buf), "%04d", i);
         str_c sub1 = str.sub(sv, i*4, i*4+4);
         tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
-        tassertf(str.cmp(sub1, s$(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
+        tassertf(str.cmp(sub1, str.cstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }
 
     sbuf.destroy(&s);
@@ -498,7 +498,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected1[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected1[nit])), 0);
         nit++;
     }
     tassert_eqi(nit, 1);
@@ -514,7 +514,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected2[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected2[nit])), 0);
         nit++;
     }
     tassert_eqi(nit, 2);
@@ -532,7 +532,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected3[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected3[nit])), 0);
         tassert_eqi(it.idx.i, nit);
         nit++;
     }
@@ -551,7 +551,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected4[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected4[nit])), 0);
         nit++;
     }
     tassert_eqi(nit, 4);
@@ -569,7 +569,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected5[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected5[nit])), 0);
         nit++;
     }
     tassert_eqi(nit, 4);
@@ -586,7 +586,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected6[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected6[nit])), 0);
         tassert_eqi(it.idx.i, nit);
         nit++;
     }

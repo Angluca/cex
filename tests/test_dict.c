@@ -485,7 +485,7 @@ test$case(test_dict_string_get_multitype_macro)
     tassert_eqs(item->key, "999");
     tassert_eqi(item->val, 'a');
 
-    str_c s = s$(rec.key);
+    str_c s = str.cstr(rec.key);
     item = dict$get(&hm, s.buf);
     tassert(item != NULL);
     tassert_eqs(item->key, "999");
@@ -746,7 +746,7 @@ test$case(test_dict_string_del_multitype_macro)
     tassert(dict$get(&hm, &rec) == NULL);
     tassert_eqs(dict$set(&hm, &rec), EOK);
 
-    str_c s = s$(rec.key);
+    str_c s = str.cstr(rec.key);
     item = dict$get(&hm, s.buf);
     tassert(item != NULL);
     tassert_eqs(item->key, "999");

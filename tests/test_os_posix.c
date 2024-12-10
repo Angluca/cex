@@ -45,7 +45,7 @@ test$case(test_os_listdir)
         bool is_found = false;
         for$array(itf, expected, arr$len(expected))
         {
-            if (str.cmp(*it.val, s$(*itf.val)) == 0) {
+            if (str.cmp(*it.val, str.cstr(*itf.val)) == 0) {
                 is_found = true;
                 break;
             }

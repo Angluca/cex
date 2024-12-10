@@ -37,24 +37,24 @@ os__listdir_(str_c path, sbuf_c* buf)
 
     struct dirent* ep;
     while ((ep = readdir(dp)) != NULL) {
-        var d = s$(ep->d_name);
+        var dir_name = str.cstr(ep->d_name);
 
-        if (str.cmp(d, s$(".")) == 0) {
+        if (str.cmp(dir_name, s$(".")) == 0) {
             continue;
         }
-        if (str.cmp(d, s$("..")) == 0) {
+        if (str.cmp(dir_name, s$("..")) == 0) {
             continue;
         }
 
-        uassert(d.buf[d.len] == '\0' && "not null term");
+        uassert(dir_name.buf[dir_name.len] == '\0' && "not null term");
 
         // we store list of files as '\n' separated records
         // we just expand +1 char, so therefore we need extra
         // sbuf.append() call for '\n' because d is already null
         // terminated string
-        d.buf[d.len] = '\n';
-        d.len++;
-        e$goto(result = sbuf.append(buf, d), fail);
+        dir_name.buf[dir_name.len] = '\n';
+        dir_name.len++;
+        e$goto(result = sbuf.append(buf, dir_name), fail);
     }
 
 end:
