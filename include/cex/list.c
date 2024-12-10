@@ -2,7 +2,7 @@
 #include "list.h"
 
 static inline list_head_s*
-list__head(list_c* self)
+list__head(list_c const * self)
 {
     uassert(self != NULL);
     uassert(self->arr != NULL && "array is not initialized");
@@ -36,7 +36,7 @@ list__alloc_capacity(usize capacity)
 }
 
 static inline void*
-list__elidx(list_head_s* head, usize idx)
+list__elidx(list_head_s const * head, usize idx)
 {
     // Memory alignment
     // |-----|head|--el1--|--el2--|--elN--|
@@ -353,7 +353,7 @@ list_extend(list_c* self, void* items, usize nitems)
 }
 
 usize
-list_len(list_c* self)
+list_len(list_c const * self)
 {
     list_c* d = (list_c*)self;
     list_head_s* head = list__head(self);
@@ -365,7 +365,7 @@ list_len(list_c* self)
 }
 
 usize
-list_capacity(list_c* self)
+list_capacity(list_c const * self)
 {
     list_head_s* head = list__head(self);
     if (unlikely(head == NULL)) {
@@ -408,7 +408,7 @@ end:
 }
 
 void*
-list_iter(list_c* self, cex_iterator_s* iterator)
+list_iter(list_c const * self, cex_iterator_s* iterator)
 {
     uassert(self != NULL && "self == NULL");
     uassert(iterator != NULL && "null iterator");

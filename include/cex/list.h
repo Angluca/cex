@@ -164,10 +164,10 @@ _Static_assert(alignof(list_head_s) == 1, "align");
 #define list$len(self)                                                                             \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), list_c *: 1, default: 0),                                    \
+            _Generic((&(self)->base), list_c *: 1, const list_c*: 1, default: 0),                  \
             "self argument expected to be derivative i.e. list$define()"                           \
         );                                                                                         \
-        list.len(&(self)->base);                                                                   \
+        (self)->len; /* NOTE: using direct access instead to list.len, for performance */          \
     })
 
 #define list$capacity(self)                                                                        \
@@ -243,16 +243,16 @@ Exception
 (*extend)(list_c* self, void* items, usize nitems);
 
 usize
-(*len)(list_c* self);
+(*len)(list_c const * self);
 
 usize
-(*capacity)(list_c* self);
+(*capacity)(list_c const * self);
 
 void
 (*destroy)(list_c* self);
 
 void*
-(*iter)(list_c* self, cex_iterator_s* iterator);
+(*iter)(list_c const * self, cex_iterator_s* iterator);
 
     // clang-format on
 };
