@@ -1,7 +1,7 @@
-#include <cex/test/test.h>
-#include <cex/str.c>
 #include <cex/all.c>
+#include <cex/str.c>
 #include <cex/test/fff.h>
+#include <cex/test/test.h>
 #include <stdio.h>
 
 const Allocator_i* allocator;
@@ -64,38 +64,18 @@ test$case(test_cstr_sdollar)
     sbuf_c sb;
     tassert_eqs(EOK, sbuf.create(&sb, 10, allocator));
     tassert_eqs(EOK, sbuf.append(&sb, s$("hello")));
-    str_c sbv = s$(sb);
-    tassert_eqs(sbv.buf, cstr);
-    tassert_eqi(sbv.len, 5); // lazy init until str.length() is called
     sbuf.destroy(&sb);
 
-    // auto-type also works!
-    var s = s$(cstr);
-    tassert_eqs(s.buf, cstr);
-    tassert_eqi(s.len, 5); // lazy init until str.length() is called
-    tassert(s.buf == cstr);
-    tassert_eqi(str.len(s), 5);
-    tassert_eqi(str.is_valid(s), true);
-
-
-    str_c s2 = s$(s);
+    str_c s2 = s$("hello");
     tassert_eqs(s2.buf, cstr);
     tassert_eqi(s2.len, 5); // lazy init until str.length() is called
     tassert(s2.buf == cstr);
     tassert_eqi(str.len(s2), 5);
     tassert_eqi(str.is_valid(s2), true);
 
-    s2 = s$("hello");
-    tassert_eqs(s2.buf, cstr);
-    tassert_eqi(s2.len, 5); // lazy init until str.length() is called
-    tassert(s2.buf == cstr);
-    tassert_eqi(str.len(s2), 5);
-    tassert_eqi(str.is_valid(s2), true);
-
-    tassert_eqi(s.len, 5); // now s.len is set
 
     char* str_null = NULL;
-    str_c snull = s$(str_null);
+    str_c snull = str.cstr(str_null);
     tassert_eqs(snull.buf, NULL);
     tassert_eqi(snull.len, 0);
     tassert_eqi(str.len(snull), 0);
@@ -108,9 +88,9 @@ test$case(test_cstr_sdollar)
     tassert_eqi(sempty.len, 0);
     tassert_eqi(str.is_valid(sempty), true);
 
-    // WARNING: buffers for s$() are extremely bad idea, they may not be null term!
+    // // WARNING: buffers for s$() are extremely bad idea, they may not be null term!
     char buf[30] = { 0 };
-    s = s$(buf);
+    var s = str.cstr(buf);
     tassert_eqs(s.buf, buf);
     tassert_eqi(s.len, 0); // lazy init until str.length() is called
     tassert_eqi(str.len(s), 0);
@@ -128,6 +108,7 @@ test$case(test_cstr_sdollar)
     tassert_eqi(str.len(s), 30);
     tassert_eqi(str.is_valid(s), true);
     tassert(s.buf == buf);
+
     return EOK;
 }
 
@@ -262,7 +243,7 @@ test$case(test_sub_negative_start)
     tassert_eqi(s.len, 6);
     tassert_eqi(str.is_valid(s), true);
 
-    str_c s_empty = {0};
+    str_c s_empty = { 0 };
     var sub = str.sub(s_empty, 0, 2);
     tassert_eqi(sub.len, 0);
     tassert(sub.buf == NULL);
@@ -407,7 +388,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected1[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected1[nit])), 0);
         nit++;
     }
     tassert_eqi(nit, 1);
@@ -422,7 +403,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected2[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected2[nit])), 0);
         nit++;
     }
     tassert_eqi(nit, 2);
@@ -439,7 +420,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected3[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected3[nit])), 0);
         nit++;
     }
     tassert_eqi(nit, 4);
@@ -456,7 +437,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected4[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected4[nit])), 0);
         tassert_eqi(it.idx.i, nit);
         nit++;
     }
@@ -474,7 +455,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected5[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected5[nit])), 0);
         tassert_eqi(it.idx.i, nit);
         nit++;
     }
@@ -491,7 +472,7 @@ test$case(test_iter_split)
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eqi(str.cmp(*it.val, s$(expected6[nit])), 0);
+        tassert_eqi(str.cmp(*it.val, str.cstr(expected6[nit])), 0);
         nit++;
     }
     tassert_eqi(nit, 3);
@@ -1373,7 +1354,7 @@ test$case(test_str_to_u64)
     num = 0;
     s = s$("18446744073709551615");
     tassert_eqe(EOK, str.to_u64(s, &num));
-    tassert(num ==__UINT64_C(18446744073709551615));
+    tassert(num == __UINT64_C(18446744073709551615));
     tassert(num == UINT64_MAX);
 
     num = 0;
@@ -1607,7 +1588,7 @@ test$case(test_str_to_f32)
     s = s$("1e39");
     tassert_eqe(Error.overflow, str.to_f32(s, &num));
 
-    
+
     num = 0;
     s = s$("1e-37");
     tassert_eqe(EOK, str.to_f32(s, &num));
@@ -1615,8 +1596,8 @@ test$case(test_str_to_f32)
     num = 0;
     s = s$("1e-38");
     tassert_eqe(Error.overflow, str.to_f32(s, &num));
-    
-    
+
+
     return EOK;
 }
 
@@ -1644,7 +1625,7 @@ test$case(test_str_to_f64)
     s = s$("1e309");
     tassert_eqe(Error.overflow, str.to_f64(s, &num));
 
-    
+
     num = 0;
     s = s$("1e-307");
     tassert_eqe(EOK, str.to_f64(s, &num));
@@ -1652,14 +1633,14 @@ test$case(test_str_to_f64)
     num = 0;
     s = s$("1e-308");
     tassert_eqe(Error.overflow, str.to_f64(s, &num));
-    
-    
+
+
     return EOK;
 }
 
 test$case(test_str_sprintf)
 {
-    char buffer[10] = {0};
+    char buffer[10] = { 0 };
 
     memset(buffer, 'z', sizeof(buffer));
     str_c s = str.sprintf(buffer, sizeof(buffer), "%s", "1234");
@@ -1672,14 +1653,14 @@ test$case(test_str_sprintf)
     memset(buffer, 'z', sizeof(buffer));
     s = str.sprintf(buffer, sizeof(buffer), "%s", "123456789");
     tassert_eqs("123456789", buffer);
-    tassert_eqi(str.cmp(s, s$(buffer)), 0);
+    tassert_eqi(str.cmp(s, str.cstr(buffer)), 0);
     tassert_eqi(s.len, 9);
     tassert(s.buf == buffer);
 
     memset(buffer, 'z', sizeof(buffer));
     s = str.sprintf(buffer, sizeof(buffer), "%s", "1234567890");
     tassert_eqs("123456789", buffer);
-    tassert_eqi(str.cmp(s, s$(buffer)), 0);
+    tassert_eqi(str.cmp(s, str.cstr(buffer)), 0);
     tassert_eqi(s.len, 10);
     tassert(s.buf == buffer);
 
@@ -1706,6 +1687,32 @@ test$case(test_str_sprintf)
     tassert_eqi(buffer[0], 'z'); // untouched!
     tassert_eqi(s.len, 0);
     tassert(s.buf == NULL);
+
+    return EOK;
+}
+
+test$case(test_s_macros)
+{
+
+    str_c s = str.cstr("123456");
+    tassert_eqi(s.len, 6);
+    tassert_eqi(str.is_valid(s), true);
+
+    str_c s2 = s$("fofo");
+    tassert_eqi(s2.len, 4);
+    tassert_eqi(str.is_valid(s2), true);
+
+    s2 = s$("");
+    tassert_eqi(s2.len, 0);
+    tassert_eqi(str.cmp(s2, s$("")), 0);
+    tassert_eqi(str.is_valid(s2), true);
+
+    str_c m = s$("\
+foo\n\
+bar\n\
+zoo\n");
+
+    tassert_eqs("foo\nbar\nzoo\n", m.buf);
 
     return EOK;
 }
@@ -1749,6 +1756,7 @@ main(int argc, char* argv[])
     test$run(test_str_to_f32);
     test$run(test_str_to_f64);
     test$run(test_str_sprintf);
+    test$run(test_s_macros);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief
+ */
+
 #pragma once
 #include "cex.h"
 #include <stdalign.h>
@@ -16,28 +21,22 @@ typedef struct
 _Static_assert(alignof(str_c) == alignof(usize), "align");
 _Static_assert(sizeof(str_c) == sizeof(usize) * 2, "size");
 
-static inline str_c
-_str__propagate_inline_small_func(str_c s)
-{
-    // this function only for s$(<str_c>)
-    return s;
-}
 
-// clang-format off
-#define s$(string)                                             \
-    _Generic(string,                                           \
-        char*: str.cstr,                                     \
-        const char*: str.cstr,                               \
-        str_c: _str__propagate_inline_small_func           \
-    )(string)
-// clang-format on
+/**
+ * @brief creates str_c, instance from string literals/constants: s$("my string")
+ *
+ * Uses compile time string length calculation, only literals
+ *
+ */
+#define s$(string)                                                                                 \
+    (str_c){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
 
 #define str$slice(str_self, start, end)                                                            \
     ({                                                                                             \
-        slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                               \
-        _arr$slice_get(__slice, str_self.buf, str_self.len, start, end);                                 \
-        __slice;                                                                                         \
+        slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
+        _arr$slice_get(__slice, str_self.buf, str_self.len, start, end);                           \
+        __slice;                                                                                   \
     })
 
 struct __module__str
