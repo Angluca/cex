@@ -217,7 +217,7 @@ typedef struct dict_new_kwargs_s
             _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
             "self argument expected to be dict$define(eltype)"                                     \
         );                                                                                         \
-        dict.destroy(&((self)->base), (dictkey));                                                  \
+        dict.destroy(&((self)->base));                                                  \
     })
 
 #define dict$iter(self, it)                                                                  \
