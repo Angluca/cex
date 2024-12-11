@@ -26,6 +26,58 @@ typedef struct
         list_c base;                                                                               \
     }
 
+#define _list$typedef_extern_0(typename) extern const struct typename##_vtable__ typename
+#define _list$typedef_extern_1(typename)
+#define _list$typedef_extern(typename, implement) _list$typedef_extern_##implement(typename)
+
+#define _list$typedef_impl_0(typename)
+#define _list$typedef_impl_1(typename)                                                             \
+    const struct typename##_vtable__ typename = { .append = (void*)list.append,                    \
+                                                  .destroy = (void*)list.destroy,                  \
+                                                  .insert = (void*)list.insert,\
+                                                  .capacity = (void*)list.capacity,\
+                                                  .clear = (void*)list.clear,\
+                                                  .extend = (void*)list.extend,\
+                                                  .del = (void*)list.del,\
+                                                  .sort = (void*)list.sort,\
+                                                  .len = (void*)list.len,\
+                                                  .iter = (void*)list.iter };
+#define _list$typedef_impl(typename, implement) _list$typedef_impl_##implement(typename)
+
+#define list$impl(typename) _list$typedef_impl(typename, 1)
+
+#define list$typedef(typename, eltype, implement)                                                  \
+    typedef struct typename##_c typename##_c;                                                      \
+    struct typename##_vtable__                                                                     \
+    {                                                                                              \
+        Exception (*append)(typename##_c * self, eltype * item);                                   \
+        Exception (*insert)(typename##_c * self, eltype* item, usize index);                         \
+        Exception (*extend)(typename##_c * self, eltype* items, usize nitems);                       \
+        Exception (*del)(typename##_c * self, usize index);                                        \
+        void (*clear)(typename##_c * self);                                                        \
+        usize (*len)(typename##_c * self);                                                         \
+        usize (*capacity)(typename##_c * self);                                                    \
+        void (*sort)(typename##_c * self, int (*comp)(const eltype*, const eltype*));                  \
+        eltype* (*iter)(typename##_c * self, cex_iterator_s * iterator);                           \
+        void (*destroy)(typename##_c * self);                                                      \
+    };                                                                                             \
+    _list$typedef_extern(typename, implement);                                                     \
+    _list$typedef_impl(typename, implement);                                                       \
+    typedef struct typename##_c                                                                    \
+    {                                                                                              \
+        union                                                                                      \
+        {                                                                                          \
+            list_c base;                                                                           \
+            struct                                                                                 \
+            {                                                                                      \
+                eltype* arr;                                                                       \
+                usize len;                                                                         \
+            };                                                                                     \
+        };                                                                                         \
+    }                                                                                              \
+    typename##_c;
+
+
 typedef struct
 {
     struct

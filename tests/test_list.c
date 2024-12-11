@@ -1,7 +1,7 @@
 #include "cex/cex.h"
 #include <cex/all.c>
-#include <cex/test/fff.h>
 #include <cex/list.c>
+#include <cex/test/fff.h>
 #include <cex/test/test.h>
 #include <stdio.h>
 
@@ -1005,6 +1005,102 @@ test$case(testlist_slice)
     list$destroy(&il);
     return EOK;
 }
+
+
+list$typedef(list_i32, i32, false);
+list$impl(list_i32)
+
+    test$case(testlist_new_macro_def)
+{
+
+    list_i32_c a = { 0 };
+    tassert_eqe(EOK, list$new(&a, 4, allocator));
+
+    // adding new elements into the end
+    for (i32 i = 0; i < 4; i++) {
+        tassert_eqs(EOK, list_i32.append(&a, &i));
+    }
+    tassert_eqi(list$len(&a), 4);
+
+    list$destroy(&a);
+    return EOK;
+}
+
+
+struct s_my
+{
+    i32 foo;
+    char bar;
+};
+
+int cmp_func(const struct s_my* a, const struct s_my* b) {
+    return b->foo - a->foo;
+}
+
+test$case(testlist_new_macro_def_testing)
+{
+    list$typedef(MyLst, struct s_my, true);
+
+    MyLst_c a = { 0 };
+    tassert_eqe(EOK, list$new(&a, 4, allocator));
+
+    // adding new elements into the end
+    for (i32 i = 0; i < 4; i++) {
+        tassert_eqs(EOK, MyLst.append(&a, &(struct s_my){ .foo = i, .bar = 'a' + i }));
+    }
+    tassert_eqi(list$len(&a), 4);
+
+    for$iter(struct s_my, it, MyLst.iter(&a, &it.iterator))
+    {
+        tassert_eqi(it.val->foo, it.idx.i);
+        tassert_eqi(it.val->bar, 'a' + it.idx.i);
+    }
+
+    tassert_eqi(a.len, 4);
+    tassert_eqe(EOK, MyLst.insert(&a, &(struct s_my){ .foo = 100, .bar = 'z' }, 0));
+    tassert_eqi(a.len, 5);
+    tassert_eqi(MyLst.len(&a), 5);
+
+    tassert_eqi(a.arr[0].foo, 100);
+    tassert_eqi(a.arr[0].bar, 'z');
+
+    tassert_eqi(a.arr[1].foo, 0);
+    tassert_eqi(a.arr[1].bar, 'a');
+
+    tassert_eqe(EOK, MyLst.del(&a, 1));
+    tassert_eqi(a.arr[0].foo, 100);
+    tassert_eqi(a.arr[0].bar, 'z');
+
+    tassert_eqi(a.arr[1].foo, 1);
+    tassert_eqi(a.arr[1].bar, 'b');
+
+    tassert_eqi(list.capacity(&a.base), 8);
+    tassert_eqi(MyLst.capacity(&a), 8);
+
+    MyLst.clear(&a);
+    tassert_eqi(MyLst.capacity(&a), 8);
+    tassert_eqi(MyLst.len(&a), 0);
+
+    struct s_my sarr[3] = {
+        (struct s_my){ .foo = 3 },
+        (struct s_my){ .foo = 4 },
+        (struct s_my){ .foo = 5 },
+    };
+    tassert_eqe(EOK, MyLst.extend(&a, sarr, arr$len(sarr)));
+    tassert_eqi(MyLst.len(&a), 3);
+    tassert_eqi(a.arr[0].foo, 3);
+    tassert_eqi(a.arr[1].foo, 4);
+    tassert_eqi(a.arr[2].foo, 5);
+
+    MyLst.sort(&a, cmp_func);
+    tassert_eqi(MyLst.len(&a), 3);
+    tassert_eqi(a.arr[0].foo, 5);
+    tassert_eqi(a.arr[1].foo, 4);
+    tassert_eqi(a.arr[2].foo, 3);
+
+    MyLst.destroy(&a);
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -1038,6 +1134,7 @@ main(int argc, char* argv[])
     test$run(testlist_cast_pass_tofunc);
     test$run(testlist_append_macro);
     test$run(testlist_slice);
+    test$run(testlist_new_macro_def_testing);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
