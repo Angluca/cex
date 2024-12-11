@@ -743,7 +743,7 @@ class CEXBuilder:
         assert not os.path.exists(app_dir), f"Already exists: {app_dir}"
         os.makedirs(app_dir)
 
-        template_dir = os.path.join(self.env.root, "cli", "project_template")
+        template_dir = os.path.join(self.env.root, "examples", "project_template")
 
         with open(os.path.join(template_dir, "src", "App.h"), "r") as fh:
             contents = fh.read()
@@ -1622,7 +1622,7 @@ def action_proj(args):
 
     print(f"making new CEX project: {proj_name}")
     env = CEXEnv()
-    shutil.copytree(os.path.join(env.root, "cli", "project_template"), proj_name)
+    shutil.copytree(os.path.join(env.root, "examples", "project_template"), proj_name)
 
     sbuf = io.StringIO()
     with open(os.path.join(proj_name, "Makefile"), "r") as fh:
