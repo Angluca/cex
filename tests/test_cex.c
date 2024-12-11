@@ -729,7 +729,7 @@ test$case(test_arrays_and_slices)
         var s4 = arr$slice(a, it.val->start, it.val->end);
         tassertf(
             s4.len == it.val->len,
-            "slice.len mismatch: start: %d end: %d, slice.len: %lu expected.len %lu",
+            "slice.len mismatch: start: %d end: %d, slice.len: %zu expected.len %zu",
             it.val->start,
             it.val->end,
             s4.len,

@@ -21,7 +21,6 @@ tests:
 	cex test run all
 
 tests32: 
-	# cex test clean all
 	cex test build all --ccargs="-m32"
 	cex test run all
 

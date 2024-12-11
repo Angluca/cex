@@ -367,9 +367,6 @@ void*
 void*
 (*iter)(dict_c* self, cex_iterator_s* iterator);
 
-Exception
-(*tolist)(dict_c* self, void* listptr, const Allocator_i* allocator);
-
     // clang-format on
 };
 extern const struct __module__dict dict; // CEX Autogen
