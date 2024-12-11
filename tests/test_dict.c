@@ -447,7 +447,10 @@ test$case(test_dict_string_get_multitype_macro)
     tassert_eqs(dict$set(&hm, &rec), EOK);
 
     // _Static_assert(_Generic((&rec), struct s *: 1, default: 0), "f");
-    _Static_assert(_Generic((&rec), typeof(rec)*: 1, typeof( ((typeof(rec)){0}).val )*: 1, default: 0), "f");
+    _Static_assert(
+        _Generic((&rec), typeof(rec)*: 1, typeof(((typeof(rec)){ 0 }).val)*: 1, default: 0),
+        "f"
+    );
 
 
     var item = dict$get(&hm, "123");
@@ -651,7 +654,7 @@ test$case(test_dict_int64_del_multitype_macro)
     tassert(item != NULL);
     tassert_eqi(item->val, 'z');
     tassert_eqi(item->key, 123);
-    
+
     item = dict$del(&hm, keyu16);
     tassert(dict$get(&hm, &rec) == NULL);
     tassert_eqs(dict$set(&hm, &rec), EOK);
@@ -757,6 +760,73 @@ test$case(test_dict_string_del_multitype_macro)
     dict.destroy(&hm.base);
     return EOK;
 }
+
+test$case(test_dict_typedef_char)
+{
+    struct s
+    {
+        char key[10];
+        char val;
+    } rec = { .key = "999", .val = 'a' };
+    (void)rec;
+
+    dict$typedef(dict_ss, struct s, char*, true);
+
+    dict_ss_c hm;
+    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
+
+    tassert_eqs(dict_ss.set(&hm, &rec), EOK);
+
+    var item = dict_ss.get(&hm, "999");
+
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    item = dict_ss.get(&hm, rec.key);
+
+    tassert(item != NULL);
+    tassert_eqs(item->key, "999");
+    tassert_eqi(item->val, 'a');
+
+    dict.destroy(&hm.base);
+    return EOK;
+}
+
+test$case(test_dict_typedef_int)
+{
+    struct s
+    {
+        u64 key;
+        char val;
+    } rec = { .key = 999, .val = 'a' };
+    (void)rec;
+
+    dict$typedef(dict_ss, struct s, u64, true);
+
+    const struct dict_ss_vtable__ vt  = {                                                     
+        .set = (void*)dict.set,                                                                      
+        .get = (void*)_Generic((u64){0}, u64: dict.geti, default: dict.get),
+    };
+    tassert((void*)vt.get == (void*)dict.geti);
+    dict_ss_c hm;
+    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
+
+    tassert_eqs(dict_ss.set(&hm, &rec), EOK);
+
+    var item = dict_ss.get(&hm, 999);
+
+    tassert(item != NULL);
+    tassert_eqi(item->key, 999);
+    tassert_eqi(item->val, 'a');
+
+    dict.destroy(&hm.base);
+
+    _Static_assert(_Generic((dict_ss_c){ 0 }._dtype->key, u64: 1, default: 0), "ddd");
+    // _Static_assert(_Generic( 0 }._dtype->key, u64: 1, default: 0), "ddd");
+
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -778,6 +848,8 @@ main(int argc, char* argv[])
     test$run(test_custom_type_key);
     test$run(test_dict_int64_del_multitype_macro);
     test$run(test_dict_string_del_multitype_macro);
+    test$run(test_dict_typedef_char);
+    test$run(test_dict_typedef_int);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

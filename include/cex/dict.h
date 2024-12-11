@@ -58,6 +58,49 @@ typedef struct dict_new_kwargs_s
         typeof(eltype)* const _dtype; /* virtual field, only for type checks, const pointer */     \
     }
 
+#define _dict$typedef_extern_0(typename) extern const struct typename##_vtable__ typename
+#define _dict$typedef_extern_1(typename)
+#define _dict$typedef_extern(typename, implement) _dict$typedef_extern_##implement(typename)
+
+
+#define _dict$typedef_impl_0(typename, keytype)
+#define _dict$typedef_impl_1(typename, keytype)                                                    \
+    _Static_assert(                                                                                \
+        _Generic(/* Validate if `keytype` match <typename>_c.key type */                           \
+                 (&(typename##_c){ 0 }._dtype->key),                                               \
+            u64 *: _Generic((keytype){ 0 }, u64: 1, default: 0),                                   \
+            char(*)[]: _Generic((keytype){ 0 }, char*: 1, default: 0),                             \
+            default: _Generic((keytype){ 0 }, default: 0)                                          \
+        ),                                                                                         \
+        "dict$impl() `keytype` arg does not match <typename>_c.key (check types!)"                     \
+    );                                                                                             \
+    const struct typename##_vtable__ typename = {                                                  \
+        .set = (void*)dict.set,                                                                    \
+        .get = (void*)(_Generic((keytype){ 0 }, u64: dict.geti, default: dict.get))                \
+    };
+
+#define _dict$typedef_impl(typename, keytype, implement)                                           \
+    _dict$typedef_impl_##implement(typename, keytype)
+
+#define dict$impl(typename, keytype) _dict$typedef_impl(typename, keytype, 1)
+#define dict$typedef(typename, eltype, keytype, implement)                                         \
+    typedef struct typename##_c                                                                    \
+    {                                                                                              \
+        union                                                                                      \
+        {                                                                                          \
+            dict_c base;                                                                           \
+            eltype* const _dtype; /* virtual field, only for type checks, const pointer */         \
+        };                                                                                         \
+    }                                                                                              \
+    typename##_c;                                                                                  \
+    struct typename##_vtable__                                                                     \
+    {                                                                                              \
+        Exception (*set)(typename##_c * self, const eltype* item);                                 \
+        eltype*  (*get)(typename##_c * self, const keytype item);                                   \
+    };                                                                                             \
+    _dict$typedef_extern(typename, implement);                                                     \
+    _dict$typedef_impl(typename, keytype, implement);
+
 #define dict$new(self, allocator, ...)                                                             \
     ({                                                                                             \
         _Static_assert(                                                                            \
@@ -217,10 +260,10 @@ typedef struct dict_new_kwargs_s
             _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
             "self argument expected to be dict$define(eltype)"                                     \
         );                                                                                         \
-        dict.destroy(&((self)->base));                                                  \
+        dict.destroy(&((self)->base));                                                             \
     })
 
-#define dict$iter(self, it)                                                                  \
+#define dict$iter(self, it)                                                                        \
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic(((self)), dict_c *: 0, default: 1),                                           \
@@ -231,10 +274,10 @@ typedef struct dict_new_kwargs_s
             "self argument xpected to be dict$define(eltype)"                                      \
         );                                                                                         \
         _Static_assert(                                                                            \
-            _Generic((it), cex_iterator_s *: 1, default: 0),                                    \
-            "expected cex_iterator_s pointer, i.e. `&it.iterator`"                                      \
+            _Generic((it), cex_iterator_s *: 1, default: 0),                                       \
+            "expected cex_iterator_s pointer, i.e. `&it.iterator`"                                 \
         );                                                                                         \
-        (typeof(((self)->_dtype)))dict.iter(&((self)->base), (it));                          \
+        (typeof(((self)->_dtype)))dict.iter(&((self)->base), (it));                                \
     })
 
 struct __module__dict

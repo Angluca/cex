@@ -85,9 +85,11 @@ _Static_assert(sizeof(_cex_list_head_s) <= _CEX_LIST_BUF, "size");
 _Static_assert(alignof(_cex_list_head_s) == 1, "align");
 
 #define list$define_static_buf(var_name, listtype, capacity)                                       \
-    alignas(alignof(typeof(*((((listtype##_c){0}).arr))))                                                  \
-    ) char var_name[_CEX_LIST_BUF + sizeof(typeof(*(((listtype##_c){0}).arr))) * (capacity)] = { 0 };      \
-    _Static_assert((capacity) > 0, "list$define_static_buf zero capacity");                          \
+    alignas(alignof(typeof(*((((listtype##_c){ 0 }).arr))))                                        \
+    ) char var_name[_CEX_LIST_BUF + sizeof(typeof(*(((listtype##_c){ 0 }).arr))) * (capacity)] = { \
+        0                                                                                          \
+    };                                                                                             \
+    _Static_assert((capacity) > 0, "list$define_static_buf zero capacity");
 
 /*
     _Static_assert(                                                                                \
@@ -129,32 +131,16 @@ _Static_assert(alignof(_cex_list_head_s) == 1, "align");
         s;                                                                                         \
     })
 
-
-Exception _cex_list_create(
-    _cex_list_c* self,
-    usize capacity,
-    usize elsize,
-    usize elalign,
-    const Allocator_i* allocator
-);
-
-Exception
-_cex_list_create_static(_cex_list_c* self, void* buf, usize buf_len, usize elsize, usize elalign);
-
+// clang-format off
+Exception _cex_list_create(_cex_list_c* self, usize capacity, usize elsize, usize elalign, const Allocator_i* allocator);
+Exception _cex_list_create_static(_cex_list_c* self, void* buf, usize buf_len, usize elsize, usize elalign);
 Exception _cex_list_insert(_cex_list_c* self, void* item, usize index);
-
 Exception _cex_list_del(_cex_list_c* self, usize index);
-
 void _cex_list_sort(_cex_list_c* self, int (*comp)(const void*, const void*));
-
 Exception _cex_list_append(_cex_list_c* self, void* item);
-
 void _cex_list_clear(_cex_list_c* self);
-
 Exception _cex_list_extend(_cex_list_c* self, void* items, usize nitems);
-
 usize _cex_list_capacity(_cex_list_c const* self);
-
 void _cex_list_destroy(_cex_list_c* self);
-
 void* _cex_list_iter(_cex_list_c const* self, cex_iterator_s* iterator);
+// clang-format on
