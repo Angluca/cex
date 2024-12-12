@@ -1,7 +1,6 @@
 #pragma once
 #include "dict.h"
 #include "_hashmap.c"
-#include "list.h"
 #include <stdarg.h>
 #include <time.h>
 
@@ -16,14 +15,9 @@ hm_int_hash_simple(u64 x)
 
 /**
  * @brief Hashmap: int compare function
- *
- * @param a as u64
- * @param b as u64
- * @param udata (unused)
- * @return
  */
-static int
-dict__hashfunc__u64_cmp(const void* a, const void* b, void* udata)
+int
+_cex_dict_u64_cmp(const void* a, const void* b, void* udata)
 {
     (void)udata;
     uassert(a != NULL && "must be set");
@@ -38,14 +32,9 @@ dict__hashfunc__u64_cmp(const void* a, const void* b, void* udata)
 
 /**
  * @brief Hashmap: int hash function, for making ticker_id -> hash (uniformly distrib)
- *
- * @param item (u64) item (ticker id)
- * @param seed0 (unused)
- * @param seed1 (unused)
- * @return hash value
  */
-static u64
-dict__hashfunc__u64_hash(const void* item, u64 seed0, u64 seed1)
+u64
+_cex_dict_u64_hash(const void* item, u64 seed0, u64 seed1)
 {
     (void)seed0;
     (void)seed1;
@@ -55,14 +44,9 @@ dict__hashfunc__u64_hash(const void* item, u64 seed0, u64 seed1)
 
 /**
  * @brief Compares static char[] buffer keys **must be null terminated**
- *
- * @param a  char[N] string
- * @param b  char[N] string
- * @param udata  (unused)
- * @return compared int value
  */
-static int
-dict__hashfunc__str_cmp(const void* a, const void* b, void* udata)
+int
+_cex_dict_str_cmp(const void* a, const void* b, void* udata)
 {
     (void)udata;
     return strcmp(a, b);
@@ -71,21 +55,21 @@ dict__hashfunc__str_cmp(const void* a, const void* b, void* udata)
 
 /**
  * @brief Compares static char[] buffer keys **must be null terminated**
- *
- * @param item
- * @param seed0
- * @param seed1
- * @return
- */
-static u64
-dict__hashfunc__str_hash(const void* item, u64 seed0, u64 seed1)
+*/
+u64
+_cex_dict_str_hash(const void* item, u64 seed0, u64 seed1)
 {
     return hashmap_sip(item, strlen((char*)item), seed0, seed1);
 }
 
 
 Exception
-dict_create(dict_c* self, usize item_size, const Allocator_i* allocator, dict_new_kwargs_s* kwargs)
+_cex_dict_create(
+    _cex_dict_c* self,
+    usize item_size,
+    const Allocator_i* allocator,
+    dict_new_kwargs_s* kwargs
+)
 {
     if (item_size < sizeof(u64)) {
         uassert(item_size >= sizeof(u64) && "item_size is too small");
@@ -123,19 +107,13 @@ dict_create(dict_c* self, usize item_size, const Allocator_i* allocator, dict_ne
         return Error.memory;
     }
 
+    self->allc = allocator;
+
     return Error.ok;
 }
 
-
-/**
- * @brief Set or replace dict item
- *
- * @param self dict() instance
- * @param item  item key/value struct
- * @return error code, EOK (0!) on success, positive on failure
- */
 Exception
-dict_set(dict_c* self, const void* item)
+_cex_dict_set(_cex_dict_c* self, const void* item)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
@@ -149,13 +127,10 @@ dict_set(dict_c* self, const void* item)
 }
 
 /**
- * @brief Get item by integer key
- *
- * @param self dict() instance
- * @param key u64 key
+ * @brief Get key by i64 value, returns NULL if not found
  */
 void*
-dict_geti(dict_c* self, u64 key)
+_cex_dict_geti(_cex_dict_c* self, u64 key)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
@@ -163,43 +138,26 @@ dict_geti(dict_c* self, u64 key)
 }
 
 /**
- * @brief Get item by generic key pointer (including strings)
- *
- * @param self dict() instance
- * @param key generic pointer key
+ * @brief Get key by pointer, returns NULL if not found
  */
 void*
-dict_get(dict_c* self, const void* key)
+_cex_dict_get(_cex_dict_c* self, const void* key)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
     return (void*)hashmap_get(self->hashmap, key);
 }
 
-
-/**
- * @brief Number elements in dict()
- *
- * @param self  dict() instance
- * @return number
- */
 usize
-dict_len(dict_c* self)
+_cex_dict_len(_cex_dict_c* self)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
     return hashmap_count(self->hashmap);
 }
 
-
-/**
- * @brief Free dict() instance
- *
- * @param self  dict() instance
- * @return always NULL
- */
 void
-dict_destroy(dict_c* self)
+_cex_dict_destroy(_cex_dict_c* self)
 {
     if (self != NULL) {
         if (self->hashmap != NULL) {
@@ -210,14 +168,8 @@ dict_destroy(dict_c* self)
     }
 }
 
-
-/**
- * @brief Clear all elements in dict (but allocated capacity unchanged)
- *
- * @param self dict() instane
- */
 void
-dict_clear(dict_c* self)
+_cex_dict_clear(_cex_dict_c* self)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
@@ -226,13 +178,10 @@ dict_clear(dict_c* self)
 }
 
 /**
- * @brief Delete item by integer key
- *
- * @param self dict() instance
- * @param key u64 key
+ * @brief Delete key by u64 value, returns NULL if not found
  */
 void*
-dict_deli(dict_c* self, u64 key)
+_cex_dict_deli(_cex_dict_c* self, u64 key)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
@@ -240,13 +189,10 @@ dict_deli(dict_c* self, u64 key)
 }
 
 /**
- * @brief Delete item by generic key pointer (including strings)
- *
- * @param self dict() instance
- * @param key generic pointer key
+ * @brief Delete key by pointer, returns NULL if not found
  */
 void*
-dict_del(dict_c* self, const void* key)
+_cex_dict_del(_cex_dict_c* self, const void* key)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
@@ -255,7 +201,7 @@ dict_del(dict_c* self, const void* key)
 
 
 void*
-dict_iter(dict_c* self, cex_iterator_s* iterator)
+_cex_dict_iter(_cex_dict_c* self, cex_iterator_s* iterator)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
@@ -299,59 +245,3 @@ dict_iter(dict_c* self, cex_iterator_s* iterator)
         return NULL;
     }
 }
-
-// Exception
-// dict_tolist(dict_c* self, void* listptr, const Allocator_i* allocator)
-// {
-//     if (self == NULL || listptr == NULL || allocator == NULL) {
-//         return Error.argument;
-//     }
-//
-//     if (self->hashmap == NULL) {
-//         uassert(self->hashmap == NULL);
-//         return Error.integrity;
-//     }
-//
-//
-//     struct hashmap* hm = self->hashmap;
-//
-//     e$except(err, list.create((list_c*)listptr, hm->count, hm->elsize, alignof(usize), allocator))
-//     {
-//         return err;
-//     }
-//
-//     usize hm_cursor = 0;
-//     void* item = NULL;
-//
-//     while (hashmap_iter(self->hashmap, &hm_cursor, &item)) {
-//         e$except(err, list.append(listptr, item))
-//         {
-//             return err;
-//         }
-//     };
-//
-//     return Error.ok;
-// }
-
-const struct __module__dict dict = {
-    // Autogenerated by CEX
-    // clang-format off
-
-    .hashfunc = {  // sub-module .hashfunc >>>
-        .u64_cmp = dict__hashfunc__u64_cmp,
-        .u64_hash = dict__hashfunc__u64_hash,
-        .str_cmp = dict__hashfunc__str_cmp,
-        .str_hash = dict__hashfunc__str_hash,
-    },  // sub-module .hashfunc <<<
-    .create = dict_create,
-    .set = dict_set,
-    .geti = dict_geti,
-    .get = dict_get,
-    .len = dict_len,
-    .destroy = dict_destroy,
-    .clear = dict_clear,
-    .deli = dict_deli,
-    .del = dict_del,
-    .iter = dict_iter,
-    // clang-format on
-};

@@ -45,15 +45,15 @@ test$case(test_dict_generic_auto_cmp_hash)
     } rec;
     (void)rec;
 
-    tassert(_dict$hashfunc(typeof(rec), key_u64) == dict.hashfunc.u64_hash);
-    tassert(_dict$hashfunc(typeof(rec), key) == dict.hashfunc.str_hash);
-    tassert(_dict$cmpfunc(typeof(rec), key_u64) == dict.hashfunc.u64_cmp);
-    tassert(_dict$cmpfunc(typeof(rec), key) == dict.hashfunc.str_cmp);
+    tassert(_dict$hashfunc(rec.key_u64) == _cex_dict_u64_hash);
+    tassert(_dict$hashfunc(rec.key) == _cex_dict_str_hash);
+    tassert(_dict$cmpfunc(rec.key_u64) == _cex_dict_u64_cmp);
+    tassert(_dict$cmpfunc(rec.key) == _cex_dict_str_cmp);
 
-    // NOTE: these are intentionally unsupported (because we store copy of data, and passing
-    // but passing pointers may leave them dangling, or use-after-free)
-    // tassert(_dict$hashfunc(typeof(rec), cexstr) == NULL);
-    // tassert(_dict$hashfunc(typeof(rec), key_ptr) == NULL);
+    // These are intentionally unsupported at this moment
+    tassert(_dict$cmpfunc(rec.cexstr) == NULL);
+    tassert(_dict$cmpfunc(rec.key_ptr) == NULL);
+
     return EOK;
 }
 
@@ -66,61 +66,56 @@ test$case(test_dict_int64)
     } rec = { 0 };
     (void)rec;
 
-    dict$define(struct s) hm;
-    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
+    dict$typedef(dict_ss, struct s, u64, true);
+    dict_ss_c hm;
+    _Static_assert(sizeof(hm) == sizeof(_cex_dict_c), "custom size mismatch");
 
     tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
 
-    // dict$set(&hm, &rec);
 
-    tassert_eqs(dict$set(&hm, (&(struct s){ .key = 123, .val = 'z' })), EOK);
+    tassert_eqs(dict_ss.set(&hm, (&(struct s){ .key = 123, .val = 'z' })), EOK);
 
-    e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = 123, .val = 'z' }))
+    e$except_silent(err, dict_ss.set(&hm, &(struct s){ .key = 123, .val = 'z' }))
     {
         tassert(false && "unexpected");
     }
 
-    e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = 133, .val = 'z' }))
+    e$except_silent(err, dict_ss.set(&hm, &(struct s){ .key = 133, .val = 'z' }))
     {
         tassert(false && "unexpected");
     }
-
 
     u64 key = 9890080;
 
     key = 123;
-    const struct s* res = dict.get(&hm.base, &key);
+    const struct s* res = dict_ss.get(&hm, key);
     tassert(res != NULL);
     tassert(res->key == 123);
 
-    res = dict.geti(&hm.base, 133);
+    res = dict_ss.get(&hm, 133);
     tassert(res != NULL);
     tassert(res->key == 133);
 
-    const struct s* res2 = dict.get(&hm.base, &(struct s){ .key = 222 });
+    const struct s* res2 = dict_ss.get(&hm, 222);
     tassert(res2 == NULL);
 
-    var res3 = (struct s*)dict.get(&hm.base, &(struct s){ .key = 133 });
+    var res3 = dict_ss.get(&hm, 133);
     tassert(res3 != NULL);
     tassert_eqi(res3->key, 133);
 
-    var res4 = dict$get(&hm, 123);
-    tassert(res4 != NULL);
-    tassert_eqi(res4->key, 123);
+    tassert_eqi(dict_ss.len(&hm), 2);
 
-    tassert_eqi(dict.len(&hm.base), 2);
+    tassert(dict_ss.del(&hm, 133) != NULL);
+    tassert(dict_ss.get(&hm, 133) == NULL);
 
-    tassert(dict.deli(&hm.base, 133) != NULL);
-    tassert(dict.geti(&hm.base, 133) == NULL);
+    tassert(dict_ss.del(&hm, 123) != NULL);
+    tassert(dict_ss.get(&hm, 123) == NULL);
 
-    tassert(dict.del(&hm.base, &(struct s){ .key = 123 }) != NULL);
-    tassert(dict.geti(&hm.base, 123) == NULL);
+    tassert(dict_ss.del(&hm, 12029381038) == NULL);
 
-    tassert(dict.deli(&hm.base, 12029381038) == NULL);
+    tassert_eqi(dict_ss.len(&hm), 0);
 
-    tassert_eqi(dict.len(&hm.base), 0);
-
-    dict.destroy(&hm.base);
+    dict_ss.destroy(&hm);
 
     return EOK;
 }
@@ -133,54 +128,55 @@ test$case(test_dict_string)
         char val;
     };
 
-    dict$define(struct s) hm;
+    dict$typedef(dict_ss, struct s, char*, true);
+    dict_ss_c hm;
+
     tassert_eqs(EOK, dict$new(&hm, allocator));
 
-    tassert_eqs(dict$set(&hm, &(struct s){ .key = "abcd", .val = 'z' }), EOK);
+    tassert_eqs(dict_ss.set(&hm, &(struct s){ .key = "abcd", .val = 'z' }), EOK);
 
-    e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = "abcd", .val = 'z' }))
+    e$except_silent(err, dict_ss.set(&hm, &(struct s){ .key = "abcd", .val = 'z' }))
     {
         tassert(false && "unexpected");
     }
 
-    e$except_silent(err, dict.set(&hm.base, &(struct s){ .key = "xyz", .val = 'z' }))
+    e$except_silent(err, dict_ss.set(&hm, &(struct s){ .key = "xyz", .val = 'z' }))
     {
         tassert(false && "unexpected");
     }
 
-    const struct s* res = dict.get(&hm.base, "abcd");
+    const struct s* res = dict_ss.get(&hm, "abcd");
     tassert(res != NULL);
     tassert_eqs(res->key, "abcd");
 
-    res = dict.get(&hm.base, "xyz");
+    res = dict_ss.get(&hm, "xyz");
     tassert(res != NULL);
     tassert_eqs(res->key, "xyz");
 
-    const struct s* res2 = dict.get(&hm.base, &(struct s){ .key = "ffff" });
+    const struct s* res2 = dict_ss.get(&hm, ((struct s){ .key = "ffff" }.key));
     tassert(res2 == NULL);
 
 
-    var res3 = (struct s*)dict.get(&hm.base, &(struct s){ .key = "abcd" });
+    var res3 = dict_ss.get(&hm, (struct s){ .key = "abcd" }.key);
     tassert(res3 != NULL);
     tassert_eqs(res3->key, "abcd");
 
-    tassert_eqi(dict.len(&hm.base), 2);
+    tassert_eqi(dict_ss.len(&hm), 2);
 
-    var res4 = dict$get(&hm, "xyz");
-    // var res4 = dict$get(&hm, 2); // GOOD type check works, compile error
+    var res4 = dict_ss.get(&hm, "xyz");
     tassert(res4 != NULL);
     tassert_eqs(res4->key, "xyz");
     res4->val = 'y';
 
-    tassert(dict.del(&hm.base, "xyznotexisting") == NULL);
+    tassert(dict_ss.del(&hm, "xyznotexisting") == NULL);
 
-    tassert(dict.del(&hm.base, &(struct s){ .key = "abcd" }) != NULL);
-    tassert(dict.get(&hm.base, "abcd") == NULL);
-    tassert(dict.del(&hm.base, "xyz") != NULL);
-    tassert(dict.get(&hm.base, "xyz") == NULL);
-    tassert_eqi(dict.len(&hm.base), 0);
+    tassert(dict_ss.del(&hm, (struct s){ .key = "abcd" }.key) != NULL);
+    tassert(dict_ss.get(&hm, "abcd") == NULL);
+    tassert(dict_ss.del(&hm, "xyz") != NULL);
+    tassert(dict_ss.get(&hm, "xyz") == NULL);
+    tassert_eqi(dict_ss.len(&hm), 0);
 
-    dict.destroy(&hm.base);
+    dict_ss.destroy(&hm);
 
     return EOK;
 }
@@ -194,19 +190,17 @@ test$case(test_dict_create_generic)
         char val;
     };
 
-    dict$define(struct s) hm;
-    // WARNING: default dict_c forces keys to be at the beginning of the struct,
-    //  if such key passed -> Error.integrity
-    // tassert_eqs(Error.integrity, dict$new(&hm, typeof(rec), another_key, allocator));
+    dict$typedef(dict_ss, struct s, char*, true);
+    dict_ss_c hm;
 
     tassert_eqs(EOK, dict$new(&hm, allocator));
 
-    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "abcd", .val = 'a' }), EOK);
-    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "xyz", .val = 'z' }), EOK);
+    tassert_eqs(dict_ss.set(&hm, &(struct s){ .key = "abcd", .val = 'a' }), EOK);
+    tassert_eqs(dict_ss.set(&hm, &(struct s){ .key = "xyz", .val = 'z' }), EOK);
 
-    tassert_eqi(dict.len(&hm.base), 2);
+    tassert_eqi(dict_ss.len(&hm), 2);
 
-    const struct s* result = dict.get(&hm.base, "xyz");
+    const struct s* result = dict_ss.get(&hm, "xyz");
     tassert(result != NULL);
     tassert_eqs(result->key, "xyz");
     tassert_eqi(result->val, 'z');
@@ -216,7 +210,7 @@ test$case(test_dict_create_generic)
     // NOTE: it's possible to edit data in dict, as long as you don't touch key!
     res->val = 'f';
 
-    result = dict.get(&hm.base, "xyz");
+    result = dict_ss.get(&hm, "xyz");
     tassert(result != NULL);
     tassert_eqs(result->key, "xyz");
     tassert_eqi(result->val, 'f');
@@ -224,15 +218,15 @@ test$case(test_dict_create_generic)
     // WARNING: If you try to edit the key it will be lost
     strcpy(res->key, "foo");
 
-    result = dict.get(&hm.base, "foo");
+    result = dict_ss.get(&hm, "foo");
     tassert(result == NULL);
     // WARNING: old key is also lost!
-    result = dict.get(&hm.base, "xyz");
+    result = dict_ss.get(&hm, "xyz");
     tassert(result == NULL);
 
-    tassert_eqi(dict.len(&hm.base), 2);
+    tassert_eqi(dict_ss.len(&hm), 2);
 
-    dict.destroy(&hm.base);
+    dict_ss.destroy(&hm);
     tassert(hm.base.hashmap == NULL);
     return EOK;
 }
@@ -247,19 +241,21 @@ test$case(test_dict_iter)
         char val;
     } rec;
 
-    dict$define(struct s) hm;
+    dict$typedef(dict_custom, struct s, char*, true);
+    dict_custom_c hm;
+
     tassert_eqs(EOK, dict$new(&hm, allocator));
 
-    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "foo", .val = 'a' }), EOK);
-    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "abcd", .val = 'b' }), EOK);
-    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "xyz", .val = 'c' }), EOK);
-    tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "bar", .val = 'd' }), EOK);
-    tassert_eqi(dict.len(&hm.base), 4);
+    tassert_eqs(dict_custom.set(&hm, &(struct s){ .key = "foo", .val = 'a' }), EOK);
+    tassert_eqs(dict_custom.set(&hm, &(struct s){ .key = "abcd", .val = 'b' }), EOK);
+    tassert_eqs(dict_custom.set(&hm, &(struct s){ .key = "xyz", .val = 'c' }), EOK);
+    tassert_eqs(dict_custom.set(&hm, &(struct s){ .key = "bar", .val = 'd' }), EOK);
+    tassert_eqi(dict_custom.len(&hm), 4);
 
     u32 nit = 0;
-    for$iter(typeof(rec), it, dict.iter(&hm.base, &it.iterator))
+    for$iter(typeof(rec), it, dict_custom.iter(&hm, &it.iterator))
     {
-        struct s* r = dict.get(&hm.base, it.val->key);
+        struct s* r = dict_custom.get(&hm, it.val->key);
         tassert(r != NULL);
         tassert_eqi(it.idx.i, nit);
         nit++;
@@ -274,10 +270,9 @@ test$case(test_dict_iter)
     };
 
     nit = 0;
-    // for$iter(struct s2, it, dict$iter(&hm, &it.iterator)) // GOOD: type check works
-    for$iter(struct s, it, dict$iter(&hm, &it.iterator))
+    for$iter(struct s, it, dict_custom.iter(&hm, &it.iterator))
     {
-        var r = dict$get(&hm, it.val->key);
+        var r = dict_custom.get(&hm, it.val->key);
         tassert(r != NULL);
         tassert_eqi(it.idx.i, nit);
         tassert(it.val->val >= 'a' && it.val->val <= 'd');
@@ -287,216 +282,18 @@ test$case(test_dict_iter)
 
     nit = 0;
     uassert_disable();
-    for$iter(typeof(rec), it, dict.iter(&hm.base, &it.iterator))
+    for$iter(typeof(rec), it, dict_custom.iter(&hm, &it.iterator))
     {
         // WARNING: changing of dict during iterator is not allowed, you'll get assert
-        dict.clear(&hm.base);
+        dict_custom.clear(&hm);
         nit++;
     }
     tassert_eqi(nit, 1);
 
-    dict.destroy(&hm.base);
+    dict_custom.destroy(&hm);
     return EOK;
 }
 
-// test$case(test_dict_tolist)
-// {
-//     struct s
-//     {
-//         char key[30];
-//         u64 another_key;
-//         char val;
-//     };
-//
-//     dict$define(struct s) hm;
-//     tassert_eqs(EOK, dict$new(&hm, allocator));
-//
-//     tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "foo", .val = 'a' }), EOK);
-//     tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "abcd", .val = 'b' }), EOK);
-//     tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "xyz", .val = 'c' }), EOK);
-//     tassert_eqs(dict.set(&hm.base, &(struct s){ .key = "bar", .val = 'd' }), EOK);
-//     tassert_eqi(dict.len(&hm.base), 4);
-//
-//     list$define(struct s) a;
-//     tassert_eqs(EOK, dict.tolist(&hm.base, &a, allocator));
-//     tassert_eqi(list.len(&a.base), 4);
-//
-//     tassert_eqs(Error.argument, dict.tolist(NULL, &a, allocator));
-//     tassert_eqs(Error.argument, dict.tolist(&hm.base, NULL, allocator));
-//     tassert_eqs(Error.argument, dict.tolist(&hm.base, &a, NULL));
-//
-//     for$array(it, a.arr, a.len)
-//     {
-//         tassert(dict.get(&hm.base, it.val) != NULL);
-//         tassert(dict.get(&hm.base, it.val->key) != NULL);
-//         // same elements buf different pointer - means copy!
-//         tassert(dict.get(&hm.base, it.val->key) != it.val);
-//     }
-//
-//     dict.destroy(&hm.base);
-//     tassert_eqs(Error.integrity, dict.tolist(&hm.base, &a, allocator));
-//
-//     list.destroy(&a.base);
-//
-//     return EOK;
-// }
-
-test$case(test_dict_int64_get_multitype_macro)
-{
-    struct s
-    {
-        u64 key;
-        char val;
-    } rec = { 0 };
-    (void)rec;
-
-    dict$define(struct s) hm;
-    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
-
-    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
-
-
-    tassert_eqs(dict$set(&hm, (&(struct s){ .key = 123, .val = 'z' })), EOK);
-
-    rec.key = 999;
-    rec.val = 'a';
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    _Static_assert(_Generic((&rec), struct s *: 1, default: 0), "f");
-
-    var item = dict$get(&hm, &rec);
-    tassert(item != NULL);
-    tassert_eqi(item->key, 999);
-    tassert_eqi(item->val, 'a');
-
-    item = dict$get(&hm, 123);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-
-    // FIX: fails at x32 arch
-    // item = dict$get(&hm, 123UL);
-    // tassert(item != NULL);
-    // tassert_eqi(item->val, 'z');
-    // tassert_eqi(item->key, 123);
-    // item = dict$get(&hm, 123L);
-    // tassert(item != NULL);
-    // tassert_eqi(item->val, 'z');
-    // tassert_eqi(item->key, 123);
-
-    // item = dict$get(&hm, 123LL); // HM... incompatible
-
-    i32 key = -123;
-    item = dict$get(&hm, key * -1);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    i16 key16 = -123;
-    item = dict$get(&hm, key16 * -1);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    i8 key8 = -123;
-    item = dict$get(&hm, key8 * -1);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    u32 keyu32 = 123;
-    item = dict$get(&hm, keyu32);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    u16 keyu16 = 123;
-    item = dict$get(&hm, keyu16);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    u8 keyu8 = 123;
-    item = dict$get(&hm, keyu8);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-
-    dict.destroy(&hm.base);
-
-    return EOK;
-}
-
-test$case(test_dict_string_get_multitype_macro)
-{
-    struct s
-    {
-        char key[10];
-        char val;
-    } rec = { .key = "999", .val = 'a' };
-    (void)rec;
-
-    dict$define(struct s) hm;
-    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
-
-    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
-
-
-    tassert_eqs(dict$set(&hm, (&(struct s){ .key = "123", .val = 'z' })), EOK);
-
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    // _Static_assert(_Generic((&rec), struct s *: 1, default: 0), "f");
-    _Static_assert(
-        _Generic((&rec), typeof(rec)*: 1, typeof(((typeof(rec)){ 0 }).val)*: 1, default: 0),
-        "f"
-    );
-
-
-    var item = dict$get(&hm, "123");
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqs(item->key, "123");
-
-    item = dict$get(&hm, &rec);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    char* k1 = rec.key;
-    item = dict$get(&hm, k1);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-
-    char const* k2 = rec.key;
-    item = dict$get(&hm, k2);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    char const* const k3 = rec.key;
-    item = dict$get(&hm, k3);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    char karr[10] = { "999" };
-    item = dict$get(&hm, karr);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    str_c s = str.cstr(rec.key);
-    item = dict$get(&hm, s.buf);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    dict.destroy(&hm.base);
-    return EOK;
-}
 
 test$case(test_custom_type_key)
 {
@@ -512,8 +309,12 @@ test$case(test_custom_type_key)
     } rec = { .key = { ._k = 999 }, .val = 'a' };
     (void)rec;
 
-    dict$define(struct s) hm;
-    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
+    dict$typedef(dict_custom, struct s, struct sk*, true);
+
+    // WARNING: always expect pointer of key, i.e. `struct sk*`
+    // dict$typedef(dict_custom, struct s, struct sk, true);  // <--- this raises static assert
+
+    dict_custom_c hm;
 
     tassert_eqs(
         EOK,
@@ -522,244 +323,27 @@ test$case(test_custom_type_key)
             allocator,
             .capacity = 128,
             // NOTE: when using non-standard keys we must set hash_func/cmp_func
-            .cmp_func = dict.hashfunc.u64_cmp,
-            .hash_func = dict.hashfunc.u64_hash
+            .cmp_func = _cex_dict_u64_cmp,
+            .hash_func = _cex_dict_u64_hash
         )
     );
 
-    tassert_eqs(dict$set(&hm, (&(struct s){ .key = { ._k = 123 }, .val = 'z' })), EOK);
+    tassert_eqs(dict_custom.set(&hm, (&(struct s){ .key = { ._k = 123 }, .val = 'z' })), EOK);
+    tassert_eqs(dict_custom.set(&hm, &rec), EOK);
+    tassert_eqi(dict_custom.len(&hm), 2);
 
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    var item = dict$get(&hm, &rec);
+    struct s* item = dict_custom.get(&hm, &rec.key);
     tassert(item != NULL);
     tassert_eqi(item->key._k, 999);
     tassert_eqi(item->val, 'a');
 
-    item = dict$get(&hm, &(struct sk){ ._k = 999 });
-    tassert(item != NULL);
-    tassert_eqi(item->key._k, 999);
-    tassert_eqi(item->val, 'a');
+    tassert(dict_custom.del(&hm, &rec.key) != NULL);
+    tassert_eqi(dict_custom.len(&hm), 1);
 
-    item = dict$get(&hm, &rec.key);
-    tassert(item != NULL);
-    tassert_eqi(item->key._k, 999);
-    tassert_eqi(item->val, 'a');
-
-    item = dict$get(&hm, item);
-    tassert(item != NULL);
-    tassert_eqi(item->key._k, 999);
-    tassert_eqi(item->val, 'a');
-
-    dict.destroy(&hm.base);
+    dict_custom.destroy(&hm);
     return EOK;
 }
 
-test$case(test_dict_int64_del_multitype_macro)
-{
-    struct s
-    {
-        u64 key;
-        char val;
-    } rec = { 0 };
-    (void)rec;
-
-    dict$define(struct s) hm;
-    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
-
-    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
-
-
-    rec.key = 123;
-    rec.val = 'z';
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    var item = dict$get(&hm, &rec);
-    tassert(item != NULL);
-    tassert_eqi(item->key, 123);
-    tassert_eqi(item->val, 'z');
-
-    item = dict$del(&hm, &rec);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    item = dict$get(&hm, 123);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-
-    item = dict$del(&hm, 123);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    // FIX: fails at x32 arch
-    // item = dict$get(&hm, 123UL);
-    // tassert(item != NULL);
-    // tassert_eqi(item->val, 'z');
-    // tassert_eqi(item->key, 123);
-    // item = dict$del(&hm, 123UL);
-    // tassert(dict$get(&hm, &rec) == NULL);
-    // tassert_eqs(dict$set(&hm, &rec), EOK);
-    // item = dict$get(&hm, 123L);
-    // tassert(item != NULL);
-    // tassert_eqi(item->val, 'z');
-    // tassert_eqi(item->key, 123);
-    // item = dict$del(&hm, 123L);
-    // tassert(dict$get(&hm, &rec) == NULL);
-    // tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    // item = dict$get(&hm, 123LL); // HM... incompatible
-
-    i32 key = -123;
-    item = dict$get(&hm, key * -1);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    item = dict$del(&hm, -key);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    i16 key16 = -123;
-    item = dict$get(&hm, key16 * -1);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    item = dict$del(&hm, -key16);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    i8 key8 = -123;
-    item = dict$get(&hm, key8 * -1);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    item = dict$del(&hm, -key8);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    u32 keyu32 = 123;
-    item = dict$get(&hm, keyu32);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    item = dict$del(&hm, keyu32);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    u16 keyu16 = 123;
-    item = dict$get(&hm, keyu16);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-
-    item = dict$del(&hm, keyu16);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    u8 keyu8 = 123;
-    item = dict$get(&hm, keyu8);
-    tassert(item != NULL);
-    tassert_eqi(item->val, 'z');
-    tassert_eqi(item->key, 123);
-    item = dict$del(&hm, keyu8);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-
-    dict.destroy(&hm.base);
-
-    return EOK;
-}
-
-test$case(test_dict_string_del_multitype_macro)
-{
-    struct s
-    {
-        char key[10];
-        char val;
-    } rec = { .key = "999", .val = 'a' };
-    (void)rec;
-
-    dict$define(struct s) hm;
-    _Static_assert(sizeof(hm) == sizeof(dict_c), "custom size mismatch");
-
-    tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
-
-
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-
-    var item = dict$get(&hm, "999");
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    item = dict$del(&hm, "999");
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    item = dict$get(&hm, &rec);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    item = dict$del(&hm, &rec);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    char* k1 = rec.key;
-    item = dict$get(&hm, k1);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    item = dict$del(&hm, k1);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-
-    char const* k2 = rec.key;
-    item = dict$get(&hm, k2);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    item = dict$del(&hm, k2);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    char const* const k3 = rec.key;
-    item = dict$get(&hm, k3);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    char karr[10] = { "999" };
-    item = dict$get(&hm, karr);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    item = dict$del(&hm, karr);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    str_c s = str.cstr(rec.key);
-    item = dict$get(&hm, s.buf);
-    tassert(item != NULL);
-    tassert_eqs(item->key, "999");
-    tassert_eqi(item->val, 'a');
-
-    item = dict$del(&hm, s.buf);
-    tassert(dict$get(&hm, &rec) == NULL);
-    tassert_eqs(dict$set(&hm, &rec), EOK);
-
-    dict.destroy(&hm.base);
-    return EOK;
-}
 
 test$case(test_dict_typedef_char)
 {
@@ -789,7 +373,13 @@ test$case(test_dict_typedef_char)
     tassert_eqs(item->key, "999");
     tassert_eqi(item->val, 'a');
 
-    dict.destroy(&hm.base);
+    var ditem = dict_ss.del(&hm, "999");
+    tassert(ditem != NULL);
+    tassert_eqs(ditem->key, "999");
+    tassert_eqi(dict_ss.len(&hm), 0);
+
+
+    dict_ss.destroy(&hm);
     return EOK;
 }
 
@@ -804,11 +394,6 @@ test$case(test_dict_typedef_int)
 
     dict$typedef(dict_ss, struct s, u64, true);
 
-    const struct dict_ss_vtable__ vt  = {                                                     
-        .set = (void*)dict.set,                                                                      
-        .get = (void*)_Generic((u64){0}, u64: dict.geti, default: dict.get),
-    };
-    tassert((void*)vt.get == (void*)dict.geti);
     dict_ss_c hm;
     tassert_eqs(EOK, dict$new(&hm, allocator, .capacity = 128));
 
@@ -820,10 +405,26 @@ test$case(test_dict_typedef_int)
     tassert_eqi(item->key, 999);
     tassert_eqi(item->val, 'a');
 
-    dict.destroy(&hm.base);
+    tassert_eqi(dict_ss.len(&hm), 1);
+    var ditem = dict_ss.del(&hm, 888);
+    tassert(ditem == NULL);
+
+    ditem = dict_ss.del(&hm, 999);
+    tassert(ditem != NULL);
+    tassert_eqi(ditem->key, 999);
+    tassert_eqi(dict_ss.len(&hm), 0);
+
+    ditem = dict_ss.del(&hm, 999);
+    tassert(ditem == NULL);
+
+    tassert_eqs(dict_ss.set(&hm, &rec), EOK);
+    tassert_eqi(dict_ss.len(&hm), 1);
+    dict_ss.clear(&hm);
+    tassert_eqi(dict_ss.len(&hm), 0);
+
+    dict_ss.destroy(&hm);
 
     _Static_assert(_Generic((dict_ss_c){ 0 }._dtype->key, u64: 1, default: 0), "ddd");
-    // _Static_assert(_Generic( 0 }._dtype->key, u64: 1, default: 0), "ddd");
 
     return EOK;
 }
@@ -843,11 +444,7 @@ main(int argc, char* argv[])
     test$run(test_dict_string);
     test$run(test_dict_create_generic);
     test$run(test_dict_iter);
-    test$run(test_dict_int64_get_multitype_macro);
-    test$run(test_dict_string_get_multitype_macro);
     test$run(test_custom_type_key);
-    test$run(test_dict_int64_del_multitype_macro);
-    test$run(test_dict_string_del_multitype_macro);
     test$run(test_dict_typedef_char);
     test$run(test_dict_typedef_int);
     

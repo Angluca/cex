@@ -3,11 +3,6 @@
 #include <stddef.h>
 #include <string.h>
 
-typedef struct dict_c
-{
-    void* hashmap; // any generic hashmap implementation
-} dict_c;
-
 typedef u64 (*dict_hash_func_f)(const void* item, u64 seed0, u64 seed1);
 typedef int (*dict_compare_func_f)(const void* a, const void* b, void* udata);
 typedef void (*dict_elfree_func_f)(void* item);
@@ -26,37 +21,25 @@ typedef struct dict_new_kwargs_s
 
 // Hack for getting hash/cmp functions by a type of key field
 // https://gustedt.wordpress.com/2015/05/11/the-controlling-expression-of-_generic/
-#define _dict$hashfunc_field(strucfield)                                                           \
+#define _dict$hashfunc(strucfield)                                                                 \
     _Generic(                                                                                      \
         &(strucfield),                                                                             \
-        const u64*: dict.hashfunc.u64_hash,                                                        \
-        u64*: dict.hashfunc.u64_hash,                                                              \
-        char(*)[]: dict.hashfunc.str_hash,                                                         \
-        const char(*)[]: dict.hashfunc.str_hash,                                                   \
+        const u64*: _cex_dict_u64_hash,                                                            \
+        u64*: _cex_dict_u64_hash,                                                                  \
+        char(*)[]: _cex_dict_str_hash,                                                             \
+        const char(*)[]: _cex_dict_str_hash,                                                       \
         default: NULL /* This will force dict.create() to raise assert */                          \
     )
 
-#define _dict$cmpfunc_field(strucfield)                                                            \
+#define _dict$cmpfunc(strucfield)                                                                  \
     _Generic(                                                                                      \
         &(strucfield),                                                                             \
-        const u64*: dict.hashfunc.u64_cmp,                                                         \
-        u64*: dict.hashfunc.u64_cmp,                                                               \
-        char(*)[]: dict.hashfunc.str_cmp,                                                          \
-        const char(*)[]: dict.hashfunc.str_cmp,                                                    \
+        const u64*: _cex_dict_u64_cmp,                                                             \
+        u64*: _cex_dict_u64_cmp,                                                                   \
+        char(*)[]: _cex_dict_str_cmp,                                                              \
+        const char(*)[]: _cex_dict_str_cmp,                                                        \
         default: NULL /* This will force dict.create() to raise assert */                          \
     )
-
-#define _dict$hashfunc(struct, field) _dict$hashfunc_field(((struct){ 0 }.field))
-
-#define _dict$cmpfunc(struct, field) _dict$cmpfunc_field(((struct){ 0 }.field))
-
-
-#define dict$define(eltype)                                                                        \
-    union                                                                                          \
-    {                                                                                              \
-        dict_c base;                                                                               \
-        typeof(eltype)* const _dtype; /* virtual field, only for type checks, const pointer */     \
-    }
 
 #define _dict$typedef_extern_0(typename) extern const struct typename##_vtable__ typename
 #define _dict$typedef_extern_1(typename)
@@ -64,23 +47,38 @@ typedef struct dict_new_kwargs_s
 
 
 #define _dict$typedef_impl_0(typename, keytype)
-#define _dict$typedef_impl_1(typename, keytype)                                                    \
-    _Static_assert(                                                                                \
-        _Generic(/* Validate if `keytype` match <typename>_c.key type */                           \
-                 (&(typename##_c){ 0 }._dtype->key),                                               \
-            u64 *: _Generic((keytype){ 0 }, u64: 1, default: 0),                                   \
-            char(*)[]: _Generic((keytype){ 0 }, char*: 1, default: 0),                             \
-            default: _Generic((keytype){ 0 }, default: 0)                                          \
-        ),                                                                                         \
-        "dict$impl() `keytype` arg does not match <typename>_c.key (check types!)"                     \
-    );                                                                                             \
-    const struct typename##_vtable__ typename = {                                                  \
-        .set = (void*)dict.set,                                                                    \
-        .get = (void*)(_Generic((keytype){ 0 }, u64: dict.geti, default: dict.get))                \
+#define _dict$typedef_impl_1(typename, keytype)                                                                               \
+    _Static_assert(/* Validate if `keytype` match <typename>_c.key type */                                                    \
+                   _Generic(                                                                                                  \
+                       (&(typename##_c){ 0 }._dtype->key),                                                                    \
+                       u64 *: _Generic((keytype){ 0 }, u64: 1, default: 0),                                                   \
+                       char(*)[]: _Generic((keytype){ 0 }, char*: 1, default: 0),                                             \
+                       default: _Generic(                                                                                     \
+                           (keytype){ 0 },                                                                                    \
+                           typeof(((typename##_c){ 0 }._dtype->key))*: 1, /* expected keytype* */                             \
+                           default: 0                                                                                         \
+                       )                                                                                                      \
+                   ),                                                                                                         \
+                   "dict$impl() `keytype` arg does not match <typename>_c.key (check types, keytype must be u64 or keytype*)" \
+    );                                                                                                                        \
+    const struct typename##_vtable__ typename = {                                                                             \
+        .set = (void*)_cex_dict_set,                                                                                          \
+        .get = (void*)(_Generic((keytype){ 0 }, u64: _cex_dict_geti, default: _cex_dict_get)),                                \
+        .del = (void*)(_Generic((keytype){ 0 }, u64: _cex_dict_deli, default: _cex_dict_del)),                                \
+        .len = (void*)_cex_dict_len,                                                                                          \
+        .iter = (void*)_cex_dict_iter,                                                                                        \
+        .destroy = (void*)_cex_dict_destroy,                                                                                  \
+        .clear = (void*)_cex_dict_clear,                                                                                      \
     };
 
 #define _dict$typedef_impl(typename, keytype, implement)                                           \
     _dict$typedef_impl_##implement(typename, keytype)
+
+typedef struct _cex_dict_c
+{
+    void* hashmap; // any generic hashmap implementation
+    const Allocator_i* allc;
+} _cex_dict_c;
 
 #define dict$impl(typename, keytype) _dict$typedef_impl(typename, keytype, 1)
 #define dict$typedef(typename, eltype, keytype, implement)                                         \
@@ -88,7 +86,7 @@ typedef struct dict_new_kwargs_s
     {                                                                                              \
         union                                                                                      \
         {                                                                                          \
-            dict_c base;                                                                           \
+            _cex_dict_c base;                                                                      \
             eltype* const _dtype; /* virtual field, only for type checks, const pointer */         \
         };                                                                                         \
     }                                                                                              \
@@ -96,7 +94,12 @@ typedef struct dict_new_kwargs_s
     struct typename##_vtable__                                                                     \
     {                                                                                              \
         Exception (*set)(typename##_c * self, const eltype* item);                                 \
-        eltype*  (*get)(typename##_c * self, const keytype item);                                   \
+        eltype* (*get)(typename##_c * self, const keytype item);                                   \
+        usize (*len)(typename##_c * self);                                                         \
+        eltype* (*del)(typename##_c * self, const keytype item);                                   \
+        void (*clear)(typename##_c * self);                                                        \
+        eltype* (*iter)(typename##_c * self, cex_iterator_s * iterator);                           \
+        void (*destroy)(typename##_c * self);                                                      \
     };                                                                                             \
     _dict$typedef_extern(typename, implement);                                                     \
     _dict$typedef_impl(typename, keytype, implement);
@@ -104,11 +107,11 @@ typedef struct dict_new_kwargs_s
 #define dict$new(self, allocator, ...)                                                             \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic(((self)), dict_c *: 0, default: 1),                                           \
+            _Generic(((self)), _cex_dict_c *: 0, default: 1),                                      \
             "self argument expected to be dict$define()"                                           \
         );                                                                                         \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
+            _Generic((&(self)->base), _cex_dict_c *: 1, default: 0),                               \
             "self argument expected to be dict$define()"                                           \
         );                                                                                         \
         _Static_assert(                                                                            \
@@ -121,295 +124,28 @@ typedef struct dict_new_kwargs_s
         );                                                                                         \
         dict_new_kwargs_s kwargs = { __VA_ARGS__ };                                                \
         if (kwargs.cmp_func == NULL) {                                                             \
-            kwargs.cmp_func = _dict$cmpfunc_field(((typeof(*((self)->_dtype))){ 0 }).key);         \
+            kwargs.cmp_func = _dict$cmpfunc(((typeof(*((self)->_dtype))){ 0 }).key);               \
         }                                                                                          \
         if (kwargs.hash_func == NULL) {                                                            \
-            kwargs.hash_func = _dict$hashfunc_field(((typeof(*((self)->_dtype))){ 0 }).key);       \
+            kwargs.hash_func = _dict$hashfunc(((typeof(*((self)->_dtype))){ 0 }).key);             \
         }                                                                                          \
-        dict.create(&((self)->base), sizeof(*((self)->_dtype)), allocator, &kwargs);               \
+        _cex_dict_create(&((self)->base), sizeof(*((self)->_dtype)), allocator, &kwargs);          \
     })
 
 
-#define dict$set(self, ...)                                                                        \
-    ({                                                                                             \
-        _Static_assert(                                                                            \
-            _Generic(((self)), dict_c *: 0, default: 1),                                           \
-            "self argument expected to be dict$define()"                                           \
-        );                                                                                         \
-        _Static_assert(                                                                            \
-            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
-            "self argument xpected to be dict$define()"                                            \
-        );                                                                                         \
-        /*__VA_ARGS__ to support inline struct initialization &(struct s){.key = 1}*/              \
-        typeof(((self)->_dtype)) _value = (__VA_ARGS__); /*dict type safety check */               \
-        dict.set(&((self)->base), _value);                                                         \
-    })
-
-#define dict$get(self, dictkey)                                                                    \
-    ({                                                                                             \
-        _Static_assert(                                                                            \
-            _Generic(((self)), dict_c *: 0, default: 1),                                           \
-            "self argument expected to be dict$define(eltype) 1"                                   \
-        );                                                                                         \
-        _Static_assert(                                                                            \
-            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
-            "self argument expected to be dict$define(eltype)"                                     \
-        );                                                                                         \
-        _Static_assert(                                                                            \
-            _Generic(/* Validate if `dictkey` match dict.key type */                               \
-                     (&(((typeof(*((self)->_dtype))){ 0 }).key)),                                  \
-                u64 *: _Generic(/* STANDARD u64 keys, we may pass literals and type of _dtype */   \
-                                (dictkey),                                                         \
-                        i8: 1,                                                                     \
-                        u8: 1,                                                                     \
-                        i16: 1,                                                                    \
-                        u16: 1,                                                                    \
-                        i32: 1,                                                                    \
-                        u32: 1,                                                                    \
-                        u64: 1,                                                                    \
-                        i64: 1,                                                                    \
-                        typeof((*(self)->_dtype))*: 1, /* only full record type*/                  \
-                        default: 0                     /* assert failure */                        \
-                     ),                                                                            \
-                char(*)[]: _Generic(/* STANDARD char array keys */                                 \
-                                    (dictkey),                                                     \
-                    const char*: 1,                                                                \
-                    char*: 1,                                                                      \
-                    typeof((*(self)->_dtype))*: 1, /* only full record type*/                      \
-                    default: 0                     /* assert failure */                            \
-                ),                                                                                 \
-                default: _Generic(/* CUSTOM keys must be exact key type or full record pointer*/   \
-                                  (dictkey),                                                       \
-                    typeof((*(self)->_dtype))*: 1,                    /* only full record type*/   \
-                    typeof(((typeof(*(self)->_dtype)){ 0 }).key)*: 1, /* only full key type */     \
-                    default: 0                                        /* assert failure */         \
-                )                                                                                  \
-            ),                                                                                     \
-            "dict$get() `dictkey` arg and expected dict `key` field type mismatch"                 \
-        );                                                                                         \
-        /* clang-format off */ \
-        (typeof(*((self)->_dtype))* /* return as dict type */ )_Generic(                           \
-            /* NOTE: picking appropriate function based on dictkey type (supporting literals) */   \
-            (dictkey), \
-            /* number literals */ i8: dict.geti, u8: dict.geti,i16: dict.geti, u16: dict.geti, i32: dict.geti, u32: dict.geti, i64: dict.geti, u64: dict.geti, \
-            /* all other cases */ default: dict.get                           \
-         )(&((self)->base), (dictkey));                                                                   \
-        /* clang-format on */                                                                      \
-    })
-
-#define dict$del(self, dictkey)                                                                    \
-    ({                                                                                             \
-        _Static_assert(                                                                            \
-            _Generic(((self)), dict_c *: 0, default: 1),                                           \
-            "self argument expected to be dict$define(eltype) 1"                                   \
-        );                                                                                         \
-        _Static_assert(                                                                            \
-            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
-            "self argument expected to be dict$define(eltype)"                                     \
-        );                                                                                         \
-        _Static_assert(                                                                            \
-            _Generic(/* Validate if `dictkey` match dict.key type */                               \
-                     (&(((typeof(*((self)->_dtype))){ 0 }).key)),                                  \
-                u64 *: _Generic(/* STANDARD u64 keys, we may pass literals and type of _dtype */   \
-                                (dictkey),                                                         \
-                        i8: 1,                                                                     \
-                        u8: 1,                                                                     \
-                        i16: 1,                                                                    \
-                        u16: 1,                                                                    \
-                        i32: 1,                                                                    \
-                        u32: 1,                                                                    \
-                        u64: 1,                                                                    \
-                        i64: 1,                                                                    \
-                        typeof((*(self)->_dtype))*: 1, /* only full record type*/                  \
-                        default: 0                     /* assert failure */                        \
-                     ),                                                                            \
-                char(*)[]: _Generic(/* STANDARD char array keys */                                 \
-                                    (dictkey),                                                     \
-                    const char*: 1,                                                                \
-                    char*: 1,                                                                      \
-                    typeof((*(self)->_dtype))*: 1, /* only full record type*/                      \
-                    default: 0                     /* assert failure */                            \
-                ),                                                                                 \
-                default: _Generic(/* CUSTOM keys must be exact key type or full record pointer*/   \
-                                  (dictkey),                                                       \
-                    typeof((*(self)->_dtype))*: 1,                    /* only full record type*/   \
-                    typeof(((typeof(*(self)->_dtype)){ 0 }).key)*: 1, /* only full key type */     \
-                    default: 0                                        /* assert failure */         \
-                )                                                                                  \
-            ),                                                                                     \
-            "dict$get() `dictkey` arg and expected dict `key` field type mismatch"                 \
-        );                                                                                         \
-        /* clang-format off */ \
-        (typeof(*((self)->_dtype))* /* return as dict type */ )_Generic(                           \
-            /* NOTE: picking appropriate function based on dictkey type (supporting literals) */   \
-            (dictkey), \
-            /* number literals */ i8: dict.deli, u8: dict.deli,i16: dict.deli, u16: dict.deli, i32: dict.deli, u32: dict.deli, i64: dict.deli, u64: dict.deli, \
-            /* all other cases */ default: dict.del                           \
-         )(&((self)->base), (dictkey));                                                                   \
-        /* clang-format on */                                                                      \
-    })
-
-
-#define dict$destroy(self)                                                                         \
-    ({                                                                                             \
-        _Static_assert(                                                                            \
-            _Generic(((self)), dict_c *: 0, default: 1),                                           \
-            "self argument expected to be dict$define(eltype) 1"                                   \
-        );                                                                                         \
-        _Static_assert(                                                                            \
-            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
-            "self argument expected to be dict$define(eltype)"                                     \
-        );                                                                                         \
-        dict.destroy(&((self)->base));                                                             \
-    })
-
-#define dict$iter(self, it)                                                                        \
-    ({                                                                                             \
-        _Static_assert(                                                                            \
-            _Generic(((self)), dict_c *: 0, default: 1),                                           \
-            "self argument expected to be dict$define(eltype) 1"                                   \
-        );                                                                                         \
-        _Static_assert(                                                                            \
-            _Generic((&(self)->base), dict_c *: 1, default: 0),                                    \
-            "self argument xpected to be dict$define(eltype)"                                      \
-        );                                                                                         \
-        _Static_assert(                                                                            \
-            _Generic((it), cex_iterator_s *: 1, default: 0),                                       \
-            "expected cex_iterator_s pointer, i.e. `&it.iterator`"                                 \
-        );                                                                                         \
-        (typeof(((self)->_dtype)))dict.iter(&((self)->base), (it));                                \
-    })
-
-struct __module__dict
-{
-    // Autogenerated by CEX
-    // clang-format off
-
-
-struct {  // sub-module .hashfunc >>>
-    /**
-     * @brief Hashmap: int compare function
-     *
-     * @param a as u64
-     * @param b as u64
-     * @param udata (unused)
-     * @return
-     */
-    int
-    (*u64_cmp)(const void* a, const void* b, void* udata);
-
-    /**
-     * @brief Hashmap: int hash function, for making ticker_id -> hash (uniformly distrib)
-     *
-     * @param item (u64) item (ticker id)
-     * @param seed0 (unused)
-     * @param seed1 (unused)
-     * @return hash value
-     */
-    u64
-    (*u64_hash)(const void* item, u64 seed0, u64 seed1);
-
-    /**
-     * @brief Compares static char[] buffer keys **must be null terminated**
-     *
-     * @param a  char[N] string
-     * @param b  char[N] string
-     * @param udata  (unused)
-     * @return compared int value
-     */
-    int
-    (*str_cmp)(const void* a, const void* b, void* udata);
-
-    /**
-     * @brief Compares static char[] buffer keys **must be null terminated**
-     *
-     * @param item
-     * @param seed0
-     * @param seed1
-     * @return
-     */
-    u64
-    (*str_hash)(const void* item, u64 seed0, u64 seed1);
-
-} hashfunc;  // sub-module .hashfunc <<<
-Exception
-(*create)(dict_c* self, usize item_size, const Allocator_i* allocator, dict_new_kwargs_s* kwargs);
-
-/**
- * @brief Set or replace dict item
- *
- * @param self dict() instance
- * @param item  item key/value struct
- * @return error code, EOK (0!) on success, positive on failure
- */
-Exception
-(*set)(dict_c* self, const void* item);
-
-/**
- * @brief Get item by integer key
- *
- * @param self dict() instance
- * @param key u64 key
- */
-void*
-(*geti)(dict_c* self, u64 key);
-
-/**
- * @brief Get item by generic key pointer (including strings)
- *
- * @param self dict() instance
- * @param key generic pointer key
- */
-void*
-(*get)(dict_c* self, const void* key);
-
-/**
- * @brief Number elements in dict()
- *
- * @param self  dict() instance
- * @return number
- */
-usize
-(*len)(dict_c* self);
-
-/**
- * @brief Free dict() instance
- *
- * @param self  dict() instance
- * @return always NULL
- */
-void
-(*destroy)(dict_c* self);
-
-/**
- * @brief Clear all elements in dict (but allocated capacity unchanged)
- *
- * @param self dict() instane
- */
-void
-(*clear)(dict_c* self);
-
-/**
- * @brief Delete item by integer key
- *
- * @param self dict() instance
- * @param key u64 key
- */
-void*
-(*deli)(dict_c* self, u64 key);
-
-/**
- * @brief Delete item by generic key pointer (including strings)
- *
- * @param self dict() instance
- * @param key generic pointer key
- */
-void*
-(*del)(dict_c* self, const void* key);
-
-void*
-(*iter)(dict_c* self, cex_iterator_s* iterator);
-
-    // clang-format on
-};
-extern const struct __module__dict dict; // CEX Autogen
+// clang-format off
+int _cex_dict_u64_cmp(const void* a, const void* b, void* udata);
+u64 _cex_dict_u64_hash(const void* item, u64 seed0, u64 seed1);
+int _cex_dict_str_cmp(const void* a, const void* b, void* udata);
+u64 _cex_dict_str_hash(const void* item, u64 seed0, u64 seed1);
+Exception _cex_dict_create(_cex_dict_c* self, usize item_size, const Allocator_i* allocator, dict_new_kwargs_s* kwargs);
+Exception _cex_dict_set(_cex_dict_c* self, const void* item);
+void* _cex_dict_geti(_cex_dict_c* self, u64 key);
+void* _cex_dict_get(_cex_dict_c* self, const void* key);
+usize _cex_dict_len(_cex_dict_c* self);
+void _cex_dict_destroy(_cex_dict_c* self);
+void _cex__cex_dict_clear(_cex_dict_c* self);
+void* _cex_dict_deli(_cex_dict_c* self, u64 key);
+void* _cex_dict_del(_cex_dict_c* self, const void* key);
+void* _cex_dict_iter(_cex_dict_c* self, cex_iterator_s* iterator);
+// clang-format on
