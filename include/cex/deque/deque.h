@@ -85,33 +85,23 @@ typedef struct __cex_deque_c* _cex_deque_c;
     typename##_c;
 
 #define deque$new(self, allocator, /* deque_new_kwargs_s */...)                                    \
-    ({                                                                                             \
-        _Static_assert(                                                                            \
-            _Generic((&(self)->base), _cex_deque_c *: 1, default: 0),                              \
-            "self argument expected to be deque$typedef() class"                                   \
-        );                                                                                         \
-        deque_new_kwargs_s kwargs = { __VA_ARGS__ };                                               \
-        _cex_deque_create(                                                                         \
-            &(self)->base,                                                                         \
-            sizeof(*((self)->_dtype)),                                                             \
-            alignof(typeof(*((self)->_dtype))),                                                    \
-            allocator,                                                                             \
-            &kwargs                                                                                \
-        );                                                                                         \
-    })
+    (_cex_deque_create(                                                                            \
+        &(self)->base,                                                                             \
+        sizeof(*((self)->_dtype)),                                                                 \
+        alignof(typeof(*((self)->_dtype))),                                                        \
+        allocator,                                                                                 \
+        &(deque_new_kwargs_s){ __VA_ARGS__ }                                                       \
+    ))
 
-#define deque$new_static(self, buf, buf_len, /* _cex_deque_new_kwargs_s */...)                     \
-    ({                                                                                             \
-        deque_new_kwargs_s kwargs = { __VA_ARGS__ };                                               \
-        _cex_deque_create_static(                                                                  \
-            &(self)->base,                                                                         \
-            buf,                                                                                   \
-            buf_len,                                                                               \
-            sizeof(*((self)->_dtype)),                                                             \
-            alignof(typeof(*((self)->_dtype))),                                                    \
-            &kwargs                                                                                \
-        );                                                                                         \
-    })
+#define deque$new_static(self, buf, buf_len, /* deque_new_kwargs_s */...)                     \
+    (_cex_deque_create_static(                                                                     \
+        &(self)->base,                                                                             \
+        buf,                                                                                       \
+        buf_len,                                                                                   \
+        sizeof(*((self)->_dtype)),                                                                 \
+        alignof(typeof(*((self)->_dtype))),                                                        \
+        &(deque_new_kwargs_s){ __VA_ARGS__ }                                                       \
+    ))
 
 // clang-format off
 Exception _cex_deque_validate(_cex_deque_c *self);
