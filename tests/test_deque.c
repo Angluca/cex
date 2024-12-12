@@ -923,6 +923,55 @@ test$case(test_deque_validate__bad_pointer_alignment)
 
 }
 
+test$case(test_deque_generic_new_append_pop)
+{
+    deque$typedef(deque_i32, int, true);
+
+    deque_i32_c a;
+    tassert_eqe(EOK, deque.create(&a.base, 0, false, sizeof(int), alignof(int), allocator));
+    tassert_eqs(EOK, deque.validate(&a.base));
+
+    deque_head_s* head = &a.base->_head;
+    tassert_eqi(head->capacity, 16);
+    tassert_eqi(deque.len(&a.base), 0);
+
+    for (i32 i = 0; i < 16; i++) {
+        tassert_eqs(EOK, deque_i32.append(&a, &i));
+    }
+    tassert_eqi(deque.len(&a.base), 16);
+    tassert_eqi(head->idx_tail, 16);
+
+    u32 nit = 0;
+    for (i32 i = 16; i > 0; i--) {
+        i32* p = deque_i32.pop(&a);
+        tassertf(p != NULL, "%d\n: NULL", i);
+        tassertf(*p == (i - 1), "%d: i=%d\n", *p, i);
+        nit++;
+    }
+    tassert_eqi(nit, 16);
+    tassert_eqi(deque_i32.len(&a), 0);
+
+    for (i32 i = 0; i < 16; i++) {
+        tassert_eqs(EOK, deque_i32.enqueue(&a, &i));
+    }
+    tassert_eqi(deque_i32.len(&a), 16);
+    tassert_eqi(head->idx_head, 0);
+    tassert_eqi(head->idx_tail, 16);
+
+    for (i32 i = 0; i < 16; i++) {
+        i32* p = deque_i32.dequeue(&a);
+        tassertf(p != NULL, "%d\n: NULL", i);
+        tassertf(*p == i, "%d: i=%d\n", *p, i);
+    }
+    tassert_eqi(deque_i32.len(&a), 0);
+    tassert_eqi(head->idx_head, 16);
+    tassert_eqi(head->idx_tail, 16);
+
+    tassert_eqs(EOK, deque.validate(&a.base));
+    deque_i32.destroy(&a);
+    return EOK;
+
+}
 
 /*
  *
@@ -961,6 +1010,7 @@ main(int argc, char* argv[])
     test$run(test_deque_validate__zero_capacity);
     test$run(test_deque_validate__bad_magic);
     test$run(test_deque_validate__bad_pointer_alignment);
+    test$run(test_deque_generic_new_append_pop);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

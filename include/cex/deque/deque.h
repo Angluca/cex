@@ -27,6 +27,46 @@ struct _deque_c
 };
 typedef struct _deque_c* deque_c;
 
+#define _deque$typedef_extern_0(typename) extern const struct typename##_vtable__ typename
+#define _deque$typedef_extern_1(typename)
+#define _deque$typedef_extern(typename, implement) _deque$typedef_extern_##implement(typename)
+
+#define _deque$typedef_impl_0(typename)
+#define _deque$typedef_impl_1(typename)                                                            \
+    const struct typename##_vtable__ typename = {                                                  \
+        .append = (void*)deque.append,                                                             \
+        .pop = (void*)deque.pop,                                                                   \
+        .len = (void*)deque.len,                                                                   \
+        .enqueue = (void*)deque.enqueue,                                                                   \
+        .dequeue = (void*)deque.dequeue,                                                                   \
+        .destroy = (void*)deque.destroy,                                                                   \
+    };
+#define _deque$typedef_impl(typename, implement) _deque$typedef_impl_##implement(typename)
+
+#define deque$impl(typename) _deque$typedef_impl(typename, 1)
+
+#define deque$typedef(typename, eltype, implement)                                                 \
+    typedef struct typename##_c typename##_c;                                                      \
+    struct typename##_vtable__                                                                     \
+    {                                                                                              \
+        Exception (*append)(typename##_c * self, eltype * item);                                   \
+        eltype* (*pop)(typename##_c * self);                                                       \
+        usize (*len)(typename##_c * self);                                                         \
+        Exception (*enqueue)(typename##_c * self, eltype * item);                                   \
+        eltype* (*dequeue)(typename##_c * self);                                                       \
+        void (*destroy)(typename##_c * self);                                                         \
+    };                                                                                             \
+    _deque$typedef_extern(typename, implement);                                                    \
+    _deque$typedef_impl(typename, implement);                                                      \
+    typedef struct typename##_c                                                                    \
+    {                                                                                              \
+        union                                                                                      \
+        {                                                                                          \
+            deque_c base;                                                                          \
+            eltype* const _dtype; /* virtual field, only for type checks, const pointer */         \
+        };                                                                                         \
+    }                                                                                              \
+    typename##_c;
 
 #define deque$new(self, eltype, max_capacity, rewrite_overflowed, allocator)                       \
     (deque.create(                                                                                 \
