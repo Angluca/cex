@@ -11,11 +11,11 @@ typedef struct
 {
     alignas(64) struct
     {
-        usize magic : 16;             // deque magic number for sanity checks
-        usize elsize : 16;            // element size
-        usize elalign : 8;            // align of element type
-        usize eloffset : 8;           // offset in bytes to the 1st element array
-        usize rewrite_overflowed : 8; // allow rewriting old unread values if que overflowed
+        u64 magic : 16;             // deque magic number for sanity checks
+        u64 elsize : 16;            // element size
+        u64 elalign : 8;            // align of element type
+        u64 eloffset : 8;           // offset in bytes to the 1st element array
+        u64 rewrite_overflowed : 8; // allow rewriting old unread values if que overflowed
     } header;
     usize idx_head;
     usize idx_tail;
@@ -56,7 +56,17 @@ typedef struct __cex_deque_c* _cex_deque_c;
 
 #define deque$impl(typename) _deque$typedef_impl(typename, 1)
 
+
+// clang-format off
+#define deque$define_static_buf(var_name, dequetype, capacity)                                                  \
+    alignas(alignof(_cex_deque_head_s)) char var_name[          \
+        sizeof(_cex_deque_head_s) + sizeof(*(dequetype##_c){ 0 }._dtype) * (capacity) \
+    ] = {0}; \
+    _Static_assert((capacity) > 0, "list$define_static_buf zero capacity");
+// clang-format on
+
 #define deque$typedef(typename, eltype, implement)                                                 \
+    _Static_assert(alignof(eltype) <= 64, "alignment of element is too high, max is 64");          \
     typedef struct typename##_c typename##_c;                                                      \
     struct typename##_vtable__                                                                     \
     {                                                                                              \
@@ -93,7 +103,7 @@ typedef struct __cex_deque_c* _cex_deque_c;
         &(deque_new_kwargs_s){ __VA_ARGS__ }                                                       \
     ))
 
-#define deque$new_static(self, buf, buf_len, /* deque_new_kwargs_s */...)                     \
+#define deque$new_static(self, buf, buf_len, /* deque_new_kwargs_s */...)                          \
     (_cex_deque_create_static(                                                                     \
         &(self)->base,                                                                             \
         buf,                                                                                       \

@@ -640,7 +640,7 @@ test$case(testlist_align16)
 test$case(testlist_append_static)
 {
 
-    list$define_static_buf(buf, list_i32, 4);
+    static list$define_static_buf(buf, list_i32, 4);
 
     list_i32_c a;
     tassert_eqs(EOK, list$new_static(&a, buf, arr$len(buf)));

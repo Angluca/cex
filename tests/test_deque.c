@@ -178,10 +178,12 @@ test$case(test_element_alignment_64)
 
     uassert_disable();
 
-    deque$typedef(deque_foo128, struct foo128, true);
-    deque_foo128_c b;
-    tassert_eqs(Error.argument, deque$new(&b, allocator));
-    (void)deque_foo128;
+    // NOTE: Alignment is too high, static assert failure
+    // deque$typedef(deque_foo128, struct foo128, true);
+    // deque_foo128_c b;
+    // tassert_eqs(Error.argument, deque$new(&b, allocator));
+    // (void)deque_foo128;
+
     return EOK;
 
 }
@@ -719,12 +721,15 @@ test$case(test_deque_iter_fetch_reversed)
 //
 test$case(test_deque_static)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // NOTE: allowed to prepend static! to make function static vars
+    static deque$define_static_buf(buf, deque_int, 16);
 
     deque_int_c a;
-    e$except(err, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true))
+    e$except(err, deque$new_static(&a, buf, sizeof(buf), .rewrite_overflowed = true))
     {
         tassert(false && "deque$new fail");
+
+
     }
     tassert_eqs(EOK, _cex_deque_validate(&a.base));
 
