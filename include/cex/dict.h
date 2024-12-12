@@ -144,7 +144,7 @@ void* _cex_dict_geti(_cex_dict_c* self, u64 key);
 void* _cex_dict_get(_cex_dict_c* self, const void* key);
 usize _cex_dict_len(_cex_dict_c* self);
 void _cex_dict_destroy(_cex_dict_c* self);
-void _cex__cex_dict_clear(_cex_dict_c* self);
+void _cex_dict_clear(_cex_dict_c* self);
 void* _cex_dict_deli(_cex_dict_c* self, u64 key);
 void* _cex_dict_del(_cex_dict_c* self, const void* key);
 void* _cex_dict_iter(_cex_dict_c* self, cex_iterator_s* iterator);
