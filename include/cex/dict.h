@@ -108,11 +108,11 @@ typedef struct _cex_dict_c
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic(((self)), _cex_dict_c *: 0, default: 1),                                      \
-            "self argument expected to be dict$define()"                                           \
+            "self argument expected to be dict$typedef() class"                                           \
         );                                                                                         \
         _Static_assert(                                                                            \
             _Generic((&(self)->base), _cex_dict_c *: 1, default: 0),                               \
-            "self argument expected to be dict$define()"                                           \
+            "self argument expected to be dict$typedef() class"                                           \
         );                                                                                         \
         _Static_assert(                                                                            \
             _Alignof(typeof(*((self)->_dtype))) <= _Alignof(void*),                                \

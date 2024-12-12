@@ -103,11 +103,10 @@ deque_validate(deque_c *self)
 Exception
 deque_create(
     deque_c* self,
-    usize max_capacity,
-    bool rewrite_overflowed,
     usize elsize,
     usize elalign,
-    const Allocator_i* allocator
+    const Allocator_i* allocator,
+    deque_new_kwargs_s* kwargs
 )
 {
     if (self == NULL) {
@@ -131,6 +130,10 @@ deque_create(
         uassert((elalign & (elalign - 1)) == 0 && "elalign must be power of 2");
         return Error.argument;
     }
+
+    // kwargs defaults
+    usize max_capacity = kwargs != NULL ? kwargs->max_capacity : 0;
+    bool rewrite_overflowed = kwargs != NULL ? kwargs->rewrite_overflowed: false;
 
     if (max_capacity > 0 && (max_capacity & (max_capacity - 1)) != 0) {
         uassert(false && "max_capacity must be power of 2");
@@ -180,9 +183,9 @@ deque_create_static(
     deque_c* self,
     void* buf,
     usize buf_len,
-    bool rewrite_overflowed,
     usize elsize,
-    usize elalign
+    usize elalign,
+    deque_new_kwargs_s* kwargs
 )
 {
     if (self == NULL) {
@@ -213,6 +216,8 @@ deque_create_static(
         uassert(false && "memory buffer address must be aligned to 64 bytes");
         return Error.integrity;
     }
+
+    bool rewrite_overflowed = kwargs != NULL ? kwargs->rewrite_overflowed: false;
 
     // buffer size might not contain exact pow of 2 number, just round it down
     usize max_capacity = (buf_len - sizeof(deque_head_s)) / elsize / 2;

@@ -1,6 +1,12 @@
 #pragma once
 #include <cex/cex.h>
 
+typedef struct deque_new_kwargs_s
+{
+    usize max_capacity;
+    bool rewrite_overflowed;
+} deque_new_kwargs_s;
+
 typedef struct
 {
     alignas(64) struct
@@ -37,9 +43,9 @@ typedef struct _deque_c* deque_c;
         .append = (void*)deque.append,                                                             \
         .pop = (void*)deque.pop,                                                                   \
         .len = (void*)deque.len,                                                                   \
-        .enqueue = (void*)deque.enqueue,                                                                   \
-        .dequeue = (void*)deque.dequeue,                                                                   \
-        .destroy = (void*)deque.destroy,                                                                   \
+        .enqueue = (void*)deque.enqueue,                                                           \
+        .dequeue = (void*)deque.dequeue,                                                           \
+        .destroy = (void*)deque.destroy,                                                           \
     };
 #define _deque$typedef_impl(typename, implement) _deque$typedef_impl_##implement(typename)
 
@@ -52,9 +58,9 @@ typedef struct _deque_c* deque_c;
         Exception (*append)(typename##_c * self, eltype * item);                                   \
         eltype* (*pop)(typename##_c * self);                                                       \
         usize (*len)(typename##_c * self);                                                         \
-        Exception (*enqueue)(typename##_c * self, eltype * item);                                   \
-        eltype* (*dequeue)(typename##_c * self);                                                       \
-        void (*destroy)(typename##_c * self);                                                         \
+        Exception (*enqueue)(typename##_c * self, eltype * item);                                  \
+        eltype* (*dequeue)(typename##_c * self);                                                   \
+        void (*destroy)(typename##_c * self);                                                      \
     };                                                                                             \
     _deque$typedef_extern(typename, implement);                                                    \
     _deque$typedef_impl(typename, implement);                                                      \
@@ -68,18 +74,21 @@ typedef struct _deque_c* deque_c;
     }                                                                                              \
     typename##_c;
 
-#define deque$new(self, eltype, max_capacity, rewrite_overflowed, allocator)                       \
-    (deque.create(                                                                                 \
-        self,                                                                                      \
-        max_capacity,                                                                              \
-        rewrite_overflowed,                                                                        \
-        sizeof(eltype),                                                                            \
-        alignof(eltype),                                                                           \
-        allocator                                                                                  \
-    ))
+#define deque$new(self, allocator, ...)                                                            \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic((&(self)->base), deque_c *: 1, default: 0),                               \
+            "self argument expected to be deque$typedef() class"                                           \
+        );                                                                                         \
+        deque_new_kwargs_s kwargs = { __VA_ARGS__ };                                               \
+        deque.create(self, sizeof(eltype), alignof(eltype), allocator, &kwargs);                   \
+    })
 
 #define deque$new_static(self, eltype, buf, buf_len, rewrite_overflowed)                           \
-    (deque.create_static(self, buf, buf_len, rewrite_overflowed, sizeof(eltype), alignof(eltype)))
+    ({                                                                                             \
+        deque_new_kwargs_s kwargs = { __VA_ARGS__ };                                               \
+        deque.create_static(self, buf, buf_len, sizeof(eltype), alignof(eltype), &kwargs);         \
+    })
 
 struct __module__deque
 {
@@ -90,7 +99,7 @@ Exception
 (*validate)(deque_c *self);
 
 Exception
-(*create)(deque_c* self, usize max_capacity, bool rewrite_overflowed, usize elsize, usize elalign, const Allocator_i* allocator);
+(*create)(deque_c* self, usize elsize, usize elalign, const Allocator_i* allocator, deque_new_kwargs_s* kwargs);
 
 Exception
 (*create_static)(deque_c* self, void* buf, usize buf_len, bool rewrite_overflowed, usize elsize, usize elalign);
