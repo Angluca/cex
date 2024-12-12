@@ -74,17 +74,23 @@ typedef struct _deque_c* deque_c;
     }                                                                                              \
     typename##_c;
 
-#define deque$new(self, allocator, ...)                                                            \
+#define deque$new(self, allocator, /* deque_new_kwargs_s */ ...)                                      \
     ({                                                                                             \
         _Static_assert(                                                                            \
-            _Generic((&(self)->base), deque_c *: 1, default: 0),                               \
-            "self argument expected to be deque$typedef() class"                                           \
+            _Generic((&(self)->base), deque_c *: 1, default: 0),                                   \
+            "self argument expected to be deque$typedef() class"                                   \
         );                                                                                         \
         deque_new_kwargs_s kwargs = { __VA_ARGS__ };                                               \
-        deque.create(self, sizeof(eltype), alignof(eltype), allocator, &kwargs);                   \
+        deque.create(                                                                              \
+            &(self)->base,                                                                         \
+            sizeof(*((self)->_dtype)),                                                             \
+            alignof(typeof(*((self)->_dtype))),                                                    \
+            allocator,                                                                             \
+            &kwargs                                                                                \
+        );                                                                                         \
     })
 
-#define deque$new_static(self, eltype, buf, buf_len, rewrite_overflowed)                           \
+#define deque$new_static(self, buf, buf_len, /* deque_new_kwargs_s */ ...)                                                  \
     ({                                                                                             \
         deque_new_kwargs_s kwargs = { __VA_ARGS__ };                                               \
         deque.create_static(self, buf, buf_len, sizeof(eltype), alignof(eltype), &kwargs);         \
@@ -102,7 +108,7 @@ Exception
 (*create)(deque_c* self, usize elsize, usize elalign, const Allocator_i* allocator, deque_new_kwargs_s* kwargs);
 
 Exception
-(*create_static)(deque_c* self, void* buf, usize buf_len, bool rewrite_overflowed, usize elsize, usize elalign);
+(*create_static)(deque_c* self, void* buf, usize buf_len, usize elsize, usize elalign, deque_new_kwargs_s* kwargs);
 
 Exception
 (*append)(deque_c* self, const void* item);
