@@ -1,5 +1,6 @@
 #pragma once
 #include "sbuf.h"
+#include "str.h"
 #include "_stb_sprintf.h"
 #include "_stb_sprintf.c"
 #include "cex.h"

@@ -1,6 +1,7 @@
 #pragma once
 #include <cex/cex.h>
 #include <cex/sbuf.h>
+#include <cex/str.h>
 #include <dirent.h>
 #include <linux/limits.h>
 #include <stdio.h>
