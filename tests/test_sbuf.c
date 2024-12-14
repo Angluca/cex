@@ -128,7 +128,7 @@ test$case(test_sbuf_append_char_grow)
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
     tassert_eqi(sbuf.len(&s), sbuf.capacity(&s));
 
-    tassert_eqs(EOK, sbuf.append(&s, s$("B")));
+    tassert_eqs(EOK, sbuf.append(&s, str$("B")));
     tassert_eqi(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     // check null term
@@ -176,7 +176,7 @@ test$case(test_sbuf_clear)
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s));
 
-    tassert_eqs(EOK, sbuf.append(&s, s$("1234567890A")));
+    tassert_eqs(EOK, sbuf.append(&s, str$("1234567890A")));
     tassert_eqs("1234567890A", s);
 
     sbuf.clear(&s);
@@ -201,7 +201,7 @@ test$case(test_sbuf_destroy)
     char* alt_s = buf + sizeof(sbuf_head_s);
     tassert_eqs(EOK, sbuf.create_static(&s, buf, arr$len(buf)));
     tassert(buf[0] != '\0');
-    tassert_eqs(EOK, sbuf.append(&s, s$("1234567890A")));
+    tassert_eqs(EOK, sbuf.append(&s, str$("1234567890A")));
     tassert(*alt_s == '1');
     tassert_eqs("1234567890A", s);
     tassert(buf[0] != '\0');
@@ -224,7 +224,7 @@ test$case(test_sbuf_replace)
     char buf[128];
 
     tassert_eqs(EOK, sbuf.create_static(&s, buf, arr$len(buf)));
-    tassert_eqs(EOK, sbuf.append(&s, s$("123123123")));
+    tassert_eqs(EOK, sbuf.append(&s, str$("123123123")));
     u32 cap = sbuf.capacity(&s);
 
     tassert_eqs(EOK, sbuf.replace(&s, str.cstr("123"), str.cstr("456")));
@@ -486,7 +486,7 @@ test$case(test_iter_split)
     tassert_eqs(EOK, sbuf.create_static(&s, str_buf, arr$len(str_buf)));
     tassert(s != buf);
 
-    tassert_eqe(EOK, sbuf.append(&s, s$("123456")));
+    tassert_eqe(EOK, sbuf.append(&s, str$("123456")));
     u32 nit = 0;
 
 

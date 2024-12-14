@@ -446,7 +446,7 @@ test$case(test_fprintf_to_file)
     io.rewind(&file);
 
     tassert_eqs(EOK, io.readall(&file, &content));
-    tassert_eqi(0, str.cmp(content, s$("io.fprintf: str_c: 1234\n")));
+    tassert_eqi(0, str.cmp(content, str$("io.fprintf: str_c: 1234\n")));
 
 
     io.close(&file);
@@ -465,7 +465,7 @@ test$case(test_write)
     str_c content;
     io.rewind(&file);
     tassert_eqs(EOK, io.readall(&file, &content));
-    tassert_eqi(0, str.cmp(content, s$("1234")));
+    tassert_eqi(0, str.cmp(content, str$("1234")));
 
     io.close(&file);
     return EOK;

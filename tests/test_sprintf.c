@@ -69,7 +69,7 @@ test$case(stb_sprintf_str)
 
     str_c sv = str.cstr("45678");
     str_c sv_sub = str.sub(sv, 1, 3);
-    tassert_eqi(str.cmp(sv_sub, s$("56")), 0);
+    tassert_eqi(str.cmp(sv_sub, str$("56")), 0);
 
     _Static_assert(sizeof(char*) == sizeof(usize), "size");
 

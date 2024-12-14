@@ -255,7 +255,7 @@ test$case(test_arrays_and_slices)
 
     i32 a_empty[] = {};
     tassert_eqi(arr$len(a_empty), 0);
-    var s2 = arr$slice(a_empty, 1, 3);
+    var s2 = arr$slice(a_empty, .start = -1);
     tassert_eqi(s2.len, 0);
     tassert(s2.arr == NULL);
 
@@ -270,6 +270,21 @@ test$case(test_arrays_and_slices)
     tassert_eqi(s3.arr[1], 3);
 
     tassert_eqi(arr$slice(a, 1, 3).len, 2);
+
+    var s4 = arr$slice(a, 1);
+    tassert_eqi(s4.len, 3);
+    tassert_eqi(s4.arr[0], 2);
+    tassert_eqi(s4.arr[1], 3);
+    tassert_eqi(s4.arr[2], 4);
+
+    var s5 = arr$slice(a, .end = -2);
+    tassert_eqi(s5.len, 2);
+    tassert_eqi(s5.arr[0], 1);
+    tassert_eqi(s5.arr[1], 2);
+
+    var s6 = arr$slice(a, .start = 1, .end = -2);
+    tassert_eqi(s6.len, 1);
+    tassert_eqi(s6.arr[0], 2);
 
     // NOTE: slice_py is auto-generate by python script, in order to replicate pytnon's
     //       slice behavior. If end=0, it treated as a[start:] slice operation.

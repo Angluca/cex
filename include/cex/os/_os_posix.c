@@ -40,10 +40,10 @@ os__listdir_(str_c path, sbuf_c* buf)
     while ((ep = readdir(dp)) != NULL) {
         var dir_name = str.cstr(ep->d_name);
 
-        if (str.cmp(dir_name, s$(".")) == 0) {
+        if (str.cmp(dir_name, str$(".")) == 0) {
             continue;
         }
-        if (str.cmp(dir_name, s$("..")) == 0) {
+        if (str.cmp(dir_name, str$("..")) == 0) {
             continue;
         }
 

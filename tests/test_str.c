@@ -63,10 +63,10 @@ test$case(test_cstr_sdollar)
 
     sbuf_c sb;
     tassert_eqs(EOK, sbuf.create(&sb, 10, allocator));
-    tassert_eqs(EOK, sbuf.append(&sb, s$("hello")));
+    tassert_eqs(EOK, sbuf.append(&sb, str$("hello")));
     sbuf.destroy(&sb);
 
-    str_c s2 = s$("hello");
+    str_c s2 = str$("hello");
     tassert_eqs(s2.buf, cstr);
     tassert_eqi(s2.len, 5); // lazy init until str.length() is called
     tassert(s2.buf == cstr);
@@ -81,14 +81,14 @@ test$case(test_cstr_sdollar)
     tassert_eqi(str.len(snull), 0);
     tassert_eqi(str.is_valid(snull), false);
 
-    str_c sempty = s$("");
+    str_c sempty = str$("");
     tassert_eqs(sempty.buf, "");
     tassert_eqi(sempty.len, 0);
     tassert_eqi(str.len(sempty), 0);
     tassert_eqi(sempty.len, 0);
     tassert_eqi(str.is_valid(sempty), true);
 
-    // // WARNING: buffers for s$() are extremely bad idea, they may not be null term!
+    // // WARNING: buffers for str$() are extremely bad idea, they may not be null term!
     char buf[30] = { 0 };
     var s = str.cstr(buf);
     tassert_eqs(s.buf, buf);
@@ -100,7 +100,7 @@ test$case(test_cstr_sdollar)
     memset(buf, 'z', arr$len(buf));
 
     // WARNING: if no null term
-    // s = s$(buf); // !!!! STACK OVERFLOW, no null term!
+    // s = str$(buf); // !!!! STACK OVERFLOW, no null term!
     //
     // Consider using str.cbuf() - it limits length by buffer size
     s = str.cbuf(buf, arr$len(buf));
@@ -135,7 +135,7 @@ test$case(test_copy)
     tassert_eqs(Error.argument, str.copy(s, buf, 0)); // untouched
 
     memset(buf, 'a', arr$len(buf));
-    tassert_eqs(Error.ok, str.copy(s$(""), buf, arr$len(buf)));
+    tassert_eqs(Error.ok, str.copy(str$(""), buf, arr$len(buf)));
     tassert_eqs("", buf);
 
     memset(buf, 'a', arr$len(buf));
@@ -277,6 +277,10 @@ test$case(test_sub_negative_start)
     var slice = str$slice(s, -3, -1);
     tassert_eqi(slice.len, 2);
     tassert(memcmp(slice.arr, "45", slice.len) == 0);
+
+    var slice2 = str$slice(s, .start = -3, .end = -1);
+    tassert_eqi(slice2.len, 2);
+    tassert(memcmp(slice2.arr, "45", slice2.len) == 0);
 
     sub = str.sub(s, -3, -400);
     tassert_eqi(str.is_valid(sub), false);
@@ -533,7 +537,7 @@ test$case(test_find)
     tassert_eqi(-1, str.find(s, str.cstr("1"), 7, 5));
 
     // starts from left
-    tassert_eqi(0, str.find(s$("123123123"), str.cstr("123"), 0, 0));
+    tassert_eqi(0, str.find(str$("123123123"), str.cstr("123"), 0, 0));
 
     return EOK;
 }
@@ -595,7 +599,7 @@ test$case(test_rfind)
     tassert_eqi(-1, str.rfind(s, str.cstr("1"), 7, 5));
 
     // starts from right
-    tassert_eqi(6, str.rfind(s$("123123123"), str.cstr("123"), 0, 0));
+    tassert_eqi(6, str.rfind(str$("123123123"), str.cstr("123"), 0, 0));
 
     return EOK;
 }
@@ -638,24 +642,24 @@ test$case(test_remove_prefix)
 {
     str_c out;
 
-    out = str.remove_prefix(s$("prefix_str_prefix"), s$("prefix"));
-    tassert_eqi(str.cmp(out, s$("_str_prefix")), 0);
+    out = str.remove_prefix(str$("prefix_str_prefix"), str$("prefix"));
+    tassert_eqi(str.cmp(out, str$("_str_prefix")), 0);
 
     // no exact match skipped
-    out = str.remove_prefix(s$(" prefix_str_prefix"), s$("prefix"));
-    tassert_eqi(str.cmp(out, s$(" prefix_str_prefix")), 0);
+    out = str.remove_prefix(str$(" prefix_str_prefix"), str$("prefix"));
+    tassert_eqi(str.cmp(out, str$(" prefix_str_prefix")), 0);
 
     // empty prefix
-    out = str.remove_prefix(s$("prefix_str_prefix"), s$(""));
-    tassert_eqi(str.cmp(out, s$("prefix_str_prefix")), 0);
+    out = str.remove_prefix(str$("prefix_str_prefix"), str$(""));
+    tassert_eqi(str.cmp(out, str$("prefix_str_prefix")), 0);
 
     // bad prefix
-    out = str.remove_prefix(s$("prefix_str_prefix"), str.cstr(NULL));
-    tassert_eqi(str.cmp(out, s$("prefix_str_prefix")), 0);
+    out = str.remove_prefix(str$("prefix_str_prefix"), str.cstr(NULL));
+    tassert_eqi(str.cmp(out, str$("prefix_str_prefix")), 0);
 
     // no match
-    out = str.remove_prefix(s$("prefix_str_prefix"), s$("prefi_"));
-    tassert_eqi(str.cmp(out, s$("prefix_str_prefix")), 0);
+    out = str.remove_prefix(str$("prefix_str_prefix"), str$("prefi_"));
+    tassert_eqi(str.cmp(out, str$("prefix_str_prefix")), 0);
 
     return EOK;
 }
@@ -664,24 +668,24 @@ test$case(test_remove_suffix)
 {
     str_c out;
 
-    out = str.remove_suffix(s$("suffix_str_suffix"), s$("suffix"));
-    tassert_eqi(str.cmp(out, s$("suffix_str_")), 0);
+    out = str.remove_suffix(str$("suffix_str_suffix"), str$("suffix"));
+    tassert_eqi(str.cmp(out, str$("suffix_str_")), 0);
 
     // no exact match skipped
-    out = str.remove_suffix(s$("suffix_str_suffix "), s$("suffix"));
-    tassert_eqi(str.cmp(out, s$("suffix_str_suffix ")), 0);
+    out = str.remove_suffix(str$("suffix_str_suffix "), str$("suffix"));
+    tassert_eqi(str.cmp(out, str$("suffix_str_suffix ")), 0);
 
     // empty suffix
-    out = str.remove_suffix(s$("suffix_str_suffix"), s$(""));
-    tassert_eqi(str.cmp(out, s$("suffix_str_suffix")), 0);
+    out = str.remove_suffix(str$("suffix_str_suffix"), str$(""));
+    tassert_eqi(str.cmp(out, str$("suffix_str_suffix")), 0);
 
     // bad suffix
-    out = str.remove_suffix(s$("suffix_str_suffix"), str.cstr(NULL));
-    tassert_eqi(str.cmp(out, s$("suffix_str_suffix")), 0);
+    out = str.remove_suffix(str$("suffix_str_suffix"), str.cstr(NULL));
+    tassert_eqi(str.cmp(out, str$("suffix_str_suffix")), 0);
 
     // no match
-    out = str.remove_suffix(s$("suffix_str_suffix"), s$("_uffix"));
-    tassert_eqi(str.cmp(out, s$("suffix_str_suffix")), 0);
+    out = str.remove_suffix(str$("suffix_str_suffix"), str$("_uffix"));
+    tassert_eqi(str.cmp(out, str$("suffix_str_suffix")), 0);
 
     return EOK;
 }
@@ -728,7 +732,7 @@ test$case(test_strip)
     s = str.cstr("\n\t \r\r\n\t");
     out = str.rstrip(s);
     tassert_eqi(out.len, 0);
-    tassert_eqi(str.cmp(out, s$("")), 0);
+    tassert_eqi(str.cmp(out, str$("")), 0);
 
     // BOTH
     out = str.strip(str.cstr(NULL));
@@ -805,177 +809,177 @@ test$case(str_to__signed_num)
     str_c s;
 
     num = 0;
-    s = s$("1");
+    s = str$("1");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 1);
 
     num = 0;
-    s = s$(" ");
+    s = str$(" ");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$(" -");
+    s = str$(" -");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$(" +");
+    s = str$(" +");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("+");
+    s = str$("+");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("100");
+    s = str$("100");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 100);
 
     num = 0;
-    s = s$("      -100");
+    s = str$("      -100");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, -100);
 
     num = 0;
-    s = s$("      +100");
+    s = str$("      +100");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 100);
 
     num = 0;
-    s = s$("-100");
+    s = str$("-100");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, -100);
 
     num = 10;
-    s = s$("0");
+    s = str$("0");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("0xf");
+    s = str$("0xf");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 15);
 
     num = 0;
-    s = s$("-0xf");
+    s = str$("-0xf");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, -15);
 
 
     num = 0;
-    s = s$("0x0F");
+    s = str$("0x0F");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 15);
 
 
     num = 0;
-    s = s$("0x0A");
+    s = str$("0x0A");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 10);
 
     num = 0;
-    s = s$("0x0a");
+    s = str$("0x0a");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 10);
 
     num = 0;
-    s = s$("127");
+    s = str$("127");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, INT8_MAX);
 
     num = 0;
-    s = s$("-127");
+    s = str$("-127");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, -127);
 
     num = 0;
-    s = s$("-128");
+    s = str$("-128");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, INT8_MIN);
 
     num = 0;
-    s = s$("-129");
+    s = str$("-129");
     tassert_eqe(Error.overflow, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("128");
+    s = str$("128");
     tassert_eqe(Error.overflow, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("-0x80");
+    s = str$("-0x80");
     tassert_eqe(Error.ok, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, -128);
     tassert_eqi(num, INT8_MIN);
 
     num = 0;
-    s = s$("-0x");
+    s = str$("-0x");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
-    s = s$("0x7f");
+    s = str$("0x7f");
     tassert_eqe(Error.ok, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, 127);
     tassert_eqi(num, INT8_MAX);
 
     num = 0;
-    s = s$("0x80");
+    s = str$("0x80");
     tassert_eqe(Error.overflow, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
-    s = s$("-100");
+    s = str$("-100");
     tassert_eqe(EOK, str__to_signed_num(s, &num, -100, 100));
     tassert_eqi(num, -100);
 
     num = 0;
-    s = s$("-101");
+    s = str$("-101");
     tassert_eqe(Error.overflow, str__to_signed_num(s, &num, -100, 100));
 
     num = 0;
-    s = s$("101");
+    s = str$("101");
     tassert_eqe(Error.overflow, str__to_signed_num(s, &num, -100, 100));
 
     num = 0;
-    s = s$("-000000000127    ");
+    s = str$("-000000000127    ");
     tassert_eqe(EOK, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
     tassert_eqi(num, -127);
 
     num = 0;
-    s = s$("    ");
+    s = str$("    ");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
-    s = s$("12 2");
+    s = str$("12 2");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
-    s = s$("-000000000127a");
+    s = str$("-000000000127a");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
-    s = s$("-000000000127h");
+    s = str$("-000000000127h");
     tassert_eqe(Error.argument, str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
-    s = s$("-9223372036854775807");
+    s = str$("-9223372036854775807");
     tassert_eqe(Error.ok, str__to_signed_num(s, &num, INT64_MIN + 1, INT64_MAX));
     tassert_eql(num, -9223372036854775807L);
 
     num = 0;
-    s = s$("-9223372036854775808");
+    s = str$("-9223372036854775808");
     tassert_eqe(Error.overflow, str__to_signed_num(s, &num, INT64_MIN + 1, INT64_MAX));
 
     num = 0;
-    s = s$("9223372036854775807");
+    s = str$("9223372036854775807");
     tassert_eqe(Error.ok, str__to_signed_num(s, &num, INT64_MIN + 1, INT64_MAX));
     tassert_eql(num, 9223372036854775807L);
 
     num = 0;
-    s = s$("9223372036854775808");
+    s = str$("9223372036854775808");
     tassert_eqe(Error.overflow, str__to_signed_num(s, &num, INT64_MIN + 1, INT64_MAX));
 
     return EOK;
@@ -987,28 +991,28 @@ test$case(test_str_to_i8)
     str_c s;
 
     num = 0;
-    s = s$("127");
+    s = str$("127");
     tassert_eqe(EOK, str.to_i8(s, &num));
     tassert_eqi(num, 127);
 
     num = 0;
-    s = s$("128");
+    s = str$("128");
     tassert_eqe(Error.overflow, str.to_i8(s, &num));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("0");
+    s = str$("0");
     tassert_eqe(Error.ok, str.to_i8(s, &num));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("-128");
+    s = str$("-128");
     tassert_eqe(Error.ok, str.to_i8(s, &num));
     tassert_eqi(num, -128);
 
 
     num = 0;
-    s = s$("-129");
+    s = str$("-129");
     tassert_eqe(Error.overflow, str.to_i8(s, &num));
     tassert_eqi(num, 0);
 
@@ -1023,22 +1027,22 @@ test$case(test_str_to_i16)
     str_c s;
 
     num = 0;
-    s = s$("-32768");
+    s = str$("-32768");
     tassert_eqe(EOK, str.to_i16(s, &num));
     tassert_eqi(num, -32768);
 
     num = 0;
-    s = s$("-32769");
+    s = str$("-32769");
     tassert_eqe(Error.overflow, str.to_i16(s, &num));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("32767");
+    s = str$("32767");
     tassert_eqe(Error.ok, str.to_i16(s, &num));
     tassert_eqi(num, 32767);
 
     num = 0;
-    s = s$("32768");
+    s = str$("32768");
     tassert_eqe(Error.overflow, str.to_i16(s, &num));
     tassert_eqi(num, 0);
 
@@ -1051,23 +1055,23 @@ test$case(test_str_to_i32)
     str_c s;
 
     num = 0;
-    s = s$("-2147483648");
+    s = str$("-2147483648");
     tassert_eqe(EOK, str.to_i32(s, &num));
     tassert_eqi(num, -2147483648);
 
     num = 0;
-    s = s$("-2147483649");
+    s = str$("-2147483649");
     tassert_eqe(Error.overflow, str.to_i32(s, &num));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("2147483647");
+    s = str$("2147483647");
     tassert_eqe(Error.ok, str.to_i32(s, &num));
     tassert_eqi(num, 2147483647);
 
 
     num = 0;
-    s = s$("2147483648");
+    s = str$("2147483648");
     tassert_eqe(Error.overflow, str.to_i32(s, &num));
     tassert_eqi(num, 0);
 
@@ -1080,22 +1084,22 @@ test$case(test_str_to_i64)
     str_c s;
 
     num = 0;
-    s = s$("-9223372036854775807");
+    s = str$("-9223372036854775807");
     tassert_eqe(Error.ok, str.to_i64(s, &num));
     tassert_eql(num, -9223372036854775807);
 
     num = 0;
-    s = s$("-9223372036854775808");
+    s = str$("-9223372036854775808");
     tassert_eqe(Error.overflow, str.to_i64(s, &num));
     // tassert_eql(num, -9223372036854775808UL);
 
     num = 0;
-    s = s$("9223372036854775807");
+    s = str$("9223372036854775807");
     tassert_eqe(Error.ok, str.to_i64(s, &num));
     tassert_eql(num, 9223372036854775807);
 
     num = 0;
-    s = s$("9223372036854775808");
+    s = str$("9223372036854775808");
     tassert_eqe(Error.overflow, str.to_i64(s, &num));
     // tassert_eql(num, 9223372036854775807);
 
@@ -1108,161 +1112,161 @@ test$case(str_to__unsigned_num)
     str_c s;
 
     num = 0;
-    s = s$("1");
+    s = str$("1");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 1);
 
     num = 0;
-    s = s$(" ");
+    s = str$(" ");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$(" -");
+    s = str$(" -");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$(" +");
+    s = str$(" +");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("+");
+    s = str$("+");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("100");
+    s = str$("100");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 100);
 
     num = 0;
-    s = s$("      -100");
+    s = str$("      -100");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 0;
-    s = s$("      +100");
+    s = str$("      +100");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 100);
 
     num = 0;
-    s = s$("-100");
+    s = str$("-100");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 10;
-    s = s$("0");
+    s = str$("0");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("0xf");
+    s = str$("0xf");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 15);
 
     num = 0;
-    s = s$("0x");
+    s = str$("0x");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 0;
-    s = s$("-0xf");
+    s = str$("-0xf");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
 
     num = 0;
-    s = s$("0x0F");
+    s = str$("0x0F");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 15);
 
 
     num = 0;
-    s = s$("0x0A");
+    s = str$("0x0A");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 10);
 
     num = 0;
-    s = s$("0x0a");
+    s = str$("0x0a");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 10);
 
     num = 0;
-    s = s$("127");
+    s = str$("127");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, INT8_MAX);
 
     num = 0;
-    s = s$("-127");
+    s = str$("-127");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 0;
-    s = s$("-128");
+    s = str$("-128");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 0;
-    s = s$("255");
+    s = str$("255");
     tassert_eqe(Error.ok, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 255);
 
     num = 0;
-    s = s$("256");
+    s = str$("256");
     tassert_eqe(Error.overflow, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("0xff");
+    s = str$("0xff");
     tassert_eqe(Error.ok, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 255);
     tassert_eqi(num, UINT8_MAX);
 
 
     num = 0;
-    s = s$("100");
+    s = str$("100");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, 100));
     tassert_eqi(num, 100);
 
     num = 0;
-    s = s$("101");
+    s = str$("101");
     tassert_eqe(Error.overflow, str__to_unsigned_num(s, &num, 100));
 
 
     num = 0;
-    s = s$("000000000127    ");
+    s = str$("000000000127    ");
     tassert_eqe(EOK, str__to_unsigned_num(s, &num, UINT8_MAX));
     tassert_eqi(num, 127);
 
     num = 0;
-    s = s$("    ");
+    s = str$("    ");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 0;
-    s = s$("12 2");
+    s = str$("12 2");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 0;
-    s = s$("000000000127a");
+    s = str$("000000000127a");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 0;
-    s = s$("000000000127h");
+    s = str$("000000000127h");
     tassert_eqe(Error.argument, str__to_unsigned_num(s, &num, UINT8_MAX));
 
     num = 0;
-    s = s$("9223372036854775807");
+    s = str$("9223372036854775807");
     tassert_eqe(Error.ok, str__to_unsigned_num(s, &num, UINT64_MAX));
     tassert_eql(num, 9223372036854775807L);
 
     num = 0;
-    s = s$("9223372036854775807");
+    s = str$("9223372036854775807");
     tassert_eqe(Error.ok, str__to_unsigned_num(s, &num, UINT64_MAX));
     tassert_eql(num, 9223372036854775807L);
 
     num = 0;
-    s = s$("18446744073709551615");
+    s = str$("18446744073709551615");
     tassert_eqe(Error.ok, str__to_unsigned_num(s, &num, UINT64_MAX));
     tassert(num == __UINT64_C(18446744073709551615));
 
     num = 0;
-    s = s$("18446744073709551616");
+    s = str$("18446744073709551616");
     tassert_eqe(Error.overflow, str__to_unsigned_num(s, &num, UINT64_MAX));
 
     return EOK;
@@ -1275,18 +1279,18 @@ test$case(test_str_to_u8)
     str_c s;
 
     num = 0;
-    s = s$("255");
+    s = str$("255");
     tassert_eqe(EOK, str.to_u8(s, &num));
     tassert_eqi(num, 255);
     tassert(num == UINT8_MAX);
 
     num = 0;
-    s = s$("256");
+    s = str$("256");
     tassert_eqe(Error.overflow, str.to_u8(s, &num));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("0");
+    s = str$("0");
     tassert_eqe(Error.ok, str.to_u8(s, &num));
     tassert_eqi(num, 0);
 
@@ -1301,18 +1305,18 @@ test$case(test_str_to_u16)
     str_c s;
 
     num = 0;
-    s = s$("65535");
+    s = str$("65535");
     tassert_eqe(EOK, str.to_u16(s, &num));
     tassert_eqi(num, 65535);
     tassert(num == UINT16_MAX);
 
     num = 0;
-    s = s$("65536");
+    s = str$("65536");
     tassert_eqe(Error.overflow, str.to_u16(s, &num));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("0");
+    s = str$("0");
     tassert_eqe(Error.ok, str.to_u16(s, &num));
     tassert_eqi(num, 0);
 
@@ -1327,18 +1331,18 @@ test$case(test_str_to_u32)
     str_c s;
 
     num = 0;
-    s = s$("4294967295");
+    s = str$("4294967295");
     tassert_eqe(EOK, str.to_u32(s, &num));
     tassert_eql(num, 4294967295U);
     tassert(num == UINT32_MAX);
 
     num = 0;
-    s = s$("4294967296");
+    s = str$("4294967296");
     tassert_eqe(Error.overflow, str.to_u32(s, &num));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("0");
+    s = str$("0");
     tassert_eqe(Error.ok, str.to_u32(s, &num));
     tassert_eqi(num, 0);
 
@@ -1352,18 +1356,18 @@ test$case(test_str_to_u64)
     str_c s;
 
     num = 0;
-    s = s$("18446744073709551615");
+    s = str$("18446744073709551615");
     tassert_eqe(EOK, str.to_u64(s, &num));
     tassert(num == __UINT64_C(18446744073709551615));
     tassert(num == UINT64_MAX);
 
     num = 0;
-    s = s$("18446744073709551616");
+    s = str$("18446744073709551616");
     tassert_eqe(Error.overflow, str.to_u64(s, &num));
     tassert_eqi(num, 0);
 
     num = 0;
-    s = s$("0");
+    s = str$("0");
     tassert_eqe(Error.ok, str.to_u64(s, &num));
     tassert_eqi(num, 0);
 
@@ -1376,190 +1380,190 @@ test$case(str_to__double)
     str_c s;
 
     num = 0;
-    s = s$("1");
+    s = str$("1");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 1.0);
 
     num = 0;
-    s = s$("1.5");
+    s = str$("1.5");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 1.5);
 
     num = 0;
-    s = s$("-1.5");
+    s = str$("-1.5");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, -1.5);
 
     num = 0;
-    s = s$("1e3");
+    s = str$("1e3");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 1000);
 
     num = 0;
-    s = s$("1e-3");
+    s = str$("1e-3");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 1e-3);
 
     num = 0;
-    s = s$("123e-30");
+    s = str$("123e-30");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 123e-30);
 
     num = 0;
-    s = s$("123e+30");
+    s = str$("123e+30");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 123e+30);
 
     num = 0;
-    s = s$("123.321E+30");
+    s = str$("123.321E+30");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 123.321e+30);
 
     num = 0;
-    s = s$("-0.");
+    s = str$("-0.");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, -0.0);
 
     num = 0;
-    s = s$("+.5");
+    s = str$("+.5");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 0.5);
 
     num = 0;
-    s = s$(".0e10");
+    s = str$(".0e10");
     tassert_eqe(EOK, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 0.0);
 
     num = 0;
-    s = s$(".");
+    s = str$(".");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 0.0);
 
     num = 0;
-    s = s$(".e10");
+    s = str$(".e10");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 0.0);
 
     num = 0;
-    s = s$("00000000001.e00000010");
+    s = str$("00000000001.e00000010");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 10000000000.0);
 
     num = 0;
-    s = s$("e10");
+    s = str$("e10");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("10e");
+    s = str$("10e");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("10e0.3");
+    s = str$("10e0.3");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("10a");
+    s = str$("10a");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("10.0a");
+    s = str$("10.0a");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("10.0e-a");
+    s = str$("10.0e-a");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("      10.5     ");
+    s = str$("      10.5     ");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, 10.5);
 
     num = 0;
-    s = s$("      10.5     z");
+    s = str$("      10.5     z");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("n");
+    s = str$("n");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("na");
+    s = str$("na");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("nan");
+    s = str$("nan");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, NAN);
 
     num = 0;
-    s = s$("   NAN    ");
+    s = str$("   NAN    ");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, NAN);
 
     num = 0;
-    s = s$("   NaN    ");
+    s = str$("   NaN    ");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, NAN);
 
     num = 0;
-    s = s$("   nan    y");
+    s = str$("   nan    y");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("   nanny");
+    s = str$("   nanny");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("inf");
+    s = str$("inf");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, INFINITY);
 
     num = 0;
-    s = s$("INF");
+    s = str$("INF");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, INFINITY);
     tassert(isinf(num));
 
     num = 0;
-    s = s$("-iNf");
+    s = str$("-iNf");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, -INFINITY);
     tassert(isinf(num));
 
     num = 0;
-    s = s$("-infinity");
+    s = str$("-infinity");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, -INFINITY);
     tassert(isinf(num));
 
     num = 0;
-    s = s$("   INFINITY   ");
+    s = str$("   INFINITY   ");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
     tassert_eqf(num, INFINITY);
     tassert(isinf(num));
 
     num = 0;
-    s = s$("INFINITY0");
+    s = str$("INFINITY0");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("INFO");
+    s = str$("INFO");
     tassert_eqe(Error.argument, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("1e100");
+    s = str$("1e100");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("1e101");
+    s = str$("1e101");
     tassert_eqe(Error.overflow, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("1e-100");
+    s = str$("1e-100");
     tassert_eqe(Error.ok, str__to_double(s, &num, -100, 100));
 
     num = 0;
-    s = s$("1e-101");
+    s = str$("1e-101");
     tassert_eqe(Error.overflow, str__to_double(s, &num, -100, 100));
 
     return EOK;
@@ -1570,31 +1574,31 @@ test$case(test_str_to_f32)
     str_c s;
 
     num = 0;
-    s = s$("1.4");
+    s = str$("1.4");
     tassert_eqe(EOK, str.to_f32(s, &num));
     tassert_eqf(num, 1.4f);
 
 
     num = 0;
-    s = s$("nan");
+    s = str$("nan");
     tassert_eqe(EOK, str.to_f32(s, &num));
     tassert_eqf(num, NAN);
 
     num = 0;
-    s = s$("1e38");
+    s = str$("1e38");
     tassert_eqe(EOK, str.to_f32(s, &num));
 
     num = 0;
-    s = s$("1e39");
+    s = str$("1e39");
     tassert_eqe(Error.overflow, str.to_f32(s, &num));
 
 
     num = 0;
-    s = s$("1e-37");
+    s = str$("1e-37");
     tassert_eqe(EOK, str.to_f32(s, &num));
 
     num = 0;
-    s = s$("1e-38");
+    s = str$("1e-38");
     tassert_eqe(Error.overflow, str.to_f32(s, &num));
 
 
@@ -1607,31 +1611,31 @@ test$case(test_str_to_f64)
     str_c s;
 
     num = 0;
-    s = s$("1.4");
+    s = str$("1.4");
     tassert_eqe(EOK, str.to_f64(s, &num));
     tassert_eqf(num, 1.4);
 
 
     num = 0;
-    s = s$("nan");
+    s = str$("nan");
     tassert_eqe(EOK, str.to_f64(s, &num));
     tassert_eqf(num, NAN);
 
     num = 0;
-    s = s$("1e308");
+    s = str$("1e308");
     tassert_eqe(EOK, str.to_f64(s, &num));
 
     num = 0;
-    s = s$("1e309");
+    s = str$("1e309");
     tassert_eqe(Error.overflow, str.to_f64(s, &num));
 
 
     num = 0;
-    s = s$("1e-307");
+    s = str$("1e-307");
     tassert_eqe(EOK, str.to_f64(s, &num));
 
     num = 0;
-    s = s$("1e-308");
+    s = str$("1e-308");
     tassert_eqe(Error.overflow, str.to_f64(s, &num));
 
 
@@ -1645,7 +1649,7 @@ test$case(test_str_sprintf)
     memset(buffer, 'z', sizeof(buffer));
     str_c s = str.sprintf(buffer, sizeof(buffer), "%s", "1234");
     tassert_eqs("1234", buffer);
-    tassert_eqi(str.cmp(s, s$("1234")), 0);
+    tassert_eqi(str.cmp(s, str$("1234")), 0);
     tassert_eqi(s.len, 4);
     tassert(s.buf == buffer);
 
@@ -1698,16 +1702,16 @@ test$case(test_s_macros)
     tassert_eqi(s.len, 6);
     tassert_eqi(str.is_valid(s), true);
 
-    str_c s2 = s$("fofo");
+    str_c s2 = str$("fofo");
     tassert_eqi(s2.len, 4);
     tassert_eqi(str.is_valid(s2), true);
 
-    s2 = s$("");
+    s2 = str$("");
     tassert_eqi(s2.len, 0);
-    tassert_eqi(str.cmp(s2, s$("")), 0);
+    tassert_eqi(str.cmp(s2, str$("")), 0);
     tassert_eqi(str.is_valid(s2), true);
 
-    str_c m = s$("\
+    str_c m = str$("\
 foo\n\
 bar\n\
 zoo\n");

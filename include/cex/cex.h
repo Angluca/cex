@@ -375,38 +375,54 @@ int __cex_test_uassert_enabled = 1;
         usize len;                                                                                 \
     }
 
-#define _arr$slice_get(slice, array, array_len, start, end)                                        \
+struct _cex_arr_slice {
+    isize start;
+    isize end;
+    isize __placeholder;
+};
+
+#define _arr$slice_get(slice, array, array_len, ...)                                        \
     {                                                                                              \
-        isize _start = start;                                                                      \
-        isize _end = end;                                                                          \
+        struct _cex_arr_slice _slice = { __VA_ARGS__, .__placeholder = 0 };\
         isize _len = array_len;                                                                    \
-        if (unlikely(_start < 0))                                                                  \
-            _start += _len;                                                                        \
-        if (_end == 0) /* _end=0 equivalent of python's arr[_star:] */                             \
-            _end = _len;                                                                           \
-        else if (unlikely(_end < 0))                                                               \
-            _end += _len;                                                                          \
-        _end = _end < _len ? _end : _len;                                                          \
-        _start = _start > 0 ? _start : 0;                                                          \
+        if (unlikely(_slice.start < 0))                                                                  \
+            _slice.start += _len;                                                                        \
+        if (_slice.end == 0) /* _end=0 equivalent of python's arr[_star:] */                             \
+            _slice.end = _len;                                                                           \
+        else if (unlikely(_slice.end < 0))                                                               \
+            _slice.end += _len;                                                                          \
+        _slice.end = _slice.end < _len ? _slice.end : _len;                                                          \
+        _slice.start = _slice.start > 0 ? _slice.start : 0;                                                          \
         /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld", start, end, _start, _end); */  \
-        if (_start < _end && array != NULL) {                                                      \
-            slice.arr = &((array)[_start]);                                                        \
-            slice.len = (usize)(_end - _start);                                                    \
+        if (_slice.start < _slice.end && array != NULL) {                                                      \
+            slice.arr = &((array)[_slice.start]);                                                        \
+            slice.len = (usize)(_slice.end - _slice.start);                                                    \
         }                                                                                          \
     }
 
 
 /**
  * @brief Gets array generic slice (typed as array)
+ *
+ * Example:
+ * var s = arr$slice(arr, .start = 1, .end = -2);
+ * var s = arr$slice(arr, 1, -2);
+ * var s = arr$slice(arr, .start = -2);
+ * var s = arr$slice(arr, .end = 3);
+ * 
+ * Note: arr$slice creates a temporary type, and it's preferable to use var keyword
+ * 
  * @param array - generic array
- * @param start - start index, may be negative to get item from the end of array
- * @param end - end index, 0 - means all, or may be negative to get item from the end of array
+ * @param .start - start index, may be negative to get item from the end of array
+ * @param .end - end index, 0 - means all, or may be negative to get item from the end of array
  * @return struct {eltype* arr, usize len}, or {NULL, 0} if bad slice index/not found/NULL array
+ *
+ * @warning returns {.arr = NULL, .len = 0} if bad indexes or array 
  */
-#define arr$slice(array, start, end)                                                               \
+#define arr$slice(array, ...)                                                               \
     ({                                                                                             \
         slice$define(*array) s = { .arr = NULL, .len = 0 };                                        \
-        _arr$slice_get(s, array, arr$len(array), start, end);                                      \
+        _arr$slice_get(s, array, arr$len(array), __VA_ARGS__);                                      \
         s;                                                                                         \
     })
 
@@ -540,22 +556,22 @@ _Static_assert(sizeof(str_c) == sizeof(usize) * 2, "size");
 
 
 /**
- * @brief creates str_c, instance from string literals/constants: s$("my string")
+ * @brief creates str_c, instance from string literals/constants: str$("my string")
  *
  * Uses compile time string length calculation, only literals
  *
  */
-#define s$(string)                                                                                 \
+#define str$(string)                                                                                 \
     (str_c){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
 
 /**
  * @brief creates slice of string
  */
-#define str$slice(str_self, start, end)                                                            \
+#define str$slice(str_self, ...)                                                            \
     ({                                                                                             \
         slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
-        _arr$slice_get(__slice, str_self.buf, str_self.len, start, end);                           \
+        _arr$slice_get(__slice, str_self.buf, str_self.len, __VA_ARGS__);                           \
         __slice;                                                                                   \
     })
 

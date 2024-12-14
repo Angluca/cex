@@ -58,7 +58,7 @@ App__process_plain(App_c* app, io_c* file)
     while ((r = io.readline(file, &line)) == EOK) {
         io.printf("%S\n", line);
 
-        if (str.contains(line, s$("cat"))) {
+        if (str.contains(line, str$("cat"))) {
             io.printf("edited by cex cat with love\n");
         }
     }

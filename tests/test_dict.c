@@ -437,7 +437,7 @@ test$case(test_dict_cex_str_key)
     {
         str_c key;
         char val;
-    } rec = { .key = s$("999"), .val = 'a' };
+    } rec = { .key = str$("999"), .val = 'a' };
     (void)rec;
 
     dict$typedef(dict_ss, struct s, str_c, true);
@@ -447,7 +447,7 @@ test$case(test_dict_cex_str_key)
 
     tassert_eqs(dict_ss.set(&hm, &rec), EOK);
 
-    var item = dict_ss.get(&hm, s$("999"));
+    var item = dict_ss.get(&hm, str$("999"));
 
     tassert(item != NULL);
     tassert_eqs(item->key.buf, "999");
@@ -459,7 +459,7 @@ test$case(test_dict_cex_str_key)
     tassert_eqs(item->key.buf, "999");
     tassert_eqi(item->val, 'a');
 
-    var ditem = dict_ss.del(&hm, s$("999"));
+    var ditem = dict_ss.del(&hm, str$("999"));
     tassert(ditem != NULL);
     tassert_eqs(ditem->key.buf, "999");
     tassert_eqi(dict_ss.len(&hm), 0);
@@ -471,27 +471,30 @@ test$case(test_dict_cex_str_key)
 
 test$case(test_dict_cex_str_hash_cmp_func_test)
 {
-    var s = s$("");
-    var s2 = s$("");
+    var s = str$("");
+    var s2 = str$("");
 
     // No segfault, or something
     tassert(_cex_dict_cexstr_hash(&s, 0, 0) > 0);
-    tassert(_cex_dict_cexstr_hash(&s$("foofoobar"), 0, 0) > 0);
-    tassert(_cex_dict_cexstr_hash(&s$("foofoobar"), 0, 0) != _cex_dict_cexstr_hash(&s$("booboob"), 0, 0) );
+    tassert(_cex_dict_cexstr_hash(&str$("foofoobar"), 0, 0) > 0);
+    tassert(
+        _cex_dict_cexstr_hash(&str$("foofoobar"), 0, 0) !=
+        _cex_dict_cexstr_hash(&str$("booboob"), 0, 0)
+    );
 
     tassert_eqi(0, _cex_dict_cexstr_cmp(&s, &s2, NULL));
 
-    tassert_eqi(_cex_dict_cexstr_cmp(&s$("123456"), &s$("123456"), NULL), 0);
-    tassert_eqi(_cex_dict_cexstr_cmp(&s$(""), &s$(""), NULL), 0);
-    tassert_eqi(_cex_dict_cexstr_cmp(&s$("ABC"), &s$("AB"), NULL), 67);
+    tassert_eqi(_cex_dict_cexstr_cmp(&str$("123456"), &str$("123456"), NULL), 0);
+    tassert_eqi(_cex_dict_cexstr_cmp(&str$(""), &str$(""), NULL), 0);
+    tassert_eqi(_cex_dict_cexstr_cmp(&str$("ABC"), &str$("AB"), NULL), 67);
 #ifdef CEX_ENV32BIT
-    tassert(_cex_dict_cexstr_cmp(&s$("ABA"), &s$("ABZ"), NULL) < 0);
+    tassert(_cex_dict_cexstr_cmp(&str$("ABA"), &str$("ABZ"), NULL) < 0);
 #else
-    tassert_eqi(_cex_dict_cexstr_cmp(&s$("ABA"), &s$("ABZ"), NULL), -25);
+    tassert_eqi(_cex_dict_cexstr_cmp(&str$("ABA"), &str$("ABZ"), NULL), -25);
 #endif
-    tassert_eqi(_cex_dict_cexstr_cmp(&s$("AB"), &s$("ABC"), NULL), -67);
-    tassert_eqi(_cex_dict_cexstr_cmp(&s$("A"), &s$(""), NULL), (int)'A');
-    tassert_eqi(_cex_dict_cexstr_cmp(&s$(""), &s$("A"), NULL), -1 * ((int)'A'));
+    tassert_eqi(_cex_dict_cexstr_cmp(&str$("AB"), &str$("ABC"), NULL), -67);
+    tassert_eqi(_cex_dict_cexstr_cmp(&str$("A"), &str$(""), NULL), (int)'A');
+    tassert_eqi(_cex_dict_cexstr_cmp(&str$(""), &str$("A"), NULL), -1 * ((int)'A'));
     return EOK;
 }
 /*
