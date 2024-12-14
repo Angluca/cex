@@ -26,6 +26,7 @@ typedef struct dict_new_kwargs_s
         &(strucfield),                                                                             \
         const u64*: _cex_dict_u64_hash,                                                            \
         u64*: _cex_dict_u64_hash,                                                                  \
+        str_c*: _cex_dict_cexstr_hash,                                                             \
         char(*)[]: _cex_dict_str_hash,                                                             \
         const char(*)[]: _cex_dict_str_hash,                                                       \
         default: NULL /* This will force dict.create() to raise assert */                          \
@@ -36,6 +37,7 @@ typedef struct dict_new_kwargs_s
         &(strucfield),                                                                             \
         const u64*: _cex_dict_u64_cmp,                                                             \
         u64*: _cex_dict_u64_cmp,                                                                   \
+        str_c*: _cex_dict_cexstr_cmp,                                                              \
         char(*)[]: _cex_dict_str_cmp,                                                              \
         const char(*)[]: _cex_dict_str_cmp,                                                        \
         default: NULL /* This will force dict.create() to raise assert */                          \
@@ -52,6 +54,7 @@ typedef struct dict_new_kwargs_s
                    _Generic(                                                                                                  \
                        (&(typename##_c){ 0 }._dtype->key),                                                                    \
                        u64 *: _Generic((keytype){ 0 }, u64: 1, default: 0),                                                   \
+                       str_c *: _Generic((keytype){ 0 }, str_c: 1, default: 0),                                               \
                        char(*)[]: _Generic((keytype){ 0 }, char*: 1, default: 0),                                             \
                        default: _Generic(                                                                                     \
                            (keytype){ 0 },                                                                                    \
@@ -63,8 +66,18 @@ typedef struct dict_new_kwargs_s
     );                                                                                                                        \
     const struct typename##_vtable__ typename = {                                                                             \
         .set = (void*)_cex_dict_set,                                                                                          \
-        .get = (void*)(_Generic((keytype){ 0 }, u64: _cex_dict_geti, default: _cex_dict_get)),                                \
-        .del = (void*)(_Generic((keytype){ 0 }, u64: _cex_dict_deli, default: _cex_dict_del)),                                \
+        .get = (void*)(_Generic(                                                                                              \
+            (keytype){ 0 },                                                                                                   \
+                           str_c: _cex_dict_gets,                                                                             \
+                           u64: _cex_dict_geti,                                                                               \
+                           default: _cex_dict_get                                                                             \
+        )),                                                                                                                   \
+        .del = (void*)(_Generic(                                                                                              \
+            (keytype){ 0 },                                                                                                   \
+                           str_c: _cex_dict_dels,                                                                             \
+                           u64: _cex_dict_deli,                                                                               \
+                           default: _cex_dict_del                                                                             \
+        )),                                                                                                                   \
         .len = (void*)_cex_dict_len,                                                                                          \
         .iter = (void*)_cex_dict_iter,                                                                                        \
         .destroy = (void*)_cex_dict_destroy,                                                                                  \
@@ -108,11 +121,11 @@ typedef struct _cex_dict_c
     ({                                                                                             \
         _Static_assert(                                                                            \
             _Generic(((self)), _cex_dict_c *: 0, default: 1),                                      \
-            "self argument expected to be dict$typedef() class"                                           \
+            "self argument expected to be dict$typedef() class"                                    \
         );                                                                                         \
         _Static_assert(                                                                            \
             _Generic((&(self)->base), _cex_dict_c *: 1, default: 0),                               \
-            "self argument expected to be dict$typedef() class"                                           \
+            "self argument expected to be dict$typedef() class"                                    \
         );                                                                                         \
         _Static_assert(                                                                            \
             _Alignof(typeof(*((self)->_dtype))) <= _Alignof(void*),                                \
@@ -138,14 +151,18 @@ int _cex_dict_u64_cmp(const void* a, const void* b, void* udata);
 u64 _cex_dict_u64_hash(const void* item, u64 seed0, u64 seed1);
 int _cex_dict_str_cmp(const void* a, const void* b, void* udata);
 u64 _cex_dict_str_hash(const void* item, u64 seed0, u64 seed1);
+int _cex_dict_cexstr_cmp(const void* a, const void* b, void* udata);
+u64 _cex_dict_cexstr_hash(const void* item, u64 seed0, u64 seed1);
 Exception _cex_dict_create(_cex_dict_c* self, usize item_size, const Allocator_i* allocator, dict_new_kwargs_s* kwargs);
 Exception _cex_dict_set(_cex_dict_c* self, const void* item);
 void* _cex_dict_geti(_cex_dict_c* self, u64 key);
+void* _cex_dict_gets(_cex_dict_c* self, str_c key);
 void* _cex_dict_get(_cex_dict_c* self, const void* key);
 usize _cex_dict_len(_cex_dict_c* self);
 void _cex_dict_destroy(_cex_dict_c* self);
 void _cex_dict_clear(_cex_dict_c* self);
 void* _cex_dict_deli(_cex_dict_c* self, u64 key);
 void* _cex_dict_del(_cex_dict_c* self, const void* key);
+void* _cex_dict_dels(_cex_dict_c* self, str_c key);
 void* _cex_dict_iter(_cex_dict_c* self, cex_iterator_s* iterator);
 // clang-format on

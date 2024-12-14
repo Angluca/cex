@@ -9,35 +9,6 @@
 #include <stdint.h>
 
 
-typedef struct
-{
-    // NOTE: len comes first which prevents bad casting of str_c to char*
-    // stb_sprintf() has special case of you accidentally pass str_c to
-    // %s format specifier (it will show -> (str_c->%S))
-    usize len;
-    char* buf;
-} str_c;
-
-_Static_assert(alignof(str_c) == alignof(usize), "align");
-_Static_assert(sizeof(str_c) == sizeof(usize) * 2, "size");
-
-
-/**
- * @brief creates str_c, instance from string literals/constants: s$("my string")
- *
- * Uses compile time string length calculation, only literals
- *
- */
-#define s$(string)                                                                                 \
-    (str_c){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
-
-
-#define str$slice(str_self, start, end)                                                            \
-    ({                                                                                             \
-        slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
-        _arr$slice_get(__slice, str_self.buf, str_self.len, start, end);                           \
-        __slice;                                                                                   \
-    })
 
 struct __module__str
 {

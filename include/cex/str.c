@@ -1,7 +1,7 @@
 #pragma once
 #include "str.h"
-#include "_stb_sprintf.h"
 #include "_stb_sprintf.c"
+#include "_stb_sprintf.h"
 #include <ctype.h>
 #include <float.h>
 #include <math.h>
@@ -66,9 +66,9 @@ str_cbuf(char* s, usize length)
 str_c
 str_sub(str_c s, isize start, isize end)
 {
-    slice$define(*s.buf) slice = {0};
-    if (s.buf != NULL){
-        _arr$slice_get(slice, s.buf, s.len, start, end); 
+    slice$define(*s.buf) slice = { 0 };
+    if (s.buf != NULL) {
+        _arr$slice_get(slice, s.buf, s.len, start, end);
     }
 
     return (str_c){
@@ -128,7 +128,7 @@ str_sprintf(char* dest, usize dest_len, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    str_c result =  str_vsprintf(dest, dest_len, format, va);
+    str_c result = str_vsprintf(dest, dest_len, format, va);
     va_end(va);
     return result;
 }
@@ -435,7 +435,7 @@ str_cmp(str_c self, str_c other)
     usize min_len = self.len < other.len ? self.len : other.len;
     int cmp = memcmp(self.buf, other.buf, min_len);
 
-    if (cmp == 0 && self.len != other.len) {
+    if (unlikely(cmp == 0 && self.len != other.len)) {
         if (self.len > other.len) {
             cmp = self.buf[min_len] - '\0';
         } else {

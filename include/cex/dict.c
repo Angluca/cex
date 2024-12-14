@@ -1,6 +1,7 @@
 #pragma once
 #include "dict.h"
 #include "_hashmap.c"
+#include "str.h"
 #include <stdarg.h>
 #include <time.h>
 
@@ -52,14 +53,56 @@ _cex_dict_str_cmp(const void* a, const void* b, void* udata)
     return strcmp(a, b);
 }
 
+/**
+ * @brief Compares str_c item keys (str.buf must not be NULL)
+ */
+int
+_cex_dict_cexstr_cmp(const void* a, const void* b, void* udata)
+{
+    (void)udata;
+    str_c* self = (str_c*)a;
+    str_c* other = (str_c*)b;
+
+    if (unlikely(self->len == 0)) {
+        if (other->len == 0) {
+            return 0;
+        } else {
+            return -other->buf[0];
+        }
+    }
+
+    usize min_len = self->len < other->len ? self->len : other->len;
+    int cmp = memcmp(self->buf, other->buf, min_len);
+
+    if (unlikely(cmp == 0 && self->len != other->len)) {
+        if (self->len > other->len) {
+            cmp = self->buf[min_len] - '\0';
+        } else {
+            cmp = '\0' - other->buf[min_len];
+        }
+    }
+    return cmp;
+}
 
 /**
- * @brief Compares static char[] buffer keys **must be null terminated**
-*/
+ * @brief Hash function for char[] buffer keys **must be null terminated**
+ */
 u64
 _cex_dict_str_hash(const void* item, u64 seed0, u64 seed1)
 {
     return hashmap_sip(item, strlen((char*)item), seed0, seed1);
+}
+
+/**
+ * @brief Hash function for str_c keys (str.buf must be not NULL)
+ *
+ * @return 
+ */
+u64
+_cex_dict_cexstr_hash(const void* item, u64 seed0, u64 seed1)
+{
+    str_c* s = (str_c*)item;
+    return hashmap_sip(s->buf, s->len, seed0, seed1);
 }
 
 
@@ -137,6 +180,14 @@ _cex_dict_geti(_cex_dict_c* self, u64 key)
     return (void*)hashmap_get(self->hashmap, &key);
 }
 
+void*
+_cex_dict_gets(_cex_dict_c* self, str_c key)
+{
+    uassert(self != NULL);
+    uassert(self->hashmap != NULL);
+    uassert(key.buf != NULL);
+    return (void*)hashmap_get(self->hashmap, &key);
+}
 /**
  * @brief Get key by pointer, returns NULL if not found
  */
@@ -185,6 +236,15 @@ _cex_dict_deli(_cex_dict_c* self, u64 key)
 {
     uassert(self != NULL);
     uassert(self->hashmap != NULL);
+    return (void*)hashmap_delete(self->hashmap, &key);
+}
+
+void*
+_cex_dict_dels(_cex_dict_c* self, str_c key)
+{
+    uassert(self != NULL);
+    uassert(self->hashmap != NULL);
+    uassert(key.buf != NULL);
     return (void*)hashmap_delete(self->hashmap, &key);
 }
 
