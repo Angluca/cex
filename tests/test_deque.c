@@ -103,7 +103,7 @@ test$case(test_element_alignment_16)
 
     for (u32 i = 0; i < 16; i++) {
         struct foo16 f = { .foo = i };
-        tassert_eqs(EOK, deque_foo.append(&a, &f));
+        tassert_eqs(EOK, deque_foo.push(&a, &f));
     }
     tassert_eqi(deque_foo.len(&a), 16);
     tassert_eqi(head->idx_tail, 16);
@@ -159,7 +159,7 @@ test$case(test_element_alignment_64)
 
     for (u32 i = 0; i < 16; i++) {
         struct foo64 f = { .foo = i };
-        tassert_eqs(EOK, deque_foo.append(&a, &f));
+        tassert_eqs(EOK, deque_foo.push(&a, &f));
     }
     tassert_eqi(deque_foo.len(&a), 16);
     tassert_eqi(head->idx_tail, 16);
@@ -202,7 +202,7 @@ test$case(test_deque_new_append_pop)
     tassert_eqi(deque_int.len(&a), 0);
 
     for (i32 i = 0; i < 16; i++) {
-        tassert_eqs(EOK, deque_int.append(&a, &i));
+        tassert_eqs(EOK, deque_int.push(&a, &i));
     }
     tassert_eqi(deque_int.len(&a), 16);
     tassert_eqi(head->idx_tail, 16);
@@ -270,8 +270,8 @@ test$case(test_deque_new_append_roll_over)
     tassert_eqi(head->idx_tail, 16);
 
     // Que is emty, next push/append/enque - resets all to zero
-    tassert_eqs(EOK, deque_int.append(&a, &nit));
-    tassert_eqs(EOK, deque_int.append(&a, &nit));
+    tassert_eqs(EOK, deque_int.push(&a, &nit));
+    tassert_eqs(EOK, deque_int.push(&a, &nit));
     tassert_eqi(deque_int.len(&a), 2);
     tassert_eqi(head->idx_head, 0);
     tassert_eqi(head->idx_tail, 2);
@@ -283,7 +283,7 @@ test$case(test_deque_new_append_roll_over)
     tassert_eqi(head->idx_tail, 2);
 
     // Que is emty, next push/append/enque - resets all to zero
-    tassert_eqs(EOK, deque_int.append(&a, &nit));
+    tassert_eqs(EOK, deque_int.enqueue(&a, &nit));
     tassert_eqi(deque_int.len(&a), 1);
     tassert_eqi(head->idx_head, 0);
     tassert_eqi(head->idx_tail, 1);
@@ -935,7 +935,7 @@ test$case(test_deque_generic_new_append_pop)
     tassert_eqi(deque_i32.len(&a), 0);
 
     for (i32 i = 0; i < 16; i++) {
-        tassert_eqs(EOK, deque_i32.append(&a, &i));
+        tassert_eqs(EOK, deque_i32.push(&a, &i));
     }
     tassert_eqi(deque_i32.len(&a), 16);
     tassert_eqi(head->idx_tail, 16);

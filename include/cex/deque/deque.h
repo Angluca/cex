@@ -40,17 +40,16 @@ typedef struct __cex_deque_c* _cex_deque_c;
 #define _deque$typedef_impl_0(typename)
 #define _deque$typedef_impl_1(typename)                                                            \
     const struct typename##_vtable__ typename = {                                                  \
-        .append = (void*)_cex_deque_append,                                                        \
+        .get = (void*)_cex_deque_get,                                                              \
         .pop = (void*)_cex_deque_pop,                                                              \
-        .len = (void*)_cex_deque_len,                                                              \
-        .enqueue = (void*)_cex_deque_enqueue,                                                      \
         .push = (void*)_cex_deque_push,                                                            \
+        .enqueue = (void*)_cex_deque_enqueue,                                                      \
         .dequeue = (void*)_cex_deque_dequeue,                                                      \
-        .destroy = (void*)_cex_deque_destroy,                                                      \
+        .len = (void*)_cex_deque_len,                                                              \
         .clear = (void*)_cex_deque_clear,                                                          \
         .iter_get = (void*)_cex_deque_iter_get,                                                    \
         .iter_fetch = (void*)_cex_deque_iter_fetch,                                                \
-        .get = (void*)_cex_deque_get,                                                              \
+        .destroy = (void*)_cex_deque_destroy,                                                      \
     };
 #define _deque$typedef_impl(typename, implement) _deque$typedef_impl_##implement(typename)
 
@@ -70,15 +69,14 @@ typedef struct __cex_deque_c* _cex_deque_c;
     typedef struct typename##_c typename##_c;                                                      \
     struct typename##_vtable__                                                                     \
     {                                                                                              \
-        Exception (*append)(typename##_c * self, eltype * item);                                   \
-        eltype* (*pop)(typename##_c * self);                                                       \
-        usize (*len)(typename##_c * self);                                                         \
-        Exception (*enqueue)(typename##_c * self, eltype * item);                                  \
+        eltype* (*get)(typename##_c * self, usize index);                                          \
         Exception (*push)(typename##_c * self, eltype * item);                                     \
+        eltype* (*pop)(typename##_c * self);                                                       \
+        Exception (*enqueue)(typename##_c * self, eltype * item);                                  \
         eltype* (*dequeue)(typename##_c * self);                                                   \
         void (*destroy)(typename##_c * self);                                                      \
         void (*clear)(typename##_c * self);                                                        \
-        eltype* (*get)(typename##_c * self, usize index);                                          \
+        usize (*len)(typename##_c * self);                                                         \
         eltype* (*iter_get)(typename##_c * self, i32 direction, cex_iterator_s * iterator);        \
         eltype* (*iter_fetch)(typename##_c * self, i32 direction, cex_iterator_s * iterator);      \
     };                                                                                             \

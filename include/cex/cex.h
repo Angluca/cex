@@ -2,8 +2,6 @@
  * @file cex/cex.h
  * @brief CEX core file
  */
-
-
 #pragma once
 #include <errno.h>
 #include <stdalign.h>
