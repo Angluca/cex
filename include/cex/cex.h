@@ -421,6 +421,17 @@ int __cex_test_uassert_enabled = 1;
          it.idx < __CEX_TMPNAME(__cex_arriter__length);                                            \
          it.val++, it.idx++)
 
+#define for$array_rev(it, array, length)                                                           \
+    struct __CEX_TMPNAME(__cex_arriter_)                                                           \
+    {                                                                                              \
+        typeof(*array)* val;                                                                       \
+        usize idx;                                                                                 \
+    };                                                                                             \
+    usize __CEX_TMPNAME(__cex_arriter__length) = (length); /* prevents multi call of (length)*/    \
+    for (struct __CEX_TMPNAME(__cex_arriter_)                                                      \
+             it = { .val = (array) + __CEX_TMPNAME(__cex_arriter__length),                         \
+                    .idx = __CEX_TMPNAME(__cex_arriter__length) };                                 \
+         it.idx-- > 0 && (it.val--);)
 /**
  * @brief cex_iterator_s - CEX iterator interface
  */

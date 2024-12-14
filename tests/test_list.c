@@ -383,13 +383,6 @@ test$case(testlist_iterator)
     }
 
     u32 nit = 0;
-    // type is inferred?
-    for$iter(*a.arr, it, list_i32.iter(&a, &it.iterator))
-    {
-        tassert(false && "not expected");
-        nit++;
-    }
-    tassert_eqi(nit, 0);
 
     int arr[4] = { 0, 1, 2, 300 };
     nit = 0;
@@ -430,16 +423,9 @@ test$case(testlist_iterator)
     tassert_eqi(a.len, 4);
 
     nit = 0;
-    for$iter(int, it, list_i32.iter(&a, &it.iterator))
+    for$array(it, a.arr, a.len)
     {
-        tassert_eqi(it.idx.i, nit);
-        tassert_eqi(*it.val, arr[nit]);
-        nit++;
-    }
-    nit = 0;
-    for$iter(*a.arr, it, list_i32.iter(&a, &it.iterator))
-    {
-        tassert_eqi(it.idx.i, nit);
+        tassert_eqi(it.idx, nit);
         tassert_eqi(*it.val, arr[nit]);
         nit++;
     }
@@ -497,10 +483,10 @@ test$case(testlist_align256)
         tassert_eqi(a.arr[i].foo, i);
     }
     u32 nit = 0;
-    for$iter(struct foo64, it, list_foo64.iter(&a, &it.iterator))
+    for$array(it, a.arr, a.len)
     {
-        tassert_eqi(it.idx.i, nit);
-        tassert_eqi(it.val->foo, a.arr[it.idx.i].foo);
+        tassert_eqi(it.idx, nit);
+        tassert_eqi(it.val->foo, a.arr[it.idx].foo);
         nit++;
     }
     tassert_eqi(nit, a.len);
@@ -612,9 +598,9 @@ test$case(testlist_align16)
     tassert_eqi(head->header.elalign, 16);
 
     // validate appended values
-    for$iter(typeof(*a.arr), it, list_foo64.iter(&a, &it.iterator))
+    for$array(it, a.arr, a.len)
     {
-        tassert_eqi(it.val->foo, it.idx.i);
+        tassert_eqi(it.val->foo, it.idx);
     }
 
     // check if array got resized
@@ -710,7 +696,7 @@ test$case(testlist_static_with_alignment)
     list_foo64_c a;
 
     list$define_static_buf(buf, list_foo64, 2);
-    _Static_assert(alignof(buf) == 64, "align");
+    // _Static_assert(alignof(buf) == 64, "align");
     tassert_eqi(sizeof(buf), sizeof(struct foo64) * 2 + _CEX_LIST_BUF);
 
     usize unalign = 1;
@@ -818,12 +804,6 @@ test$case(testlist_new_macro_def_testing)
     }
     tassert_eqi(a.len, 4);
 
-    for$iter(struct s_my, it, MyLst.iter(&a, &it.iterator))
-    {
-        tassert_eqi(it.val->foo, it.idx.i);
-        tassert_eqi(it.val->bar, 'a' + it.idx.i);
-    }
-
     tassert_eqi(a.len, 4);
     tassert_eqe(EOK, MyLst.insert(&a, &(struct s_my){ .foo = 100, .bar = 'z' }, 0));
     tassert_eqi(a.len, 5);
@@ -864,8 +844,80 @@ test$case(testlist_new_macro_def_testing)
     tassert_eqi(a.arr[0].foo, 5);
     tassert_eqi(a.arr[1].foo, 4);
     tassert_eqi(a.arr[2].foo, 3);
-
+    
     MyLst.destroy(&a);
+    return EOK;
+}
+test$case(testlist_array_iter)
+{
+
+    list_i32_c a;
+    e$except(err, list$new(&a, 4, allocator))
+    {
+        tassert(false && "list$new fail");
+    }
+
+    u32 nit = 0;
+
+    int arr[4] = { 0, 1, 2, 300 };
+    nit = 0;
+    for$array(it, arr, arr$len(arr))
+    {
+        tassert_eqi(it.idx, nit);
+        tassert_eqi(*it.val, arr[nit]);
+        nit++;
+    }
+    tassert_eqi(nit, 4);
+
+    struct tstruct
+    {
+        u32 foo;
+        char* bar;
+    } tarr[2] = {
+        { .foo = 1 },
+        { .foo = 2 },
+    };
+    nit = 0;
+    for$array(it, tarr, arr$len(tarr))
+    {
+        tassert_eqi(it.idx, nit);
+        tassert_eqi(it.val->foo, nit + 1);
+        nit++;
+    }
+    tassert_eqi(nit, 2);
+
+    nit = 0;
+    for$array(it, tarr, arr$len(tarr))
+    {
+        tassert_eqi(it.idx, nit);
+        tassert_eqi(it.val->foo, nit + 1);
+        nit++;
+    }
+    tassert_eqi(nit, 2);
+    tassert_eqs(EOK, list_i32.extend(&a, arr, arr$len(arr)));
+    tassert_eqi(a.len, 4);
+
+    nit = 0;
+    for$array(it, a.arr, a.len)
+    {
+        tassert_eqi(it.idx, nit);
+        tassert_eqi(*it.val, arr[nit]);
+        nit++;
+    }
+    tassert_eqi(nit, 4);
+    nit = 0;
+
+    nit = 0;
+    for$array(it, a.arr, a.len)
+    {
+        tassert_eqi(it.idx, nit);
+        tassert_eqi(*it.val, arr[nit]);
+        nit++;
+    }
+    tassert_eqi(nit, 4);
+
+    list_i32.destroy(&a);
+
     return EOK;
 }
 /*

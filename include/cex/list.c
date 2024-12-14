@@ -395,38 +395,3 @@ end:
     d->len = 0;
 }
 
-void*
-_cex_list_iter(_cex_list_c const * self, cex_iterator_s* iterator)
-{
-    uassert(self != NULL && "self == NULL");
-    uassert(iterator != NULL && "null iterator");
-
-    _cex_list_c* d = (_cex_list_c*)self;
-    _cex_list_head_s* head = _cex_list__head(self);
-    if (unlikely(head == NULL)) {
-        return NULL;
-    }
-
-    // temporary struct based on _ctxbuffer
-    struct iter_ctx
-    {
-        usize cursor;
-    }* ctx = (struct iter_ctx*)iterator->_ctx;
-    _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
-
-    if (unlikely(iterator->val == NULL)) {
-        ctx->cursor = 0;
-    } else {
-        ctx->cursor++;
-    }
-
-    if (ctx->cursor >= d->len) {
-        return NULL;
-    }
-
-    iterator->idx.i = ctx->cursor;
-    iterator->val = (char*)d->arr + ctx->cursor * head->header.elsize;
-    return iterator->val;
-}
-

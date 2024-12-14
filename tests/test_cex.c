@@ -746,6 +746,58 @@ test$case(test_arrays_and_slices)
 
     return EOK;
 }
+
+test$case(test_array_iter)
+{
+
+    u32 nit = 0;
+
+    int arr[4] = { 0, 1, 2, 300 };
+    nit = 0;
+    for$array(it, arr, arr$len(arr))
+    {
+        tassert_eqi(it.idx, nit);
+        tassert_eqi(*it.val, arr[nit]);
+        nit++;
+    }
+    tassert_eqi(nit, 4);
+
+    nit = 0;
+    for$array_rev(it, arr, arr$len(arr))
+    {
+        tassert_eqi(it.idx, 4-nit-1);
+        tassert_eqi(*it.val, arr[4-nit-1]);
+        nit++;
+        // printf("i: %zu, val: %d\n", it.idx, *it.val);
+    }
+    tassert_eqi(nit, 4);
+
+    nit = 0;
+    for$array_rev(it, arr, 0)
+    {
+        tassert(false && "unepected to run");
+    }
+    tassert_eqi(nit, 0);
+
+    struct tstruct
+    {
+        u32 foo;
+        char* bar;
+    } tarr[1] = {
+        { .foo = 1 },
+    };
+
+    nit = 0;
+    for$array_rev(it, tarr, arr$len(tarr))
+    {
+        tassert_eqi(it.idx, nit);
+        tassert_eqi(it.val->foo, nit + 1);
+        nit++;
+    }
+    tassert_eqi(nit, 1);
+
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -766,6 +818,7 @@ main(int argc, char* argv[])
     test$run(test_eassert);
     test$run(test_log);
     test$run(test_arrays_and_slices);
+    test$run(test_array_iter);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

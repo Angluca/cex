@@ -20,8 +20,7 @@
                                                   .clear = (void*)_cex_list_clear,                 \
                                                   .extend = (void*)_cex_list_extend,               \
                                                   .del = (void*)_cex_list_del,                     \
-                                                  .sort = (void*)_cex_list_sort,                   \
-                                                  .iter = (void*)_cex_list_iter };
+                                                  .sort = (void*)_cex_list_sort};
 #define _list$typedef_impl(typename, implement) _list$typedef_impl_##implement(typename)
 
 #define list$impl(typename) _list$typedef_impl(typename, 1)
@@ -40,12 +39,12 @@ typedef struct
     {                                                                                              \
         Exception (*append)(typename##_c * self, eltype * item);                                   \
         Exception (*insert)(typename##_c * self, eltype * item, usize index);                      \
+        /** Extends list   */ \
         Exception (*extend)(typename##_c * self, eltype * items, usize nitems);                    \
         Exception (*del)(typename##_c * self, usize index);                                        \
         void (*clear)(typename##_c * self);                                                        \
         usize (*capacity)(typename##_c * self);                                                    \
         void (*sort)(typename##_c * self, int (*comp)(const eltype*, const eltype*));              \
-        eltype* (*iter)(typename##_c * self, cex_iterator_s * iterator);                           \
         void (*destroy)(typename##_c * self);                                                      \
     };                                                                                             \
     _list$typedef_extern(typename, implement);                                                     \
