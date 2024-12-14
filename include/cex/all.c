@@ -1,5 +1,5 @@
 #pragma once
-#include "allocators.c"
+#include "allocators/AllocatorGeneric.c"
 #include "cex.c"
 #include "dict.c"
 #include "list.c"

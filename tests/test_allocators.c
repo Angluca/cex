@@ -2,6 +2,7 @@
 #include <cex/test/test.h>
 #include <cex/all.c>
 #include <cex/test/fff.h>
+#include <cex/allocators/AllocatorStaticArena.c>
 
 #include <alloca.h>
 #include <stdalign.h>
@@ -22,8 +23,8 @@ FAKE_VALUE_FUNC(void*, __wrap_malloc, usize, usize)
 test$teardown()
 {
     uassert_disable();
-    allocators.heap.destroy();
-    allocators.staticarena.destroy();
+    AllocatorGeneric.destroy();
+    AllocatorStaticArena.destroy();
     return EOK;
 }
 test$setup()
@@ -42,9 +43,9 @@ test$setup()
 test$case(test_allocator_heap)
 {
 
-    const Allocator_i* allocator = allocators.heap.create();
+    const Allocator_i* allocator = AllocatorGeneric.create();
     char* buf = allocator->malloc(123);
-    allocator_heap_s* a = (allocator_heap_s*)allocator;
+    allocator_generic_s* a = (allocator_generic_s*)allocator;
     tassert_eqi(a->stats.n_allocs, 1);
     tassert(buf != NULL);
     memset(buf, 1, 123); // more than 123, should trigger sanitizer
@@ -58,21 +59,21 @@ test$case(test_allocator_heap)
     allocator->free(buf);
     tassert_eqi(a->stats.n_allocs, 1);
     tassert_eqi(a->stats.n_free, 1);
-    tassert(allocators.heap.destroy() == NULL);
+    tassert(AllocatorGeneric.destroy() == NULL);
     return EOK;
 }
 
 test$case(test_allocator_heap_memory_leak_check)
 {
 
-    const Allocator_i* allocator = allocators.heap.create();
+    const Allocator_i* allocator = AllocatorGeneric.create();
     char* buf = allocator->malloc(123);
-    allocator_heap_s* a = (allocator_heap_s*)allocator;
+    allocator_generic_s* a = (allocator_generic_s*)allocator;
     tassert_eqi(a->stats.n_allocs, 1);
     tassert(buf != NULL);
     tassert_eqi(a->stats.n_allocs, 1);
     tassert_eqi(a->stats.n_free, 0);
-    tassert(allocators.heap.destroy() == NULL);
+    tassert(AllocatorGeneric.destroy() == NULL);
 
     free(buf); // calm down the sanitizer
     return EOK;
@@ -81,17 +82,17 @@ test$case(test_allocator_heap_memory_leak_check)
 test$case(test_allocator_heap_fopen_unclosed)
 {
 
-    const Allocator_i* allocator = allocators.heap.create();
+    const Allocator_i* allocator = AllocatorGeneric.create();
     FILE* f = allocator->fopen("tests/data/allocator_fopen.txt", "w+");
     tassert(f != NULL);
     tassert_eqi(4, fwrite("test", 1, 4, f));
 
-    allocator_heap_s* a = (allocator_heap_s*)allocator;
+    allocator_generic_s* a = (allocator_generic_s*)allocator;
     tassert_eqi(a->stats.n_fopen, 1);
-    tassert(allocators.heap.destroy() == NULL);
+    tassert(AllocatorGeneric.destroy() == NULL);
     fclose(f);
 
-    allocator = allocators.heap.create();
+    allocator = AllocatorGeneric.create();
     f = allocator->fopen("tests/data/allocator_fopen.txt", "w");
     tassert(f != NULL);
     tassert_eqi(4, fwrite("test", 1, 4, f));
@@ -99,9 +100,9 @@ test$case(test_allocator_heap_fopen_unclosed)
 
     tassert_eqi(a->stats.n_fopen, 1);
     tassert_eqi(a->stats.n_fclose, 1);
-    tassert(allocators.heap.destroy() == NULL);
+    tassert(AllocatorGeneric.destroy() == NULL);
 
-    allocator = allocators.heap.create();
+    allocator = AllocatorGeneric.create();
     int fd = allocator->open("tests/data/allocator_fopen.txt", O_RDONLY, 0640);
     tassert(fd != -1);
     tassert_eqi(a->stats.n_open, 1);
@@ -114,15 +115,15 @@ test$case(test_allocator_heap_fopen_unclosed)
 
     close(fd);
 
-    tassert(allocators.heap.destroy() == NULL);
-    allocator = allocators.heap.create();
+    tassert(AllocatorGeneric.destroy() == NULL);
+    allocator = AllocatorGeneric.create();
     fd = allocator->open("tests/data/allocator_fopen.txt", O_RDONLY, 0640);
     tassert(fd != -1);
     tassert_eqi(a->stats.n_open, 1);
     tassert(allocator->close(fd) != -1);
     tassert_eqi(a->stats.n_close, 1);
 
-    tassert(allocators.heap.destroy() == NULL);
+    tassert(AllocatorGeneric.destroy() == NULL);
 
     return EOK;
 }
@@ -130,14 +131,14 @@ test$case(test_allocator_heap_fopen_unclosed)
 test$case(test_allocator_double_creation)
 {
 
-    const Allocator_i* allocator = allocators.heap.create();
+    const Allocator_i* allocator = AllocatorGeneric.create();
     uassert_disable();
-    const Allocator_i* allocator2 = allocators.heap.create();
+    const Allocator_i* allocator2 = AllocatorGeneric.create();
     tassert(allocator != NULL);
     tassert(allocator2 != NULL);
     (void)allocator;
     (void)allocator2;
-    allocators.heap.destroy();
+    AllocatorGeneric.destroy();
 
     return EOK;
 }
@@ -145,7 +146,7 @@ test$case(test_allocator_double_creation)
 test$case(test_allocator_alloc_aligned)
 {
 
-    const Allocator_i* allocator = allocators.heap.create();
+    const Allocator_i* allocator = AllocatorGeneric.create();
 
     char* buf2 = allocator->malloc_aligned(1024, 2048);
     tassert(buf2 != NULL);
@@ -164,7 +165,7 @@ test$case(test_allocator_alloc_aligned)
     allocator->free(buf);
     // allocator->free(buf2);  // double free!
     allocator->free(buf3);
-    tassert(allocators.heap.destroy() == NULL);
+    tassert(AllocatorGeneric.destroy() == NULL);
 
     return EOK;
 }
@@ -172,7 +173,7 @@ test$case(test_allocator_alloc_aligned)
 test$case(test_allocator_heap_calloc)
 {
 
-    const Allocator_i* allocator = allocators.heap.create();
+    const Allocator_i* allocator = AllocatorGeneric.create();
 
     char* buf2 = allocator->calloc(512, 2);
     tassert(buf2 != NULL);
@@ -182,7 +183,7 @@ test$case(test_allocator_heap_calloc)
     tassert_eqi(0, memcmp(buf2, buf_zero, 1024));
 
     allocator->free(buf2);
-    tassert(allocators.heap.destroy() == NULL);
+    tassert(AllocatorGeneric.destroy() == NULL);
 
     return EOK;
 }
@@ -190,7 +191,7 @@ test$case(test_allocator_heap_calloc)
 test$case(test_allocator_static_arena_stack)
 {
     char buf[1024];
-    const Allocator_i* allocator = allocators.staticarena.create(buf, arr$len(buf));
+    const Allocator_i* allocator = AllocatorStaticArena.create(buf, arr$len(buf));
     tassert(allocator != NULL);
 
     allocator_staticarena_s* a = (allocator_staticarena_s*)allocator;
@@ -261,7 +262,7 @@ test$case(test_allocator_static_arena_stack)
     allocator->free(v2);
     allocator->free(v4);
 
-    allocator = allocators.staticarena.destroy();
+    allocator = AllocatorStaticArena.destroy();
     tassert(allocator == NULL);
 
     tassert(a->mem == NULL);
@@ -280,7 +281,7 @@ test$case(test_allocator_static_arena_stack_aligned)
 
     alignas(64) char buf[1024];
 
-    const Allocator_i* allocator = allocators.staticarena.create(buf, arr$len(buf));
+    const Allocator_i* allocator = AllocatorStaticArena.create(buf, arr$len(buf));
 
     allocator_staticarena_s* a = (allocator_staticarena_s*)allocator;
 
@@ -297,7 +298,7 @@ test$case(test_allocator_static_arena_stack_aligned)
     tassert(v1 != NULL);
     tassert_eqi((usize)v1 % sizeof(usize), 0);
 
-    tassert(alignof(allocator_heap_s) == 64); // this struct is 64 aligned
+    tassert(alignof(allocator_generic_s) == 64); // this struct is 64 aligned
     void* v2 = allocator->malloc_aligned(64, 64);
     tassert(v2 != NULL);
     tassert_eqi((usize)v2 % 64, 0);
@@ -307,7 +308,7 @@ test$case(test_allocator_static_arena_stack_aligned)
     tassert_eqi((char*)v2 - (char*)v1, 64);
     tassert_eqi((char*)a->next - (char*)v2, 64);
 
-    allocator_heap_s* t = (allocator_heap_s*)v2;
+    allocator_generic_s* t = (allocator_generic_s*)v2;
     //  Without alignment we would have unaligned access - undefined behaviour
     //  san!
     memset(t, 0, sizeof(*t));
@@ -338,7 +339,7 @@ test$case(test_allocator_static_arena_stack_aligned)
     tassert(v1 == NULL);
 
     // Arena cleanup
-    allocator = allocators.staticarena.destroy();
+    allocator = AllocatorStaticArena.destroy();
     tassert(allocator == NULL);
 
     tassert(a->mem == NULL);
@@ -356,7 +357,7 @@ test$case(test_allocator_static_arena_memory_leak_check)
 
     alignas(64) char buf[1024];
 
-    const Allocator_i* allocator = allocators.staticarena.create(buf, arr$len(buf));
+    const Allocator_i* allocator = AllocatorStaticArena.create(buf, arr$len(buf));
     allocator_staticarena_s* a = (allocator_staticarena_s*)allocator;
 
     tassert(allocator != NULL);
@@ -365,7 +366,7 @@ test$case(test_allocator_static_arena_memory_leak_check)
     tassert(v1 != NULL);
     tassert_eqi(a->stats.n_allocs, 1);
     tassert_eqi(a->stats.n_free, 0);
-    allocator = allocators.staticarena.destroy();
+    allocator = AllocatorStaticArena.destroy();
     return EOK;
 }
 
@@ -375,7 +376,7 @@ test$case(test_allocator_static_arena_calloc)
     alignas(64) char buf[1025];
 
     // initial buffer is unaligned
-    const Allocator_i* allocator = allocators.staticarena.create(buf + 1, arr$len(buf) - 1);
+    const Allocator_i* allocator = AllocatorStaticArena.create(buf + 1, arr$len(buf) - 1);
     allocator_staticarena_s* a = (allocator_staticarena_s*)allocator;
 
     memset(buf, 'z', 1025);
@@ -431,7 +432,7 @@ test$case(test_allocator_static_arena_calloc)
     allocator->free(v3);
 
     // Arena cleanup
-    allocators.staticarena.destroy();
+    AllocatorStaticArena.destroy();
 
     return EOK;
 }
@@ -440,7 +441,7 @@ test$case(test_allocator_staticarena_fopen_unclosed)
 {
     char arena[2048];
 
-    const Allocator_i* allocator = allocators.staticarena.create(arena, sizeof(arena));
+    const Allocator_i* allocator = AllocatorStaticArena.create(arena, sizeof(arena));
 
     FILE* f = allocator->fopen("tests/data/allocator_fopen.txt", "w+");
     tassert(f != NULL);
@@ -448,10 +449,10 @@ test$case(test_allocator_staticarena_fopen_unclosed)
 
     allocator_staticarena_s* a = (allocator_staticarena_s*)allocator;
     tassert_eqi(a->stats.n_fopen, 1);
-    tassert(allocators.staticarena.destroy() == NULL);
+    tassert(AllocatorStaticArena.destroy() == NULL);
     fclose(f);
 
-    allocator = allocators.staticarena.create(arena, sizeof(arena));
+    allocator = AllocatorStaticArena.create(arena, sizeof(arena));
     f = allocator->fopen("tests/data/allocator_fopen.txt", "w");
     tassert(f != NULL);
     tassert_eqi(4, fwrite("test", 1, 4, f));
@@ -459,9 +460,9 @@ test$case(test_allocator_staticarena_fopen_unclosed)
 
     tassert_eqi(a->stats.n_fopen, 1);
     tassert_eqi(a->stats.n_fclose, 1);
-    tassert(allocators.staticarena.destroy() == NULL);
+    tassert(AllocatorStaticArena.destroy() == NULL);
 
-    allocator = allocators.staticarena.create(arena, sizeof(arena));
+    allocator = AllocatorStaticArena.create(arena, sizeof(arena));
     int fd = allocator->open("tests/data/allocator_fopen.txt", O_RDONLY, 0640);
     tassert(fd != -1);
     tassert_eqi(a->stats.n_open, 1);
@@ -473,16 +474,16 @@ test$case(test_allocator_staticarena_fopen_unclosed)
     tassert_eqs(buf, "test");
 
     close(fd);
-    tassert(allocators.staticarena.destroy() == NULL);
+    tassert(AllocatorStaticArena.destroy() == NULL);
 
-    allocator = allocators.staticarena.create(arena, sizeof(arena));
+    allocator = AllocatorStaticArena.create(arena, sizeof(arena));
     fd = allocator->open("tests/data/allocator_fopen.txt", O_RDONLY, 0640);
     tassert(fd != -1);
     tassert_eqi(a->stats.n_open, 1);
     tassert(allocator->close(fd) != -1);
     tassert_eqi(a->stats.n_close, 1);
 
-    tassert(allocators.staticarena.destroy() == NULL);
+    tassert(AllocatorStaticArena.destroy() == NULL);
 
     return EOK;
 }

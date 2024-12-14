@@ -56,7 +56,7 @@ state_2_sideeff(fsm_c* self, const fsm_event_s* e)
 
 test$teardown()
 {
-    allocator = allocators.heap.destroy(); // this also nullifies allocator
+    allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
     return EOK;
 }
 
@@ -67,7 +67,7 @@ test$setup()
     RESET_FAKE(state_2);
     RESET_FAKE(state_3);
     RESET_FAKE(state_super);
-    allocator = allocators.heap.create();
+    allocator = AllocatorGeneric.create();
     return EOK;
 }
 

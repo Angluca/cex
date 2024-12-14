@@ -18,14 +18,14 @@ const Allocator_i* allocator;
  */
 test$teardown()
 {
-    allocator = allocators.heap.destroy();
+    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable();
-    allocator = allocators.heap.create();
+    allocator = AllocatorGeneric.create();
     return EOK;
 }
 
@@ -949,6 +949,7 @@ main(int argc, char* argv[])
     test$run(testlist_static_with_alignment);
     test$run(testlist_slice);
     test$run(testlist_new_macro_def_testing);
+    test$run(testlist_array_iter);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

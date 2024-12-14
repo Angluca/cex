@@ -398,6 +398,13 @@ int __cex_test_uassert_enabled = 1;
     }
 
 
+/**
+ * @brief Gets array generic slice (typed as array)
+ * @param array - generic array
+ * @param start - start index, may be negative to get item from the end of array
+ * @param end - end index, 0 - means all, or may be negative to get item from the end of array
+ * @return struct {eltype* arr, usize len}, or {NULL, 0} if bad slice index/not found/NULL array
+ */
 #define arr$slice(array, start, end)                                                               \
     ({                                                                                             \
         slice$define(*array) s = { .arr = NULL, .len = 0 };                                        \
@@ -405,10 +412,13 @@ int __cex_test_uassert_enabled = 1;
         s;                                                                                         \
     })
 
+/**
+ * @brief Returns number of elements on compile time / static array
+ */
 #define arr$len(arr) (sizeof(arr) / sizeof(arr[0]))
 
 /**
- * @brief Iterates through array: itvar is struct {eltype* val, usize index}
+ * @brief Iterates through array: itvar is struct {eltype* val, usize idx}
  */
 #define for$array(it, array, length)                                                               \
     struct __CEX_TMPNAME(__cex_arriter_)                                                           \
@@ -421,6 +431,9 @@ int __cex_test_uassert_enabled = 1;
          it.idx < __CEX_TMPNAME(__cex_arriter__length);                                            \
          it.val++, it.idx++)
 
+/**
+ * @brief Iterates through array (reverse order): itvar is struct {eltype* val, usize idx}
+ */
 #define for$array_rev(it, array, length)                                                           \
     struct __CEX_TMPNAME(__cex_arriter_)                                                           \
     {                                                                                              \

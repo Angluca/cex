@@ -14,13 +14,13 @@ const Allocator_i* allocator;
 * SUITE INIT / SHUTDOWN
 */
 test$teardown(){
-    allocator = allocators.heap.destroy();
+    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
-    allocator = allocators.heap.create();
+    allocator = AllocatorGeneric.create();
     return EOK;
 }
 

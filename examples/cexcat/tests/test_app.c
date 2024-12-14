@@ -8,14 +8,14 @@ const Allocator_i* allocator;
 
 test$teardown()
 {
-    allocator = allocators.heap.destroy(); // this also nullifies allocator
+    allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable(); // re-enable if you disabled it in some test case
-    allocator = allocators.heap.create();
+    allocator = AllocatorGeneric.create();
     return EOK;
 }
 

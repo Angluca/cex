@@ -10,7 +10,7 @@ main(int argc, char* argv[])
 {
     i32 ret_code = EXIT_FAILURE;
     App_c app = { 0 };
-    var allocator = allocators.heap.create();
+    var allocator = AllocatorGeneric.create();
 
     e$except_silent(err, App.create(&app, argc, argv, allocator))
     {
@@ -29,6 +29,6 @@ main(int argc, char* argv[])
 
 shutdown:
     App.destroy(&app, allocator);
-    allocators.heap.destroy();
+    AllocatorGeneric.destroy();
     return ret_code;
 }

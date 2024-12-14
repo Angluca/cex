@@ -43,14 +43,14 @@ static char* ret_null_char(){
 * SUITE INIT / SHUTDOWN
 */
 test$teardown(){
-    allocator = allocators.heap.destroy();
+    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable();
-    allocator = allocators.heap.create();
+    allocator = AllocatorGeneric.create();
     return EOK;
 }
 
