@@ -15,7 +15,9 @@
  *
  *
 ```
-#include <cex.c>
+#include <cex/all.c>
+#include <cex/test/fff.h>
+#include <cex/test/test.h>
 
 const Allocator_i* allocator;
 
