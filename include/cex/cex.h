@@ -566,7 +566,7 @@ _Static_assert(sizeof(str_c) == sizeof(usize) * 2, "size");
 
 
 /**
- * @brief creates slice of string
+ * @brief creates slice of str_c instance 
  */
 #define str$slice(str_self, ...)                                                            \
     ({                                                                                             \
