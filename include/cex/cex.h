@@ -254,19 +254,14 @@ void __sanitizer_print_stack_trace();
 #define sanitizer_stack_trace() ((void)(0))
 #endif
 
-#ifndef __cex__assert
-#define __cex__assert()                                                                            \
-    do {                                                                                           \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-        sanitizer_stack_trace();                                                                   \
-        abort();                                                                                   \
-    } while (0);
-#endif
-
 #ifdef CEXTEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
 #define __CEX_OUT_STREAM stdout
+// NOTE: __cex_test_postmortem_f - function pointer, defined at cex/test/test.h
+// used for program state logging
+extern void* __cex_test_postmortem_ctx;
+extern void (*__cex_test_postmortem_f)(void* ctx);
+#define __cex_test_postmortem_exists() (__cex_test_postmortem_f != NULL)
 
 int __cex_test_uassert_enabled = 1;
 #define uassert_disable() __cex_test_uassert_enabled = 0
@@ -278,7 +273,28 @@ int __cex_test_uassert_enabled = 1;
 #define uassert_enable() (void)0
 #define uassert_is_enabled() true
 #define __CEX_OUT_STREAM stderr
+#define __cex_test_postmortem_f(...) (void)0
+#define __cex_test_postmortem_ctx NULL
+#define __cex_test_postmortem_exists() 0
 #endif
+
+#ifndef __cex__assert
+#define __cex__assert()                                                                            \
+    do {                                                                                           \
+        fflush(stdout);                                                                            \
+        fflush(stderr);                                                                            \
+        sanitizer_stack_trace();                                                                   \
+        if (__cex_test_postmortem_exists()) {                                                             \
+            fprintf(stderr, "=========== POSTMORTEM ===========\n");                \
+            __cex_test_postmortem_f(__cex_test_postmortem_ctx);                                    \
+            fflush(stdout);                                                                            \
+            fflush(stderr);                                                                            \
+            fprintf(stderr, "=========== POSTMORTEM END ===========\n");                \
+        }                                                                                          \
+        abort();                                                                                   \
+    } while (0)
+#endif
+
 
 /**
  * @def uassert(A)
@@ -375,28 +391,29 @@ int __cex_test_uassert_enabled = 1;
         usize len;                                                                                 \
     }
 
-struct _cex_arr_slice {
+struct _cex_arr_slice
+{
     isize start;
     isize end;
     isize __placeholder;
 };
 
-#define _arr$slice_get(slice, array, array_len, ...)                                        \
+#define _arr$slice_get(slice, array, array_len, ...)                                               \
     {                                                                                              \
-        struct _cex_arr_slice _slice = { __VA_ARGS__, .__placeholder = 0 };\
+        struct _cex_arr_slice _slice = { __VA_ARGS__, .__placeholder = 0 };                        \
         isize _len = array_len;                                                                    \
-        if (unlikely(_slice.start < 0))                                                                  \
-            _slice.start += _len;                                                                        \
-        if (_slice.end == 0) /* _end=0 equivalent of python's arr[_star:] */                             \
-            _slice.end = _len;                                                                           \
-        else if (unlikely(_slice.end < 0))                                                               \
-            _slice.end += _len;                                                                          \
-        _slice.end = _slice.end < _len ? _slice.end : _len;                                                          \
-        _slice.start = _slice.start > 0 ? _slice.start : 0;                                                          \
+        if (unlikely(_slice.start < 0))                                                            \
+            _slice.start += _len;                                                                  \
+        if (_slice.end == 0) /* _end=0 equivalent of python's arr[_star:] */                       \
+            _slice.end = _len;                                                                     \
+        else if (unlikely(_slice.end < 0))                                                         \
+            _slice.end += _len;                                                                    \
+        _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
+        _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
         /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld", start, end, _start, _end); */  \
-        if (_slice.start < _slice.end && array != NULL) {                                                      \
-            slice.arr = &((array)[_slice.start]);                                                        \
-            slice.len = (usize)(_slice.end - _slice.start);                                                    \
+        if (_slice.start < _slice.end && array != NULL) {                                          \
+            slice.arr = &((array)[_slice.start]);                                                  \
+            slice.len = (usize)(_slice.end - _slice.start);                                        \
         }                                                                                          \
     }
 
@@ -409,20 +426,20 @@ struct _cex_arr_slice {
  * var s = arr$slice(arr, 1, -2);
  * var s = arr$slice(arr, .start = -2);
  * var s = arr$slice(arr, .end = 3);
- * 
+ *
  * Note: arr$slice creates a temporary type, and it's preferable to use var keyword
- * 
+ *
  * @param array - generic array
  * @param .start - start index, may be negative to get item from the end of array
  * @param .end - end index, 0 - means all, or may be negative to get item from the end of array
  * @return struct {eltype* arr, usize len}, or {NULL, 0} if bad slice index/not found/NULL array
  *
- * @warning returns {.arr = NULL, .len = 0} if bad indexes or array 
+ * @warning returns {.arr = NULL, .len = 0} if bad indexes or array
  */
-#define arr$slice(array, ...)                                                               \
+#define arr$slice(array, ...)                                                                      \
     ({                                                                                             \
         slice$define(*array) s = { .arr = NULL, .len = 0 };                                        \
-        _arr$slice_get(s, array, arr$len(array), __VA_ARGS__);                                      \
+        _arr$slice_get(s, array, arr$len(array), __VA_ARGS__);                                     \
         s;                                                                                         \
     })
 
@@ -539,9 +556,9 @@ _Static_assert(sizeof(Allocator_i) == sizeof(usize) * 10, "size");
 
 
 /*
-*                  CEX STRING DATATYPE 
-*  NOTE: methods implementation in cex/str.c
-*/
+ *                  CEX STRING DATATYPE
+ *  NOTE: methods implementation in cex/str.c
+ */
 typedef struct
 {
     // NOTE: len comes first which prevents bad casting of str_c to char*
@@ -561,17 +578,17 @@ _Static_assert(sizeof(str_c) == sizeof(usize) * 2, "size");
  * Uses compile time string length calculation, only literals
  *
  */
-#define str$(string)                                                                                 \
+#define str$(string)                                                                               \
     (str_c){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
 
 /**
- * @brief creates slice of str_c instance 
+ * @brief creates slice of str_c instance
  */
-#define str$slice(str_self, ...)                                                            \
+#define str$slice(str_self, ...)                                                                   \
     ({                                                                                             \
         slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
-        _arr$slice_get(__slice, str_self.buf, str_self.len, __VA_ARGS__);                           \
+        _arr$slice_get(__slice, str_self.buf, str_self.len, __VA_ARGS__);                          \
         __slice;                                                                                   \
     })
 

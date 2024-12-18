@@ -115,7 +115,23 @@ struct __CexTestContext_s
     char _str_buf[CEXTEST_AMSG_MAX_LEN];
 };
 
+void* __cex_test_postmortem_ctx = NULL;
+void (*__cex_test_postmortem_f)(void* ctx) = NULL;
 
+
+void
+__cex_test_run_postmortem()
+{
+    if (__cex_test_postmortem_exists()) {
+        fprintf(stdout, "=========== POSTMORTEM ===========\n");
+        fflush(stdout);
+        fflush(stderr);
+        __cex_test_postmortem_f(__cex_test_postmortem_ctx);
+        fflush(stdout);
+        fflush(stderr);
+        fprintf(stdout, "=========== POSTMORTEM END =======\n");
+    }
+}
 /*
  *
  *  ASSERTS
@@ -127,6 +143,7 @@ struct __CexTestContext_s
 #define tassert(A)                                                                                 \
     do {                                                                                           \
         if (!(A)) {                                                                                \
+            __cex_test_run_postmortem();                                                           \
             return __CEXTEST_LOG_ERR(#A);                                                          \
         }                                                                                          \
     } while (0)
@@ -144,6 +161,7 @@ struct __CexTestContext_s
                 __CEXTEST_LOG_ERR(M),                                                              \
                 ##__VA_ARGS__                                                                      \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
     } while (0)
@@ -162,6 +180,7 @@ struct __CexTestContext_s
                 __CEXTEST_LOG_ERR("NULL != '%s'"),                                                 \
                 (char*)(ex)                                                                        \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         } else if ((ac) != NULL && (ex) == NULL) {                                                 \
             snprintf(                                                                              \
@@ -170,6 +189,7 @@ struct __CexTestContext_s
                 __CEXTEST_LOG_ERR("'%s' != NULL"),                                                 \
                 (char*)(ac)                                                                        \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         } else if (((ac) != NULL && (ex) != NULL) &&                                               \
                    (strcmp(__CEXTEST_NON_NULL((ac)), __CEXTEST_NON_NULL((ex))) != 0)) {            \
@@ -180,6 +200,7 @@ struct __CexTestContext_s
                 (char*)(ac),                                                                       \
                 (char*)(ex)                                                                        \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
     } while (0)
@@ -198,6 +219,7 @@ struct __CexTestContext_s
                 __CEXTEST_LOG_ERR("Error.ok != '%s'"),                                             \
                 (char*)(ex)                                                                        \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         } else if ((ac) != NULL && (ex) == NULL) {                                                 \
             snprintf(                                                                              \
@@ -206,6 +228,7 @@ struct __CexTestContext_s
                 __CEXTEST_LOG_ERR("'%s' != Error.ok"),                                             \
                 (char*)(ac)                                                                        \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         } else if (((ac) != NULL && (ex) != NULL) &&                                               \
                    (strcmp(__CEXTEST_NON_NULL((ac)), __CEXTEST_NON_NULL((ex))) != 0)) {            \
@@ -216,6 +239,7 @@ struct __CexTestContext_s
                 (char*)(ac),                                                                       \
                 (char*)(ex)                                                                        \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
     } while (0)
@@ -235,6 +259,7 @@ struct __CexTestContext_s
                 (ac),                                                                              \
                 (ex)                                                                               \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
     } while (0)
@@ -254,6 +279,7 @@ struct __CexTestContext_s
                 (ac),                                                                              \
                 (ex)                                                                               \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
     } while (0)
@@ -285,6 +311,7 @@ struct __CexTestContext_s
                 ((ac) - (ex)),                                                                     \
                 (f64)FLT_EPSILON                                                                   \
             );                                                                                     \
+            __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
     } while (0)
@@ -314,6 +341,11 @@ struct __CexTestContext_s
 //
 #define test$case(test_case_name) static test$NOOPT Exc test_case_name()
 
+#define test$set_postmortem(postmortem_func, func_ctx)                                             \
+    do {                                                                                           \
+        __cex_test_postmortem_f = (postmortem_func);                                               \
+        __cex_test_postmortem_ctx = (func_ctx);                                                    \
+    } while (0)
 
 #define test$run(test_case_name)                                                                   \
     do {                                                                                           \
@@ -351,6 +383,7 @@ struct __CexTestContext_s
                 }                                                                                  \
             }                                                                                      \
         } else {                                                                                   \
+            __CexTestContext.tests_failed++;                                                       \
             fprintf(                                                                               \
                 __CEX_TEST_STREAM,                                                                 \
                 "[%s] %s %s\n",                                                                    \
@@ -358,7 +391,6 @@ struct __CexTestContext_s
                 err,                                                                               \
                 #test_case_name                                                                    \
             );                                                                                     \
-            __CexTestContext.tests_failed++;                                                       \
         }                                                                                          \
         err = cextest_teardown_func();                                                             \
         if (err != EOK) {                                                                          \
