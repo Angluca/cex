@@ -8,6 +8,8 @@
 #include <stdatomic.h>
 #include <time.h>
 
+typedef Exc (*DSTSimulationFunc_f)(void);
+
 typedef struct
 {
     struct
@@ -26,6 +28,12 @@ typedef struct
         u32 close_fail_errnos_len;
 
     } allocators;
+
+    struct {
+        // if false - resets stdout/stderr log file every tick
+        bool keep_tick_log;
+    } simulator;
+
 } dst_params_s;
 
 typedef struct
@@ -36,6 +44,9 @@ typedef struct
     Random_c _rng;
     u64 _initial_seed;
     time_t _initial_time;
+    u64 _tick_max;
+    u64 _tick_current;
+    FILE* _sim_log;
 } DST_c;
 
 extern DST_c _DST;
@@ -54,14 +65,28 @@ Exception
 bool
 (*rnd_check)(f32 prob_threshold);
 
+bool
+(*tick)(u32 max_ticks);
+
+void
+(*sim_log_reset)();
+
+Exception
+(*simulate)(DSTSimulationFunc_f fuzzf);
+
 f32
 (*rnd_prob)();
 
 usize
 (*rnd_range)(usize min, usize max);
 
+/**
+ * @brief Compatible function with test$set_postmortem(DST.print_postmortem, NULL)
+ *
+ * @param ctx
+ */
 void
-(*print_state)();
+(*print_postmortem)(void* ctx);
 
 void
 (*destroy)();
