@@ -42,6 +42,13 @@ test$case(test_malloc_dst_zero_prob)
     return EOK;
 }
 
+#define DST$fuzz(var, ...)                                                                         \
+    _Generic((var), u64 *: DST.fuzz.u64)(                                                          \
+        var,                                                                                       \
+        (typeof(*(var))[]){ __VA_ARGS__ },                                                         \
+        sizeof((typeof(*(var))[]){ __VA_ARGS__ })/sizeof(typeof(*(var)))                                                 \
+    )
+
 Exception
 fuzz_proto(void)
 {
@@ -52,18 +59,29 @@ fuzz_proto(void)
 
     (void)foo;
     // foo[0] = 1;
-    if (DST_rnd_check(1.0)) {
+    if (DST.rnd.check(1.0)) {
         free(foo);
     }
+    u64 v = 0;
+
     // foo[2] = 108;
     // e$assert(false);
     while (DST.tick(1000)) {
         fprintf(stdout, "#%ld: stdout test\n", _DST._tick_current);
         fprintf(stderr, "#%ld: stderr test\n", _DST._tick_current);
+
+        DST.fuzz.u64(&v, NULL, 0);
+        tassert(v <= 100);
+
+        // DST.fuzz.u64(&v, (u64[]){1, 2, 3}, 3);
+        DST$fuzz(&v, 1, 2, 3);
+        tassert(v == 1 || v == 2 || v == 3);
+
+        // DST$fuzz(&v2, 1, 2, 3);
     }
     fprintf(stdout, "sim pos: %zd\n", ftell(_DST._sim_log));
     // uassert(false);
-    foo[209123] = 108;
+    // foo[209123] = 108;
 
     // return Error.io;
     return EOK;
@@ -72,9 +90,11 @@ test$case(test_fuzz)
 {
 
     e$ret(DST.create(999));
-    dst_params_s prm = { .allocators = {
-                             .malloc_fail_prob = DST.rnd_prob(),
-                         }, .simulator = {
+    dst_params_s prm = { 
+        .allocators = {
+                        .malloc_fail_prob = DST.rnd.prob(),
+                         },
+        .simulator = {
             .keep_tick_log = true,
         } };
 
@@ -90,7 +110,7 @@ test$case(test_malloc_dst)
 
     e$ret(DST.create(777999));
     dst_params_s prm = { .allocators = {
-                             .malloc_fail_prob = DST.rnd_prob(),
+                             .malloc_fail_prob = DST.rnd.prob(),
                          } };
 
     e$ret(DST.setup(&prm));

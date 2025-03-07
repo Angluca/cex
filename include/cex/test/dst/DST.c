@@ -36,6 +36,12 @@ DST_create(u64 seed)
     return EOK;
 }
 
+/**
+ * @brief DST behavior configuration
+ *
+ * @param prm params
+ * @return
+ */
 Exception
 DST_setup(dst_params_s* prm)
 {
@@ -58,8 +64,14 @@ DST_setup(dst_params_s* prm)
     return EOK;
 }
 
+/**
+ * @brief Make random dice roll and check if it passed given probability threshold
+ *
+ * @param prob_threshold >= 0 && < 1.0
+ * @return
+ */
 bool
-DST_rnd_check(f32 prob_threshold)
+DST__rnd__check(f32 prob_threshold)
 {
     // DST is designed to be used only single threaded! Assert this.
     uassert(!atomic_flag_test_and_set(&_DST._lock_rng) && "already locked, using multi-threading?");
@@ -70,6 +82,12 @@ DST_rnd_check(f32 prob_threshold)
     return result;
 }
 
+/**
+ * @brief DST loop step
+ *
+ * @param max_ticks maximum loop steps
+ * @return
+ */
 bool
 DST_tick(u32 max_ticks)
 {
@@ -99,6 +117,24 @@ DST_tick(u32 max_ticks)
         }
     }
     return result;
+}
+
+/**
+ * @brief Fuzz out_value with some wild number
+ *
+ * @param out_value
+ * @param variants overrides fuzz randomness, and used values from given array
+ * @param variants_len
+ */
+void
+DST__fuzz__u64(u64* out_value, u64 variants[], usize variants_len)
+{
+    uassert(out_value != NULL);
+    if (variants != NULL && variants_len > 0) {
+        *out_value = variants[Random.range(&_DST._rng, 0, variants_len)];
+    } else {
+        *out_value = Random.i32(&_DST._rng, 0, 100);
+    }
 }
 
 void
@@ -158,7 +194,9 @@ DST_simulate(DSTSimulationFunc_f simfunc)
     } else {
         // WE ARE IN PARENT PROCESS HERE
         int returnStatus;
-        waitpid(childPid, &returnStatus, 0); // Parent process waits here for child to terminate.
+
+        // Parent process waits here for child to terminate.
+        waitpid(childPid, &returnStatus, 0);
 
         if (returnStatus == 0) // Verify child process terminated without error.
         {
@@ -211,7 +249,7 @@ end:
 }
 
 f32
-DST_rnd_prob()
+DST__rnd__prob()
 {
     // DST is designed to be used only single threaded! Assert this.
     uassert(!atomic_flag_test_and_set(&_DST._lock_rng) && "already locked, using multi-threading?");
@@ -223,7 +261,7 @@ DST_rnd_prob()
 }
 
 usize
-DST_rnd_range(usize min, usize max)
+DST__rnd__range(usize min, usize max)
 {
     // DST is designed to be used only single threaded! Assert this.
     uassert(!atomic_flag_test_and_set(&_DST._lock_rng) && "already locked, using multi-threading?");
@@ -267,13 +305,20 @@ const struct __class__DST DST = {
     // clang-format off
     .create = DST_create,
     .setup = DST_setup,
-    .rnd_check = DST_rnd_check,
     .tick = DST_tick,
     .sim_log_reset = DST_sim_log_reset,
     .simulate = DST_simulate,
-    .rnd_prob = DST_rnd_prob,
-    .rnd_range = DST_rnd_range,
     .print_postmortem = DST_print_postmortem,
     .destroy = DST_destroy,
+
+    .rnd = {  // sub-module .rnd >>>
+        .check = DST__rnd__check,
+        .prob = DST__rnd__prob,
+        .range = DST__rnd__range,
+    },  // sub-module .rnd <<<
+
+    .fuzz = {  // sub-module .fuzz >>>
+        .u64 = DST__fuzz__u64,
+    },  // sub-module .fuzz <<<
     // clang-format on
 };

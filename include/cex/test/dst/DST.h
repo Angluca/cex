@@ -59,12 +59,21 @@ struct __class__DST
 Exception
 (*create)(u64 seed);
 
+/**
+ * @brief DST behavior configuration 
+ *
+ * @param prm params
+ * @return 
+ */
 Exception
 (*setup)(dst_params_s* prm);
 
-bool
-(*rnd_check)(f32 prob_threshold);
-
+/**
+ * @brief DST loop step 
+ *
+ * @param max_ticks maximum loop steps
+ * @return 
+ */
 bool
 (*tick)(u32 max_ticks);
 
@@ -72,13 +81,7 @@ void
 (*sim_log_reset)();
 
 Exception
-(*simulate)(DSTSimulationFunc_f fuzzf);
-
-f32
-(*rnd_prob)();
-
-usize
-(*rnd_range)(usize min, usize max);
+(*simulate)(DSTSimulationFunc_f simfunc);
 
 /**
  * @brief Compatible function with test$set_postmortem(DST.print_postmortem, NULL)
@@ -91,6 +94,37 @@ void
 void
 (*destroy)();
 
+
+struct {  // sub-module .rnd >>>
+    /**
+     * @brief Make random dice roll and check if it passed given probability threshold
+     *
+     * @param prob_threshold >= 0 && < 1.0
+     * @return 
+     */
+    bool
+    (*check)(f32 prob_threshold);
+
+    f32
+    (*prob)();
+
+    usize
+    (*range)(usize min, usize max);
+
+} rnd;  // sub-module .rnd <<<
+
+struct {  // sub-module .fuzz >>>
+    /**
+     * @brief Fuzz out_value with some wild number
+     *
+     * @param out_value 
+     * @param variants overrides fuzz randomness, and used values from given array
+     * @param variants_len 
+     */
+    void
+    (*u64)(u64* out_value, u64 variants[], usize variants_len);
+
+} fuzz;  // sub-module .fuzz <<<
     // clang-format on
 };
 extern const struct __class__DST DST; // CEX Autogen

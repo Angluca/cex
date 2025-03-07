@@ -101,7 +101,7 @@ _cex_allocator_dst__malloc(usize size)
     uassert(allocator__dst_data.magic != 0 && "Allocator not initialized");
     uassert(allocator__dst_data.magic == ALLOCATOR_DST_MAGIC && "Allocator type!");
 
-    if (DST.rnd_check(_DST.prm.allocators.malloc_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.malloc_fail_prob)) {
         return NULL;
     }
 
@@ -118,7 +118,7 @@ _cex_allocator_dst__calloc(usize nmemb, usize size)
     uassert(allocator__dst_data.magic == ALLOCATOR_DST_MAGIC && "Allocator type!");
 
 
-    if (DST.rnd_check(_DST.prm.allocators.malloc_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.malloc_fail_prob)) {
         return NULL;
     }
 
@@ -137,7 +137,7 @@ _cex_allocator_dst__aligned_malloc(usize alignment, usize size)
     uassert((alignment & (alignment - 1)) == 0 && "alignment must be power of 2");
     uassert(size % alignment == 0 && "size must be rounded to align");
 
-    if (DST.rnd_check(_DST.prm.allocators.malloc_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.malloc_fail_prob)) {
         return NULL;
     }
 
@@ -158,7 +158,7 @@ _cex_allocator_dst__realloc(void* ptr, usize size)
     uassert(allocator__dst_data.magic != 0 && "Allocator not initialized");
     uassert(allocator__dst_data.magic == ALLOCATOR_DST_MAGIC && "Allocator type!");
 
-    if (DST.rnd_check(_DST.prm.allocators.malloc_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.malloc_fail_prob)) {
         return NULL;
     }
 
@@ -179,7 +179,7 @@ _cex_allocator_dst__aligned_realloc(void* ptr, usize alignment, usize size)
     uassert(((usize)ptr % alignment) == 0 && "aligned_realloc existing pointer unaligned");
     uassert(size % alignment == 0 && "size must be rounded to align");
 
-    if (DST.rnd_check(_DST.prm.allocators.malloc_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.malloc_fail_prob)) {
         return NULL;
     }
 
@@ -260,7 +260,7 @@ _cex_allocator_dst__fopen(const char* filename, const char* mode)
     uassert(filename != NULL);
     uassert(mode != NULL);
 
-    if (DST.rnd_check(_DST.prm.allocators.open_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.open_fail_prob)) {
         errno = 0xBAAD; // some non-existing errno, but always not zero
 
         if (_DST.prm.allocators.open_fail_errnos_len > 0) {
@@ -269,9 +269,9 @@ _cex_allocator_dst__fopen(const char* filename, const char* mode)
                 arr$len(_DST.prm.allocators.open_fail_errnos)
             );
 
-            if (DST.rnd_check(0.95)) {
+            if (DST.rnd.check(0.95)) {
                 // With 95% probability replace errno 0xBAAD by something else in error list
-                usize ierr = DST.rnd_range(0, _DST.prm.allocators.open_fail_errnos_len);
+                usize ierr = DST.rnd.range(0, _DST.prm.allocators.open_fail_errnos_len);
                 i32 e = _DST.prm.allocators.open_fail_errnos[ierr];
                 uassertf(
                     e != 0,
@@ -304,7 +304,7 @@ _cex_allocator_dst__open(const char* pathname, int flags, unsigned int mode)
     uassert(allocator__dst_data.magic == ALLOCATOR_DST_MAGIC && "Allocator type!");
     uassert(pathname != NULL);
 
-    if (DST.rnd_check(_DST.prm.allocators.open_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.open_fail_prob)) {
         errno = 0xBAAD; // some non-existing errno, but always not zero
 
         if (_DST.prm.allocators.open_fail_errnos_len > 0) {
@@ -313,9 +313,9 @@ _cex_allocator_dst__open(const char* pathname, int flags, unsigned int mode)
                 arr$len(_DST.prm.allocators.open_fail_errnos)
             );
 
-            if (DST.rnd_check(0.95)) {
+            if (DST.rnd.check(0.95)) {
                 // With 95% probability replace errno 0xBAAD by something else in error list
-                usize ierr = DST.rnd_range(0, _DST.prm.allocators.open_fail_errnos_len);
+                usize ierr = DST.rnd.range(0, _DST.prm.allocators.open_fail_errnos_len);
                 i32 e = _DST.prm.allocators.open_fail_errnos[ierr];
                 uassertf(
                     e != 0,
@@ -346,7 +346,7 @@ _cex_allocator_dst__close(int fd)
     uassert(allocator__dst_data.magic != 0 && "Allocator not initialized");
     uassert(allocator__dst_data.magic == ALLOCATOR_DST_MAGIC && "Allocator type!");
 
-    if (DST.rnd_check(_DST.prm.allocators.close_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.close_fail_prob)) {
         errno = 0xBAAD; // some non-existing errno, but always not zero
 
         if (_DST.prm.allocators.close_fail_errnos_len > 0) {
@@ -355,9 +355,9 @@ _cex_allocator_dst__close(int fd)
                 arr$len(_DST.prm.allocators.close_fail_errnos)
             );
 
-            if (DST.rnd_check(0.95)) {
+            if (DST.rnd.check(0.95)) {
                 // With 95% probability replace errno 0xBAAD by something else in error list
-                usize ierr = DST.rnd_range(0, _DST.prm.allocators.close_fail_errnos_len);
+                usize ierr = DST.rnd.range(0, _DST.prm.allocators.close_fail_errnos_len);
                 i32 e = _DST.prm.allocators.close_fail_errnos[ierr];
                 uassertf(
                     e != 0,
@@ -393,7 +393,7 @@ _cex_allocator_dst__fclose(FILE* f)
     uassert(f != stdout && "closing stdout");
     uassert(f != stderr && "closing stderr");
 
-    if (DST.rnd_check(_DST.prm.allocators.close_fail_prob)) {
+    if (DST.rnd.check(_DST.prm.allocators.close_fail_prob)) {
         errno = 0xBAAD; // some non-existing errno, but always not zero
 
         if (_DST.prm.allocators.close_fail_errnos_len > 0) {
@@ -402,9 +402,9 @@ _cex_allocator_dst__fclose(FILE* f)
                 arr$len(_DST.prm.allocators.close_fail_errnos)
             );
 
-            if (DST.rnd_check(0.95)) {
+            if (DST.rnd.check(0.95)) {
                 // With 95% probability replace errno 0xBAAD by something else in error list
-                usize ierr = DST.rnd_range(0, _DST.prm.allocators.close_fail_errnos_len);
+                usize ierr = DST.rnd.range(0, _DST.prm.allocators.close_fail_errnos_len);
                 i32 e = _DST.prm.allocators.close_fail_errnos[ierr];
                 uassertf(
                     e != 0,

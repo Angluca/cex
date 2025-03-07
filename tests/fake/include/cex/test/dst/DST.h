@@ -13,12 +13,13 @@
 
 FAKE_VALUE_FUNC(Exc, DST_create, u64)
 FAKE_VALUE_FUNC(Exc, DST_setup, dst_params_s*)
-FAKE_VALUE_FUNC(bool, DST_rnd_check, f32)
+FAKE_VALUE_FUNC(bool, DST__rnd__check, f32)
 FAKE_VALUE_FUNC(bool, DST_tick, u32)
+FAKE_VOID_FUNC(DST__fuzz__u64, u64*, u64 *, usize)
 FAKE_VOID_FUNC(DST_sim_log_reset)
-FAKE_VALUE_FUNC(Exc, DST_simulate, DSTFuzzFunc_f)
-FAKE_VALUE_FUNC(f32, DST_rnd_prob)
-FAKE_VALUE_FUNC(usize, DST_rnd_range, usize, usize)
+FAKE_VALUE_FUNC(Exc, DST_simulate, DSTSimulationFunc_f)
+FAKE_VALUE_FUNC(f32, DST__rnd__prob)
+FAKE_VALUE_FUNC(usize, DST__rnd__range, usize, usize)
 FAKE_VOID_FUNC(DST_print_postmortem, void*)
 FAKE_VOID_FUNC(DST_destroy)
 
@@ -27,14 +28,21 @@ const struct __class__DST DST = {
     // clang-format off
     .create = DST_create,
     .setup = DST_setup,
-    .rnd_check = DST_rnd_check,
     .tick = DST_tick,
     .sim_log_reset = DST_sim_log_reset,
     .simulate = DST_simulate,
-    .rnd_prob = DST_rnd_prob,
-    .rnd_range = DST_rnd_range,
     .print_postmortem = DST_print_postmortem,
     .destroy = DST_destroy,
+
+    .rnd = {  // sub-module .rnd >>>
+        .check = DST__rnd__check,
+        .prob = DST__rnd__prob,
+        .range = DST__rnd__range,
+    },  // sub-module .rnd <<<
+
+    .fuzz = {  // sub-module .fuzz >>>
+        .u64 = DST__fuzz__u64,
+    },  // sub-module .fuzz <<<
     // clang-format on
 };
 
@@ -44,12 +52,13 @@ const struct __class__DST DST = {
 static void fake__DST__resetall(void) {
     RESET_FAKE(DST_create)
     RESET_FAKE(DST_setup)
-    RESET_FAKE(DST_rnd_check)
+    RESET_FAKE(DST__rnd__check)
     RESET_FAKE(DST_tick)
+    RESET_FAKE(DST__fuzz__u64)
     RESET_FAKE(DST_sim_log_reset)
     RESET_FAKE(DST_simulate)
-    RESET_FAKE(DST_rnd_prob)
-    RESET_FAKE(DST_rnd_range)
+    RESET_FAKE(DST__rnd__prob)
+    RESET_FAKE(DST__rnd__range)
     RESET_FAKE(DST_print_postmortem)
     RESET_FAKE(DST_destroy)
 }
