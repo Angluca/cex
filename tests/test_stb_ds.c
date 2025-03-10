@@ -130,32 +130,10 @@ char *strkey(int n)
    return buffer;
 }
 
-test$case(test_orig_test)
+test$case(test_orig_arr)
 {
 
-    // const int testsize = 100000;
     arr$(int) arr = NULL;
-    // const int testsize2 = testsize / 20;
-    // struct
-    // {
-    //     int key;
-    //     int value;
-    // }* intmap = NULL;
-    // struct
-    // {
-    //     char* key;
-    //     int value;
-    // } *strmap = NULL, s;
-    // struct
-    // {
-    //     stbds_struct key;
-    //     int value;
-    // }* map = NULL;
-    // stbds_struct* map2 = NULL;
-    // stbds_struct2* map3 = NULL;
-    // cexds_string_arena sa = { 0 };
-    // int key3[2] = { 1, 2 };
-    // ptrdiff_t temp;
 
     int i, j;
 
@@ -195,92 +173,114 @@ test$case(test_orig_test)
         arr$free(arr);
     }
 
-    // i = 1;
-    // tassert(cexds_hmgeti(intmap, i) == -1);
-    // cexds_hmdefault(intmap, -2);
-    // tassert(cexds_hmgeti(intmap, i) == -1);
-    // tassert(cexds_hmget(intmap, i) == -2);
-    // for (i = 0; i < testsize; i += 2) {
-    //     cexds_hmput(intmap, i, i * 5);
-    // }
-    // for (i = 0; i < testsize; i += 1) {
-    //     if (i & 1) {
-    //         tassert(cexds_hmget(intmap, i) == -2);
-    //     } else {
-    //         tassert(cexds_hmget(intmap, i) == i * 5);
-    //     }
-    //     if (i & 1) {
-    //         tassert(cexds_hmget_ts(intmap, i, temp) == -2);
-    //     } else {
-    //         tassert(cexds_hmget_ts(intmap, i, temp) == i * 5);
-    //     }
-    // }
-    // for (i = 0; i < testsize; i += 2) {
-    //     cexds_hmput(intmap, i, i * 3);
-    // }
-    // for (i = 0; i < testsize; i += 1) {
-    //     if (i & 1) {
-    //         tassert(cexds_hmget(intmap, i) == -2);
-    //     } else {
-    //         tassert(cexds_hmget(intmap, i) == i * 3);
-    //     }
-    // }
-    // for (i = 2; i < testsize; i += 4) {
-    //     cexds_hmdel(intmap, i); // delete half the entries
-    // }
-    // for (i = 0; i < testsize; i += 1) {
-    //     if (i & 3) {
-    //         tassert(cexds_hmget(intmap, i) == -2);
-    //     } else {
-    //         tassert(cexds_hmget(intmap, i) == i * 3);
-    //     }
-    // }
-    // for (i = 0; i < testsize; i += 1) {
-    //     cexds_hmdel(intmap, i); // delete the rest of the entries
-    // }
-    // for (i = 0; i < testsize; i += 1) {
-    //     tassert(cexds_hmget(intmap, i) == -2);
-    // }
-    // cexds_hmfree(intmap);
-    // for (i = 0; i < testsize; i += 2) {
-    //     cexds_hmput(intmap, i, i * 3);
-    // }
-    // cexds_hmfree(intmap);
-    //
-    // intmap = NULL;
-    // cexds_hmput(intmap, 15, 7);
-    // cexds_hmput(intmap, 11, 3);
-    // cexds_hmput(intmap, 9, 5);
-    // tassert(cexds_hmget(intmap, 9) == 5);
-    // tassert(cexds_hmget(intmap, 11) == 3);
-    // tassert(cexds_hmget(intmap, 15) == 7);
-    //
-    // for (i = 0; i < testsize; i += 2) {
-    //     stbds_struct s = { i, i * 2, i * 3, i * 4 };
-    //     cexds_hmput(map, s, i * 5);
-    // }
-    //
-    // for (i = 0; i < testsize; i += 1) {
-    //     stbds_struct s = { i, i * 2, i * 3, i * 4 };
-    //     // stbds_struct t = { i, i * 2, i * 3 + 1, i * 4 };
-    //     if (i & 1) {
-    //         tassert(cexds_hmget(map, s) == 0);
-    //     } else {
-    //         tassert(cexds_hmget(map, s) == i * 5);
-    //     }
-    //     if (i & 1) {
-    //         tassert(cexds_hmget_ts(map, s, temp) == 0);
-    //     } else {
-    //         tassert(cexds_hmget_ts(map, s, temp) == i * 5);
-    //     }
-    //     // tassert(cexds_hmget(map, t.key) == 0);
-    // }
-    //
-    // for (i = 0; i < testsize; i += 2) {
-    //     stbds_struct s = { i, i * 2, i * 3, i * 4 };
-    //     cexds_hmputs(map2, s);
-    // }
-    // cexds_hmfree(map);
+    return EOK;
+}
+
+test$case(test_orig_hashmap)
+{
+    int i = 1;
+    const int testsize = 100000;
+    struct
+    {
+        int key;
+        int value;
+    }* intmap = NULL;
+    struct
+    {
+        stbds_struct key;
+        int value;
+    }* map = NULL;
+
+    stbds_struct* map2 = NULL;
+    ptrdiff_t temp;
+
+    tassert(cexds_hmgeti(intmap, i) == -1);
+    cexds_hmdefault(intmap, -2);
+    tassert(cexds_hmgeti(intmap, i) == -1);
+    tassert(cexds_hmget(intmap, i) == -2);
+    for (i = 0; i < testsize; i += 2) {
+        cexds_hmput(intmap, i, i * 5);
+    }
+    for (i = 0; i < testsize; i += 1) {
+        if (i & 1) {
+            tassert(cexds_hmget(intmap, i) == -2);
+        } else {
+            tassert(cexds_hmget(intmap, i) == i * 5);
+        }
+        if (i & 1) {
+            tassert(cexds_hmget_ts(intmap, i, temp) == -2);
+        } else {
+            tassert(cexds_hmget_ts(intmap, i, temp) == i * 5);
+        }
+    }
+    for (i = 0; i < testsize; i += 2) {
+        cexds_hmput(intmap, i, i * 3);
+    }
+    for (i = 0; i < testsize; i += 1) {
+        if (i & 1) {
+            tassert(cexds_hmget(intmap, i) == -2);
+        } else {
+            tassert(cexds_hmget(intmap, i) == i * 3);
+        }
+    }
+    for (i = 2; i < testsize; i += 4) {
+        (void)cexds_hmdel(intmap, i); // delete half the entries
+    }
+    for (i = 0; i < testsize; i += 1) {
+        if (i & 3) {
+            tassert(cexds_hmget(intmap, i) == -2);
+        } else {
+            tassert(cexds_hmget(intmap, i) == i * 3);
+        }
+    }
+    for (i = 0; i < testsize; i += 1) {
+        (void)cexds_hmdel(intmap, i); // delete the rest of the entries
+    }
+    for (i = 0; i < testsize; i += 1) {
+        tassert(cexds_hmget(intmap, i) == -2);
+    }
+    cexds_hmfree(intmap);
+    for (i = 0; i < testsize; i += 2) {
+        cexds_hmput(intmap, i, i * 3);
+    }
+    cexds_hmfree(intmap);
+
+    intmap = NULL;
+    cexds_hmput(intmap, 15, 7);
+    cexds_hmput(intmap, 11, 3);
+    cexds_hmput(intmap, 9, 5);
+    tassert(cexds_hmget(intmap, 9) == 5);
+    tassert(cexds_hmget(intmap, 11) == 3);
+    tassert(cexds_hmget(intmap, 15) == 7);
+    cexds_hmfree(intmap);
+
+    for (i = 0; i < testsize; i += 2) {
+        stbds_struct s = { i, i * 2, i * 3, i * 4 };
+        cexds_hmput(map, s, i * 5);
+    }
+
+    for (i = 0; i < testsize; i += 1) {
+        stbds_struct s = { i, i * 2, i * 3, i * 4 };
+        // stbds_struct t = { i, i * 2, i * 3 + 1, i * 4 };
+        if (i & 1) {
+            tassert(cexds_hmget(map, s) == 0);
+        } else {
+            tassert(cexds_hmget(map, s) == i * 5);
+        }
+        if (i & 1) {
+            tassert(cexds_hmget_ts(map, s, temp) == 0);
+        } else {
+            tassert(cexds_hmget_ts(map, s, temp) == i * 5);
+        }
+        // tassert(cexds_hmget(map, t.key) == 0);
+    }
+
+    for (i = 0; i < testsize; i += 2) {
+        stbds_struct s = { i, i * 2, i * 3, i * 4 };
+        cexds_hmputs(map2, s);
+    }
+    cexds_hmfree(map2);
+    cexds_hmfree(map);
     //
     // for (i = 0; i < testsize; i += 1) {
     //     stbds_struct s = { i, i * 2, i * 3, i * 4 };
@@ -320,7 +320,8 @@ main(int argc, char* argv[])
     test$run(test_array);
     test$run(test_array_char_ptr);
     test$run(test_array_struct);
-    test$run(test_orig_test);
+    test$run(test_orig_arr);
+    test$run(test_orig_hashmap);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

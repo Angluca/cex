@@ -1,6 +1,7 @@
 #ifndef INCLUDE_STB_DS_H
 #define INCLUDE_STB_DS_H
 
+#include "cex.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -68,6 +69,17 @@ extern void * cexds_shmode_func(size_t elemsize, int mode);
 #endif
 
 #define CEXDS_OFFSETOF(var,field)           ((char *) &(var)->field - (char *) (var))
+
+typedef struct
+{
+  size_t      length;
+  size_t      capacity;
+  void      * hash_table;
+  ptrdiff_t   temp;
+    const Allocator_i* allocator;
+} cexds_array_header;
+
+_Static_assert(sizeof(cexds_array_header) == 40, "size");
 
 #define cexds_header(t)  ((cexds_array_header *) (t) - 1)
 #define cexds_temp(t)    cexds_header(t)->temp
@@ -193,13 +205,6 @@ extern void * cexds_shmode_func(size_t elemsize, int mode);
 #define cexds_shgetp_null(t,k)  (cexds_shgeti(t,k) == -1 ? NULL : &(t)[cexds_temp((t)-1)])
 #define cexds_shlen        cexds_hmlen
 
-typedef struct
-{
-  size_t      length;
-  size_t      capacity;
-  void      * hash_table;
-  ptrdiff_t   temp;
-} cexds_array_header;
 
 typedef struct cexds_string_block
 {
