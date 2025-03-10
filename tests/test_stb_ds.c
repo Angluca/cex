@@ -265,6 +265,7 @@ test$case(test_orig_hashmap)
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
         hm$put(map, s, i * 5);
+        tassert(map != NULL);
     }
     hm$free(intmap);
 

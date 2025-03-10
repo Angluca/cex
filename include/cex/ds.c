@@ -57,11 +57,6 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
         min_cap = 4;
     }
 
-    // b = CEXDS_REALLOC(
-    //     NULL,
-    //     (a) ? cexds_header(a) : 0,
-    //     elemsize * min_cap + sizeof(cexds_array_header)
-    // );
     void* b;
     if (a == NULL) {
         b = allc->malloc(elemsize * min_cap + sizeof(cexds_array_header));
@@ -194,46 +189,10 @@ cexds_make_hash_index(size_t slot_count, cexds_hash_index* ot, const Allocator_i
     t->tombstone_count = 0;
     t->used_count = 0;
 
-#if 0   // A1
-  t->used_count_threshold        = slot_count*12/16; // if 12/16th of table is occupied, grow
-  t->tombstone_count_threshold   = slot_count* 2/16; // if tombstones are 2/16th of table, rebuild
-  t->used_count_shrink_threshold = slot_count* 4/16; // if table is only 4/16th full, shrink
-#elif 1 // A2
-    // t->used_count_threshold        = slot_count*12/16; // if 12/16th of table is occupied, grow
-    // t->tombstone_count_threshold   = slot_count* 3/16; // if tombstones are 3/16th of table,
-    // rebuild t->used_count_shrink_threshold = slot_count* 4/16; // if table is only 4/16th full,
-    // shrink
-
     // compute without overflowing
     t->used_count_threshold = slot_count - (slot_count >> 2);
     t->tombstone_count_threshold = (slot_count >> 3) + (slot_count >> 4);
     t->used_count_shrink_threshold = slot_count >> 2;
-
-#elif 0 // B1
-    t->used_count_threshold = slot_count * 13 / 16; // if 13/16th of table is occupied, grow
-    t->tombstone_count_threshold = slot_count * 2 /
-                                   16; // if tombstones are 2/16th of table, rebuild
-    t->used_count_shrink_threshold = slot_count * 5 / 16; // if table is only 5/16th full, shrink
-#else   // C1
-    t->used_count_threshold = slot_count * 14 / 16; // if 14/16th of table is occupied, grow
-    t->tombstone_count_threshold = slot_count * 2 /
-                                   16; // if tombstones are 2/16th of table, rebuild
-    t->used_count_shrink_threshold = slot_count * 6 / 16; // if table is only 6/16th full, shrink
-#endif
-    // Following statistics were measured on a Core i7-6700 @ 4.00Ghz, compiled with clang 7.0.1 -O2
-    // Note that the larger tables have high variance as they were run fewer times
-    //     A1            A2          B1           C1
-    //    0.10ms :     0.10ms :     0.10ms :     0.11ms :      2,000 inserts creating 2K table
-    //    0.96ms :     0.95ms :     0.97ms :     1.04ms :     20,000 inserts creating 20K table
-    //   14.48ms :    14.46ms :    10.63ms :    11.00ms :    200,000 inserts creating 200K table
-    //  195.74ms :   196.35ms :   203.69ms :   214.92ms :  2,000,000 inserts creating 2M table
-    // 2193.88ms :  2209.22ms :  2285.54ms :  2437.17ms : 20,000,000 inserts creating 20M table
-    //   65.27ms :    53.77ms :    65.33ms :    65.47ms : 500,000 inserts & deletes in 2K table
-    //   72.78ms :    62.45ms :    71.95ms :    72.85ms : 500,000 inserts & deletes in 20K table
-    //   89.47ms :    77.72ms :    96.49ms :    96.75ms : 500,000 inserts & deletes in 200K table
-    //   97.58ms :    98.14ms :    97.18ms :    97.53ms : 500,000 inserts & deletes in 2M table
-    //  118.61ms :   119.62ms :   120.16ms :   118.86ms : 500,000 inserts & deletes in 20M table
-    //  192.11ms :   194.39ms :   196.38ms :   195.73ms : 500,000 inserts & deletes in 200M table
 
     if (slot_count <= CEXDS_BUCKET_LENGTH) {
         t->used_count_shrink_threshold = 0;
@@ -919,6 +878,7 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
                 b->index[i] = CEXDS_INDEX_DELETED;
 
                 if (mode == CEXDS_HM_STRING && table->string.mode == CEXDS_SH_STRDUP) {
+                    // FIX: this may conflict with static alloc
                     cexds_header(raw_a)->allocator->free(*(char**)((char*)a + elemsize * old_index));
                 }
 
