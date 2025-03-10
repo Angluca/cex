@@ -5,21 +5,6 @@
 #include <stddef.h>
 #include <string.h>
 
-// #if defined(CEXDS_REALLOC) && !defined(CEXDS_FREE) || !defined(CEXDS_REALLOC) && defined(CEXDS_FREE)
-// #error "You must define both CEXDS_REALLOC and CEXDS_FREE, or neither."
-// #endif
-// #if !defined(CEXDS_REALLOC) && !defined(CEXDS_FREE)
-// #include <stdlib.h>
-// #define CEXDS_REALLOC(c,p,s) realloc(p,s)
-// #define CEXDS_FREE(c,p)      free(p)
-// #endif
-
-#ifdef _MSC_VER
-#define CEXDS_NOTUSED(v)  (void)(v)
-#else
-#define CEXDS_NOTUSED(v)  (void)sizeof(v)
-#endif
-
 // for security against attackers, seed the library with a random number, at least time() but stronger is better
 extern void cexds_rand_seed(size_t seed);
 
@@ -48,27 +33,7 @@ extern void * cexds_hmput_key(void *a, size_t elemsize, void *key, size_t keysiz
 extern void * cexds_hmdel_key(void *a, size_t elemsize, void *key, size_t keysize, size_t keyoffset, int mode);
 extern void * cexds_shmode_func(size_t elemsize, int mode);
 
-#if defined(__GNUC__) || defined(__clang__)
-#define CEXDS_HAS_TYPEOF
-#endif
-
-#if !defined(__cplusplus)
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-#define CEXDS_HAS_LITERAL_ARRAY
-#endif
-#endif
-
-// this macro takes the address of the argument, but on gcc/clang can accept rvalues
-#if defined(CEXDS_HAS_LITERAL_ARRAY) && defined(CEXDS_HAS_TYPEOF)
-  #if __clang__
-  #define CEXDS_ADDRESSOF(typevar, value)     ((__typeof__(typevar)[1]){value}) // literal array decays to pointer to value
-  #else
-  #define CEXDS_ADDRESSOF(typevar, value)     ((typeof(typevar)[1]){value}) // literal array decays to pointer to value
-  #endif
-#else
-#define CEXDS_ADDRESSOF(typevar, value)     &(value)
-#endif
-
+#define CEXDS_ADDRESSOF(typevar, value)     ((typeof(typevar)[1]){value}) // literal array decays to pointer to value
 #define CEXDS_OFFSETOF(var,field)           ((char *) &(var)->field - (char *) (var))
 
 typedef struct

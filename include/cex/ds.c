@@ -157,7 +157,7 @@ static size_t
 cexds_probe_position(size_t hash, size_t slot_count, size_t slot_log2)
 {
     size_t pos;
-    CEXDS_NOTUSED(slot_log2);
+    (void)(slot_log2);
     pos = hash & (slot_count - 1);
 #ifdef CEXDS_INTERNAL_BUCKET_START
     pos &= ~CEXDS_BUCKET_MASK;
