@@ -37,7 +37,7 @@ extern void   cexds_strreset(cexds_string_arena *a);
 // Everything below here is implementation details
 //
 
-extern void * cexds_arrgrowf(void *a, size_t elemsize, size_t addlen, size_t min_cap);
+extern void * cexds_arrgrowf(void *a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc);
 extern void   cexds_arrfreef(void *a);
 extern void   cexds_hmfree_func(void *p, size_t elemsize);
 extern void * cexds_hmget_key(void *a, size_t elemsize, void *key, size_t keysize, int mode);
@@ -79,13 +79,18 @@ typedef struct
     const Allocator_i* allocator;
 } cexds_array_header;
 
-_Static_assert(sizeof(cexds_array_header) == 40, "size");
+// _Static_assert(sizeof(cexds_array_header) == 40, "size");
 
 #define cexds_header(t)  ((cexds_array_header *) (t) - 1)
 #define cexds_temp(t)    cexds_header(t)->temp
 #define cexds_temp_key(t) (*(char **) cexds_header(t)->hash_table)
 
 #define arr$(T) T*
+#define arr$new(a, capacity, allocator) \
+    (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), capacity, 0, allocator)
+
+#define arr$free(a)       (cexds_arrfreef((a)), (a)=NULL)
+
 #define arr$setcap(a,n)   (arr$grow(a,0,n))
 #define arr$setlen(a,n)   ((arr$cap(a) < (size_t) (n) ? arr$setcap((a),(size_t)(n)),0 : 0), (a) ? cexds_header(a)->length = (size_t) (n) : 0)
 #define arr$cap(a)        ((a) ? cexds_header(a)->capacity : 0)
@@ -99,7 +104,6 @@ _Static_assert(sizeof(cexds_array_header) == 40, "size");
 #define arr$addnindex(a,n)(arr$maybegrow(a,n), (n) ? (cexds_header(a)->length += (n), cexds_header(a)->length-(n)) : arr$lenu(a))
 #define arr$addnoff       arr$addnindex
 #define arr$last(a)       ((a)[cexds_header(a)->length-1])
-#define arr$free(a)       ((void) ((a) ? CEXDS_FREE(NULL,cexds_header(a)) : (void)0), (a)=NULL)
 #define arr$del(a,i)      arr$deln(a,i,1)
 #define arr$deln(a,i,n)   (memmove(&(a)[i], &(a)[(i)+(n)], sizeof *(a) * (cexds_header(a)->length-(n)-(i))), cexds_header(a)->length -= (n))
 #define arr$delswap(a,i)  ((a)[i] = arr$last(a), cexds_header(a)->length -= 1)
@@ -109,73 +113,77 @@ _Static_assert(sizeof(cexds_array_header) == 40, "size");
 #define arr$maybegrow(a,n)  ((!(a) || cexds_header(a)->length + (n) > cexds_header(a)->capacity) \
                                   ? (arr$grow(a,n,0),0) : 0)
 
-#define arr$grow(a,b,c)   ((a) = arr$growf_wrapper((a), sizeof *(a), (b), (c)))
+#define arr$grow(a,add_len,min_cap)   ((a) = cexds_arrgrowf((a), sizeof *(a), (add_len), (min_cap), NULL))
 
-#define cexds_hmput(t, k, v) \
-    ((t) = cexds_hmput_key_wrapper((t), sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, 0),   \
+#define hm$(K, V) struct {K key; V value;} *
+#define hm$new(t, capacity, allocator) \
+    (typeof(*t)*)cexds_arrgrowf(NULL, sizeof(*t), capacity, 0, allocator)
+
+#define hm$put(t, k, v) \
+    ((t) = cexds_hmput_key((t), sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, 0),   \
      (t)[cexds_temp((t)-1)].key = (k),    \
      (t)[cexds_temp((t)-1)].value = (v))
 
-#define cexds_hmputs(t, s) \
-    ((t) = cexds_hmput_key_wrapper((t), sizeof *(t), &(s).key, sizeof (s).key, CEXDS_HM_BINARY), \
+#define hm$puts(t, s) \
+    ((t) = cexds_hmput_key((t), sizeof *(t), &(s).key, sizeof (s).key, CEXDS_HM_BINARY), \
      (t)[cexds_temp((t)-1)] = (s))
 
-#define cexds_hmgeti(t,k) \
-    ((t) = cexds_hmget_key_wrapper((t), sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, CEXDS_HM_BINARY), \
+#define hm$geti(t,k) \
+    ((t) = cexds_hmget_key((t), sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, CEXDS_HM_BINARY), \
       cexds_temp((t)-1))
 
-#define cexds_hmgeti_ts(t,k,temp) \
-    ((t) = cexds_hmget_key_ts_wrapper((t), sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, &(temp), CEXDS_HM_BINARY), \
+#define hm$geti_ts(t,k,temp) \
+    ((t) = cexds_hmget_key_ts((t), sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, &(temp), CEXDS_HM_BINARY), \
       (temp))
 
-#define cexds_hmgetp(t, k) \
-    ((void) cexds_hmgeti(t,k), &(t)[cexds_temp((t)-1)])
+#define hm$getp(t, k) \
+    ((void) hm$geti(t,k), &(t)[cexds_temp((t)-1)])
 
-#define cexds_hmgetp_ts(t, k, temp) \
-    ((void) cexds_hmgeti_ts(t,k,temp), &(t)[temp])
+#define hm$getp_ts(t, k, temp) \
+    ((void) hm$geti_ts(t,k,temp), &(t)[temp])
 
-#define cexds_hmdel(t,k) \
-    (((t) = cexds_hmdel_key_wrapper((t),sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, CEXDS_OFFSETOF((t),key), CEXDS_HM_BINARY)),(t)?cexds_temp((t)-1):0)
+#define hm$del(t,k) \
+    (((t) = cexds_hmdel_key((t),sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, CEXDS_OFFSETOF((t),key), CEXDS_HM_BINARY)),(t)?cexds_temp((t)-1):0)
 
-#define cexds_hmdefault(t, v) \
-    ((t) = cexds_hmput_default_wrapper((t), sizeof *(t)), (t)[-1].value = (v))
+#define hm$default(t, v) \
+    ((t) =  cexds_hmput_default((t), sizeof *(t)), (t)[-1].value = (v))
 
-#define cexds_hmdefaults(t, s) \
-    ((t) = cexds_hmput_default_wrapper((t), sizeof *(t)), (t)[-1] = (s))
+#define hm$defaults(t, s) \
+    ((t) =  cexds_hmput_default((t), sizeof *(t)), (t)[-1] = (s))
 
-#define cexds_hmfree(p)        \
+#define hm$free(p)        \
     ((void) ((p) != NULL ? cexds_hmfree_func((p)-1,sizeof*(p)),0 : 0),(p)=NULL)
 
-#define cexds_hmgets(t, k)    (*cexds_hmgetp(t,k))
-#define cexds_hmget(t, k)     (cexds_hmgetp(t,k)->value)
-#define cexds_hmget_ts(t, k, temp)  (cexds_hmgetp_ts(t,k,temp)->value)
-#define cexds_hmlen(t)        ((t) ? (ptrdiff_t) cexds_header((t)-1)->length-1 : 0)
-#define cexds_hmlenu(t)       ((t) ?             cexds_header((t)-1)->length-1 : 0)
-#define cexds_hmgetp_null(t,k)  (cexds_hmgeti(t,k) == -1 ? NULL : &(t)[cexds_temp((t)-1)])
+#define hm$gets(t, k)    (*hm$getp(t,k))
+#define hm$get(t, k)     (hm$getp(t,k)->value)
+#define hm$get_ts(t, k, temp)  (hm$getp_ts(t,k,temp)->value)
+#define hm$len(t)        ((t) ? (ptrdiff_t) cexds_header((t)-1)->length-1 : 0)
+#define hm$lenu(t)       ((t) ?             cexds_header((t)-1)->length-1 : 0)
+#define hm$getp_null(t,k)  (hm$geti(t,k) == -1 ? NULL : &(t)[cexds_temp((t)-1)])
 
 #define cexds_shput(t, k, v) \
-    ((t) = cexds_hmput_key_wrapper((t), sizeof *(t), (void*) (k), sizeof (t)->key, CEXDS_HM_STRING),   \
+    ((t) = cexds_hmput_key((t), sizeof *(t), (void*) (k), sizeof (t)->key, CEXDS_HM_STRING),   \
      (t)[cexds_temp((t)-1)].value = (v))
 
 #define cexds_shputi(t, k, v) \
-    ((t) = cexds_hmput_key_wrapper((t), sizeof *(t), (void*) (k), sizeof (t)->key, CEXDS_HM_STRING),   \
+    ((t) = cexds_hmput_key((t), sizeof *(t), (void*) (k), sizeof (t)->key, CEXDS_HM_STRING),   \
      (t)[cexds_temp((t)-1)].value = (v), cexds_temp((t)-1))
 
 #define cexds_shputs(t, s) \
-    ((t) = cexds_hmput_key_wrapper((t), sizeof *(t), (void*) (s).key, sizeof (s).key, CEXDS_HM_STRING), \
+    ((t) = cexds_hmput_key((t), sizeof *(t), (void*) (s).key, sizeof (s).key, CEXDS_HM_STRING), \
      (t)[cexds_temp((t)-1)] = (s), \
      (t)[cexds_temp((t)-1)].key = cexds_temp_key((t)-1)) // above line overwrites whole structure, so must rewrite key here if it was allocated internally
 
 #define cexds_pshput(t, p) \
-    ((t) = cexds_hmput_key_wrapper((t), sizeof *(t), (void*) (p)->key, sizeof (p)->key, CEXDS_HM_PTR_TO_STRING), \
+    ((t) = cexds_hmput_key((t), sizeof *(t), (void*) (p)->key, sizeof (p)->key, CEXDS_HM_PTR_TO_STRING), \
      (t)[cexds_temp((t)-1)] = (p))
 
 #define cexds_shgeti(t,k) \
-     ((t) = cexds_hmget_key_wrapper((t), sizeof *(t), (void*) (k), sizeof (t)->key, CEXDS_HM_STRING), \
+     ((t) = cexds_hmget_key((t), sizeof *(t), (void*) (k), sizeof (t)->key, CEXDS_HM_STRING), \
       cexds_temp((t)-1))
 
 #define cexds_pshgeti(t,k) \
-     ((t) = cexds_hmget_key_wrapper((t), sizeof *(t), (void*) (k), sizeof (*(t))->key, CEXDS_HM_PTR_TO_STRING), \
+     ((t) = cexds_hmget_key((t), sizeof *(t), (void*) (k), sizeof (*(t))->key, CEXDS_HM_PTR_TO_STRING), \
       cexds_temp((t)-1))
 
 #define cexds_shgetp(t, k) \
@@ -185,25 +193,25 @@ _Static_assert(sizeof(cexds_array_header) == 40, "size");
     ((void) cexds_pshgeti(t,k), (t)[cexds_temp((t)-1)])
 
 #define cexds_shdel(t,k) \
-    (((t) = cexds_hmdel_key_wrapper((t),sizeof *(t), (void*) (k), sizeof (t)->key, CEXDS_OFFSETOF((t),key), CEXDS_HM_STRING)),(t)?cexds_temp((t)-1):0)
+    (((t) = cexds_hmdel_key((t),sizeof *(t), (void*) (k), sizeof (t)->key, CEXDS_OFFSETOF((t),key), CEXDS_HM_STRING)),(t)?cexds_temp((t)-1):0)
 #define cexds_pshdel(t,k) \
-    (((t) = cexds_hmdel_key_wrapper((t),sizeof *(t), (void*) (k), sizeof (*(t))->key, CEXDS_OFFSETOF(*(t),key), CEXDS_HM_PTR_TO_STRING)),(t)?cexds_temp((t)-1):0)
+    (((t) = cexds_hmdel_key((t),sizeof *(t), (void*) (k), sizeof (*(t))->key, CEXDS_OFFSETOF(*(t),key), CEXDS_HM_PTR_TO_STRING)),(t)?cexds_temp((t)-1):0)
 
 #define cexds_sh_new_arena(t)  \
     ((t) = cexds_shmode_func_wrapper(t, sizeof *(t), CEXDS_SH_ARENA))
 #define cexds_sh_new_strdup(t) \
     ((t) = cexds_shmode_func_wrapper(t, sizeof *(t), CEXDS_SH_STRDUP))
 
-#define cexds_shdefault(t, v)  cexds_hmdefault(t,v)
-#define cexds_shdefaults(t, s) cexds_hmdefaults(t,s)
+#define cexds_shdefault(t, v)  hm$default(t,v)
+#define cexds_shdefaults(t, s) hm$defaults(t,s)
 
-#define cexds_shfree       cexds_hmfree
-#define cexds_shlenu       cexds_hmlenu
+#define cexds_shfree       hm$free
+#define cexds_shlenu       hm$lenu
 
 #define cexds_shgets(t, k) (*cexds_shgetp(t,k))
 #define cexds_shget(t, k)  (cexds_shgetp(t,k)->value)
 #define cexds_shgetp_null(t,k)  (cexds_shgeti(t,k) == -1 ? NULL : &(t)[cexds_temp((t)-1)])
-#define cexds_shlen        cexds_hmlen
+#define cexds_shlen        hm$len
 
 
 typedef struct cexds_string_block
@@ -231,12 +239,7 @@ enum
    CEXDS_SH_ARENA
 };
 
-#define arr$growf_wrapper            cexds_arrgrowf
-#define cexds_hmget_key_wrapper           cexds_hmget_key
-#define cexds_hmget_key_ts_wrapper        cexds_hmget_key_ts
-#define cexds_hmput_default_wrapper       cexds_hmput_default
-#define cexds_hmput_key_wrapper           cexds_hmput_key
-#define cexds_hmdel_key_wrapper           cexds_hmdel_key
+#define cexds_arrgrowf            cexds_arrgrowf
 #define cexds_shmode_func_wrapper(t,e,m)  cexds_shmode_func(e,m)
 
 #endif // INCLUDE_STB_DS_H

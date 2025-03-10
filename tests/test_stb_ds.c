@@ -56,8 +56,12 @@ add_to_str(arr$(const char*) * arr)
 
 test$case(test_array)
 {
-    arr$(const char*) array2 = NULL;
-    arr$(int) array = { 0 };
+    arr$(const char*) array2 = arr$new(array2, 10, allocator);
+    arr$(int) array = arr$new(array, 10, allocator);
+    tassert(array != NULL);
+    tassert_eqi(arr$cap(array), 10);
+
+
     add_to_arr(&array);
     add_to_str(&array2);
     for (usize i = 0; i < arr$lenu(array); ++i) {
@@ -75,7 +79,7 @@ test$case(test_array)
 
 test$case(test_array_char_ptr)
 {
-    arr$(char*) array = NULL;
+    arr$(char*) array = arr$new(array, 10, allocator);
     arr$put(array, "foo");
     arr$put(array, "bar");
     arr$put(array, "baz");
@@ -97,7 +101,7 @@ typedef struct
 
 test$case(test_array_struct)
 {
-    arr$(my_struct) array = NULL;
+    arr$(my_struct) array = arr$new(array, 10, allocator);
 
     my_struct s;
     s = (my_struct){ 20, 5.0, "hello " };
@@ -132,35 +136,41 @@ char *strkey(int n)
 
 test$case(test_orig_arr)
 {
-
-    arr$(int) arr = NULL;
-
     int i, j;
 
-    tassert(arr$leni(arr) == 0);
     for (i = 0; i < 20000; i += 50) {
+        arr$(int) arr = arr$new(arr, 10, allocator);
+
         for (j = 0; j < i; ++j) {
             arr$push(arr, j);
         }
         arr$free(arr);
+        tassert(arr == NULL);
     }
 
     for (i = 0; i < 4; ++i) {
+        arr$(int) arr = arr$new(arr, 10, allocator);
         arr$push(arr, 1);
         arr$push(arr, 2);
         arr$push(arr, 3);
         arr$push(arr, 4);
         arr$del(arr, i);
         arr$free(arr);
+        tassert(arr == NULL);
+
+        arr = arr$new(arr, 10, allocator);
+        tassert(arr != NULL);
         arr$push(arr, 1);
         arr$push(arr, 2);
         arr$push(arr, 3);
         arr$push(arr, 4);
         arr$delswap(arr, i);
         arr$free(arr);
+        tassert(arr == NULL);
     }
 
     for (i = 0; i < 5; ++i) {
+        arr$(int) arr = arr$new(arr, 10, allocator);
         arr$push(arr, 1);
         arr$push(arr, 2);
         arr$push(arr, 3);
@@ -171,6 +181,7 @@ test$case(test_orig_arr)
             tassert(arr[4] == 4);
         }
         arr$free(arr);
+        tassert(arr == NULL);
     }
 
     return EOK;
@@ -180,133 +191,125 @@ test$case(test_orig_hashmap)
 {
     int i = 1;
     const int testsize = 100000;
-    struct
-    {
-        int key;
-        int value;
-    }* intmap = NULL;
-    struct
-    {
-        stbds_struct key;
-        int value;
-    }* map = NULL;
+    hm$(int, int) intmap = hm$new(intmap, 0, allocator);
+    hm$(stbds_struct, int) map = hm$new(map, 0, allocator);
 
     stbds_struct* map2 = NULL;
     ptrdiff_t temp;
 
-    tassert(cexds_hmgeti(intmap, i) == -1);
-    cexds_hmdefault(intmap, -2);
-    tassert(cexds_hmgeti(intmap, i) == -1);
-    tassert(cexds_hmget(intmap, i) == -2);
+    tassert(hm$geti(intmap, i) == -1);
+    hm$default(intmap, -2);
+    tassert(hm$geti(intmap, i) == -1);
+    tassert(hm$get(intmap, i) == -2);
     for (i = 0; i < testsize; i += 2) {
-        cexds_hmput(intmap, i, i * 5);
+        hm$put(intmap, i, i * 5);
     }
     for (i = 0; i < testsize; i += 1) {
         if (i & 1) {
-            tassert(cexds_hmget(intmap, i) == -2);
+            tassert(hm$get(intmap, i) == -2);
         } else {
-            tassert(cexds_hmget(intmap, i) == i * 5);
+            tassert(hm$get(intmap, i) == i * 5);
         }
         if (i & 1) {
-            tassert(cexds_hmget_ts(intmap, i, temp) == -2);
+            tassert(hm$get_ts(intmap, i, temp) == -2);
         } else {
-            tassert(cexds_hmget_ts(intmap, i, temp) == i * 5);
+            tassert(hm$get_ts(intmap, i, temp) == i * 5);
         }
     }
     for (i = 0; i < testsize; i += 2) {
-        cexds_hmput(intmap, i, i * 3);
+        hm$put(intmap, i, i * 3);
     }
     for (i = 0; i < testsize; i += 1) {
         if (i & 1) {
-            tassert(cexds_hmget(intmap, i) == -2);
+            tassert(hm$get(intmap, i) == -2);
         } else {
-            tassert(cexds_hmget(intmap, i) == i * 3);
+            tassert(hm$get(intmap, i) == i * 3);
         }
     }
     for (i = 2; i < testsize; i += 4) {
-        (void)cexds_hmdel(intmap, i); // delete half the entries
+        (void)hm$del(intmap, i); // delete half the entries
     }
     for (i = 0; i < testsize; i += 1) {
         if (i & 3) {
-            tassert(cexds_hmget(intmap, i) == -2);
+            tassert(hm$get(intmap, i) == -2);
         } else {
-            tassert(cexds_hmget(intmap, i) == i * 3);
+            tassert(hm$get(intmap, i) == i * 3);
         }
     }
     for (i = 0; i < testsize; i += 1) {
-        (void)cexds_hmdel(intmap, i); // delete the rest of the entries
+        (void)hm$del(intmap, i); // delete the rest of the entries
     }
     for (i = 0; i < testsize; i += 1) {
-        tassert(cexds_hmget(intmap, i) == -2);
+        tassert(hm$get(intmap, i) == -2);
     }
-    cexds_hmfree(intmap);
+    hm$free(intmap);
     for (i = 0; i < testsize; i += 2) {
-        cexds_hmput(intmap, i, i * 3);
+        hm$put(intmap, i, i * 3);
     }
-    cexds_hmfree(intmap);
+    hm$free(intmap);
 
     intmap = NULL;
-    cexds_hmput(intmap, 15, 7);
-    cexds_hmput(intmap, 11, 3);
-    cexds_hmput(intmap, 9, 5);
-    tassert(cexds_hmget(intmap, 9) == 5);
-    tassert(cexds_hmget(intmap, 11) == 3);
-    tassert(cexds_hmget(intmap, 15) == 7);
-    cexds_hmfree(intmap);
+    hm$put(intmap, 15, 7);
+    hm$put(intmap, 11, 3);
+    hm$put(intmap, 9, 5);
+    tassert(hm$get(intmap, 9) == 5);
+    tassert(hm$get(intmap, 11) == 3);
+    tassert(hm$get(intmap, 15) == 7);
+    hm$free(intmap);
 
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
-        cexds_hmput(map, s, i * 5);
+        hm$put(map, s, i * 5);
     }
 
     for (i = 0; i < testsize; i += 1) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
         // stbds_struct t = { i, i * 2, i * 3 + 1, i * 4 };
         if (i & 1) {
-            tassert(cexds_hmget(map, s) == 0);
+            tassert(hm$get(map, s) == 0);
         } else {
-            tassert(cexds_hmget(map, s) == i * 5);
+            tassert(hm$get(map, s) == i * 5);
         }
         if (i & 1) {
-            tassert(cexds_hmget_ts(map, s, temp) == 0);
+            tassert(hm$get_ts(map, s, temp) == 0);
         } else {
-            tassert(cexds_hmget_ts(map, s, temp) == i * 5);
+            tassert(hm$get_ts(map, s, temp) == i * 5);
         }
-        // tassert(cexds_hmget(map, t.key) == 0);
+        // tassert(hm$get(map, t.key) == 0);
     }
 
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
-        cexds_hmputs(map2, s);
+        hm$puts(map2, s);
     }
-    cexds_hmfree(map2);
-    cexds_hmfree(map);
+    hm$free(map2);
+    hm$free(map);
     //
     // for (i = 0; i < testsize; i += 1) {
     //     stbds_struct s = { i, i * 2, i * 3, i * 4 };
     //     // stbds_struct t = { i, i * 2, i * 3 + 1, i * 4 };
     //     if (i & 1) {
-    //         tassert(cexds_hmgets(map2, s.key).d == 0);
+    //         tassert(hm$gets(map2, s.key).d == 0);
     //     } else {
-    //         tassert(cexds_hmgets(map2, s.key).d == i * 4);
+    //         tassert(hm$gets(map2, s.key).d == i * 4);
     //     }
-    //     // tassert(cexds_hmgetp(map2, t.key) == 0);
+    //     // tassert(hm$getp(map2, t.key) == 0);
     // }
-    // cexds_hmfree(map2);
+    // hm$free(map2);
     //
     // for (i = 0; i < testsize; i += 2) {
     //     stbds_struct2 s = { { i, i * 2 }, i * 3, i * 4, i * 5 };
-    //     cexds_hmputs(map3, s);
+    //     hm$puts(map3, s);
     // }
     // for (i = 0; i < testsize; i += 1) {
     //     stbds_struct2 s = { { i, i * 2 }, i * 3, i * 4, i * 5 };
     //     // stbds_struct2 t = { { i, i * 2 }, i * 3 + 1, i * 4, i * 5 };
     //     if (i & 1) {
-    //         tassert(cexds_hmgets(map3, s.key).d == 0);
+    //         tassert(hm$gets(map3, s.key).d == 0);
     //     } else {
-    //         tassert(cexds_hmgets(map3, s.key).d == i * 5);
+    //         tassert(hm$gets(map3, s.key).d == i * 5);
     //     }
-    //     // tassert(cexds_hmgetp(map3, t.key) == 0);
+    //     // tassert(hm$getp(map3, t.key) == 0);
     // }
     return EOK;
 }

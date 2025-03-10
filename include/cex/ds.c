@@ -1,4 +1,5 @@
 #include "ds.h"
+#include "cex.h"
 
 #include <assert.h>
 #include <string.h>
@@ -26,14 +27,19 @@ size_t cexds_rehash_items;
 // cexds_arr implementation
 //
 
-// int *prev_allocs[65536];
-// int num_prev;
-
 void*
-cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap)
+cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc)
 {
+    if (a == NULL) {
+        if (allc == NULL) {
+            uassert(allc != NULL && "using uninitialized arr/hm or out-of-mem error");
+            // unconditionally abort even in production
+            abort();
+        }
+    } else {
+        uassert(allc == NULL && "you must pass NULL to allc, when array/hm initialized");
+    }
     cexds_array_header temp = { 0 }; // force debugging
-    void* b;
     size_t min_len = arr$lenu(a) + addlen;
     (void)sizeof(temp);
 
@@ -53,20 +59,32 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap)
         min_cap = 4;
     }
 
-    // if (num_prev < 65536) if (a) prev_allocs[num_prev++] = (int *) ((char *) a+1);
-    // if (num_prev == 2201)
-    //   num_prev = num_prev;
-    b = CEXDS_REALLOC(
-        NULL,
-        (a) ? cexds_header(a) : 0,
-        elemsize * min_cap + sizeof(cexds_array_header)
-    );
-    // if (num_prev < 65536) prev_allocs[num_prev++] = (int *) (char *) b;
+    // b = CEXDS_REALLOC(
+    //     NULL,
+    //     (a) ? cexds_header(a) : 0,
+    //     elemsize * min_cap + sizeof(cexds_array_header)
+    // );
+    void* b;
+    if (a == NULL) {
+        b = allc->malloc(elemsize * min_cap + sizeof(cexds_array_header));
+    } else {
+        b = cexds_header(a)->allocator->realloc(
+            cexds_header(a),
+            elemsize * min_cap + sizeof(cexds_array_header)
+        );
+    }
+
+    if (b == NULL) {
+        // oops memory error
+        return NULL;
+    }
+
     b = (char*)b + sizeof(cexds_array_header);
     if (a == NULL) {
         cexds_header(b)->length = 0;
-        cexds_header(b)->hash_table = 0;
+        cexds_header(b)->hash_table = NULL;
         cexds_header(b)->temp = 0;
+        cexds_header(b)->allocator = allc;
     } else {
         CEXDS_STATS(++cexds_array_grow);
     }
@@ -78,7 +96,11 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap)
 void
 cexds_arrfreef(void* a)
 {
-    CEXDS_FREE(NULL, cexds_header(a));
+    if (a != NULL) {
+        uassert(cexds_header(a)->allocator != NULL);
+        cexds_array_header* h = cexds_header(a);
+        h->allocator->free(h);
+    }
 }
 
 //
@@ -622,7 +644,7 @@ cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_
     size_t keyoffset = 0;
     if (a == NULL) {
         // make it non-empty so we can return a temp
-        a = cexds_arrgrowf(0, elemsize, 0, 1);
+        a = cexds_arrgrowf(0, elemsize, 0, 1, NULL);
         cexds_header(a)->length += 1;
         memset(a, 0, elemsize);
         *temp = CEXDS_INDEX_EMPTY;
@@ -665,7 +687,7 @@ cexds_hmput_default(void* a, size_t elemsize)
     //   a has a hash table but no entries, because of shmode <- grow
     //   a has entries <- do nothing
     if (a == NULL || cexds_header(CEXDS_HASH_TO_ARR(a, elemsize))->length == 0) {
-        a = cexds_arrgrowf(a ? CEXDS_HASH_TO_ARR(a, elemsize) : NULL, elemsize, 0, 1);
+        a = cexds_arrgrowf(a ? CEXDS_HASH_TO_ARR(a, elemsize) : NULL, elemsize, 0, 1, NULL);
         cexds_header(a)->length += 1;
         memset(a, 0, elemsize);
         a = CEXDS_ARR_TO_HASH(a, elemsize);
@@ -683,7 +705,7 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
     cexds_hash_index* table;
 
     if (a == NULL) {
-        a = cexds_arrgrowf(0, elemsize, 0, 1);
+        a = cexds_arrgrowf(0, elemsize, 0, 1, NULL);
         memset(a, 0, elemsize);
         cexds_header(a)->length += 1;
         // adjust a to point AFTER the default element
@@ -805,7 +827,7 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
             // we want to do cexds_arraddn(1), but we can't use the macros since we don't have
             // something of the right type
             if ((size_t)i + 1 > arr$cap(a)) {
-                *(void**)&a = cexds_arrgrowf(a, elemsize, 1, 0);
+                *(void**)&a = cexds_arrgrowf(a, elemsize, 1, 0, NULL);
             }
             raw_a = CEXDS_ARR_TO_HASH(a, elemsize);
 
@@ -840,7 +862,7 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
 void*
 cexds_shmode_func(size_t elemsize, int mode)
 {
-    void* a = cexds_arrgrowf(0, elemsize, 0, 1);
+    void* a = cexds_arrgrowf(0, elemsize, 0, 1, NULL);
     cexds_hash_index* h;
     memset(a, 0, elemsize);
     cexds_header(a)->length = 1;
