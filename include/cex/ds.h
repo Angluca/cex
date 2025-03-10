@@ -5,14 +5,14 @@
 #include <stddef.h>
 #include <string.h>
 
-#if defined(CEXDS_REALLOC) && !defined(CEXDS_FREE) || !defined(CEXDS_REALLOC) && defined(CEXDS_FREE)
-#error "You must define both CEXDS_REALLOC and CEXDS_FREE, or neither."
-#endif
-#if !defined(CEXDS_REALLOC) && !defined(CEXDS_FREE)
-#include <stdlib.h>
-#define CEXDS_REALLOC(c,p,s) realloc(p,s)
-#define CEXDS_FREE(c,p)      free(p)
-#endif
+// #if defined(CEXDS_REALLOC) && !defined(CEXDS_FREE) || !defined(CEXDS_REALLOC) && defined(CEXDS_FREE)
+// #error "You must define both CEXDS_REALLOC and CEXDS_FREE, or neither."
+// #endif
+// #if !defined(CEXDS_REALLOC) && !defined(CEXDS_FREE)
+// #include <stdlib.h>
+// #define CEXDS_REALLOC(c,p,s) realloc(p,s)
+// #define CEXDS_FREE(c,p)      free(p)
+// #endif
 
 #ifdef _MSC_VER
 #define CEXDS_NOTUSED(v)  (void)(v)
@@ -40,6 +40,7 @@ extern void   cexds_strreset(cexds_string_arena *a);
 extern void * cexds_arrgrowf(void *a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc);
 extern void   cexds_arrfreef(void *a);
 extern void   cexds_hmfree_func(void *p, size_t elemsize);
+extern void * cexds_hminit(size_t capacity, size_t elemsize, const Allocator_i* allc);
 extern void * cexds_hmget_key(void *a, size_t elemsize, void *key, size_t keysize, int mode);
 extern void * cexds_hmget_key_ts(void *a, size_t elemsize, void *key, size_t keysize, ptrdiff_t *temp, int mode);
 extern void * cexds_hmput_default(void *a, size_t elemsize);
@@ -123,7 +124,7 @@ typedef struct
 
 #define hm$(K, V) struct {K key; V value;} *
 #define hm$new(t, capacity, allocator) \
-    (typeof(*t)*)CEXDS_ARR_TO_HASH(cexds_arrgrowf(NULL, sizeof(*t), 0, capacity, allocator), sizeof(*t))
+    (typeof(*t)*)cexds_hminit((capacity), sizeof(*t), (allocator))
 
 #define hm$put(t, k, v) \
     ((t) = cexds_hmput_key((t), sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, 0),   \
@@ -158,7 +159,7 @@ typedef struct
     ((t) =  cexds_hmput_default((t), sizeof *(t)), (t)[-1] = (s))
 
 #define hm$free(p)        \
-    ((void) ((p) != NULL ? cexds_hmfree_func((p)-1,sizeof*(p)),0 : 0),(p)=NULL)
+    (cexds_hmfree_func((p)-1,sizeof*(p)),(p)=NULL)
 
 #define hm$gets(t, k)    (*hm$getp(t,k))
 #define hm$get(t, k)     (hm$getp(t,k)->value)

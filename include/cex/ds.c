@@ -4,10 +4,6 @@
 #include <assert.h>
 #include <string.h>
 
-#ifndef CEXDS_ASSERT
-#define CEXDS_ASSERT_WAS_UNDEFINED
-#define CEXDS_ASSERT(x) ((void)0)
-#endif
 
 #ifdef CEXDS_STATISTICS
 #define CEXDS_STATS(x) x
@@ -186,12 +182,9 @@ cexds_log2(size_t slot_count)
 }
 
 static cexds_hash_index*
-cexds_make_hash_index(size_t slot_count, cexds_hash_index* ot)
+cexds_make_hash_index(size_t slot_count, cexds_hash_index* ot, const Allocator_i* allc)
 {
-    cexds_hash_index* t;
-    t = (cexds_hash_index*)CEXDS_REALLOC(
-        NULL,
-        0,
+    cexds_hash_index* t = allc->realloc(NULL,
         (slot_count >> CEXDS_BUCKET_SHIFT) * sizeof(cexds_hash_bucket) + sizeof(cexds_hash_index) +
             CEXDS_CACHE_LINE_SIZE - 1
     );
@@ -247,7 +240,7 @@ cexds_make_hash_index(size_t slot_count, cexds_hash_index* ot)
     }
     // to avoid infinite loop, we need to guarantee that at least one slot is empty and will
     // terminate probes
-    CEXDS_ASSERT(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
+    uassert(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
     CEXDS_STATS(++cexds_hash_alloc);
     if (ot) {
         t->string = ot->string;
@@ -567,18 +560,21 @@ cexds_hmfree_func(void* a, size_t elemsize)
     if (a == NULL) {
         return;
     }
+    cexds_array_header* h = cexds_header(a);
+    uassert(h->allocator != NULL);
+
     if (cexds_hash_table(a) != NULL) {
         if (cexds_hash_table(a)->string.mode == CEXDS_SH_STRDUP) {
             size_t i;
             // skip 0th element, which is default
-            for (i = 1; i < cexds_header(a)->length; ++i) {
-                CEXDS_FREE(NULL, *(char**)((char*)a + elemsize * i));
+            for (i = 1; i < h->length; ++i) {
+                h->allocator->free(*(char**)((char*)a + elemsize * i));
             }
         }
         cexds_strreset(&cexds_hash_table(a)->string);
     }
-    CEXDS_FREE(NULL, cexds_header(a)->hash_table);
-    CEXDS_FREE(NULL, cexds_header(a));
+    h->allocator->free(h->hash_table);
+    h->allocator->free(h);
 }
 
 static ptrdiff_t
@@ -696,12 +692,25 @@ cexds_hmput_default(void* a, size_t elemsize)
     return a;
 }
 
+void*
+cexds_hminit(size_t capacity, size_t elemsize, const Allocator_i* allc)
+{
+    void* a = cexds_arrgrowf(NULL, elemsize, 0, capacity, allc);
+    if (a == NULL) return NULL; // memory error
+
+    cexds_header(a)->length += 1;
+    memset(a, 0, elemsize);
+    a = CEXDS_ARR_TO_HASH(a, elemsize);
+    return a;
+}
+
 static char* cexds_strdup(char* str);
 
 void*
 cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
 {
     uassert(a != NULL);
+
     size_t keyoffset = 0;
     void* raw_a;
     cexds_hash_index* table;
@@ -725,9 +734,9 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
         size_t slot_count;
 
         slot_count = (table == NULL) ? CEXDS_BUCKET_LENGTH : table->slot_count * 2;
-        nt = cexds_make_hash_index(slot_count, table);
+        nt = cexds_make_hash_index(slot_count, table, cexds_header(a)->allocator);
         if (table) {
-            CEXDS_FREE(NULL, table);
+            cexds_header(a)->allocator->free(table);
         } else {
             nt->string.mode = mode >= CEXDS_HM_STRING ? CEXDS_SH_DEFAULT : 0;
         }
@@ -833,7 +842,7 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
             }
             raw_a = CEXDS_ARR_TO_HASH(a, elemsize);
 
-            CEXDS_ASSERT((size_t)i + 1 <= cexds_arrcap(a));
+            uassert((size_t)i + 1 <= arr$cap(a));
             cexds_header(a)->length = i + 1;
             bucket = &table->storage[pos >> CEXDS_BUCKET_SHIFT];
             bucket->hash[pos & CEXDS_BUCKET_MASK] = hash;
@@ -861,18 +870,19 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
     }
 }
 
-void*
-cexds_shmode_func(size_t elemsize, int mode)
-{
-    void* a = cexds_arrgrowf(0, elemsize, 0, 1, NULL);
-    cexds_hash_index* h;
-    memset(a, 0, elemsize);
-    cexds_header(a)->length = 1;
-    cexds_header(a)->hash_table = h = (cexds_hash_index*)
-        cexds_make_hash_index(CEXDS_BUCKET_LENGTH, NULL);
-    h->string.mode = (unsigned char)mode;
-    return CEXDS_ARR_TO_HASH(a, elemsize);
-}
+// void*
+// cexds_shmode_func(size_t elemsize, int mode)
+// {
+//    // TODO: allocator support 
+//
+//     void* a = cexds_arrgrowf(0, elemsize, 0, 1, NULL);
+//     cexds_hash_index* h;
+//     memset(a, 0, elemsize);
+//     cexds_header(a)->length = 1;
+//     cexds_header(a)->hash_table = h = cexds_make_hash_index(CEXDS_BUCKET_LENGTH, NULL, );
+//     h->string.mode = (unsigned char)mode;
+//     return CEXDS_ARR_TO_HASH(a, elemsize);
+// }
 
 void*
 cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
@@ -884,6 +894,7 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
         cexds_hash_index* table;
         void* raw_a = CEXDS_HASH_TO_ARR(a, elemsize);
         table = (cexds_hash_index*)cexds_header(raw_a)->hash_table;
+        uassert(cexds_header(raw_a)->allocator != NULL);
         cexds_temp(raw_a) = 0;
         if (table == 0) {
             return a;
@@ -898,17 +909,17 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
                 ptrdiff_t old_index = b->index[i];
                 ptrdiff_t final_index = (ptrdiff_t)arr$leni(raw_a) - 1 -
                                         1; // minus one for the raw_a vs a, and minus one for 'last'
-                CEXDS_ASSERT(slot < (ptrdiff_t)table->slot_count);
+                uassert(slot < (ptrdiff_t)table->slot_count);
                 --table->used_count;
                 ++table->tombstone_count;
                 cexds_temp(raw_a) = 1;
-                CEXDS_ASSERT(table->used_count >= 0);
-                // CEXDS_ASSERT(table->tombstone_count < table->slot_count/4);
+                uassert(table->used_count < UINT64_MAX-10);
+                // uassert(table->tombstone_count < table->slot_count/4);
                 b->hash[i] = CEXDS_HASH_DELETED;
                 b->index[i] = CEXDS_INDEX_DELETED;
 
                 if (mode == CEXDS_HM_STRING && table->string.mode == CEXDS_SH_STRDUP) {
-                    CEXDS_FREE(NULL, *(char**)((char*)a + elemsize * old_index));
+                    cexds_header(raw_a)->allocator->free(*(char**)((char*)a + elemsize * old_index));
                 }
 
                 // if indices are the same, memcpy is a no-op, but back-pointer-fixup will fail, so
@@ -941,10 +952,10 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
                             mode
                         );
                     }
-                    CEXDS_ASSERT(slot >= 0);
+                    uassert(slot >= 0);
                     b = &table->storage[slot >> CEXDS_BUCKET_SHIFT];
                     i = slot & CEXDS_BUCKET_MASK;
-                    CEXDS_ASSERT(b->index[i] == final_index);
+                    uassert(b->index[i] == final_index);
                     b->index[i] = old_index;
                 }
                 cexds_header(raw_a)->length -= 1;
@@ -953,16 +964,18 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
                     table->slot_count > CEXDS_BUCKET_LENGTH) {
                     cexds_header(raw_a)->hash_table = cexds_make_hash_index(
                         table->slot_count >> 1,
-                        table
+                        table,
+                        cexds_header(raw_a)->allocator
                     );
-                    CEXDS_FREE(NULL, table);
+                    cexds_header(raw_a)->allocator->free(table);
                     CEXDS_STATS(++cexds_hash_shrink);
                 } else if (table->tombstone_count > table->tombstone_count_threshold) {
                     cexds_header(raw_a)->hash_table = cexds_make_hash_index(
                         table->slot_count,
-                        table
+                        table,
+                        cexds_header(raw_a)->allocator
                     );
-                    CEXDS_FREE(NULL, table);
+                    cexds_header(raw_a)->allocator->free(table);
                     CEXDS_STATS(++cexds_hash_rebuild);
                 }
 
@@ -979,7 +992,9 @@ cexds_strdup(char* str)
     // to keep replaceable allocator simple, we don't want to use strdup.
     // rolling our own also avoids problem of strdup vs _strdup
     size_t len = strlen(str) + 1;
-    char* p = (char*)CEXDS_REALLOC(NULL, 0, len);
+    // char* p = (char*)CEXDS_REALLOC(NULL, 0, len);
+    // TODO
+    char* p = (char*)realloc(NULL, len);
     memmove(p, str, len);
     return p;
 }
@@ -1014,8 +1029,7 @@ cexds_stralloc(cexds_string_arena* a, char* str)
             // note that we still advance string_block so block size will continue
             // increasing, so e.g. if somebody only calls this with 1000-long strings,
             // eventually the arena will start doubling and handling those as well
-            cexds_string_block* sb = (cexds_string_block*)
-                CEXDS_REALLOC(NULL, 0, sizeof(*sb) - 8 + len);
+            cexds_string_block* sb = realloc(NULL, sizeof(*sb) - 8 + len);
             memmove(sb->storage, str, len);
             if (a->storage) {
                 // insert it after the first element, so that we don't waste the space there
@@ -1028,15 +1042,14 @@ cexds_stralloc(cexds_string_arena* a, char* str)
             }
             return sb->storage;
         } else {
-            cexds_string_block* sb = (cexds_string_block*)
-                CEXDS_REALLOC(NULL, 0, sizeof(*sb) - 8 + blocksize);
+            cexds_string_block* sb = realloc(NULL, sizeof(*sb) - 8 + blocksize);
             sb->next = a->storage;
             a->storage = sb;
             a->remaining = blocksize;
         }
     }
 
-    CEXDS_ASSERT(len <= a->remaining);
+    uassert(len <= a->remaining);
     p = a->storage->storage + a->remaining - len;
     a->remaining -= len;
     memmove(p, str, len);
@@ -1050,7 +1063,7 @@ cexds_strreset(cexds_string_arena* a)
     x = a->storage;
     while (x) {
         y = x->next;
-        CEXDS_FREE(NULL, x);
+        free(x);
         x = y;
     }
     memset(a, 0, sizeof(*a));
