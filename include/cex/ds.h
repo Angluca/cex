@@ -73,6 +73,7 @@ extern void * cexds_shmode_func(size_t elemsize, int mode);
 #define cexds_temp(t)    cexds_header(t)->temp
 #define cexds_temp_key(t) (*(char **) cexds_header(t)->hash_table)
 
+#define arr$(T) T*
 #define arr$setcap(a,n)   (arr$grow(a,0,n))
 #define arr$setlen(a,n)   ((arr$cap(a) < (size_t) (n) ? arr$setcap((a),(size_t)(n)),0 : 0), (a) ? cexds_header(a)->length = (size_t) (n) : 0)
 #define arr$cap(a)        ((a) ? cexds_header(a)->capacity : 0)
@@ -83,14 +84,14 @@ extern void * cexds_shmode_func(size_t elemsize, int mode);
 #define arr$pop(a)        (cexds_header(a)->length--, (a)[cexds_header(a)->length])
 #define arr$addn(a,n)     ((void)(arr$addnindex(a, n)))    // deprecated, use one of the following instead:
 #define arr$addnptr(a,n)  (arr$maybegrow(a,n), (n) ? (cexds_header(a)->length += (n), &(a)[cexds_header(a)->length-(n)]) : (a))
-#define arr$addnindex(a,n)(arr$maybegrow(a,n), (n) ? (cexds_header(a)->length += (n), cexds_header(a)->length-(n)) : arr$len(a))
+#define arr$addnindex(a,n)(arr$maybegrow(a,n), (n) ? (cexds_header(a)->length += (n), cexds_header(a)->length-(n)) : arr$lenu(a))
 #define arr$addnoff       arr$addnindex
 #define arr$last(a)       ((a)[cexds_header(a)->length-1])
 #define arr$free(a)       ((void) ((a) ? CEXDS_FREE(NULL,cexds_header(a)) : (void)0), (a)=NULL)
 #define arr$del(a,i)      arr$deln(a,i,1)
 #define arr$deln(a,i,n)   (memmove(&(a)[i], &(a)[(i)+(n)], sizeof *(a) * (cexds_header(a)->length-(n)-(i))), cexds_header(a)->length -= (n))
 #define arr$delswap(a,i)  ((a)[i] = arr$last(a), cexds_header(a)->length -= 1)
-#define arr$insn(a,i,n)   (arr$addn((a),(n)), memmove(&(a)[(i)+(n)], &(a)[i], sizeof *(a) * (cexds_header(a)->length-(n)-(i))))
+#define arr$insn(a,i,n)   (arr$addn((a),(n)), memmove(&(a)[(i)+(n)], &(a)[i], sizeof(*(a)) * (cexds_header(a)->length-(n)-(i))))
 #define arr$ins(a,i,v)    (arr$insn((a),(i),1), (a)[i]=(v))
 
 #define arr$maybegrow(a,n)  ((!(a) || cexds_header(a)->length + (n) > cexds_header(a)->capacity) \
