@@ -30,6 +30,8 @@ size_t cexds_rehash_items;
 void*
 cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc)
 {
+    uassert(addlen > 0 || min_cap > 0);
+
     if (a == NULL) {
         if (allc == NULL) {
             uassert(allc != NULL && "using uninitialized arr/hm or out-of-mem error");
@@ -559,11 +561,6 @@ cexds_is_key_equal(
     }
 }
 
-#define CEXDS_HASH_TO_ARR(x, elemsize) ((char*)(x) - (elemsize))
-#define CEXDS_ARR_TO_HASH(x, elemsize) ((char*)(x) + (elemsize))
-
-#define cexds_hash_table(a) ((cexds_hash_index*)cexds_header(a)->hash_table)
-
 void
 cexds_hmfree_func(void* a, size_t elemsize)
 {
@@ -587,6 +584,7 @@ cexds_hmfree_func(void* a, size_t elemsize)
 static ptrdiff_t
 cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
 {
+    uassert(a != NULL);
     void* raw_a = CEXDS_HASH_TO_ARR(a, elemsize);
     cexds_hash_index* table = cexds_hash_table(raw_a);
     size_t hash = mode >= CEXDS_HM_STRING ? cexds_hash_string((char*)key, table->seed)
@@ -641,6 +639,7 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
 void*
 cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_t* temp, int mode)
 {
+    uassert(a != NULL);
     size_t keyoffset = 0;
     if (a == NULL) {
         // make it non-empty so we can return a temp
@@ -673,6 +672,7 @@ cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_
 void*
 cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
 {
+    uassert(a != NULL);
     ptrdiff_t temp;
     void* p = cexds_hmget_key_ts(a, elemsize, key, keysize, &temp, mode);
     cexds_temp(CEXDS_HASH_TO_ARR(p, elemsize)) = temp;
@@ -682,6 +682,7 @@ cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
 void*
 cexds_hmput_default(void* a, size_t elemsize)
 {
+    uassert(a != NULL);
     // three cases:
     //   a is NULL <- allocate
     //   a has a hash table but no entries, because of shmode <- grow
@@ -700,6 +701,7 @@ static char* cexds_strdup(char* str);
 void*
 cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
 {
+    uassert(a != NULL);
     size_t keyoffset = 0;
     void* raw_a;
     cexds_hash_index* table;
@@ -875,6 +877,7 @@ cexds_shmode_func(size_t elemsize, int mode)
 void*
 cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
 {
+    uassert(a != NULL);
     if (a == NULL) {
         return 0;
     } else {

@@ -115,9 +115,15 @@ typedef struct
 
 #define arr$grow(a,add_len,min_cap)   ((a) = cexds_arrgrowf((a), sizeof *(a), (add_len), (min_cap), NULL))
 
+
+
+#define CEXDS_HASH_TO_ARR(x, elemsize) ((char*)(x) - (elemsize))
+#define CEXDS_ARR_TO_HASH(x, elemsize) ((char*)(x) + (elemsize))
+#define cexds_hash_table(a) ((cexds_hash_index*)cexds_header(a)->hash_table)
+
 #define hm$(K, V) struct {K key; V value;} *
 #define hm$new(t, capacity, allocator) \
-    (typeof(*t)*)cexds_arrgrowf(NULL, sizeof(*t), capacity, 0, allocator)
+    (typeof(*t)*)CEXDS_ARR_TO_HASH(cexds_arrgrowf(NULL, sizeof(*t), 0, capacity, allocator), sizeof(*t))
 
 #define hm$put(t, k, v) \
     ((t) = cexds_hmput_key((t), sizeof *(t), (void*) CEXDS_ADDRESSOF((t)->key, (k)), sizeof (t)->key, 0),   \

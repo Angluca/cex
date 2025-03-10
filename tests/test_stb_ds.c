@@ -191,10 +191,10 @@ test$case(test_orig_hashmap)
 {
     int i = 1;
     const int testsize = 100000;
-    hm$(int, int) intmap = hm$new(intmap, 0, allocator);
-    hm$(stbds_struct, int) map = hm$new(map, 0, allocator);
+    hm$(int, int) intmap = hm$new(intmap, 10, allocator);
+    hm$(stbds_struct, int) map = hm$new(map, 10, allocator);
+    tassert(intmap != NULL);
 
-    stbds_struct* map2 = NULL;
     ptrdiff_t temp;
 
     tassert(hm$geti(intmap, i) == -1);
@@ -243,12 +243,16 @@ test$case(test_orig_hashmap)
         tassert(hm$get(intmap, i) == -2);
     }
     hm$free(intmap);
+    tassert(intmap == NULL);
+
+    intmap = hm$new(intmap, 10, allocator);
+
     for (i = 0; i < testsize; i += 2) {
         hm$put(intmap, i, i * 3);
     }
     hm$free(intmap);
 
-    intmap = NULL;
+    intmap = hm$new(intmap, 10, allocator);
     hm$put(intmap, 15, 7);
     hm$put(intmap, 11, 3);
     hm$put(intmap, 9, 5);
@@ -257,10 +261,12 @@ test$case(test_orig_hashmap)
     tassert(hm$get(intmap, 15) == 7);
     hm$free(intmap);
 
+    intmap = hm$new(intmap, 10, allocator);
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
         hm$put(map, s, i * 5);
     }
+    hm$free(intmap);
 
     for (i = 0; i < testsize; i += 1) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
@@ -278,6 +284,7 @@ test$case(test_orig_hashmap)
         // tassert(hm$get(map, t.key) == 0);
     }
 
+    stbds_struct* map2 = hm$new(map2, 10, allocator);
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
         hm$puts(map2, s);
