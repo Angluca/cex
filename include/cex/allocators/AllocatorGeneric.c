@@ -2,8 +2,8 @@
 #include "AllocatorGeneric.h"
 #include <fcntl.h>
 #include <malloc.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define ALLOCATOR_HEAP_MAGIC 0xFEED0001U
 
@@ -21,17 +21,17 @@ static int _cex_allocator_generic__close(int fd);
 
 static allocator_generic_s
     allocator__generic_data = { .base = {
-                                 .malloc = _cex_allocator_generic__malloc,
-                                 .malloc_aligned = _cex_allocator_generic__aligned_malloc,
-                                 .realloc = _cex_allocator_generic__realloc,
-                                 .realloc_aligned = _cex_allocator_generic__aligned_realloc,
-                                 .calloc = _cex_allocator_generic__calloc,
-                                 .free = _cex_allocator_generic__free,
-                                 .fopen = _cex_allocator_generic__fopen,
-                                 .fclose = _cex_allocator_generic__fclose,
-                                 .open = _cex_allocator_generic__open,
-                                 .close = _cex_allocator_generic__close,
-                             } };
+                                    .malloc = _cex_allocator_generic__malloc,
+                                    .malloc_aligned = _cex_allocator_generic__aligned_malloc,
+                                    .realloc = _cex_allocator_generic__realloc,
+                                    .realloc_aligned = _cex_allocator_generic__aligned_realloc,
+                                    .calloc = _cex_allocator_generic__calloc,
+                                    .free = _cex_allocator_generic__free,
+                                    .fopen = _cex_allocator_generic__fopen,
+                                    .fclose = _cex_allocator_generic__fclose,
+                                    .open = _cex_allocator_generic__open,
+                                    .close = _cex_allocator_generic__close,
+                                } };
 /*
  *                  HEAP ALLOCATOR
  */
@@ -145,7 +145,11 @@ _cex_allocator_generic__realloc(void* ptr, usize size)
     uassert(allocator__generic_data.magic == ALLOCATOR_HEAP_MAGIC && "Allocator type!");
 
 #ifndef NDEBUG
-    allocator__generic_data.stats.n_reallocs++;
+    if (ptr == NULL) {
+        allocator__generic_data.stats.n_allocs++;
+    } else {
+        allocator__generic_data.stats.n_reallocs++;
+    }
 #endif
 
     return realloc(ptr, size);
@@ -162,7 +166,11 @@ _cex_allocator_generic__aligned_realloc(void* ptr, usize alignment, usize size)
     uassert(size % alignment == 0 && "size must be rounded to align");
 
 #ifndef NDEBUG
-    allocator__generic_data.stats.n_reallocs++;
+    if (ptr == NULL) {
+        allocator__generic_data.stats.n_allocs++;
+    } else {
+        allocator__generic_data.stats.n_reallocs++;
+    }
 #endif
 
     // TODO: implement #ifdef MSVC it supports _aligned_realloc()
