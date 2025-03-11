@@ -386,15 +386,34 @@ test$case(test_for_arr)
         printf("c: %c\n", c);
     }
 
-    #define set_true(dst, src) (dst = src, 1)
-    
     int j = 0; 
     int cnt = 3; 
     for(int i; j < cnt && set_true(i, j); j++) {
         printf("i: %d\n", i);
     }
 
+    for$arrp(v, array) {
+        printf("v: %s\n", *v);
+    }
+
     arr$free(array);
+
+    // TODO: check if possible for$arr(*v, &arr)??
+    // for$arr(c, &buf) {
+    //     printf("c: %c\n", *c);
+    // }
+    // typeof((&buf)[0])* pbuf_ptr = &((&buf)[0]);
+    // // typeof((&buf)[0]) p = pbuf_ptr[0]; 
+    // var p = pbuf_ptr[0]; 
+    // tassert_eqi(*p, 'a');
+
+    // typeof((&array)[0])* array_ptr = &((&array)[0]);
+    // typeof((&array)[0]) p_array = array_ptr[0]; 
+    // char*** array_ptr = &array;
+    // char** p_array = array_ptr[0]; 
+    // tassert_eqs(*p_array, "foo");
+    // printf("p_array: %s\n", *p_array);
+
     return EOK;
 }
 

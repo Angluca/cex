@@ -338,10 +338,11 @@ int __cex_test_uassert_enabled = 1;
 #endif
 
 
-// __CEX_TMPNAME - internal macro for generating temporary variable names (unique__line_num)
-#define __CEX_CONCAT_INNER(a, b) a##b
-#define __CEX_CONCAT(a, b) __CEX_CONCAT_INNER(a, b)
-#define __CEX_TMPNAME(base) __CEX_CONCAT(base, __LINE__)
+// cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
+#define cex$concat3(c, a, b) c##a##b
+#define cex$concat(a, b) a##b
+#define cex$varname(a, b) cex$concat3(__cex__, a, b)
+#define cex$tmpname(base) cex$varname(base, __LINE__)
 
 #define e$raise(return_uerr, error_msg, ...)                                                       \
     (log$error("[%s] " error_msg, return_uerr, ##__VA_ARGS__), (return_uerr))
@@ -365,19 +366,19 @@ int __cex_test_uassert_enabled = 1;
     if (unlikely(((_expression) == NULL) && log$error("`%s` returned NULL", #_expression)))
 
 #define e$ret(_func)                                                                               \
-    for (Exc __CEX_TMPNAME(__cex_err_traceback_) = _func; unlikely(                                \
-             (__CEX_TMPNAME(__cex_err_traceback_) != EOK) &&                                       \
-             (__cex__traceback(__CEX_TMPNAME(__cex_err_traceback_), #_func))                       \
+    for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                \
+             (cex$tmpname(__cex_err_traceback_) != EOK) &&                                       \
+             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                       \
          );                                                                                        \
-         __CEX_TMPNAME(__cex_err_traceback_) = EOK)                                                \
-    return __CEX_TMPNAME(__cex_err_traceback_)
+         cex$tmpname(__cex_err_traceback_) = EOK)                                                \
+    return cex$tmpname(__cex_err_traceback_)
 
 #define e$goto(_func, _label)                                                                      \
-    for (Exc __CEX_TMPNAME(__cex_err_traceback_) = _func; unlikely(                                \
-             (__CEX_TMPNAME(__cex_err_traceback_) != EOK) &&                                       \
-             (__cex__traceback(__CEX_TMPNAME(__cex_err_traceback_), #_func))                       \
+    for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                \
+             (cex$tmpname(__cex_err_traceback_) != EOK) &&                                       \
+             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                       \
          );                                                                                        \
-         __CEX_TMPNAME(__cex_err_traceback_) = EOK)                                                \
+         cex$tmpname(__cex_err_traceback_) = EOK)                                                \
     goto _label
 
 
@@ -448,29 +449,29 @@ struct _cex_arr_slice
  * @brief Iterates through array: itvar is struct {eltype* val, usize idx}
  */
 #define for$array(it, array, length)                                                               \
-    struct __CEX_TMPNAME(__cex_arriter_)                                                           \
+    struct cex$tmpname(__cex_arriter_)                                                           \
     {                                                                                              \
         typeof(*array)* val;                                                                       \
         usize idx;                                                                                 \
     };                                                                                             \
-    usize __CEX_TMPNAME(__cex_arriter__length) = (length); /* prevents multi call of (length)*/    \
-    for (struct __CEX_TMPNAME(__cex_arriter_) it = { .val = array, .idx = 0 };                     \
-         it.idx < __CEX_TMPNAME(__cex_arriter__length);                                            \
+    usize cex$tmpname(__cex_arriter__length) = (length); /* prevents multi call of (length)*/    \
+    for (struct cex$tmpname(__cex_arriter_) it = { .val = array, .idx = 0 };                     \
+         it.idx < cex$tmpname(__cex_arriter__length);                                            \
          it.val++, it.idx++)
 
 /**
  * @brief Iterates through array (reverse order): itvar is struct {eltype* val, usize idx}
  */
 #define for$array_rev(it, array, length)                                                           \
-    struct __CEX_TMPNAME(__cex_arriter_)                                                           \
+    struct cex$tmpname(__cex_arriter_)                                                           \
     {                                                                                              \
         typeof(*array)* val;                                                                       \
         usize idx;                                                                                 \
     };                                                                                             \
-    usize __CEX_TMPNAME(__cex_arriter__length) = (length); /* prevents multi call of (length)*/    \
-    for (struct __CEX_TMPNAME(__cex_arriter_)                                                      \
-             it = { .val = (array) + __CEX_TMPNAME(__cex_arriter__length),                         \
-                    .idx = __CEX_TMPNAME(__cex_arriter__length) };                                 \
+    usize cex$tmpname(__cex_arriter__length) = (length); /* prevents multi call of (length)*/    \
+    for (struct cex$tmpname(__cex_arriter_)                                                      \
+             it = { .val = (array) + cex$tmpname(__cex_arriter__length),                         \
+                    .idx = cex$tmpname(__cex_arriter__length) };                                 \
          it.idx-- > 0 && (it.val--);)
 
 /**
@@ -506,7 +507,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
  * for$iter(u32, it, array_iterator(arr2, arr$len(arr2), &it.iterator))
  */
 #define for$iter(eltype, it, iter_func)                                                            \
-    union __CEX_TMPNAME(__cex_iter_)                                                               \
+    union cex$tmpname(__cex_iter_)                                                               \
     {                                                                                              \
         cex_iterator_s iterator;                                                                   \
         struct /* NOTE:  iterator above and this struct shadow each other */                       \
@@ -525,7 +526,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
         };                                                                                         \
     };                                                                                             \
                                                                                                    \
-    for (union __CEX_TMPNAME(__cex_iter_) it = { .val = (iter_func) }; it.val != NULL;             \
+    for (union cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; it.val != NULL;             \
          it.val = (iter_func))
 
 

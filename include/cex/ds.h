@@ -114,20 +114,30 @@ typedef struct
     _Pragma("GCC diagnostic push"); \
     /* NOTE: temporary disable syntax error to support both static array length and arr$(T)  */ \
     _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\""); \
-    __builtin_types_compatible_p(typeof(arr), typeof(&arr[0])) ?             \
+    __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0])) ?             \
         (arr$validate(arr), cexds_header(arr)->length) :                                               \
         (sizeof(arr) / sizeof((arr)[0])); \
     _Pragma("GCC diagnostic pop"); \
 })
 
-#define set_true(dst, src) (dst = src, 1)
+// TODO: refactor set_true ( rename + it could be used in different CEX code)
+#define set_true(dst, src) ((dst) = (src), 1)
 #define for$arr(v, array)                                                               \
-    usize __CEX_TMPNAME(__cex_arriter__length) = arr$len(array); /* prevents multi call of (length)*/    \
-    typeof((array)[0])* __CEX_TMPNAME(__cex_arriter__arrp) = &(array)[0]; \
-    usize __CEX_TMPNAME(__cex_arriter__index) = 0; \
-    for (typeof((array)[0]) v = __CEX_TMPNAME(__cex_arriter__arrp)[0];\
-         __CEX_TMPNAME(__cex_arriter__index) < __CEX_TMPNAME(__cex_arriter__length) && (set_true(v, __CEX_TMPNAME(__cex_arriter__arrp)[__CEX_TMPNAME(__cex_arriter__index)]));\
-         __CEX_TMPNAME(__cex_arriter__index)++) \
+    usize cex$tmpname(arr_length) = arr$len(array); /* prevents multi call of (length)*/    \
+    typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0]; \
+    usize cex$tmpname(arr_index) = 0; \
+    for (typeof((array)[0]) v = {0};\
+         cex$tmpname(arr_index) < cex$tmpname(arr_length) && \
+         (set_true(v, cex$tmpname(arr_arrp)[cex$tmpname(arr_index)]));\
+         cex$tmpname(arr_index)++) \
+
+#define for$arrp(v, array)                                                               \
+    usize cex$tmpname(arr_length) = arr$len(array); /* prevents multi call of (length)*/    \
+    typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0]; \
+    usize cex$tmpname(arr_index) = 0; \
+    for (typeof((array)[0])* v = cex$tmpname(arr_arrp);\
+         cex$tmpname(arr_index) < cex$tmpname(arr_length); \
+         cex$tmpname(arr_index)++, v++) \
 
 #define CEXDS_HASH_TO_ARR(x, elemsize) ((char*)(x) - (elemsize))
 #define CEXDS_ARR_TO_HASH(x, elemsize) ((char*)(x) + (elemsize))
