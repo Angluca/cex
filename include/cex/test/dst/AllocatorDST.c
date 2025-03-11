@@ -1,6 +1,7 @@
 #pragma once
 #include "AllocatorDST.h"
 #include "DST.h"
+#include <cex/ds.c>
 #include <cex/random/Random.h>
 #include <fcntl.h>
 #include <malloc.h>

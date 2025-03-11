@@ -2,6 +2,7 @@
 #include <cex/all.c>
 #include <cex/random/Random.c>
 #include <cex/test/fff.h>
+#include <cex/ds.c>
 #include <cex/test/test.h>
 
 const Allocator_i* allocator;

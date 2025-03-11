@@ -1,6 +1,7 @@
 #include "_generic_defs.h"
 #include <cex/all.c>
 #include <cex/deque/deque.c>
+#include <cex/ds.c>
 #include <cex/test/fff.h>
 #include <cex/test/test.h>
 #include <stdalign.h>

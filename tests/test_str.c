@@ -1,5 +1,6 @@
 #include <cex/all.c>
 #include <cex/str.c>
+#include <cex/ds.c>
 #include <cex/test/fff.h>
 #include <cex/test/test.h>
 #include <stdio.h>
@@ -95,7 +96,6 @@ test$case(test_cstr_sdollar)
     tassert_eqi(s.len, 0); // lazy init until str.length() is called
     tassert_eqi(str.len(s), 0);
     tassert_eqi(str.is_valid(s), true);
-
 
     memset(buf, 'z', arr$len(buf));
 

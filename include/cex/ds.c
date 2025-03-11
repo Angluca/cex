@@ -1,5 +1,6 @@
 #include "ds.h"
 #include "cex.h"
+#include "mem.h"
 
 #include <assert.h>
 #include <string.h>
@@ -60,11 +61,15 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
 
     void* b;
     if (a == NULL) {
-        b = allc->malloc(elemsize * min_cap + sizeof(cexds_array_header));
+        b = allc->malloc_aligned(
+            CEXDS_HDR_PAD,
+            mem$aligned_round(elemsize * min_cap + CEXDS_HDR_PAD, CEXDS_HDR_PAD)
+        );
     } else {
-        b = cexds_header(a)->allocator->realloc(
-            cexds_header(a),
-            elemsize * min_cap + sizeof(cexds_array_header)
+        b = cexds_header(a)->allocator->realloc_aligned(
+            cexds_base(a),
+            CEXDS_HDR_PAD,
+            mem$aligned_round(elemsize * min_cap + CEXDS_HDR_PAD, CEXDS_HDR_PAD)
         );
     }
 
@@ -73,7 +78,7 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
         return NULL;
     }
 
-    b = (char*)b + sizeof(cexds_array_header);
+    b = (char*)b + CEXDS_HDR_PAD;
     if (a == NULL) {
         cexds_header(b)->length = 0;
         cexds_header(b)->hash_table = NULL;
@@ -94,7 +99,7 @@ cexds_arrfreef(void* a)
     if (a != NULL) {
         uassert(cexds_header(a)->allocator != NULL);
         cexds_array_header* h = cexds_header(a);
-        h->allocator->free(h);
+        h->allocator->free(cexds_base(a));
     }
 }
 
@@ -181,7 +186,8 @@ cexds_log2(size_t slot_count)
 static cexds_hash_index*
 cexds_make_hash_index(size_t slot_count, cexds_hash_index* ot, const Allocator_i* allc)
 {
-    cexds_hash_index* t = allc->realloc(NULL,
+    cexds_hash_index* t = allc->realloc(
+        NULL,
         (slot_count >> CEXDS_BUCKET_SHIFT) * sizeof(cexds_hash_bucket) + sizeof(cexds_hash_index) +
             CEXDS_CACHE_LINE_SIZE - 1
     );
@@ -535,7 +541,7 @@ cexds_hmfree_func(void* a, size_t elemsize)
         cexds_strreset(&cexds_hash_table(a)->string);
     }
     h->allocator->free(h->hash_table);
-    h->allocator->free(h);
+    h->allocator->free(cexds_base(a));
 }
 
 static ptrdiff_t
@@ -657,7 +663,9 @@ void*
 cexds_hminit(size_t capacity, size_t elemsize, const Allocator_i* allc)
 {
     void* a = cexds_arrgrowf(NULL, elemsize, 0, capacity, allc);
-    if (a == NULL) return NULL; // memory error
+    if (a == NULL) {
+        return NULL; // memory error
+    }
 
     cexds_header(a)->length += 1;
     memset(a, 0, elemsize);
@@ -834,7 +842,7 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
 // void*
 // cexds_shmode_func(size_t elemsize, int mode)
 // {
-//    // TODO: allocator support 
+//    // TODO: allocator support
 //
 //     void* a = cexds_arrgrowf(0, elemsize, 0, 1, NULL);
 //     cexds_hash_index* h;
@@ -874,14 +882,15 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
                 --table->used_count;
                 ++table->tombstone_count;
                 cexds_temp(raw_a) = 1;
-                uassert(table->used_count < UINT64_MAX-10);
+                uassert(table->used_count < UINT64_MAX - 10);
                 // uassert(table->tombstone_count < table->slot_count/4);
                 b->hash[i] = CEXDS_HASH_DELETED;
                 b->index[i] = CEXDS_INDEX_DELETED;
 
                 if (mode == CEXDS_HM_STRING && table->string.mode == CEXDS_SH_STRDUP) {
                     // FIX: this may conflict with static alloc
-                    cexds_header(raw_a)->allocator->free(*(char**)((char*)a + elemsize * old_index));
+                    cexds_header(raw_a)->allocator->free(*(char**)((char*)a + elemsize * old_index)
+                    );
                 }
 
                 // if indices are the same, memcpy is a no-op, but back-pointer-fixup will fail, so

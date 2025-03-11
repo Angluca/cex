@@ -2,6 +2,7 @@
 #include <cex/cex.h>
 #include <cex/sbuf.h>
 #include <cex/str.h>
+#include <cex/ds.c>
 #include <dirent.h>
 #include <linux/limits.h>
 #include <stdio.h>

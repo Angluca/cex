@@ -2,6 +2,7 @@
 #define INCLUDE_STB_DS_H
 
 #include "cex.h"
+#include "mem.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -36,20 +37,32 @@ extern void * cexds_shmode_func(size_t elemsize, int mode);
 #define CEXDS_ADDRESSOF(typevar, value)     ((typeof(typevar)[1]){value}) // literal array decays to pointer to value
 #define CEXDS_OFFSETOF(var,field)           ((char *) &(var)->field - (char *) (var))
 #define CEXDS_ARR_MAGIC 0xC001DAAD
+#define CEXDS_HDR_PAD 64
+_Static_assert(mem$is_power_of2(CEXDS_HDR_PAD), "expected pow of 2");
 
+
+// cexds array alignment
+// v malloc'd pointer              v-element 1
+// |..... <cexds_array_header>|====!====!==== 
+//    ^ padding      ^cap^len ^         ^-element 2
+//                            ^-- arr$ user space pointer (element 0)
+//
 typedef struct
 {
-  size_t      length;
-  size_t      capacity;
   void      * hash_table;
   ptrdiff_t   temp;
     const Allocator_i* allocator;
     u32 magic_num;
+    size_t      capacity;
+    size_t      length; // This MUST BE LAST
 } cexds_array_header;
 
-// _Static_assert(sizeof(cexds_array_header) == 40, "size");
+_Static_assert(alignof(cexds_array_header) == alignof(void*), "align");
+_Static_assert(sizeof(cexds_array_header) <= CEXDS_HDR_PAD, "size too high");
+_Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 
-#define cexds_header(t)  ((cexds_array_header *) (t) - 1)
+#define cexds_header(t)  ((cexds_array_header*)(((char*)(t)) - sizeof(cexds_array_header)))
+#define cexds_base(t)  ((char*)(t) - CEXDS_HDR_PAD)
 #define cexds_temp(t)    cexds_header(t)->temp
 #define cexds_temp_key(t) (*(char **) cexds_header(t)->hash_table)
 
@@ -86,22 +99,6 @@ typedef struct
 /**
  * @brief Returns number of elements on compile time / static array
  */
-
-/*
-// #define arr$len(arr)  \
-//  __builtin_choose_expr (                                         \
-//     sizeof(arr) != sizeof(&arr[0]),            \
-//     cexds_header(arr)->length,                                               \
-//     (sizeof(arr) / sizeof((arr)[0])))
-*/
-
-/*
-#define arr$foo(arr) (sizeof((arr)[0]))
-
-#define arr$len(arr) _Generic(&arr, \
-    typeof(arr) *:  (sizeof(arr) / arr$foo(arr)) \
-)
-*/
 #define arr$validate(arr) \
 ({\
     uassert(arr != NULL && "array uninitialized or out-of-mem");\

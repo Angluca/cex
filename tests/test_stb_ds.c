@@ -417,6 +417,26 @@ test$case(test_for_arr)
     return EOK;
 }
 
+test$case(test_slice)
+{
+    char buf[] = {'a', 'b', 'c'};
+
+    var b = arr$slice(buf, 1);
+    tassert_eqi(b.arr[0], 'b');
+    tassert_eqi(b.len, 2);
+
+    arr$(int) array = arr$new(array, 10, allocator);
+    arr$put(array, 1);
+    arr$put(array, 2);
+    arr$put(array, 3);
+
+    var i = arr$slice(array, 1);
+    tassert_eqi(i.arr[0], 2);
+    tassert_eqi(i.len, 2);
+    arr$free(array);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -430,6 +450,7 @@ main(int argc, char* argv[])
     test$run(test_orig_hashmap);
     test$run(test_array_len_unified);
     test$run(test_for_arr);
+    test$run(test_slice);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

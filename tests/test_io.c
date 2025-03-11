@@ -1,5 +1,6 @@
 #include <cex/test/test.h>
 #include <cex/all.c>
+#include <cex/ds.c>
 #include <stdio.h>
 
 const Allocator_i* allocator;
