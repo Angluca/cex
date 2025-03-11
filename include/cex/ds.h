@@ -35,6 +35,7 @@ extern void * cexds_shmode_func(size_t elemsize, int mode);
 
 #define CEXDS_ADDRESSOF(typevar, value)     ((typeof(typevar)[1]){value}) // literal array decays to pointer to value
 #define CEXDS_OFFSETOF(var,field)           ((char *) &(var)->field - (char *) (var))
+#define CEXDS_ARR_MAGIC 0xC001DAAD
 
 typedef struct
 {
@@ -43,6 +44,7 @@ typedef struct
   void      * hash_table;
   ptrdiff_t   temp;
     const Allocator_i* allocator;
+    u32 magic_num;
 } cexds_array_header;
 
 // _Static_assert(sizeof(cexds_array_header) == 40, "size");
@@ -81,7 +83,51 @@ typedef struct
 
 #define arr$grow(a,add_len,min_cap)   ((a) = cexds_arrgrowf((a), sizeof *(a), (add_len), (min_cap), NULL))
 
+/**
+ * @brief Returns number of elements on compile time / static array
+ */
 
+/*
+// #define arr$len(arr)  \
+//  __builtin_choose_expr (                                         \
+//     sizeof(arr) != sizeof(&arr[0]),            \
+//     cexds_header(arr)->length,                                               \
+//     (sizeof(arr) / sizeof((arr)[0])))
+*/
+
+/*
+#define arr$foo(arr) (sizeof((arr)[0]))
+
+#define arr$len(arr) _Generic(&arr, \
+    typeof(arr) *:  (sizeof(arr) / arr$foo(arr)) \
+)
+*/
+#define arr$validate(arr) \
+({\
+    uassert(arr != NULL && "array uninitialized or out-of-mem");\
+    /* WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */ \
+    uassert((cexds_header(arr)->magic_num == CEXDS_ARR_MAGIC) && "bad array pointer"); \
+})
+
+#define arr$len(arr)  \
+({\
+    _Pragma("GCC diagnostic push"); \
+    /* NOTE: temporary disable syntax error to support both static array length and arr$(T)  */ \
+    _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\""); \
+    __builtin_types_compatible_p(typeof(arr), typeof(&arr[0])) ?             \
+        (arr$validate(arr), cexds_header(arr)->length) :                                               \
+        (sizeof(arr) / sizeof((arr)[0])); \
+    _Pragma("GCC diagnostic pop"); \
+})
+
+#define set_true(dst, src) (dst = src, 1)
+#define for$arr(v, array)                                                               \
+    usize __CEX_TMPNAME(__cex_arriter__length) = arr$len(array); /* prevents multi call of (length)*/    \
+    typeof((array)[0])* __CEX_TMPNAME(__cex_arriter__arrp) = &(array)[0]; \
+    usize __CEX_TMPNAME(__cex_arriter__index) = 0; \
+    for (typeof((array)[0]) v = __CEX_TMPNAME(__cex_arriter__arrp)[0];\
+         __CEX_TMPNAME(__cex_arriter__index) < __CEX_TMPNAME(__cex_arriter__length) && (set_true(v, __CEX_TMPNAME(__cex_arriter__arrp)[__CEX_TMPNAME(__cex_arriter__index)]));\
+         __CEX_TMPNAME(__cex_arriter__index)++) \
 
 #define CEXDS_HASH_TO_ARR(x, elemsize) ((char*)(x) - (elemsize))
 #define CEXDS_ARR_TO_HASH(x, elemsize) ((char*)(x) + (elemsize))

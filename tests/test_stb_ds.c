@@ -84,7 +84,7 @@ test$case(test_array_char_ptr)
     arr$put(array, "bar");
     arr$put(array, "baz");
     for (usize i = 0; i < arr$lenu(array); ++i) {
-        printf("%s ", array[i]);
+        printf("%s \n", array[i]);
     }
     arr$free(array);
 
@@ -322,6 +322,82 @@ test$case(test_orig_hashmap)
     return EOK;
 }
 
+test$case(test_array_len_unified)
+{
+    char buf[10];
+    u32 iarr[20];
+    char buf_zero[0];
+    arr$(char*) array = arr$new(array, 10, allocator);
+    tassert_eqi(0, arr$len(array));
+
+    arr$put(array, "foo");
+    arr$put(array, "bar");
+    arr$put(array, "baz");
+
+    tassert_eqi(10, arr$len(buf));
+    tassert_eqi(20, arr$len(iarr));
+    tassert_eqi(3, arr$len(array));
+    tassert_eqi(0, arr$len(buf_zero));
+    u32 *p = &iarr[10];
+    (void)p;
+    // u32 *p = NULL;
+    // tassert_eqi(3, arr$len(NULL));
+    // tassert_eqi(3, arr$len(p));
+
+    // u32* p2 = malloc(100);
+    // tassert(p2 != NULL);
+    // tassert_eqi(3, arr$len(p2));
+
+    arr$free(array);
+    return EOK;
+}
+
+test$case(test_for_arr)
+{
+    char buf[] = {'a', 'b', 'c'};
+    char buf_zero[] = {};
+    for$arr(v, buf_zero) {
+        (void)v;
+        tassert(false && "must not happen!");
+    }
+    arr$(char*) array = arr$new(array, 10, allocator);
+    for$arr(v, array) {
+        (void)v;
+        tassert(false && "must not happen!");
+    }
+    arr$put(array, "foo");
+    arr$put(array, "bar");
+    arr$put(array, "baz");
+
+    tassert_eqi(3, arr$len(buf));
+    tassert_eqi(3, arr$len(array));
+
+    for$arr(v, array) {
+        printf("v: %s\n", v);
+    }
+
+    typeof(buf[0])* pbuf = &buf[0];
+    typeof(array[0])* pbuf2 = &array[0];
+
+    tassert_eqi(pbuf[0], 'a');
+    tassert_eqs(pbuf2[0], "foo");
+
+    for$arr(c, buf) {
+        printf("c: %c\n", c);
+    }
+
+    #define set_true(dst, src) (dst = src, 1)
+    
+    int j = 0; 
+    int cnt = 3; 
+    for(int i; j < cnt && set_true(i, j); j++) {
+        printf("i: %d\n", i);
+    }
+
+    arr$free(array);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -333,6 +409,8 @@ main(int argc, char* argv[])
     test$run(test_array_struct);
     test$run(test_orig_arr);
     test$run(test_orig_hashmap);
+    test$run(test_array_len_unified);
+    test$run(test_for_arr);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

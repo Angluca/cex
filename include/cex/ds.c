@@ -36,6 +36,7 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
         }
     } else {
         uassert(allc == NULL && "you must pass NULL to allc, when array/hm initialized");
+        uassert((cexds_header(a)->magic_num == CEXDS_ARR_MAGIC) && "bad array pointer");
     }
     cexds_array_header temp = { 0 }; // force debugging
     size_t min_len = arr$lenu(a) + addlen;
@@ -78,6 +79,7 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
         cexds_header(b)->hash_table = NULL;
         cexds_header(b)->temp = 0;
         cexds_header(b)->allocator = allc;
+        cexds_header(b)->magic_num = CEXDS_ARR_MAGIC;
     } else {
         CEXDS_STATS(++cexds_array_grow);
     }

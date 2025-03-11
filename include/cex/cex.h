@@ -443,10 +443,6 @@ struct _cex_arr_slice
         s;                                                                                         \
     })
 
-/**
- * @brief Returns number of elements on compile time / static array
- */
-#define arr$len(arr) (sizeof(arr) / sizeof(arr[0]))
 
 /**
  * @brief Iterates through array: itvar is struct {eltype* val, usize idx}
@@ -476,6 +472,7 @@ struct _cex_arr_slice
              it = { .val = (array) + __CEX_TMPNAME(__cex_arriter__length),                         \
                     .idx = __CEX_TMPNAME(__cex_arriter__length) };                                 \
          it.idx-- > 0 && (it.val--);)
+
 /**
  * @brief cex_iterator_s - CEX iterator interface
  */
@@ -539,17 +536,17 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 typedef struct Allocator_i
 {
     // >>> cacheline
-    void* (*malloc)(usize size);
-    void* (*calloc)(usize nmemb, usize size);
-    void* (*realloc)(void* ptr, usize new_size);
-    void* (*malloc_aligned)(usize alignment, usize size);
-    void* (*realloc_aligned)(void* ptr, usize alignment, usize new_size);
-    void (*free)(void* ptr);
-    FILE* (*fopen)(const char* filename, const char* mode);
-    int (*open)(const char* pathname, int flags, unsigned int mode);
+    void* (*const malloc)(usize size);
+    void* (*const calloc)(usize nmemb, usize size);
+    void* (*const realloc)(void* ptr, usize new_size);
+    void* (*const malloc_aligned)(usize alignment, usize size);
+    void* (*const realloc_aligned)(void* ptr, usize alignment, usize new_size);
+    void (*const free)(void* ptr);
+    FILE* (*const fopen)(const char* filename, const char* mode);
+    int (*const open)(const char* pathname, int flags, unsigned int mode);
     //<<< 64 byte cacheline
-    int (*fclose)(FILE* stream);
-    int (*close)(int fd);
+    int (*const fclose)(FILE* stream);
+    int (*const close)(int fd);
 } Allocator_i;
 _Static_assert(alignof(Allocator_i) == alignof(usize), "size");
 _Static_assert(sizeof(Allocator_i) == sizeof(usize) * 10, "size");
