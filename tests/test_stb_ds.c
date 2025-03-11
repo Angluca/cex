@@ -437,6 +437,39 @@ test$case(test_slice)
     return EOK;
 }
 
+test$case(test_for_arr_custom_size)
+{
+
+    arr$(char*) array = arr$new(array, 10, allocator);
+    for$arr(v, array) {
+        (void)v;
+        tassert(false && "must not happen!");
+    }
+    arr$put(array, "foo");
+    arr$put(array, "bar");
+    arr$put(array, "baz");
+
+    u32 n = 0;
+    tassert_eqi(3, arr$len(array));
+    for$arr(v, array, arr$len(array)-1) {
+        printf("v: %s\n", v);
+        n++;
+    }
+    tassert_eqi(n, 2);
+
+    char buf[] = {'a', 'b', 'c'};
+    n = 0;
+    tassert_eqi(3, arr$len(buf));
+    for$arr(c, buf, 2) {
+        printf("c: %c\n", c);
+        n++;
+    }
+    tassert_eqi(n, 2);
+
+    arr$free(array);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -451,6 +484,7 @@ main(int argc, char* argv[])
     test$run(test_array_len_unified);
     test$run(test_for_arr);
     test$run(test_slice);
+    test$run(test_for_arr_custom_size);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

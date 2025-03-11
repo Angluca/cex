@@ -68,7 +68,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 
 #define arr$(T) T*
 #define arr$new(a, capacity, allocator) ({ \
-    _Static_assert(_Alignof(*a) <= 64, "array item alignment too high"); \
+    _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high"); \
     (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), capacity, 0, allocator); \
 })
 
@@ -121,8 +121,9 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 
 // TODO: refactor set_true ( rename + it could be used in different CEX code)
 #define set_true(dst, src) ((dst) = (src), 1)
-#define for$arr(v, array)                                                               \
-    usize cex$tmpname(arr_length) = arr$len(array); /* prevents multi call of (length)*/    \
+#define for$arr(v, array, array_len...)                                                               \
+    usize cex$tmpname(arr_length_opt)[] = { array_len };                                                           \
+    usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0) ? cex$tmpname(arr_length_opt)[0] : arr$len(array); /* prevents multi call of (length)*/    \
     typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0]; \
     usize cex$tmpname(arr_index) = 0; \
     for (typeof((array)[0]) v = {0};\
