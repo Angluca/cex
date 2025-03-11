@@ -177,8 +177,9 @@ test$case(test_orig_arr)
         arr$push(arr, 4);
         arr$ins(arr, i, 5);
         tassert(arr[i] == 5);
+        tassert_eqi(arr$len(arr), 5);
         if (i < 4) {
-            tassert(arr[4] == 4);
+            tassert_eqi(arr[4], 4);
         }
         arr$free(arr);
         tassert(arr == NULL);
@@ -505,7 +506,7 @@ test$case(test_for_arr_for_struct)
     tassert_eqi(array[1].key, 200);
 
     n = 0;
-    for$arrp(v, array) {
+    for$arrp(v, array, arr$len(array)) {
         isize i = v - array;
         printf("v: %s\n", v->my_string);
         tassert_eqi(n, i);
@@ -520,6 +521,33 @@ test$case(test_for_arr_for_struct)
     return EOK;
 }
 
+test$case(test_arr_insert_pop)
+{
+    arr$(int) arr = arr$new(arr, 10, allocator);
+    arr$ins(arr, 0, 5);
+    arr$ins(arr, 0, 4);
+    arr$ins(arr, 0, 3);
+    arr$ins(arr, 0, 2);
+    arr$ins(arr, 0, 1);
+
+    tassert_eqi(arr$len(arr), 5);
+    tassert_eqi(arr$at(arr, 0), 1);
+    tassert_eqi(arr$at(arr, 1), 2);
+    tassert_eqi(arr$at(arr, 2), 3);
+    tassert_eqi(arr$at(arr, 3), 4);
+    tassert_eqi(arr$at(arr, 4), 5);
+
+    tassert_eqi(arr$pop(arr), 5);
+    tassert_eqi(arr$pop(arr), 4);
+    tassert_eqi(arr$pop(arr), 3);
+    tassert_eqi(arr$pop(arr), 2);
+    tassert_eqi(arr$pop(arr), 1);
+
+    tassert_eqi(arr$len(arr), 0);
+
+    arr$free(arr);
+    return EOK;
+}
 int
 main(int argc, char* argv[])
 {
@@ -536,6 +564,7 @@ main(int argc, char* argv[])
     test$run(test_slice);
     test$run(test_for_arr_custom_size);
     test$run(test_for_arr_for_struct);
+    test$run(test_arr_insert_pop);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
