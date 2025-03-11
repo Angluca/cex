@@ -26,11 +26,11 @@ test$setup()
 }
 
 
-#define arr$putm(arr, args...)                                                                     \
+#define arr$pushm(arr, args...)                                                                     \
     ({                                                                                             \
         typeof(*arr) _args[] = { args };                                                           \
         for (usize i = 0; i < sizeof(_args) / sizeof(_args[0]); i++)                               \
-            arr$put(arr, _args[i]);                                                                \
+            arr$push(arr, _args[i]);                                                                \
     })
 
 static void
@@ -40,7 +40,7 @@ add_to_arr(arr$(int) * arr)
     // arrput(*arr, 3);
     // arrput(*arr, 5);
     int z = 200;
-    arr$putm(*arr, z, 3, 5);
+    arr$pushm(*arr, z, 3, 5);
 }
 
 static void
@@ -48,10 +48,10 @@ add_to_str(arr$(const char*) * arr)
 {
     char buf[10] = { "buf" };
 
-    arr$put(*arr, "foooo");
-    arr$put(*arr, "barrr");
-    arr$put(*arr, "bazzz");
-    arr$putm(*arr, "one", "two", "three", buf);
+    arr$push(*arr, "foooo");
+    arr$push(*arr, "barrr");
+    arr$push(*arr, "bazzz");
+    arr$pushm(*arr, "one", "two", "three", buf);
 }
 
 test$case(test_array)
@@ -80,9 +80,9 @@ test$case(test_array)
 test$case(test_array_char_ptr)
 {
     arr$(char*) array = arr$new(array, 10, allocator);
-    arr$put(array, "foo");
-    arr$put(array, "bar");
-    arr$put(array, "baz");
+    arr$push(array, "foo");
+    arr$push(array, "bar");
+    arr$push(array, "baz");
     for (usize i = 0; i < arr$lenu(array); ++i) {
         printf("%s \n", array[i]);
     }
@@ -105,11 +105,11 @@ test$case(test_array_struct)
 
     my_struct s;
     s = (my_struct){ 20, 5.0, "hello " };
-    arr$put(array, s);
+    arr$push(array, s);
     s = (my_struct){ 40, 2.5, "failure" };
-    arr$put(array, s);
+    arr$push(array, s);
     s = (my_struct){ 40, 1.1, "world!" };
-    arr$put(array, s);
+    arr$push(array, s);
 
     for (int i = 0; i < arr$leni(array); ++i) {
         printf("key: %d str: %s\n", array[i].key, array[i].my_string);
@@ -330,9 +330,9 @@ test$case(test_array_len_unified)
     arr$(char*) array = arr$new(array, 10, allocator);
     tassert_eqi(0, arr$len(array));
 
-    arr$put(array, "foo");
-    arr$put(array, "bar");
-    arr$put(array, "baz");
+    arr$push(array, "foo");
+    arr$push(array, "bar");
+    arr$push(array, "baz");
 
     tassert_eqi(10, arr$len(buf));
     tassert_eqi(20, arr$len(iarr));
@@ -365,9 +365,9 @@ test$case(test_for_arr)
         (void)v;
         tassert(false && "must not happen!");
     }
-    arr$put(array, "foo");
-    arr$put(array, "bar");
-    arr$put(array, "baz");
+    arr$push(array, "foo");
+    arr$push(array, "bar");
+    arr$push(array, "baz");
 
     tassert_eqi(3, arr$len(buf));
     tassert_eqi(3, arr$len(array));
@@ -392,28 +392,38 @@ test$case(test_for_arr)
         printf("i: %d\n", i);
     }
 
+    u32 n = 0;
     for$arrp(v, array) {
-        printf("v: %s\n", *v);
+        isize i = v - array; 
+        tassert_eqi(n, i);
+        printf("v: %s, i: %ld\n", *v, i);
+        n++;
     }
 
-    arr$free(array);
+    n = 0;
+    for$arrp(v, buf) {
+        isize i = v - buf; 
+        tassert_eqi(n, i);
+        printf("v: %c, i: %ld\n", *v, i);
+        n++;
+    }
 
     // TODO: check if possible for$arr(*v, &arr)??
     // for$arr(c, &buf) {
     //     printf("c: %c\n", *c);
     // }
-    // typeof((&buf)[0])* pbuf_ptr = &((&buf)[0]);
-    // // typeof((&buf)[0]) p = pbuf_ptr[0]; 
-    // var p = pbuf_ptr[0]; 
-    // tassert_eqi(*p, 'a');
+    typeof((&buf)[0])* pbuf_ptr = &((&buf)[0]);
+    // typeof((&buf)[0]) p = pbuf_ptr[0]; 
+    var p = pbuf_ptr[0]; 
+    tassert_eqi(*p, 'a');
 
-    // typeof((&array)[0])* array_ptr = &((&array)[0]);
+    typeof((array)[0])* array_ptr = &((array)[0]);
     // typeof((&array)[0]) p_array = array_ptr[0]; 
-    // char*** array_ptr = &array;
-    // char** p_array = array_ptr[0]; 
+    var p_array = array_ptr; 
     // tassert_eqs(*p_array, "foo");
-    // printf("p_array: %s\n", *p_array);
+    printf("p_array: %p\n", p_array);
 
+    arr$free(array);
     return EOK;
 }
 
@@ -426,9 +436,9 @@ test$case(test_slice)
     tassert_eqi(b.len, 2);
 
     arr$(int) array = arr$new(array, 10, allocator);
-    arr$put(array, 1);
-    arr$put(array, 2);
-    arr$put(array, 3);
+    arr$push(array, 1);
+    arr$push(array, 2);
+    arr$push(array, 3);
 
     var i = arr$slice(array, 1);
     tassert_eqi(i.arr[0], 2);
@@ -445,9 +455,9 @@ test$case(test_for_arr_custom_size)
         (void)v;
         tassert(false && "must not happen!");
     }
-    arr$put(array, "foo");
-    arr$put(array, "bar");
-    arr$put(array, "baz");
+    arr$push(array, "foo");
+    arr$push(array, "bar");
+    arr$push(array, "baz");
 
     u32 n = 0;
     tassert_eqi(3, arr$len(array));
@@ -470,6 +480,46 @@ test$case(test_for_arr_custom_size)
     return EOK;
 }
 
+test$case(test_for_arr_for_struct)
+{
+    arr$(my_struct) array = arr$new(array, 10, allocator);
+    for$arr(v, array) {
+        (void)v;
+        tassert(false && "must not happen!");
+    }
+    my_struct f = {.my_string = "far", .key = 200};
+    arr$push(array, (my_struct){.my_string = "foo", .key = 200, .my_val = 31.2});
+    arr$push(array, f);
+    tassert_eqi(2, arr$len(array));
+
+    u32 n = 0;
+    // v - is a copy of the array element
+    for$arr(v, array) {
+        printf("v: %s\n", v.my_string);
+        n++;
+        v.key = 77;
+    }
+    tassert_eqi(n, 2);
+    // NOT changed
+    tassert_eqi(array[0].key, 200);
+    tassert_eqi(array[1].key, 200);
+
+    n = 0;
+    for$arrp(v, array) {
+        isize i = v - array;
+        printf("v: %s\n", v->my_string);
+        tassert_eqi(n, i);
+        n++;
+        v->key = 77;
+    }
+    tassert_eqi(n, 2);
+    // array has been changed by pointer
+    tassert_eqi(array[0].key, 77);
+    tassert_eqi(array[1].key, 77);
+    arr$free(array);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -485,6 +535,7 @@ main(int argc, char* argv[])
     test$run(test_for_arr);
     test$run(test_slice);
     test$run(test_for_arr_custom_size);
+    test$run(test_for_arr_for_struct);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

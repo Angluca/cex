@@ -79,8 +79,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 #define arr$cap(a)        ((a) ? cexds_header(a)->capacity : 0)
 #define arr$leni(a)        ((a) ? (ptrdiff_t) cexds_header(a)->length : 0)
 #define arr$lenu(a)       ((a) ?             cexds_header(a)->length : 0)
-#define arr$put(a,v)      (arr$maybegrow(a,1), (a)[cexds_header(a)->length++] = (v))
-#define arr$push          arr$put  // synonym
+#define arr$push(a, value...)      (arr$maybegrow(a,1), (a)[cexds_header(a)->length++] = (value))
 #define arr$pop(a)        (cexds_header(a)->length--, (a)[cexds_header(a)->length])
 #define arr$addn(a,n)     ((void)(arr$addnindex(a, n)))    // deprecated, use one of the following instead:
 #define arr$addnptr(a,n)  (arr$maybegrow(a,n), (n) ? (cexds_header(a)->length += (n), &(a)[cexds_header(a)->length-(n)]) : (a))
