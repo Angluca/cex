@@ -40,7 +40,7 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
         uassert((cexds_header(a)->magic_num == CEXDS_ARR_MAGIC) && "bad array pointer");
     }
     cexds_array_header temp = { 0 }; // force debugging
-    size_t min_len = arr$lenu(a) + addlen;
+    size_t min_len = (a ? cexds_header(a)->length : 0) + addlen;
     (void)sizeof(temp);
 
     // compute the minimum capacity needed
@@ -803,7 +803,7 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
         ++table->used_count;
 
         {
-            ptrdiff_t i = (ptrdiff_t)arr$leni(a);
+            ptrdiff_t i = (ptrdiff_t)cexds_header(a)->length;
             // we want to do cexds_arraddn(1), but we can't use the macros since we don't have
             // something of the right type
             if ((size_t)i + 1 > arr$cap(a)) {
@@ -876,8 +876,8 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
                 cexds_hash_bucket* b = &table->storage[slot >> CEXDS_BUCKET_SHIFT];
                 int i = slot & CEXDS_BUCKET_MASK;
                 ptrdiff_t old_index = b->index[i];
-                ptrdiff_t final_index = (ptrdiff_t)arr$leni(raw_a) - 1 -
-                                        1; // minus one for the raw_a vs a, and minus one for 'last'
+                // minus one for the raw_a vs a, and minus one for 'last'
+                ptrdiff_t final_index = (ptrdiff_t)cexds_header(raw_a)->length - 1 - 1;
                 uassert(slot < (ptrdiff_t)table->slot_count);
                 --table->used_count;
                 ++table->tombstone_count;

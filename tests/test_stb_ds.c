@@ -64,11 +64,11 @@ test$case(test_array)
 
     add_to_arr(&array);
     add_to_str(&array2);
-    for (usize i = 0; i < arr$lenu(array); ++i) {
+    for (usize i = 0; i < arr$len(array); ++i) {
         printf("%d \n", array[i]);
     }
 
-    for (usize i = 0; i < arr$lenu(array2); ++i) {
+    for (usize i = 0; i < arr$len(array2); ++i) {
         printf("%s \n", array2[i]);
     }
     arr$free(array);
@@ -83,7 +83,7 @@ test$case(test_array_char_ptr)
     arr$push(array, "foo");
     arr$push(array, "bar");
     arr$push(array, "baz");
-    for (usize i = 0; i < arr$lenu(array); ++i) {
+    for (usize i = 0; i < arr$len(array); ++i) {
         printf("%s \n", array[i]);
     }
     arr$free(array);
@@ -111,7 +111,7 @@ test$case(test_array_struct)
     s = (my_struct){ 40, 1.1, "world!" };
     arr$push(array, s);
 
-    for (int i = 0; i < arr$leni(array); ++i) {
+    for (usize i = 0; i < arr$len(array); ++i) {
         printf("key: %d str: %s\n", array[i].key, array[i].my_string);
     }
     arr$free(array);

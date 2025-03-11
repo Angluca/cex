@@ -77,13 +77,11 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 #define arr$setcap(a,n)   (arr$grow(a,0,n))
 #define arr$setlen(a,n)   ((arr$cap(a) < (size_t) (n) ? arr$setcap((a),(size_t)(n)),0 : 0), (a) ? cexds_header(a)->length = (size_t) (n) : 0)
 #define arr$cap(a)        ((a) ? cexds_header(a)->capacity : 0)
-#define arr$leni(a)        ((a) ? (ptrdiff_t) cexds_header(a)->length : 0)
-#define arr$lenu(a)       ((a) ?             cexds_header(a)->length : 0)
 #define arr$push(a, value...)      (arr$maybegrow(a,1), (a)[cexds_header(a)->length++] = (value))
 #define arr$pop(a)        (cexds_header(a)->length--, (a)[cexds_header(a)->length])
 #define arr$addn(a,n)     ((void)(arr$addnindex(a, n)))    // deprecated, use one of the following instead:
 #define arr$addnptr(a,n)  (arr$maybegrow(a,n), (n) ? (cexds_header(a)->length += (n), &(a)[cexds_header(a)->length-(n)]) : (a))
-#define arr$addnindex(a,n)(arr$maybegrow(a,n), (n) ? (cexds_header(a)->length += (n), cexds_header(a)->length-(n)) : arr$lenu(a))
+#define arr$addnindex(a,n)(arr$maybegrow(a,n), (n) ? (cexds_header(a)->length += (n), cexds_header(a)->length-(n)) : cexds_header(a)->length)
 #define arr$addnoff       arr$addnindex
 #define arr$last(a)       ((a)[cexds_header(a)->length-1])
 #define arr$del(a,i)      arr$deln(a,i,1)
