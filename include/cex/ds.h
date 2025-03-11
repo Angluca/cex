@@ -67,8 +67,10 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 #define cexds_temp_key(t) (*(char **) cexds_header(t)->hash_table)
 
 #define arr$(T) T*
-#define arr$new(a, capacity, allocator) \
-    (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), capacity, 0, allocator)
+#define arr$new(a, capacity, allocator) ({ \
+    _Static_assert(_Alignof(*a) <= 64, "array item alignment too high"); \
+    (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), capacity, 0, allocator); \
+})
 
 #define arr$free(a)       (cexds_arrfreef((a)), (a)=NULL)
 
