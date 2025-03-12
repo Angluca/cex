@@ -49,10 +49,10 @@ add_to_str(arr$(const char*) * arr)
 
 test$case(test_array)
 {
-    arr$(const char*) array2 = arr$new(array2, 10, allocator);
-    arr$(int) array = arr$new(array, 10, allocator);
+    arr$(const char*) array2 = arr$new(array2, allocator);
+    arr$(int) array = arr$new(array, allocator);
     tassert(array != NULL);
-    tassert_eqi(arr$cap(array), 10);
+    tassert_eqi(arr$cap(array), 16);
 
 
     add_to_arr(&array);
@@ -72,7 +72,7 @@ test$case(test_array)
 
 test$case(test_array_char_ptr)
 {
-    arr$(char*) array = arr$new(array, 10, allocator);
+    arr$(char*) array = arr$new(array,  allocator);
     arr$push(array, "foo");
     arr$push(array, "bar");
     arr$push(array, "baz");
@@ -94,7 +94,8 @@ typedef struct
 
 test$case(test_array_struct)
 {
-    arr$(my_struct) array = arr$new(array, 10, allocator);
+    arr$(my_struct) array = arr$new(array,  allocator, .capacity = 128);
+    tassert_eqi(arr$cap(array), 128);
 
     my_struct s;
     s = (my_struct){ 20, 5.0, "hello " };
@@ -111,20 +112,27 @@ test$case(test_array_struct)
 
     return EOK;
 }
- 
 
-typedef struct { int key,b,c,d; } stbds_struct;
-typedef struct { int key[2],b,c,d; } stbds_struct2;
+
+typedef struct
+{
+    int key, b, c, d;
+} stbds_struct;
+typedef struct
+{
+    int key[2], b, c, d;
+} stbds_struct2;
 
 static char buffer[256];
-char *strkey(int n)
+char*
+strkey(int n)
 {
 #if defined(_WIN32) && defined(__STDC_WANT_SECURE_LIB__)
-   sprintf_s(buffer, sizeof(buffer), "test_%d", n);
+    sprintf_s(buffer, sizeof(buffer), "test_%d", n);
 #else
-   sprintf(buffer, "test_%d", n);
+    sprintf(buffer, "test_%d", n);
 #endif
-   return buffer;
+    return buffer;
 }
 
 test$case(test_orig_arr)
@@ -132,7 +140,7 @@ test$case(test_orig_arr)
     int i, j;
 
     for (i = 0; i < 20000; i += 50) {
-        arr$(int) arr = arr$new(arr, 10, allocator);
+        arr$(int) arr = arr$new(arr,  allocator);
 
         for (j = 0; j < i; ++j) {
             arr$push(arr, j);
@@ -142,7 +150,7 @@ test$case(test_orig_arr)
     }
 
     for (i = 0; i < 4; ++i) {
-        arr$(int) arr = arr$new(arr, 10, allocator);
+        arr$(int) arr = arr$new(arr,  allocator);
         arr$push(arr, 1);
         arr$push(arr, 2);
         arr$push(arr, 3);
@@ -151,7 +159,7 @@ test$case(test_orig_arr)
         arr$free(arr);
         tassert(arr == NULL);
 
-        arr = arr$new(arr, 10, allocator);
+        arr = arr$new(arr,  allocator);
         tassert(arr != NULL);
         arr$push(arr, 1);
         arr$push(arr, 2);
@@ -163,7 +171,7 @@ test$case(test_orig_arr)
     }
 
     for (i = 0; i < 5; ++i) {
-        arr$(int) arr = arr$new(arr, 10, allocator);
+        arr$(int) arr = arr$new(arr,  allocator);
         arr$push(arr, 1);
         arr$push(arr, 2);
         arr$push(arr, 3);
@@ -185,8 +193,8 @@ test$case(test_orig_hashmap)
 {
     int i = 1;
     const int testsize = 100000;
-    hm$(int, int) intmap = hm$new(intmap, 10, allocator);
-    hm$(stbds_struct, int) map = hm$new(map, 10, allocator);
+    hm$(int, int) intmap = hm$new(intmap,  allocator);
+    hm$(stbds_struct, int) map = hm$new(map,  allocator);
     tassert(intmap != NULL);
 
     ptrdiff_t temp;
@@ -239,14 +247,14 @@ test$case(test_orig_hashmap)
     hm$free(intmap);
     tassert(intmap == NULL);
 
-    intmap = hm$new(intmap, 10, allocator);
+    intmap = hm$new(intmap,  allocator);
 
     for (i = 0; i < testsize; i += 2) {
         hm$put(intmap, i, i * 3);
     }
     hm$free(intmap);
 
-    intmap = hm$new(intmap, 10, allocator);
+    intmap = hm$new(intmap,  allocator);
     hm$put(intmap, 15, 7);
     hm$put(intmap, 11, 3);
     hm$put(intmap, 9, 5);
@@ -255,7 +263,7 @@ test$case(test_orig_hashmap)
     tassert(hm$get(intmap, 15) == 7);
     hm$free(intmap);
 
-    intmap = hm$new(intmap, 10, allocator);
+    intmap = hm$new(intmap,  allocator);
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
         hm$put(map, s, i * 5);
@@ -279,7 +287,7 @@ test$case(test_orig_hashmap)
         // tassert(hm$get(map, t.key) == 0);
     }
 
-    stbds_struct* map2 = hm$new(map2, 10, allocator);
+    stbds_struct* map2 = hm$new(map2,  allocator);
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
         hm$puts(map2, s);
@@ -321,7 +329,7 @@ test$case(test_array_len_unified)
     char buf[10];
     u32 iarr[20];
     char buf_zero[0];
-    arr$(char*) array = arr$new(array, 10, allocator);
+    arr$(char*) array = arr$new(array,  allocator);
     tassert_eqi(0, arr$len(array));
     tassert(mem$aligned_pointer(array, 64) == array);
 
@@ -333,7 +341,7 @@ test$case(test_array_len_unified)
     tassert_eqi(20, arr$len(iarr));
     tassert_eqi(3, arr$len(array));
     tassert_eqi(0, arr$len(buf_zero));
-    u32 *p = &iarr[10];
+    u32* p = &iarr[10];
     (void)p;
     // u32 *p = NULL;
     // tassert_eqi(3, arr$len(NULL));
@@ -349,15 +357,17 @@ test$case(test_array_len_unified)
 
 test$case(test_for_arr)
 {
-    char buf[] = {'a', 'b', 'c'};
+    char buf[] = { 'a', 'b', 'c' };
     char buf_zero[] = {};
-    for$arr(v, buf_zero) {
+    for$arr(v, buf_zero)
+    {
         (void)v;
         tassert(false && "must not happen!");
     }
-    arr$(char*) array = arr$new(array, 10, allocator);
+    arr$(char*) array = arr$new(array,  allocator);
     tassert(mem$aligned_pointer(array, 64) == array);
-    for$arr(v, array) {
+    for$arr(v, array)
+    {
         (void)v;
         tassert(false && "must not happen!");
     }
@@ -368,7 +378,8 @@ test$case(test_for_arr)
     tassert_eqi(3, arr$len(buf));
     tassert_eqi(3, arr$len(array));
 
-    for$arr(v, array) {
+    for$arr(v, array)
+    {
         printf("v: %s\n", v);
     }
 
@@ -378,21 +389,24 @@ test$case(test_for_arr)
     tassert_eqi(pbuf[0], 'a');
     tassert_eqs(pbuf2[0], "foo");
 
-    for$arr(c, buf) {
+    for$arr(c, buf)
+    {
         printf("c: %c\n", c);
     }
 
     u32 n = 0;
-    for$arrp(v, array) {
-        isize i = v - array; 
+    for$arrp(v, array)
+    {
+        isize i = v - array;
         tassert_eqi(n, i);
         printf("v: %s, i: %ld\n", *v, i);
         n++;
     }
 
     n = 0;
-    for$arrp(v, buf) {
-        isize i = v - buf; 
+    for$arrp(v, buf)
+    {
+        isize i = v - buf;
         tassert_eqi(n, i);
         printf("v: %c, i: %ld\n", *v, i);
         n++;
@@ -403,13 +417,13 @@ test$case(test_for_arr)
     //     printf("c: %c\n", *c);
     // }
     typeof((&buf)[0])* pbuf_ptr = &((&buf)[0]);
-    // typeof((&buf)[0]) p = pbuf_ptr[0]; 
-    var p = pbuf_ptr[0]; 
+    // typeof((&buf)[0]) p = pbuf_ptr[0];
+    var p = pbuf_ptr[0];
     tassert_eqi(*p, 'a');
 
     typeof((array)[0])* array_ptr = &((array)[0]);
-    // typeof((&array)[0]) p_array = array_ptr[0]; 
-    var p_array = array_ptr; 
+    // typeof((&array)[0]) p_array = array_ptr[0];
+    var p_array = array_ptr;
     // tassert_eqs(*p_array, "foo");
     printf("p_array: %p\n", p_array);
 
@@ -419,13 +433,13 @@ test$case(test_for_arr)
 
 test$case(test_slice)
 {
-    char buf[] = {'a', 'b', 'c'};
+    char buf[] = { 'a', 'b', 'c' };
 
     var b = arr$slice(buf, 1);
     tassert_eqi(b.arr[0], 'b');
     tassert_eqi(b.len, 2);
 
-    arr$(int) array = arr$new(array, 10, allocator);
+    arr$(int) array = arr$new(array,  allocator);
     arr$push(array, 1);
     arr$push(array, 2);
     arr$push(array, 3);
@@ -440,8 +454,9 @@ test$case(test_slice)
 test$case(test_for_arr_custom_size)
 {
 
-    arr$(char*) array = arr$new(array, 10, allocator);
-    for$arr(v, array) {
+    arr$(char*) array = arr$new(array,  allocator);
+    for$arr(v, array)
+    {
         (void)v;
         tassert(false && "must not happen!");
     }
@@ -451,16 +466,18 @@ test$case(test_for_arr_custom_size)
 
     u32 n = 0;
     tassert_eqi(3, arr$len(array));
-    for$arr(v, array, arr$len(array)-1) {
+    for$arr(v, array, arr$len(array) - 1)
+    {
         printf("v: %s\n", v);
         n++;
     }
     tassert_eqi(n, 2);
 
-    char buf[] = {'a', 'b', 'c'};
+    char buf[] = { 'a', 'b', 'c' };
     n = 0;
     tassert_eqi(3, arr$len(buf));
-    for$arr(c, buf, 2) {
+    for$arr(c, buf, 2)
+    {
         printf("c: %c\n", c);
         n++;
     }
@@ -472,19 +489,22 @@ test$case(test_for_arr_custom_size)
 
 test$case(test_for_arr_for_struct)
 {
-    arr$(my_struct) array = arr$new(array, 10, allocator);
-    for$arr(v, array) {
+    arr$(my_struct) array = arr$new(array, allocator);
+    tassert_eqi(arr$cap(array), 16);
+    for$arr(v, array)
+    {
         (void)v;
         tassert(false && "must not happen!");
     }
-    my_struct f = {.my_string = "far", .key = 200};
-    arr$push(array, (my_struct){.my_string = "foo", .key = 200, .my_val = 31.2});
+    my_struct f = { .my_string = "far", .key = 200 };
+    arr$push(array, (my_struct){ .my_string = "foo", .key = 200, .my_val = 31.2 });
     arr$push(array, f);
     tassert_eqi(2, arr$len(array));
 
     u32 n = 0;
     // v - is a copy of the array element
-    for$arr(v, array) {
+    for$arr(v, array)
+    {
         printf("v: %s\n", v.my_string);
         n++;
         v.key = 77;
@@ -495,7 +515,8 @@ test$case(test_for_arr_for_struct)
     tassert_eqi(array[1].key, 200);
 
     n = 0;
-    for$arrp(v, array, arr$len(array)) {
+    for$arrp(v, array, arr$len(array))
+    {
         isize i = v - array;
         printf("v: %s\n", v->my_string);
         tassert_eqi(n, i);
@@ -512,7 +533,7 @@ test$case(test_for_arr_for_struct)
 
 test$case(test_arr_insert_pop)
 {
-    arr$(int) arr = arr$new(arr, 10, allocator);
+    arr$(int) arr = arr$new(arr,  allocator);
     arr$ins(arr, 0, 5);
     arr$ins(arr, 0, 4);
     arr$ins(arr, 0, 3);
@@ -540,27 +561,28 @@ test$case(test_arr_insert_pop)
 
 test$case(test_arr_pushm)
 {
-    arr$(int) arr = arr$new(arr, 10, allocator);
-    arr$(int) arr2 = arr$new(arr, 10, allocator);
+    arr$(int) arr = arr$new(arr,  allocator);
+    arr$(int) arr2 = arr$new(arr,  allocator);
     tassert(mem$aligned_pointer(arr, 64) == arr);
 
     arr$pushm(arr2, 10, 6, 7, 8, 9, 0);
     tassert_eqi(arr$len(arr2), 6);
 
-    int sarr[] = {4, 5};
+    int sarr[] = { 4, 5 };
 
-    for(u32 i = 0; i < 100; i++){
+    for (u32 i = 0; i < 100; i++) {
         arr$pushm(arr, 1, 2, 3);
         arr$pusha(arr, sarr);
         // NOTE: overriding arr2 size + using it as a raw pointer
         // arr$pusha(arr, &arr2[1]); // THIS IS WRONG, and fail sanitize/arr$validate - needs len!
 
-        // We may use any pointer as an array, but length become mandatory 
+        // We may use any pointer as an array, but length become mandatory
         arr$pusha(arr, &arr2[1], 5);
     }
     tassert_eqi(1000, arr$len(arr));
 
-    for$arr(v, arr){
+    for$arr(v, arr)
+    {
         tassert(v < 10);
     }
 
@@ -571,27 +593,28 @@ test$case(test_arr_pushm)
 
 test$case(test_overaligned_struct)
 {
-    struct test32_s {
+    struct test32_s
+    {
         alignas(32) usize s;
     };
 
-    arr$(struct test32_s) arr = arr$new(arr, 10, allocator);
-    struct test32_s f = {.s = 100};
+    arr$(struct test32_s) arr = arr$new(arr,  allocator);
+    struct test32_s f = { .s = 100 };
     tassert(mem$aligned_pointer(arr, 64) == arr);
 
-    for (u32 i = 0; i < 1000; i++){
+    for (u32 i = 0; i < 1000; i++) {
         f.s = i;
         arr$push(arr, f);
 
-        tassert_eqi(arr$len(arr), i+1);
-        tassert_eqi(((size_t*)arr)[-1], i+1);
+        tassert_eqi(arr$len(arr), i + 1);
+        tassert_eqi(((size_t*)arr)[-1], i + 1);
     }
     tassert_eqi(arr$len(arr), 1000);
-    // size is stored -sizeof(size_t) bytes from arr address 
+    // size is stored -sizeof(size_t) bytes from arr address
     tassert_eqi(((size_t*)arr)[-1], 1000);
 
-    for (u32 i = 0; i < 1000; i++){
-        tassert_eqi(arr[i].s, i); 
+    for (u32 i = 0; i < 1000; i++) {
+        tassert_eqi(arr[i].s, i);
         tassert(mem$aligned_pointer(&arr[i], 32) == &arr[i]);
     }
 
@@ -601,24 +624,25 @@ test$case(test_overaligned_struct)
 
 test$case(test_overaligned_struct64)
 {
-    struct test64_s {
+    struct test64_s
+    {
         alignas(64) usize s;
     };
 
-    arr$(struct test64_s) arr = arr$new(arr, 10, allocator);
-    struct test64_s f = {.s = 100};
+    arr$(struct test64_s) arr = arr$new(arr,  allocator);
+    struct test64_s f = { .s = 100 };
     tassert(mem$aligned_pointer(arr, 64) == arr);
 
-    for (u32 i = 0; i < 1000; i++){
+    for (u32 i = 0; i < 1000; i++) {
         f.s = i;
         arr$push(arr, f);
     }
     tassert_eqi(arr$len(arr), 1000);
-    // size is stored -sizeof(size_t) bytes from arr address 
+    // size is stored -sizeof(size_t) bytes from arr address
     tassert_eqi(((size_t*)arr)[-1], 1000);
 
-    for (u32 i = 0; i < 1000; i++){
-        tassert_eqi(arr[i].s, i); 
+    for (u32 i = 0; i < 1000; i++) {
+        tassert_eqi(arr[i].s, i);
         tassert(mem$aligned_pointer(&arr[i], 64) == &arr[i]);
     }
 
@@ -628,22 +652,35 @@ test$case(test_overaligned_struct64)
 
 test$case(test_smallest_alignment)
 {
-    arr$(char) arr = arr$new(arr, 10, allocator);
+    arr$(char) arr = arr$new(arr,  allocator);
     tassert(mem$aligned_pointer(arr, 64) == arr);
 
-    for (u32 i = 0; i < 1000; i++){
+    for (u32 i = 0; i < 1000; i++) {
         arr$push(arr, i % 10);
     }
     tassert_eqi(arr$len(arr), 1000);
-    // size is stored -sizeof(size_t) bytes from arr address 
+    // size is stored -sizeof(size_t) bytes from arr address
     tassert_eqi(((size_t*)arr)[-1], 1000);
 
-    for (u32 i = 0; i < 1000; i++){
-        tassert_eqi(arr[i], i % 10); 
+    for (u32 i = 0; i < 1000; i++) {
+        tassert_eqi(arr[i], i % 10);
         tassert(mem$aligned_pointer(&arr[i], 1) == &arr[i]);
     }
 
     arr$free(arr);
+    return EOK;
+}
+
+test$case(test_hashmap_basic)
+{
+    hm$(int, int) intmap = hm$new(intmap,  allocator);
+    tassert(intmap != NULL);
+    e$assert(intmap);
+    hm$put(intmap, 1, 3);
+
+
+    hm$free(intmap);
+    tassert(intmap == NULL);
     return EOK;
 }
 int
@@ -667,6 +704,7 @@ main(int argc, char* argv[])
     test$run(test_overaligned_struct);
     test$run(test_overaligned_struct64);
     test$run(test_smallest_alignment);
+    test$run(test_hashmap_basic);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

@@ -27,7 +27,6 @@ size_t cexds_rehash_items;
 void*
 cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc)
 {
-    uassert(addlen > 0 || min_cap > 0);
     uassert(addlen < PTRDIFF_MAX && "negative or overflow");               
     uassert(min_cap < PTRDIFF_MAX && "negative or overflow");               
 
@@ -50,15 +49,17 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
         min_cap = min_len;
     }
 
-    if (min_cap <= arr$cap(a)) {
-        return a;
-    }
-
     // increase needed capacity to guarantee O(1) amortized
     if (min_cap < 2 * arr$cap(a)) {
         min_cap = 2 * arr$cap(a);
-    } else if (min_cap < 4) {
-        min_cap = 4;
+    } else if (min_cap < 16) {
+        min_cap = 16;
+    }
+    uassert(min_cap < PTRDIFF_MAX && "negative or overflow after processing");               
+    uassert(addlen > 0 || min_cap > 0);
+
+    if (min_cap <= arr$cap(a)) {
+        return a;
     }
 
     void* b;
@@ -662,15 +663,19 @@ cexds_hmput_default(void* a, size_t elemsize)
 }
 
 void*
-cexds_hminit(size_t capacity, size_t elemsize, const Allocator_i* allc)
+cexds_hminit(size_t elemsize, const Allocator_i* allc, struct cexds_hm_new_kwargs_s* kwargs)
 {
+    size_t capacity = (kwargs) ? kwargs->capacity : 0;
     void* a = cexds_arrgrowf(NULL, elemsize, 0, capacity, allc);
     if (a == NULL) {
         return NULL; // memory error
     }
 
     cexds_header(a)->length += 1;
+    // element-0 is a default hashmap element!
     memset(a, 0, elemsize);
+
+    // a points to element-1
     a = CEXDS_ARR_TO_HASH(a, elemsize);
     return a;
 }
@@ -685,14 +690,6 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
     size_t keyoffset = 0;
     void* raw_a;
     cexds_hash_index* table;
-
-    if (a == NULL) {
-        a = cexds_arrgrowf(0, elemsize, 0, 1, NULL);
-        memset(a, 0, elemsize);
-        cexds_header(a)->length += 1;
-        // adjust a to point AFTER the default element
-        a = CEXDS_ARR_TO_HASH(a, elemsize);
-    }
 
     // adjust a to point to the default element
     raw_a = a;

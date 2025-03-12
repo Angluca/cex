@@ -25,21 +25,32 @@ extern void cexds_strreset(cexds_string_arena* a);
 // Everything below here is implementation details
 //
 
-extern void*
-cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc);
+struct cexds_hm_new_kwargs_s
+{
+    usize capacity;
+    size_t seed;
+    bool copy_keys;
+};
+struct cexds_arr_new_kwargs_s
+{
+    usize capacity;
+};
+
+// clang-format off
+extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc);
 extern void cexds_arrfreef(void* a);
 extern void cexds_hmfree_func(void* p, size_t elemsize);
-extern void* cexds_hminit(size_t capacity, size_t elemsize, const Allocator_i* allc);
+extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, struct cexds_hm_new_kwargs_s* kwargs);
 extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, int mode);
-extern void*
-cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_t* temp, int mode);
+extern void* cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_t* temp, int mode);
 extern void* cexds_hmput_default(void* a, size_t elemsize);
 extern void* cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode);
-extern void*
-cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode);
+extern void* cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode);
 extern void* cexds_shmode_func(size_t elemsize, int mode);
+// clang-format on
 
 #define CEXDS_ARR_MAGIC 0xC001DAAD
+#define CEXDS_HM_MAGIC 0xF001C001
 #define CEXDS_HDR_PAD 64
 _Static_assert(mem$is_power_of2(CEXDS_HDR_PAD), "expected pow of 2");
 
@@ -72,19 +83,19 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
 #define cexds_temp_key(t) (*(char**)cexds_header(t)->hash_table)
 
 #define arr$(T) T*
-#define arr$new(a, capacity, allocator)                                                            \
+#define arr$new(a, allocator, kwargs...)                                                           \
     ({                                                                                             \
         _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
         uassert(allocator != NULL);                                                                \
-        uassert(capacity > 0);                                                                     \
-        (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), capacity, 0, allocator);                     \
+        struct cexds_arr_new_kwargs_s _kwargs = { kwargs };                                        \
+        (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);             \
     })
 
 #define arr$free(a) (arr$validate(a), cexds_arrfreef((a)), (a) = NULL)
 
 #define arr$setcap(a, n) (arr$validate(a), arr$grow(a, 0, n))
 #define arr$clear(a) (arr$validate(a), cexds_header(a)->length = 0)
-#define arr$cap(a) ((a) ? (arr$validate(a), cexds_header(a)->capacity) : 0)
+#define arr$cap(a) ((a) ? (cexds_header(a)->capacity) : 0)
 
 #define arr$del(a, i)                                                                              \
     ({                                                                                             \
@@ -144,7 +155,7 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
         usize _arr_len_va[] = { array_len };                                                       \
         (void)_arr_len_va;                                                                         \
         usize arr_len = (sizeof(_arr_len_va) > 0) ? _arr_len_va[0] : arr$len(array);               \
-        uassert(arr_len < PTRDIFF_MAX && "negative length or overflow");               \
+        uassert(arr_len < PTRDIFF_MAX && "negative length or overflow");                           \
         if (unlikely(!arr$grow_check(a, arr_len))) {                                               \
             uassert(false && "arr$pusha memory error");                                            \
             abort();                                                                               \
@@ -233,8 +244,15 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
         K key;                                                                                     \
         V value;                                                                                   \
     }*
-#define hm$new(t, capacity, allocator)                                                             \
-    (typeof(*t)*)cexds_hminit((capacity), sizeof(*t), (allocator))
+
+
+#define hm$new(t, allocator, kwargs...)                                                            \
+    ({                                                                                             \
+        _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
+        uassert(allocator != NULL);                                                                \
+        struct cexds_hm_new_kwargs_s _kwargs = { kwargs };                                         \
+        (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), &_kwargs);                  \
+    })
 
 #define hm$put(t, k, v)                                                                             \
     ((t                                                                                             \
