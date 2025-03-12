@@ -674,13 +674,32 @@ test$case(test_smallest_alignment)
 test$case(test_hashmap_basic)
 {
     hm$(int, int) intmap = hm$new(intmap,  allocator);
+    hm$(i64, int) intmap64 = hm$new(intmap64,  allocator);
     tassert(intmap != NULL);
-    e$assert(intmap);
+    tassert(intmap64 != NULL);
+
     hm$validate(intmap);
+    tassert_eqi(hm$len(intmap), 0);
+
     hm$set(intmap, 1, 3);
+    tassert_eqi(hm$len(intmap), 1);
+    tassert_eqi(hm$get(intmap, 1), 3);
+
+    // returns default (all zeros)
+    tassert_eqi(hm$get(intmap, -1), 0);
+    tassert_eqi(hm$get(intmap64, -1), 0);
+
+    tassert_eqi(hm$len(intmap), 1);
+    hm$del(intmap, 1);
+    tassert_eqi(hm$len(intmap), 0);
+
+    hm$default(intmap, 2);
+    tassert_eqi(hm$get(intmap, -1), 2);
+
 
 
     hm$free(intmap);
+    hm$free(intmap64);
     tassert(intmap == NULL);
     return EOK;
 }

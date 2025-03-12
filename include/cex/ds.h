@@ -254,14 +254,26 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
         (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), &_kwargs);                              \
     })
 
-#define hm$validate(hm)                                                                                                   \
-    ({                                                                                                                    \
-        uassert(hm != NULL && "hashmap uninitialized or out-of-mem");                                                       \
-        /* WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */                           \
-        /*          when arr pointer is invalid arr$ type pointer                            */                           \
-        uassert((cexds_header(CEXDS_HASH_TO_ARR(hm, sizeof(*hm)))->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer"); \
-        true;                                                                                                             \
+#define hm$validate(hm)                                                                            \
+    ({                                                                                             \
+        uassert(hm != NULL && "hashmap uninitialized or out-of-mem");                              \
+        /* WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */    \
+        /*          when arr pointer is invalid arr$ type pointer                            */    \
+        uassert(                                                                                   \
+            (cexds_header(CEXDS_HASH_TO_ARR(hm, sizeof(*hm)))->magic_num == CEXDS_HM_MAGIC) &&     \
+            "bad hashmap pointer"                                                                  \
+        );                                                                                         \
+        true;                                                                                      \
     })
+
+#define hm$default(t, v)                                                                           \
+    ({                                                                                             \
+        hm$validate(t);                                                                            \
+        uassert(hm$len(t) == 0 && "setting default allowed only when no elements added");          \
+        (t)[-1].value = (v);                                                                       \
+    })
+
+// #define hm$setdefs(t, s) ((t) = cexds_hmput_default((t), sizeof *(t)), (t)[-1] = (s))
 
 #define hm$set(t, k, v)                                                                             \
     ((t                                                                                             \
@@ -300,19 +312,19 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
 #define hm$getp_ts(t, k, temp) ((void)hm$geti_ts(t, k, temp), &(t)[temp])
 
 #define hm$del(t, k)                                                                               \
-    (((t) = cexds_hmdel_key(                                                                       \
-          (t),                                                                                     \
-          sizeof *(t),                                                                             \
-          (void*)mem$addressof((t)->key, (k)),                                                     \
-          sizeof(t)->key,                                                                          \
-          mem$offsetof((t), key),                                                                  \
-          CEXDS_HM_BINARY                                                                          \
-      )),                                                                                          \
-     (t) ? cexds_temp((t) - 1) : 0)
+    ({                                                                                             \
+        hm$validate(t);                                                                            \
+        (t) = cexds_hmdel_key(                                                                     \
+            (t),                                                                                   \
+            sizeof *(t),                                                                           \
+            (void*)mem$addressof((t)->key, (k)),                                                   \
+            sizeof(t)->key,                                                                        \
+            mem$offsetof((t), key),                                                                \
+            CEXDS_HM_BINARY                                                                        \
+        );                                                                                         \
+        /* TODO: implement return bool flag if deleted key existed*/                               \
+    })
 
-#define hm$default(t, v) ((t) = cexds_hmput_default((t), sizeof *(t)), (t)[-1].value = (v))
-
-#define hm$defaults(t, s) ((t) = cexds_hmput_default((t), sizeof *(t)), (t)[-1] = (s))
 
 #define hm$free(p) (cexds_hmfree_func((p) - 1, sizeof *(p)), (p) = NULL)
 
