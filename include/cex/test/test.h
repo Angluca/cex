@@ -141,19 +141,19 @@ __cex_test_run_postmortem()
 // tassert( condition ) - simple test assert, fails when condition false
 //
 #define tassert(A)                                                                                 \
-    do {                                                                                           \
+    ({                                                                                             \
         if (!(A)) {                                                                                \
             __cex_test_run_postmortem();                                                           \
             return __CEXTEST_LOG_ERR(#A);                                                          \
         }                                                                                          \
-    } while (0)
+    })
 
 //
 // tassertf( condition, format_string, ...) - test only assert with printf() style formatting
 // error message
 //
 #define tassertf(A, M, ...)                                                                        \
-    do {                                                                                           \
+    ({                                                                                             \
         if (!(A)) {                                                                                \
             snprintf(                                                                              \
                 __CexTestContext._str_buf,                                                         \
@@ -164,13 +164,13 @@ __cex_test_run_postmortem()
             __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
-    } while (0)
+    })
 
 //
 // tassert_eqs(char * actual, char * expected) - compares strings via strcmp() (NULL tolerant)
 //
 #define tassert_eqs(_ac, _ex)                                                                      \
-    do {                                                                                           \
+    ({                                                                                             \
         const char* ac = (_ac);                                                                    \
         const char* ex = (_ex);                                                                    \
         if ((ac) == NULL && (ex) != NULL) {                                                        \
@@ -203,13 +203,13 @@ __cex_test_run_postmortem()
             __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
-    } while (0)
+    })
 
 //
 // tassert_eqs(Exception actual, Exception expected) - compares Exceptions (Error.ok = NULL = EOK)
 //
 #define tassert_eqe(_ac, _ex)                                                                      \
-    do {                                                                                           \
+    ({                                                                                             \
         const char* ac = (_ac);                                                                    \
         const char* ex = (_ex);                                                                    \
         if ((ac) == NULL && (ex) != NULL) {                                                        \
@@ -242,13 +242,13 @@ __cex_test_run_postmortem()
             __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
-    } while (0)
+    })
 
 //
 // tassert_eqi(int actual, int expected) - compares equality of signed integers
 //
 #define tassert_eqi(_ac, _ex)                                                                      \
-    do {                                                                                           \
+    ({                                                                                             \
         long int ac = (_ac);                                                                       \
         long int ex = (_ex);                                                                       \
         if ((ac) != (ex)) {                                                                        \
@@ -262,13 +262,13 @@ __cex_test_run_postmortem()
             __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
-    } while (0)
+    })
 
 //
 // tassert_eql(int actual, int expected) - compares equality of long signed integers
 //
 #define tassert_eql(_ac, _ex)                                                                      \
-    do {                                                                                           \
+    ({                                                                                             \
         long long ac = (_ac);                                                                      \
         long long ex = (_ex);                                                                      \
         if ((ac) != (ex)) {                                                                        \
@@ -282,14 +282,14 @@ __cex_test_run_postmortem()
             __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
-    } while (0)
+    })
 
 //
 // tassert_eqf(f64 actual, f64 expected) - compares equality of f64 / double numbers
 // NAN friendly, i.e. tassert_eqf(NAN, NAN) -- passes
 //
 #define tassert_eqf(_ac, _ex)                                                                      \
-    do {                                                                                           \
+    ({                                                                                             \
         f64 ac = (_ac);                                                                            \
         f64 ex = (_ex);                                                                            \
         int __at_assert_passed = 1;                                                                \
@@ -314,7 +314,7 @@ __cex_test_run_postmortem()
             __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
-    } while (0)
+    })
 
 
 /*
@@ -342,10 +342,11 @@ __cex_test_run_postmortem()
 #define test$case(test_case_name) static test$NOOPT Exc test_case_name()
 
 #define test$set_postmortem(postmortem_func, func_ctx)                                             \
-    do {                                                                                           \
+    {                                                                                              \
         __cex_test_postmortem_f = (postmortem_func);                                               \
         __cex_test_postmortem_ctx = (func_ctx);                                                    \
-    } while (0)
+    }                                                                                              \
+    while (0)
 
 #define test$run(test_case_name)                                                                   \
     do {                                                                                           \
@@ -412,7 +413,7 @@ __cex_test_run_postmortem()
 //  Prints current test header
 //
 #define test$print_header()                                                                        \
-    do {                                                                                           \
+    ({                                                                                             \
         setbuf(__CEX_TEST_STREAM, NULL);                                                           \
         if (__CexTestContext.verbosity > 0) {                                                      \
             fprintf(__CEX_TEST_STREAM, "-------------------------------------\n");                 \
@@ -421,13 +422,13 @@ __cex_test_run_postmortem()
         }                                                                                          \
         fflush(stdout);                                                                            \
         fflush(stderr);                                                                            \
-    } while (0)
+    })
 
 //
 // Prints current tests stats total / passed / failed
 //
 #define test$print_footer()                                                                        \
-    do {                                                                                           \
+    ({                                                                                             \
         if (__CexTestContext.verbosity > 0) {                                                      \
             fprintf(__CEX_TEST_STREAM, "\n-------------------------------------\n");               \
             fprintf(                                                                               \
@@ -452,7 +453,7 @@ __cex_test_run_postmortem()
         fflush(__CEX_TEST_STREAM);                                                                 \
         fflush(stdout);                                                                            \
         fflush(stderr);                                                                            \
-    } while (0)
+    })
 
 //
 //  Utility macro for returning main() exit code based on test failed/run, if no tests
@@ -484,7 +485,7 @@ __cex_test_run_postmortem()
         if (__CexTestContext.verbosity == 0) {                                                     \
             freopen(CEXTEST_NULL_DEVICE, "w", stdout);                                             \
         }                                                                                          \
-    } while (0);
+    } while (0)
 
 #define test$exit_code() (-1 ? __CexTestContext.tests_run == 0 : __CexTestContext.tests_failed)
 

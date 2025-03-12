@@ -193,16 +193,16 @@ __cex__fprintf_dummy(void)
  * @brief Non disposable assert, returns Error.assert CEX exception when failed
  */
 #define e$assert(A)                                                                                \
-    do {                                                                                           \
+    ({                                                                                           \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(stdout, "[ASSERT] ", __FILE_NAME__, __LINE__, __func__, "%s\n", #A);    \
             return Error.assert;                                                                   \
         }                                                                                          \
-    } while (0)
+    })
 
 
 #define e$assertf(A, format, ...)                                                                  \
-    do {                                                                                           \
+    ({                                                                                           \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
                 stdout,                                                                            \
@@ -215,23 +215,23 @@ __cex__fprintf_dummy(void)
             );                                                                                     \
             return Error.assert;                                                                   \
         }                                                                                          \
-    } while (0)
+    })
 #else // #if CEX_LOG_LVL > 0
 #define __cex__traceback(uerr, fail_func) __cex__fprintf_dummy()
 #define e$assert(A)                                                                                \
-    do {                                                                                           \
+    ({                                                                                           \
         if (unlikely(!((A)))) {                                                                    \
             return Error.assert;                                                                   \
         }                                                                                          \
-    } while (0)
+    })
 
 
 #define e$assertf(A, format, ...)                                                                  \
-    do {                                                                                           \
+    ({                                                                                           \
         if (unlikely(!((A)))) {                                                                    \
             return Error.assert;                                                                   \
         }                                                                                          \
-    } while (0)
+    })
 #endif // #if CEX_LOG_LVL > 0
 
 
@@ -280,7 +280,7 @@ int __cex_test_uassert_enabled = 1;
 
 #ifndef __cex__assert
 #define __cex__assert()                                                                            \
-    do {                                                                                           \
+    ({                                                                                           \
         fflush(stdout);                                                                            \
         fflush(stderr);                                                                            \
         sanitizer_stack_trace();                                                                   \
@@ -292,7 +292,7 @@ int __cex_test_uassert_enabled = 1;
             fprintf(stderr, "=========== POSTMORTEM END ===========\n");                \
         }                                                                                          \
         abort();                                                                                   \
-    } while (0)
+    })
 #endif
 
 
@@ -301,7 +301,7 @@ int __cex_test_uassert_enabled = 1;
  * @brief Custom assertion, with support of sanitizer call stack printout at failure.
  */
 #define uassert(A)                                                                                 \
-    do {                                                                                           \
+    ({                                                                                           \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
                 __CEX_OUT_STREAM,                                                                  \
@@ -316,10 +316,10 @@ int __cex_test_uassert_enabled = 1;
                 __cex__assert();                                                                   \
             }                                                                                      \
         }                                                                                          \
-    } while (0)
+    })
 
 #define uassertf(A, format, ...)                                                                   \
-    do {                                                                                           \
+    ({                                                                                           \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
                 __CEX_OUT_STREAM,                                                                  \
@@ -334,7 +334,7 @@ int __cex_test_uassert_enabled = 1;
                 __cex__assert();                                                                   \
             }                                                                                      \
         }                                                                                          \
-    } while (0)
+    })
 #endif
 
 
