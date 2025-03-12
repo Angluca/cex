@@ -251,18 +251,28 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
         _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
         uassert(allocator != NULL);                                                                \
         struct cexds_hm_new_kwargs_s _kwargs = { kwargs };                                         \
-        (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), &_kwargs);                  \
+        (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), &_kwargs);                              \
     })
 
-#define hm$put(t, k, v)                                                                             \
+#define hm$validate(hm)                                                                                                   \
+    ({                                                                                                                    \
+        uassert(hm != NULL && "hashmap uninitialized or out-of-mem");                                                       \
+        /* WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */                           \
+        /*          when arr pointer is invalid arr$ type pointer                            */                           \
+        uassert((cexds_header(CEXDS_HASH_TO_ARR(hm, sizeof(*hm)))->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer"); \
+        true;                                                                                                             \
+    })
+
+#define hm$set(t, k, v)                                                                             \
     ((t                                                                                             \
      ) = cexds_hmput_key((t), sizeof *(t), (void*)mem$addressof((t)->key, (k)), sizeof(t)->key, 0), \
      (t)[cexds_temp((t) - 1)].key = (k),                                                            \
      (t)[cexds_temp((t) - 1)].value = (v))
 
-#define hm$puts(t, s)                                                                              \
+#define hm$sets(t, s)                                                                              \
     ((t) = cexds_hmput_key((t), sizeof *(t), &(s).key, sizeof(s).key, CEXDS_HM_BINARY),            \
      (t)[cexds_temp((t) - 1)] = (s))
+
 
 #define hm$geti(t, k)                                                                              \
     ((t) = cexds_hmget_key(                                                                        \
@@ -313,6 +323,7 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
 #define hm$lenu(t) ((t) ? cexds_header((t) - 1)->length - 1 : 0)
 #define hm$getp_null(t, k) (hm$geti(t, k) == -1 ? NULL : &(t)[cexds_temp((t) - 1)])
 
+/*
 #define cexds_shput(t, k, v)                                                                       \
     ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING),         \
      (t)[cexds_temp((t) - 1)].value = (v))
@@ -329,10 +340,10 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
     ) // above line overwrites whole structure, so must rewrite key here if it was allocated
       // internally
 
-#define cexds_pshput(t, p)                                                                           \
-    ((t                                                                                              \
-     ) = cexds_hmput_key((t), sizeof *(t), (void*)(p)->key, sizeof(p)->key, CEXDS_HM_PTR_TO_STRING), \
-     (t)[cexds_temp((t) - 1)] = (p))
+#define cexds_pshput(t, p) \
+    ((t \
+     ) = cexds_hmput_key((t), sizeof *(t), (void*)(p)->key, sizeof(p)->key, CEXDS_HM_PTR_TO_STRING),
+\ (t)[cexds_temp((t) - 1)] = (p))
 
 #define cexds_shgeti(t, k)                                                                         \
     ((t) = cexds_hmget_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING),         \
@@ -382,6 +393,7 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
 #define cexds_shgetp_null(t, k) (cexds_shgeti(t, k) == -1 ? NULL : &(t)[cexds_temp((t) - 1)])
 #define cexds_shlen hm$len
 
+*/
 
 typedef struct cexds_string_block
 {

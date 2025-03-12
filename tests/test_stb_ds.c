@@ -204,7 +204,7 @@ test$case(test_orig_hashmap)
     tassert(hm$geti(intmap, i) == -1);
     tassert(hm$get(intmap, i) == -2);
     for (i = 0; i < testsize; i += 2) {
-        hm$put(intmap, i, i * 5);
+        hm$set(intmap, i, i * 5);
     }
     for (i = 0; i < testsize; i += 1) {
         if (i & 1) {
@@ -219,7 +219,7 @@ test$case(test_orig_hashmap)
         }
     }
     for (i = 0; i < testsize; i += 2) {
-        hm$put(intmap, i, i * 3);
+        hm$set(intmap, i, i * 3);
     }
     for (i = 0; i < testsize; i += 1) {
         if (i & 1) {
@@ -250,14 +250,14 @@ test$case(test_orig_hashmap)
     intmap = hm$new(intmap,  allocator);
 
     for (i = 0; i < testsize; i += 2) {
-        hm$put(intmap, i, i * 3);
+        hm$set(intmap, i, i * 3);
     }
     hm$free(intmap);
 
     intmap = hm$new(intmap,  allocator);
-    hm$put(intmap, 15, 7);
-    hm$put(intmap, 11, 3);
-    hm$put(intmap, 9, 5);
+    hm$set(intmap, 15, 7);
+    hm$set(intmap, 11, 3);
+    hm$set(intmap, 9, 5);
     tassert(hm$get(intmap, 9) == 5);
     tassert(hm$get(intmap, 11) == 3);
     tassert(hm$get(intmap, 15) == 7);
@@ -266,7 +266,7 @@ test$case(test_orig_hashmap)
     intmap = hm$new(intmap,  allocator);
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
-        hm$put(map, s, i * 5);
+        hm$set(map, s, i * 5);
         tassert(map != NULL);
     }
     hm$free(intmap);
@@ -290,7 +290,7 @@ test$case(test_orig_hashmap)
     stbds_struct* map2 = hm$new(map2,  allocator);
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
-        hm$puts(map2, s);
+        hm$sets(map2, s);
     }
     hm$free(map2);
     hm$free(map);
@@ -309,7 +309,7 @@ test$case(test_orig_hashmap)
     //
     // for (i = 0; i < testsize; i += 2) {
     //     stbds_struct2 s = { { i, i * 2 }, i * 3, i * 4, i * 5 };
-    //     hm$puts(map3, s);
+    //     hm$sets(map3, s);
     // }
     // for (i = 0; i < testsize; i += 1) {
     //     stbds_struct2 s = { { i, i * 2 }, i * 3, i * 4, i * 5 };
@@ -676,7 +676,8 @@ test$case(test_hashmap_basic)
     hm$(int, int) intmap = hm$new(intmap,  allocator);
     tassert(intmap != NULL);
     e$assert(intmap);
-    hm$put(intmap, 1, 3);
+    hm$validate(intmap);
+    hm$set(intmap, 1, 3);
 
 
     hm$free(intmap);

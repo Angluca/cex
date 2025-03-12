@@ -38,7 +38,7 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
         }
     } else {
         uassert(allc == NULL && "you must pass NULL to allc, when array/hm initialized");
-        uassert((cexds_header(a)->magic_num == CEXDS_ARR_MAGIC) && "bad array pointer");
+        // uassert((cexds_header(a)->magic_num == CEXDS_ARR_MAGIC) && "bad array pointer");
     }
     cexds_array_header temp = { 0 }; // force debugging
     size_t min_len = (a ? cexds_header(a)->length : 0) + addlen;
@@ -674,6 +674,9 @@ cexds_hminit(size_t elemsize, const Allocator_i* allc, struct cexds_hm_new_kwarg
     cexds_header(a)->length += 1;
     // element-0 is a default hashmap element!
     memset(a, 0, elemsize);
+
+    uassert(cexds_header(a)->magic_num == CEXDS_ARR_MAGIC);
+    cexds_header(a)->magic_num = CEXDS_HM_MAGIC;
 
     // a points to element-1
     a = CEXDS_ARR_TO_HASH(a, elemsize);
