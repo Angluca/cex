@@ -39,9 +39,6 @@ extern void*
 cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode);
 extern void* cexds_shmode_func(size_t elemsize, int mode);
 
-#define CEXDS_ADDRESSOF(typevar, value)                                                            \
-    ((typeof(typevar)[1]){ value }) // literal array decays to pointer to value
-#define CEXDS_OFFSETOF(var, field) ((char*)&(var)->field - (char*)(var))
 #define CEXDS_ARR_MAGIC 0xC001DAAD
 #define CEXDS_HDR_PAD 64
 _Static_assert(mem$is_power_of2(CEXDS_HDR_PAD), "expected pow of 2");
@@ -240,7 +237,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
     ((t) = cexds_hmput_key(                                                                        \
          (t),                                                                                      \
          sizeof *(t),                                                                              \
-         (void*)CEXDS_ADDRESSOF((t)->key, (k)),                                                    \
+         (void*)mem$addressof((t)->key, (k)),                                                    \
          sizeof(t)->key,                                                                           \
          0                                                                                         \
      ),                                                                                            \
@@ -255,7 +252,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
     ((t) = cexds_hmget_key(                                                                        \
          (t),                                                                                      \
          sizeof *(t),                                                                              \
-         (void*)CEXDS_ADDRESSOF((t)->key, (k)),                                                    \
+         (void*)mem$addressof((t)->key, (k)),                                                    \
          sizeof(t)->key,                                                                           \
          CEXDS_HM_BINARY                                                                           \
      ),                                                                                            \
@@ -265,7 +262,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
     ((t) = cexds_hmget_key_ts(                                                                     \
          (t),                                                                                      \
          sizeof *(t),                                                                              \
-         (void*)CEXDS_ADDRESSOF((t)->key, (k)),                                                    \
+         (void*)mem$addressof((t)->key, (k)),                                                    \
          sizeof(t)->key,                                                                           \
          &(temp),                                                                                  \
          CEXDS_HM_BINARY                                                                           \
@@ -280,9 +277,9 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
     (((t) = cexds_hmdel_key(                                                                       \
           (t),                                                                                     \
           sizeof *(t),                                                                             \
-          (void*)CEXDS_ADDRESSOF((t)->key, (k)),                                                   \
+          (void*)mem$addressof((t)->key, (k)),                                                   \
           sizeof(t)->key,                                                                          \
-          CEXDS_OFFSETOF((t), key),                                                                \
+          mem$offsetof((t), key),                                                                \
           CEXDS_HM_BINARY                                                                          \
       )),                                                                                          \
      (t) ? cexds_temp((t) - 1) : 0)
@@ -340,7 +337,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
           sizeof *(t),                                                                             \
           (void*)(k),                                                                              \
           sizeof(t)->key,                                                                          \
-          CEXDS_OFFSETOF((t), key),                                                                \
+          mem$offsetof((t), key),                                                                \
           CEXDS_HM_STRING                                                                          \
       )),                                                                                          \
      (t) ? cexds_temp((t) - 1) : 0)
@@ -350,7 +347,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
           sizeof *(t),                                                                             \
           (void*)(k),                                                                              \
           sizeof(*(t))->key,                                                                       \
-          CEXDS_OFFSETOF(*(t), key),                                                               \
+          mem$offsetof(*(t), key),                                                               \
           CEXDS_HM_PTR_TO_STRING                                                                   \
       )),                                                                                          \
      (t) ? cexds_temp((t) - 1) : 0)
