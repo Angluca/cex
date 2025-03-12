@@ -141,15 +141,16 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
     ({                                                                                             \
         arr$validate(a);                                                                           \
         uassert(array != NULL);                                                                    \
-        usize _arr_len_va[] = { array_len };                                                         \
-        (void)_arr_len_va;\
+        usize _arr_len_va[] = { array_len };                                                       \
+        (void)_arr_len_va;                                                                         \
         usize arr_len = (sizeof(_arr_len_va) > 0) ? _arr_len_va[0] : arr$len(array);               \
+        uassert(arr_len < PTRDIFF_MAX && "negative length or overflow");               \
         if (unlikely(!arr$grow_check(a, arr_len))) {                                               \
             uassert(false && "arr$pusha memory error");                                            \
             abort();                                                                               \
         }                                                                                          \
         for (usize i = 0; i < arr_len; i++) {                                                      \
-            (a)[cexds_header(a)->length++] = ((array)[i]);                                           \
+            (a)[cexds_header(a)->length++] = ((array)[i]);                                         \
         }                                                                                          \
     })
 
@@ -194,7 +195,6 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
         _Pragma("GCC diagnostic pop");                                                             \
     })
 
-#define cex$set_ret1(dst, src) ((dst) = (src), 1)
 #define for$arr(v, array, array_len...)                                                            \
     usize cex$tmpname(arr_length_opt)[] = { array_len };                                           \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
@@ -202,9 +202,9 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
                                       : arr$len(array); /* prevents multi call of (length)*/       \
     typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
     usize cex$tmpname(arr_index) = 0;                                                              \
-    for (typeof((array)[0]) v = { 0 };                                                             \
-         cex$tmpname(arr_index) < cex$tmpname(arr_length) &&                                       \
-         (cex$set_ret1(v, cex$tmpname(arr_arrp)[cex$tmpname(arr_index)]));                         \
+    uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
+    for (typeof((array)[0]) v = { 0 }; cex$tmpname(arr_index) < cex$tmpname(arr_length) &&         \
+                                       ((v) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1);   \
          cex$tmpname(arr_index)++)
 
 #define for$arrp(v, array, array_len...)                                                           \
@@ -212,6 +212,7 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
                                       : arr$len(array); /* prevents multi call of (length)*/       \
+    uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
     typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
     usize cex$tmpname(arr_index) = 0;                                                              \
     for (typeof((array)[0])* v = cex$tmpname(arr_arrp);                                            \
@@ -235,15 +236,10 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
 #define hm$new(t, capacity, allocator)                                                             \
     (typeof(*t)*)cexds_hminit((capacity), sizeof(*t), (allocator))
 
-#define hm$put(t, k, v)                                                                            \
-    ((t) = cexds_hmput_key(                                                                        \
-         (t),                                                                                      \
-         sizeof *(t),                                                                              \
-         (void*)mem$addressof((t)->key, (k)),                                                    \
-         sizeof(t)->key,                                                                           \
-         0                                                                                         \
-     ),                                                                                            \
-     (t)[cexds_temp((t) - 1)].key = (k),                                                           \
+#define hm$put(t, k, v)                                                                             \
+    ((t                                                                                             \
+     ) = cexds_hmput_key((t), sizeof *(t), (void*)mem$addressof((t)->key, (k)), sizeof(t)->key, 0), \
+     (t)[cexds_temp((t) - 1)].key = (k),                                                            \
      (t)[cexds_temp((t) - 1)].value = (v))
 
 #define hm$puts(t, s)                                                                              \
@@ -254,7 +250,7 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
     ((t) = cexds_hmget_key(                                                                        \
          (t),                                                                                      \
          sizeof *(t),                                                                              \
-         (void*)mem$addressof((t)->key, (k)),                                                    \
+         (void*)mem$addressof((t)->key, (k)),                                                      \
          sizeof(t)->key,                                                                           \
          CEXDS_HM_BINARY                                                                           \
      ),                                                                                            \
@@ -264,7 +260,7 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
     ((t) = cexds_hmget_key_ts(                                                                     \
          (t),                                                                                      \
          sizeof *(t),                                                                              \
-         (void*)mem$addressof((t)->key, (k)),                                                    \
+         (void*)mem$addressof((t)->key, (k)),                                                      \
          sizeof(t)->key,                                                                           \
          &(temp),                                                                                  \
          CEXDS_HM_BINARY                                                                           \
@@ -279,9 +275,9 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
     (((t) = cexds_hmdel_key(                                                                       \
           (t),                                                                                     \
           sizeof *(t),                                                                             \
-          (void*)mem$addressof((t)->key, (k)),                                                   \
+          (void*)mem$addressof((t)->key, (k)),                                                     \
           sizeof(t)->key,                                                                          \
-          mem$offsetof((t), key),                                                                \
+          mem$offsetof((t), key),                                                                  \
           CEXDS_HM_BINARY                                                                          \
       )),                                                                                          \
      (t) ? cexds_temp((t) - 1) : 0)
@@ -339,7 +335,7 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
           sizeof *(t),                                                                             \
           (void*)(k),                                                                              \
           sizeof(t)->key,                                                                          \
-          mem$offsetof((t), key),                                                                \
+          mem$offsetof((t), key),                                                                  \
           CEXDS_HM_STRING                                                                          \
       )),                                                                                          \
      (t) ? cexds_temp((t) - 1) : 0)
@@ -349,7 +345,7 @@ _Static_assert(sizeof(cexds_array_header) == 48, "size");
           sizeof *(t),                                                                             \
           (void*)(k),                                                                              \
           sizeof(*(t))->key,                                                                       \
-          mem$offsetof(*(t), key),                                                               \
+          mem$offsetof(*(t), key),                                                                 \
           CEXDS_HM_PTR_TO_STRING                                                                   \
       )),                                                                                          \
      (t) ? cexds_temp((t) - 1) : 0)

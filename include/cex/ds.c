@@ -28,6 +28,8 @@ void*
 cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc)
 {
     uassert(addlen > 0 || min_cap > 0);
+    uassert(addlen < PTRDIFF_MAX && "negative or overflow");               
+    uassert(min_cap < PTRDIFF_MAX && "negative or overflow");               
 
     if (a == NULL) {
         if (allc == NULL) {
