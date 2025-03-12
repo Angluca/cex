@@ -87,13 +87,12 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 #define arr$clear(a) (arr$validate(a), cexds_header(a)->length = 0)
 #define arr$cap(a) ((a) ? (arr$validate(a), cexds_header(a)->capacity) : 0)
 
-#define arr$del(a, i) arr$deln(a, i, 1)
-#define arr$deln(a, i, n)                                                                          \
+#define arr$del(a, i)                                                                              \
     ({                                                                                             \
         arr$validate(a);                                                                           \
         uassert((usize)i < cexds_header(a)->length && "out of bounds");                            \
-        memmove(&(a)[i], &(a)[(i) + (n)], sizeof *(a) * (cexds_header(a)->length - (n) - (i)));    \
-        cexds_header(a)->length -= (n);                                                            \
+        memmove(&(a)[i], &(a)[(i) + 1], sizeof *(a) * (cexds_header(a)->length - 1 - (i)));        \
+        cexds_header(a)->length--;                                                                 \
     })
 #define arr$delswap(a, i)                                                                          \
     ({                                                                                             \
@@ -107,12 +106,12 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
     ({                                                                                             \
         arr$validate(a);                                                                           \
         uassert(cexds_header(a)->length > 0 && "empty array");                                     \
-        (a)[cexds_header(a)->length - 1];                                                           \
+        (a)[cexds_header(a)->length - 1];                                                          \
     })
 #define arr$at(a, i)                                                                               \
     ({                                                                                             \
         arr$validate(a);                                                                           \
-        uassert((usize)i < cexds_header(a)->length && "out of bounds");                                               \
+        uassert((usize)i < cexds_header(a)->length && "out of bounds");                            \
         (a)[i];                                                                                    \
     })
 
@@ -131,6 +130,30 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
         }                                                                                          \
         (a)[cexds_header(a)->length++] = (value);                                                  \
     } while (0)
+
+#define arr$pushm(a, items...)                                                                     \
+    ({                                                                                             \
+        typeof(*a) _args[] = { items };                                                            \
+        _Static_assert(sizeof(_args) > 0, "You must pass at least one item");                      \
+        arr$pusha(a, _args, arr$len(_args));                                                       \
+    })
+
+#define arr$pusha(a, array, array_len...)                                                          \
+    ({                                                                                             \
+        arr$validate(a);                                                                           \
+        uassert(array != NULL);                                                                    \
+        usize _arr_len_va[] = { array_len };                                                         \
+        (void)_arr_len_va;\
+        usize arr_len = (sizeof(_arr_len_va) > 0) ? _arr_len_va[0] : arr$len(array);               \
+        if (unlikely(!arr$grow_check(a, arr_len))) {                                               \
+            uassert(false && "arr$pusha memory error");                                            \
+            abort();                                                                               \
+        }                                                                                          \
+        for (usize i = 0; i < arr_len; i++) {                                                      \
+            (a)[cexds_header(a)->length++] = ((array)[i]);                                           \
+        }                                                                                          \
+    })
+
 
 #define arr$ins(a, i, value...)                                                                    \
     do {                                                                                           \
@@ -152,13 +175,11 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 #define arr$grow(a, add_len, min_cap)                                                              \
     ((a) = cexds_arrgrowf((a), sizeof *(a), (add_len), (min_cap), NULL))
 
-/**
- * @brief Returns number of elements on compile time / static array
- */
 #define arr$validate(arr)                                                                          \
     ({                                                                                             \
         uassert(arr != NULL && "array uninitialized or out-of-mem");                               \
         /* WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */    \
+        /*          when arr pointer is invalid arr$ type pointer                            */    \
         uassert((cexds_header(arr)->magic_num == CEXDS_ARR_MAGIC) && "bad array pointer");         \
         true;                                                                                      \
     })
@@ -174,8 +195,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
         _Pragma("GCC diagnostic pop");                                                             \
     })
 
-// TODO: refactor set_true ( rename + it could be used in different CEX code)
-#define set_true(dst, src) ((dst) = (src), 1)
+#define cex$set_ret1(dst, src) ((dst) = (src), 1)
 #define for$arr(v, array, array_len...)                                                            \
     usize cex$tmpname(arr_length_opt)[] = { array_len };                                           \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
@@ -185,7 +205,7 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
     usize cex$tmpname(arr_index) = 0;                                                              \
     for (typeof((array)[0]) v = { 0 };                                                             \
          cex$tmpname(arr_index) < cex$tmpname(arr_length) &&                                       \
-         (set_true(v, cex$tmpname(arr_arrp)[cex$tmpname(arr_index)]));                             \
+         (cex$set_ret1(v, cex$tmpname(arr_arrp)[cex$tmpname(arr_index)]));                         \
          cex$tmpname(arr_index)++)
 
 #define for$arrp(v, array, array_len...)                                                           \
@@ -198,6 +218,10 @@ _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
     for (typeof((array)[0])* v = cex$tmpname(arr_arrp);                                            \
          cex$tmpname(arr_index) < cex$tmpname(arr_length);                                         \
          cex$tmpname(arr_index)++, v++)
+/*
+ *                 HASH MAP
+ *
+ */
 
 #define CEXDS_HASH_TO_ARR(x, elemsize) ((char*)(x) - (elemsize))
 #define CEXDS_ARR_TO_HASH(x, elemsize) ((char*)(x) + (elemsize))

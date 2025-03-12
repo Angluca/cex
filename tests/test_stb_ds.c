@@ -26,13 +26,6 @@ test$setup()
 }
 
 
-#define arr$pushm(arr, args...)                                                                     \
-    ({                                                                                             \
-        typeof(*arr) _args[] = { args };                                                           \
-        for (usize i = 0; i < sizeof(_args) / sizeof(_args[0]); i++)                               \
-            arr$push(arr, _args[i]);                                                                \
-    })
-
 static void
 add_to_arr(arr$(int) * arr)
 {
@@ -330,6 +323,7 @@ test$case(test_array_len_unified)
     char buf_zero[0];
     arr$(char*) array = arr$new(array, 10, allocator);
     tassert_eqi(0, arr$len(array));
+    tassert(mem$aligned_pointer(array, 64) == array);
 
     arr$push(array, "foo");
     arr$push(array, "bar");
@@ -362,6 +356,7 @@ test$case(test_for_arr)
         tassert(false && "must not happen!");
     }
     arr$(char*) array = arr$new(array, 10, allocator);
+    tassert(mem$aligned_pointer(array, 64) == array);
     for$arr(v, array) {
         (void)v;
         tassert(false && "must not happen!");
@@ -385,12 +380,6 @@ test$case(test_for_arr)
 
     for$arr(c, buf) {
         printf("c: %c\n", c);
-    }
-
-    int j = 0; 
-    int cnt = 3; 
-    for(int i; j < cnt && set_true(i, j); j++) {
-        printf("i: %d\n", i);
     }
 
     u32 n = 0;
@@ -548,6 +537,106 @@ test$case(test_arr_insert_pop)
     arr$free(arr);
     return EOK;
 }
+
+test$case(test_arr_pushm)
+{
+    arr$(int) arr = arr$new(arr, 10, allocator);
+    arr$(int) arr2 = arr$new(arr, 10, allocator);
+    tassert(mem$aligned_pointer(arr, 64) == arr);
+
+    arr$pushm(arr2, 10, 6, 7, 8, 9, 0);
+    tassert_eqi(arr$len(arr2), 6);
+
+    int sarr[] = {4, 5};
+
+    for(u32 i = 0; i < 100; i++){
+        arr$pushm(arr, 1, 2, 3);
+        arr$pusha(arr, sarr);
+        // NOTE: overriding arr2 size + using it as a raw pointer
+        // arr$pusha(arr, &arr2[1]); // THIS IS WRONG, and fail sanitize/arr$validate - needs len!
+
+        // We may use any pointer as an array, but length become mandatory 
+        arr$pusha(arr, &arr2[1], 5);
+    }
+    tassert_eqi(1000, arr$len(arr));
+
+    for$arr(v, arr){
+        tassert(v < 10);
+    }
+
+    arr$free(arr);
+    arr$free(arr2);
+    return EOK;
+}
+
+test$case(test_overaligned_struct)
+{
+    struct test32_s {
+        alignas(32) usize s;
+    };
+
+    arr$(struct test32_s) arr = arr$new(arr, 10, allocator);
+    struct test32_s f = {.s = 100};
+    tassert(mem$aligned_pointer(arr, 64) == arr);
+
+    for (u32 i = 0; i < 1000; i++){
+        f.s = i;
+        arr$push(arr, f);
+    }
+    tassert_eqi(arr$len(arr), 1000);
+
+    for (u32 i = 0; i < 1000; i++){
+        tassert_eqi(arr[i].s, i); 
+        tassert(mem$aligned_pointer(&arr[i], 32) == &arr[i]);
+    }
+
+    arr$free(arr);
+    return EOK;
+}
+
+test$case(test_overaligned_struct64)
+{
+    struct test64_s {
+        alignas(64) usize s;
+    };
+
+    arr$(struct test64_s) arr = arr$new(arr, 10, allocator);
+    struct test64_s f = {.s = 100};
+    tassert(mem$aligned_pointer(arr, 64) == arr);
+
+    for (u32 i = 0; i < 1000; i++){
+        f.s = i;
+        arr$push(arr, f);
+    }
+    tassert_eqi(arr$len(arr), 1000);
+
+    for (u32 i = 0; i < 1000; i++){
+        tassert_eqi(arr[i].s, i); 
+        tassert(mem$aligned_pointer(&arr[i], 64) == &arr[i]);
+    }
+
+    arr$free(arr);
+    return EOK;
+}
+
+test$case(test_smallest_alignment)
+{
+    arr$(char) arr = arr$new(arr, 10, allocator);
+    tassert(mem$aligned_pointer(arr, 64) == arr);
+
+    for (u32 i = 0; i < 1000; i++){
+        arr$push(arr, i % 10);
+    }
+    tassert_eqi(arr$len(arr), 1000);
+
+    for (u32 i = 0; i < 1000; i++){
+        tassert_eqi(arr[i], i % 10); 
+        tassert(mem$aligned_pointer(&arr[i], 1) == &arr[i]);
+    }
+
+    arr$free(arr);
+    return EOK;
+}
 int
 main(int argc, char* argv[])
 {
@@ -565,6 +654,10 @@ main(int argc, char* argv[])
     test$run(test_for_arr_custom_size);
     test$run(test_for_arr_for_struct);
     test$run(test_arr_insert_pop);
+    test$run(test_arr_pushm);
+    test$run(test_overaligned_struct);
+    test$run(test_overaligned_struct64);
+    test$run(test_smallest_alignment);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
