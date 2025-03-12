@@ -6,10 +6,6 @@
 #include <stddef.h>
 #include <string.h>
 
-// for security against attackers, seed the library with a random number, at least time() but
-// stronger is better
-extern void cexds_rand_seed(size_t seed);
-
 // these are the hash functions used internally if you want to test them or use them for other
 // purposes
 extern size_t cexds_hash_bytes(void* p, size_t len, size_t seed);
@@ -59,6 +55,8 @@ typedef struct
     ptrdiff_t temp;
     const Allocator_i* allocator;
     u32 magic_num;
+    u32 hm_key_type;
+    size_t hm_seed;
     size_t capacity;
     size_t length; // This MUST BE LAST
 } cexds_array_header;
@@ -66,7 +64,7 @@ _Static_assert(alignof(cexds_array_header) == alignof(void*), "align");
 _Static_assert(sizeof(cexds_array_header) <= CEXDS_HDR_PAD, "size too high");
 _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 
-_Static_assert(sizeof(cexds_array_header) == 48, "size");
+_Static_assert(sizeof(cexds_array_header) == 56, "size");
 
 
 #define cexds_header(t) ((cexds_array_header*)(((char*)(t)) - sizeof(cexds_array_header)))

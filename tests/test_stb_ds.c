@@ -696,7 +696,8 @@ test$case(test_hashmap_basic)
     hm$default(intmap, 2);
     tassert_eqi(hm$get(intmap, -1), 2);
 
-
+    var h = cexds_header(CEXDS_HASH_TO_ARR(intmap, sizeof(*intmap)));
+    tassert(h->hm_seed != 0);
 
     hm$free(intmap);
     hm$free(intmap64);
