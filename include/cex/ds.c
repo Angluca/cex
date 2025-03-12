@@ -3,6 +3,7 @@
 #include "mem.h"
 
 #include <assert.h>
+#include <stddef.h>
 #include <string.h>
 
 
@@ -283,9 +284,24 @@ cexds_make_hash_index(
 #define CEXDS_ROTATE_LEFT(val, n) (((val) << (n)) | ((val) >> (CEXDS_SIZE_T_BITS - (n))))
 #define CEXDS_ROTATE_RIGHT(val, n) (((val) >> (n)) | ((val) << (CEXDS_SIZE_T_BITS - (n))))
 
+
+#ifdef CEXDS_SIPHASH_2_4
+#define CEXDS_SIPHASH_C_ROUNDS 2
+#define CEXDS_SIPHASH_D_ROUNDS 4
+typedef int CEXDS_SIPHASH_2_4_can_only_be_used_in_64_bit_builds[sizeof(size_t) == 8 ? 1 : -1];
+#endif
+
+#ifndef CEXDS_SIPHASH_C_ROUNDS
+#define CEXDS_SIPHASH_C_ROUNDS 1
+#endif
+#ifndef CEXDS_SIPHASH_D_ROUNDS
+#define CEXDS_SIPHASH_D_ROUNDS 1
+#endif
+
 size_t
-cexds_hash_string(char* str, size_t seed)
+cexds_hash_string(char* str, size_t str_cap, size_t seed)
 {
+    (void)str_cap;
     size_t hash = seed;
     while (*str) {
         hash = CEXDS_ROTATE_LEFT(hash, 9) + (unsigned char)*str++;
@@ -301,19 +317,6 @@ cexds_hash_string(char* str, size_t seed)
     hash ^= CEXDS_ROTATE_RIGHT(hash, 22);
     return hash + seed;
 }
-
-#ifdef CEXDS_SIPHASH_2_4
-#define CEXDS_SIPHASH_C_ROUNDS 2
-#define CEXDS_SIPHASH_D_ROUNDS 4
-typedef int CEXDS_SIPHASH_2_4_can_only_be_used_in_64_bit_builds[sizeof(size_t) == 8 ? 1 : -1];
-#endif
-
-#ifndef CEXDS_SIPHASH_C_ROUNDS
-#define CEXDS_SIPHASH_C_ROUNDS 1
-#endif
-#ifndef CEXDS_SIPHASH_D_ROUNDS
-#define CEXDS_SIPHASH_D_ROUNDS 1
-#endif
 
 static size_t
 cexds_siphash_bytes(void* p, size_t len, size_t seed)
@@ -406,7 +409,7 @@ cexds_siphash_bytes(void* p, size_t len, size_t seed)
 #endif
 }
 
-size_t
+static size_t
 cexds_hash_bytes(void* p, size_t len, size_t seed)
 {
 #ifdef CEXDS_SIPHASH_2_4
@@ -449,6 +452,29 @@ cexds_hash_bytes(void* p, size_t len, size_t seed)
         return cexds_siphash_bytes(p, len, seed);
     }
 #endif
+}
+
+static inline size_t
+cexds_hash(enum _CexDsKeyType_e key_type, void* key, size_t key_size, size_t seed) {
+    switch(key_type) {
+        case _CexDsKeyType__generic: 
+            return cexds_hash_bytes(key, key_size, seed);
+
+        case _CexDsKeyType__charptr: 
+            // NOTE: we can't know char* length without touching it, 
+            // 65536 is a max key length in case of char was not null term
+            return cexds_hash_string(key, 65536, seed);
+
+        case _CexDsKeyType__charbuf: 
+            return cexds_hash_string(key, key_size, seed);
+        
+        case _CexDsKeyType__cexstr: {
+            str_c s = *(str_c*)key;
+            uassert(s.buf != NULL && "NULL str_c not allowed");
+            return cexds_hash_string(s.buf, s.len, seed);
+        }
+    }
+    abort();
 }
 
 static int
@@ -498,8 +524,7 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
     uassert(a != NULL);
     void* raw_a = CEXDS_HASH_TO_ARR(a, elemsize);
     cexds_hash_index* table = cexds_hash_table(raw_a);
-    size_t hash = mode >= CEXDS_HM_STRING ? cexds_hash_string((char*)key, table->seed)
-                                          : cexds_hash_bytes(key, keysize, table->seed);
+    size_t hash = cexds_hash(cexds_header(raw_a)->hm_key_type,key, keysize, table->seed);
     size_t step = CEXDS_BUCKET_LENGTH;
 
     if (hash < 2) {
@@ -576,7 +601,12 @@ cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
 }
 
 void*
-cexds_hminit(size_t elemsize, const Allocator_i* allc, struct cexds_hm_new_kwargs_s* kwargs)
+cexds_hminit(
+    size_t elemsize,
+    const Allocator_i* allc,
+    enum _CexDsKeyType_e key_type,
+    struct cexds_hm_new_kwargs_s* kwargs
+)
 {
     size_t capacity = 0;
     size_t hm_seed = 0xBadB0dee;
@@ -597,6 +627,7 @@ cexds_hminit(size_t elemsize, const Allocator_i* allc, struct cexds_hm_new_kwarg
     uassert(cexds_header(a)->magic_num == CEXDS_ARR_MAGIC);
     cexds_header(a)->magic_num = CEXDS_HM_MAGIC;
     cexds_header(a)->hm_seed = hm_seed;
+    cexds_header(a)->hm_key_type = key_type;
 
     // a points to element-1
     a = CEXDS_ARR_TO_HASH(a, elemsize);
@@ -639,8 +670,7 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
 
     // we iterate hash table explicitly because we want to track if we saw a tombstone
     {
-        size_t hash = mode >= CEXDS_HM_STRING ? cexds_hash_string((char*)key, table->seed)
-                                              : cexds_hash_bytes(key, keysize, table->seed);
+        size_t hash = cexds_hash(cexds_header(a)->hm_key_type, key, keysize, table->seed);
         size_t step = CEXDS_BUCKET_LENGTH;
         size_t pos;
         ptrdiff_t tombstone = -1;

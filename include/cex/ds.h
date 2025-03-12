@@ -6,11 +6,6 @@
 #include <stddef.h>
 #include <string.h>
 
-// these are the hash functions used internally if you want to test them or use them for other
-// purposes
-extern size_t cexds_hash_bytes(void* p, size_t len, size_t seed);
-extern size_t cexds_hash_string(char* str, size_t seed);
-
 // this is a simple string arena allocator, initialize with e.g. 'cexds_string_arena my_arena={0}'.
 typedef struct cexds_string_arena cexds_string_arena;
 extern char* cexds_stralloc(cexds_string_arena* a, char* str);
@@ -25,10 +20,17 @@ extern void cexds_strreset(cexds_string_arena* a);
 // clang-format off
 struct cexds_hm_new_kwargs_s;
 struct cexds_arr_new_kwargs_s;
+enum _CexDsKeyType_e
+{
+    _CexDsKeyType__generic,
+    _CexDsKeyType__charptr,
+    _CexDsKeyType__charbuf,
+    _CexDsKeyType__cexstr,
+};
 extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc);
 extern void cexds_arrfreef(void* a);
 extern void cexds_hmfree_func(void* p, size_t elemsize);
-extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, struct cexds_hm_new_kwargs_s* kwargs);
+extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
 extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, int mode);
 extern void* cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_t* temp, int mode);
 extern void* cexds_hmput_default(void* a, size_t elemsize);
@@ -55,7 +57,7 @@ typedef struct
     ptrdiff_t temp;
     const Allocator_i* allocator;
     u32 magic_num;
-    u32 hm_key_type;
+    enum _CexDsKeyType_e hm_key_type;
     size_t hm_seed;
     size_t capacity;
     size_t length; // This MUST BE LAST
@@ -246,22 +248,7 @@ struct cexds_hm_new_kwargs_s
     size_t seed;
     bool copy_keys;
 };
-#define hm$new(t, allocator, kwargs...)                                                            \
-    ({                                                                                             \
-        _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
-        uassert(allocator != NULL);                                                                \
-        struct cexds_hm_new_kwargs_s _kwargs = { kwargs };                                         \
-        (t) = (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), &_kwargs);                              \
-    })
 
-enum _CexDsKeyType_e
-{
-    _CexDsKeyType__na,
-    _CexDsKeyType__charptr,
-    _CexDsKeyType__charbuf,
-    _CexDsKeyType__cexstr,
-    _CexDsKeyType__generic,
-};
 
 #define _hm$keytype(t)                                                                             \
     _Generic(                                                                                      \
@@ -273,6 +260,14 @@ enum _CexDsKeyType_e
         const char(*)[]: _CexDsKeyType__charbuf,                                                     \
         default: _CexDsKeyType__generic                                                             \
     )
+
+#define hm$new(t, allocator, kwargs...)                                                            \
+    ({                                                                                             \
+        _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
+        uassert(allocator != NULL);                                                                \
+        struct cexds_hm_new_kwargs_s _kwargs = { kwargs };                                         \
+        (t) = (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), _hm$keytype(t), &_kwargs);                              \
+    })
 
 #define hm$validate(hm)                                                                            \
     ({                                                                                             \
