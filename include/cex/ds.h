@@ -59,10 +59,12 @@ typedef struct
     size_t capacity;
     size_t length; // This MUST BE LAST
 } cexds_array_header;
-
 _Static_assert(alignof(cexds_array_header) == alignof(void*), "align");
 _Static_assert(sizeof(cexds_array_header) <= CEXDS_HDR_PAD, "size too high");
 _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
+
+_Static_assert(sizeof(cexds_array_header) == 48, "size");
+
 
 #define cexds_header(t) ((cexds_array_header*)(((char*)(t)) - sizeof(cexds_array_header)))
 #define cexds_base(t) ((char*)(t) - CEXDS_HDR_PAD)
