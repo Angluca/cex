@@ -83,7 +83,7 @@ struct cexds_arr_new_kwargs_s
         _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
         uassert(allocator != NULL);                                                                \
         struct cexds_arr_new_kwargs_s _kwargs = { kwargs };                                        \
-        (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);             \
+        (a) = (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);             \
     })
 
 #define arr$free(a) (arr$validate(a), cexds_arrfreef((a)), (a) = NULL)
@@ -251,8 +251,28 @@ struct cexds_hm_new_kwargs_s
         _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
         uassert(allocator != NULL);                                                                \
         struct cexds_hm_new_kwargs_s _kwargs = { kwargs };                                         \
-        (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), &_kwargs);                              \
+        (t) = (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), &_kwargs);                              \
     })
+
+enum _CexDsKeyType_e
+{
+    _CexDsKeyType__na,
+    _CexDsKeyType__charptr,
+    _CexDsKeyType__charbuf,
+    _CexDsKeyType__cexstr,
+    _CexDsKeyType__generic,
+};
+
+#define _hm$keytype(t)                                                                             \
+    _Generic(                                                                                      \
+        &((t)->key),                                                                               \
+        str_c *: _CexDsKeyType__cexstr,                                                              \
+        char(**): _CexDsKeyType__charptr,                                                           \
+        const char(**): _CexDsKeyType__charptr,                                                           \
+        char(*)[]: _CexDsKeyType__charbuf,                                                           \
+        const char(*)[]: _CexDsKeyType__charbuf,                                                     \
+        default: _CexDsKeyType__generic                                                             \
+    )
 
 #define hm$validate(hm)                                                                            \
     ({                                                                                             \

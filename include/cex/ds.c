@@ -143,7 +143,7 @@ typedef struct
     cexds_string_arena string;
 
     // not a separate allocation, just 64-byte aligned storage after this struct
-    cexds_hash_bucket* storage; 
+    cexds_hash_bucket* storage;
 } cexds_hash_index;
 
 #define CEXDS_INDEX_EMPTY -1
@@ -155,7 +155,7 @@ typedef struct
 
 #define CEXDS_SIZE_T_BITS ((sizeof(size_t)) * 8)
 
-static size_t
+static inline size_t
 cexds_probe_position(size_t hash, size_t slot_count, size_t slot_log2)
 {
     size_t pos;
@@ -501,23 +501,21 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
     size_t hash = mode >= CEXDS_HM_STRING ? cexds_hash_string((char*)key, table->seed)
                                           : cexds_hash_bytes(key, keysize, table->seed);
     size_t step = CEXDS_BUCKET_LENGTH;
-    size_t limit, i;
-    size_t pos;
-    cexds_hash_bucket* bucket;
 
     if (hash < 2) {
         hash += 2; // stored hash values are forbidden from being 0, so we can detect empty slots
     }
 
-    pos = cexds_probe_position(hash, table->slot_count, table->slot_count_log2);
+    size_t pos = cexds_probe_position(hash, table->slot_count, table->slot_count_log2);
 
+    // TODO: check when this could be infinite loop (due to overflow or something)?
     for (;;) {
         CEXDS_STATS(++cexds_hash_probes);
-        bucket = &table->storage[pos >> CEXDS_BUCKET_SHIFT];
+        cexds_hash_bucket* bucket = &table->storage[pos >> CEXDS_BUCKET_SHIFT];
 
         // start searching from pos to end of bucket, this should help performance on small hash
         // tables that fit in cache
-        for (i = pos & CEXDS_BUCKET_MASK; i < CEXDS_BUCKET_LENGTH; ++i) {
+        for (size_t i = pos & CEXDS_BUCKET_MASK; i < CEXDS_BUCKET_LENGTH; ++i) {
             if (bucket->hash[i] == hash) {
                 if (cexds_is_key_equal(a, elemsize, key, keysize, keyoffset, mode, bucket->index[i])) {
                     return (pos & ~CEXDS_BUCKET_MASK) + i;
@@ -528,8 +526,8 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
         }
 
         // search from beginning of bucket to pos
-        limit = pos & CEXDS_BUCKET_MASK;
-        for (i = 0; i < limit; ++i) {
+        size_t limit = pos & CEXDS_BUCKET_MASK;
+        for (size_t i = 0; i < limit; ++i) {
             if (bucket->hash[i] == hash) {
                 if (cexds_is_key_equal(a, elemsize, key, keysize, keyoffset, mode, bucket->index[i])) {
                     return (pos & ~CEXDS_BUCKET_MASK) + i;
@@ -544,7 +542,6 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
         step += CEXDS_BUCKET_LENGTH;
         pos &= (table->slot_count - 1);
     }
-    /* NOTREACHED */
 }
 
 void*
@@ -552,11 +549,9 @@ cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_
 {
     uassert(a != NULL);
     size_t keyoffset = 0;
-    cexds_hash_index* table;
     void* raw_a = CEXDS_HASH_TO_ARR(a, elemsize);
-    // adjust a to point to the default element
-    table = (cexds_hash_index*)cexds_header(raw_a)->hash_table;
-    if (table == 0) {
+    cexds_hash_index* table = (cexds_hash_index*)cexds_header(raw_a)->hash_table;
+    if (table == NULL) {
         *temp = -1;
     } else {
         ptrdiff_t slot = cexds_hm_find_slot(a, elemsize, key, keysize, keyoffset, mode);
@@ -586,7 +581,7 @@ cexds_hminit(size_t elemsize, const Allocator_i* allc, struct cexds_hm_new_kwarg
     size_t capacity = 0;
     size_t hm_seed = 0xBadB0dee;
 
-    if(kwargs){
+    if (kwargs) {
         capacity = kwargs->capacity;
         hm_seed = kwargs->seed ? kwargs->seed : hm_seed;
     }
@@ -616,21 +611,17 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
     uassert(a != NULL);
 
     size_t keyoffset = 0;
-    void* raw_a;
-    cexds_hash_index* table;
+    void* raw_a = a;
 
     // adjust a to point to the default element
-    raw_a = a;
     a = CEXDS_HASH_TO_ARR(a, elemsize);
 
-    table = (cexds_hash_index*)cexds_header(a)->hash_table;
+    cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
 
     if (table == NULL || table->used_count >= table->used_count_threshold) {
-        cexds_hash_index* nt;
-        size_t slot_count;
 
-        slot_count = (table == NULL) ? CEXDS_BUCKET_LENGTH : table->slot_count * 2;
-        nt = cexds_make_hash_index(
+        size_t slot_count = (table == NULL) ? CEXDS_BUCKET_LENGTH : table->slot_count * 2;
+        cexds_hash_index* nt = cexds_make_hash_index(
             slot_count,
             table,
             cexds_header(a)->allocator,
@@ -809,10 +800,10 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
     // minus one for the raw_a vs a, and minus one for 'last'
     ptrdiff_t final_index = (ptrdiff_t)cexds_header(raw_a)->length - 1 - 1;
     uassert(slot < (ptrdiff_t)table->slot_count);
+    uassert(table->used_count > 0);
     --table->used_count;
     ++table->tombstone_count;
     cexds_temp(raw_a) = 1;
-    uassert(table->used_count < UINT64_MAX - 10);
     // uassert(table->tombstone_count < table->slot_count/4);
     b->hash[i] = CEXDS_HASH_DELETED;
     b->index[i] = CEXDS_INDEX_DELETED;
