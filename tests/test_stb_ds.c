@@ -733,6 +733,33 @@ test$case(test_hashmap_keytype)
     tassert_eqi(_hm$keytype(map5), _CexDsKeyType__cexstr);
     return EOK;
 }
+
+test$case(test_hashmap_hash)
+{
+    // We created the same string, but stored in different places
+    const char* key = "foobar";
+    char key_buf[10] = "foobar";
+    char key_buf2[6] = "foobar";
+    str_c key_str = str.cbuf(key_buf2, sizeof(key_buf2));
+
+    // Make sure pointers are different
+    tassert(str.cmp(key_str, str$("foobar")) == 0);
+    tassert_eqi(sizeof(key_buf2), 6);
+    tassert(key_str.buf != key);
+    tassert(key_buf != key);
+    tassert(key_buf != key_str.buf);
+
+    size_t seed = 27361;
+    size_t hash_key = cexds_hash(_CexDsKeyType__charptr, key, 10000, seed);
+    tassert(hash_key > 0);
+
+    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, key_buf, sizeof(key_buf), seed), hash_key);
+    tassert_eqi(cexds_hash(_CexDsKeyType__cexstr, &key_str, sizeof(key_str), seed), hash_key);
+    // NOTE: This case is non \0 terminated buffer!
+    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, key_buf2, sizeof(key_buf2), seed), hash_key);
+
+    return EOK;
+}
 int
 main(int argc, char* argv[])
 {
@@ -756,6 +783,7 @@ main(int argc, char* argv[])
     test$run(test_smallest_alignment);
     test$run(test_hashmap_basic);
     test$run(test_hashmap_keytype);
+    test$run(test_hashmap_hash);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

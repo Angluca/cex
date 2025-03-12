@@ -168,7 +168,7 @@ cexds_probe_position(size_t hash, size_t slot_count, size_t slot_log2)
     return pos;
 }
 
-static size_t
+static inline size_t
 cexds_log2(size_t slot_count)
 {
     size_t n = 0;
@@ -298,12 +298,13 @@ typedef int CEXDS_SIPHASH_2_4_can_only_be_used_in_64_bit_builds[sizeof(size_t) =
 #define CEXDS_SIPHASH_D_ROUNDS 1
 #endif
 
-size_t
-cexds_hash_string(char* str, size_t str_cap, size_t seed)
+static inline size_t
+cexds_hash_string(const char* str, size_t str_cap, size_t seed)
 {
-    (void)str_cap;
     size_t hash = seed;
-    while (*str) {
+    // NOTE: using max buffer capacity capping, this allows using hash 
+    //       on char buf[N] - without stack overflowing
+    for(size_t i = 0; i < str_cap && *str; i++) {
         hash = CEXDS_ROTATE_LEFT(hash, 9) + (unsigned char)*str++;
     }
 
@@ -318,8 +319,8 @@ cexds_hash_string(char* str, size_t str_cap, size_t seed)
     return hash + seed;
 }
 
-static size_t
-cexds_siphash_bytes(void* p, size_t len, size_t seed)
+static inline size_t
+cexds_siphash_bytes(const void* p, size_t len, size_t seed)
 {
     unsigned char* d = (unsigned char*)p;
     size_t i, j;
@@ -409,8 +410,8 @@ cexds_siphash_bytes(void* p, size_t len, size_t seed)
 #endif
 }
 
-static size_t
-cexds_hash_bytes(void* p, size_t len, size_t seed)
+static inline size_t
+cexds_hash_bytes(const void* p, size_t len, size_t seed)
 {
 #ifdef CEXDS_SIPHASH_2_4
     return cexds_siphash_bytes(p, len, seed);
@@ -455,7 +456,7 @@ cexds_hash_bytes(void* p, size_t len, size_t seed)
 }
 
 static inline size_t
-cexds_hash(enum _CexDsKeyType_e key_type, void* key, size_t key_size, size_t seed) {
+cexds_hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size_t seed) {
     switch(key_type) {
         case _CexDsKeyType__generic: 
             return cexds_hash_bytes(key, key_size, seed);
@@ -474,6 +475,7 @@ cexds_hash(enum _CexDsKeyType_e key_type, void* key, size_t key_size, size_t see
             return cexds_hash_string(s.buf, s.len, seed);
         }
     }
+    uassert(false && "unexpected key type");
     abort();
 }
 
