@@ -110,7 +110,6 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
     if (a == NULL) {
         cexds_header(b)->length = 0;
         cexds_header(b)->hash_table = NULL;
-        cexds_header(b)->temp = 0;
         cexds_header(b)->allocator = allc;
         cexds_header(b)->magic_num = CEXDS_ARR_MAGIC;
     } else {
@@ -874,30 +873,14 @@ end:
     return a;
 }
 
-// void*
-// cexds_shmode_func(size_t elemsize, int mode)
-// {
-//    // TODO: allocator support
-//
-//     void* a = cexds_arrgrowf(0, elemsize, 0, 1, NULL);
-//     cexds_hash_index* h;
-//     memset(a, 0, elemsize);
-//     cexds_header(a)->length = 1;
-//     cexds_header(a)->hash_table = h = cexds_make_hash_index(CEXDS_BUCKET_LENGTH, NULL, );
-//     h->string.mode = (unsigned char)mode;
-//     return CEXDS_ARR_TO_HASH(a, elemsize);
-// }
 
 void*
 cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
 {
-    uassert(a != NULL);
-    /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */
-    uassert((cexds_header(a)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");
+    cexds_arr_integrity(a, CEXDS_HM_MAGIC);                                                    \
 
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
     uassert(cexds_header(a)->allocator != NULL);
-    cexds_temp(a) = 0;
     if (table == 0) {
         return a;
     }
@@ -915,7 +898,6 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
     uassert(table->used_count > 0);
     --table->used_count;
     ++table->tombstone_count;
-    cexds_temp(a) = 0;
     // uassert(table->tombstone_count < table->slot_count/4);
     b->hash[i] = CEXDS_HASH_DELETED;
     b->index[i] = CEXDS_INDEX_DELETED;

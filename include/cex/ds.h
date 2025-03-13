@@ -52,7 +52,6 @@ _Static_assert(mem$is_power_of2(CEXDS_HDR_PAD), "expected pow of 2");
 typedef struct
 {
     void* hash_table;
-    ptrdiff_t temp;
     const Allocator_i* allocator;
     u32 magic_num;
     enum _CexDsKeyType_e hm_key_type;
@@ -64,14 +63,12 @@ _Static_assert(alignof(cexds_array_header) == alignof(void*), "align");
 _Static_assert(sizeof(cexds_array_header) <= CEXDS_HDR_PAD, "size too high");
 _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
 
-_Static_assert(sizeof(cexds_array_header) == 56, "size");
+_Static_assert(sizeof(cexds_array_header) == 48, "size");
 
 
 #define cexds_header(t) ((cexds_array_header*)(((char*)(t)) - sizeof(cexds_array_header)))
 #define cexds_base(t) ((char*)(t) - CEXDS_HDR_PAD)
 #define cexds_item_ptr(t, i, elemsize) ((char*)a + elemsize * i)
-#define cexds_temp(t) cexds_header(t)->temp
-#define cexds_temp_key(t) (*(char**)cexds_header(t)->hash_table)
 
 #define arr$(T) T*
 
@@ -352,10 +349,10 @@ struct cexds_hm_new_kwargs_s
         (t) = cexds_hmdel_key(                                                                     \
             (t),                                                                                   \
             sizeof *(t),                                                                           \
-            (void*)mem$addressof((t)->key, (k)),                                                   \
+            ((typeof((t)->key)[1]){ (k) }),                                                        \
             sizeof(t)->key,                                                                        \
-            mem$offsetof((t), key),                                                                \
-            CEXDS_HM_BINARY                                                                        \
+            offsetof(typeof(*t), key),                                                             \
+            0                                                                                      \
         );                                                                                         \
         /* TODO: implement return bool flag if deleted key existed*/                               \
     })
