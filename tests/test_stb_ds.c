@@ -877,35 +877,48 @@ test$case(test_hashmap_string)
 
     hm$(const char*, int) smap = hm$new(smap, allocator);
 
+    char* k = "foo";
+    char* k2 = "baz";
     hm$set(smap, "foo", 3);
     tassert_eqi(hm$len(smap), 1);
     tassert_eqi(hm$get(smap, "foo"), 3);
     tassert_eqi(hm$get(smap, key_buf2), 0);
+    tassert_eqi(hm$get(smap, k), 3);
 
     tassert_eqi(hm$get(smap, "bar"), 0);
+    tassert_eqi(hm$get(smap, k2), 0);
     tassert_eqi(hm$get(smap, key_buf), 0);
+
+    tassert_eqi(hm$del(smap, k), 1);
+    tassert_eqi(hm$len(smap), 0);
 
     hm$free(smap);
     return EOK;
 }
-// TODO: /home/ubertrader/code/cex/include/cex/ds.h:303:38: error: assignment to expression with
-// array type 303 |         (t)[cexds_temp((t) - 1)].key = (k); test$case(test_hashmap_bufkey)
-// {
-//     struct
-//     {
-//         char key[10];
-//         int value;
-//     }* smap = hm$new(smap, allocator);
-//
-//     hm$set(smap, "foo", 3);
-//     tassert_eqi(hm$len(smap), 1);
-//     tassert_eqi(hm$get(smap, "foo"), 3);
-//
-//     tassert_eqi(hm$get(smap, "bar"), 0);
-//
-//     hm$free(smap);
-//     return EOK;
-// }
+
+test$case(test_hashmap_bufkey)
+{
+    struct
+    {
+        char key[10];
+        int value;
+    }* smap = hm$new(smap, allocator);
+
+    hm$set(smap, "foo", 3);
+
+    // Doesn't work
+    // char* f = "soo";
+    // tassert(hm$set(smap, f, 9));
+
+    tassert_eqi(hm$len(smap), 1);
+    tassert_eqi(hm$get(smap, "foo"), 3);
+    tassert_eqi(hm$get(smap, "bar"), 0);
+
+    tassert_eqi(hm$del(smap, "foo"), 1);
+    tassert_eqi(hm$len(smap), 0);
+    hm$free(smap);
+    return EOK;
+}
 
 #define _hm$test(t, k)                                                                             \
     ({                                                                                             \
@@ -932,10 +945,14 @@ test$case(test_hashmap_cex_string)
 
     hm$set(smap, str$("foo"), 3);
     hm$set(smap, str.cstr("bar"), 5);
-    // hm$set(smap, {.buf = "goo", .len = 2}, 7);
     tassert_eqi(hm$len(smap), 2);
-    // tassert_eqi(hm$get(smap, str$("foo")), 3);
+    tassert_eqi(hm$get(smap, str$("foo")), 3);
     tassert_eqi(hm$get(smap, str.cstr("foo")), 3);
+
+    // FIX: this ASAN failed
+    // tassert_eqi(hm$del(smap, str.cstr("foo")), 3);
+    // tassert_eqi(hm$del(smap, str$("bar")), 3);
+    // tassert_eqi(hm$len(smap), 0);
 
     hm$(int, int) imap;
     hm$(char*, int) cmap;
@@ -1110,6 +1127,7 @@ main(int argc, char* argv[])
     test$run(test_hashmap_hash);
     test$run(test_hashmap_compare_strings_bounded);
     test$run(test_hashmap_string);
+    test$run(test_hashmap_bufkey);
     test$run(test_hashmap_cex_string);
     test$run(test_hashmap_basic_delete);
     test$run(test_hashmap_basic_clear);

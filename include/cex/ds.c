@@ -703,9 +703,28 @@ cexds_hminit(
     }
 
     uassert(cexds_header(a)->magic_num == CEXDS_ARR_MAGIC);
+    uassert(cexds_header(a)->hash_table == NULL);
+
     cexds_header(a)->magic_num = CEXDS_HM_MAGIC;
     cexds_header(a)->hm_seed = hm_seed;
     cexds_header(a)->hm_key_type = key_type;
+
+    cexds_hash_index* table = cexds_header(a)->hash_table;
+
+    // ensure slot counts must be pow of 2
+    uassert(mem$is_power_of2(arr$cap(a)));
+    table = cexds_header(a)->hash_table =  cexds_make_hash_index(
+        arr$cap(a),
+        NULL,
+        cexds_header(a)->allocator,
+        cexds_header(a)->hm_seed
+    );
+
+    if (table) {
+        // NEW Table initialization here
+        // nt->string.mode = mode >= CEXDS_HM_STRING ? CEXDS_SH_DEFAULT : 0;
+        table->string.mode = 0;
+    }
 
     return a;
 }
