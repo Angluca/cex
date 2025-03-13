@@ -728,7 +728,12 @@ test$case(test_hashmap_basic_struct)
     struct test64_s s2 = (struct test64_s){.foo = 2};
     tassert(hm$set(intmap, 1, (struct test64_s){.foo = 1}));
     tassert(hm$set(intmap, 2, s2));
-    tassert(hm$set(intmap, 3, (struct test64_s){3, 4}));
+    // tassert(hm$set(intmap, 3, (struct test64_s){3, 4}));
+
+    var s3 = hm$setp(intmap, 3);
+    tassert(s3 != NULL);
+    s3->foo = 3;
+    s3->bar = 4;
 
     tassert_eqi(hm$len(intmap), 3);
     tassert_eqi(arr$len(intmap), 3);
@@ -744,6 +749,25 @@ test$case(test_hashmap_basic_struct)
     tassert_eqi(hm$getp(intmap, 1)[0].foo, 1);
     tassert_eqi(hm$getp(intmap, 2)[0].foo, 2);
     tassert_eqi(hm$getp(intmap, 3)[0].foo, 3);
+
+    u32 n = 0;
+    for$arr(v, intmap) {
+        tassert_eqi(intmap[n].key, v.key);
+        // hasmap also supports bounds checked arr$at
+        tassert_eqi(arr$at(intmap, n).value.foo, v.value.foo);
+        tassert_eqi(v.key, n+1);
+        n++;
+    }
+    tassert_eqi(n, arr$len(intmap));
+
+    n = 0;
+    for$arrp(v, intmap) {
+        tassert_eqi(intmap[n].key, v->key);
+        tassert_eqi(intmap[n].value.foo, v->value.foo);
+        tassert_eqi(v->key, n+1);
+        n++;
+    }
+    tassert_eqi(n, arr$len(intmap));
 
     // ZII struct if not found
     tassert_eqi(hm$get(intmap, -1).foo, 0);

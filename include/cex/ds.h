@@ -279,6 +279,21 @@ struct cexds_hm_new_kwargs_s
         result;                                                                                    \
     })
 
+#define hm$setp(t, k)                                                                              \
+    ({                                                                                             \
+        typeof(t) result = NULL;                                                                   \
+        (t) = cexds_hmput_key(                                                                     \
+            (t),                                                                                   \
+            sizeof(*t),                     /* size of hashmap item */                             \
+            ((typeof((t)->key)[1]){ (k) }), /* temp on stack pointer to (k) value */               \
+            sizeof((t)->key),               /* size of key */                                      \
+            offsetof(typeof(*t), key),      /* offset of key in hm struct */                       \
+            NULL,                           /* no full element set */                              \
+            &result                         /* NULL on memory error */                             \
+        );                                                                                         \
+        (result ? &result->value : NULL);                                                          \
+    })
+
 #define hm$sets(t, v...)                                                                           \
     ({                                                                                             \
         typeof(t) result = NULL;                                                                   \
@@ -331,35 +346,6 @@ struct cexds_hm_new_kwargs_s
         );                                                                                         \
         result;                                                                                    \
     })
-
-/*
-
-#define hm$getp(t, k) ((void)hm$geti(t, k), &(t)[cexds_temp((t))])
-#define hm$getp_ts(t, k, temp) ((void)hm$geti_ts(t, k, temp), &(t)[temp])
-#define hm$gets(t, k) (*hm$getp(t, k))
-// #define hm$get(t, k) (hm$getp(t, k)->value)
-#define hm$get_ts(t, k, temp) (hm$getp_ts(t, k, temp)->value)
-#define hm$getp_null(t, k) (hm$geti(t, k) == -1 ? NULL : &(t)[cexds_temp((t))])
-#define hm$geti(t, k) \
-    ((t) = cexds_hmget_key( \
-         (t), \
-         sizeof *(t), \
-         (void*)mem$addressof((t)->key, (k)), \
-         sizeof(t)->key, \
-         CEXDS_HM_BINARY \
-     ), \ cexds_temp((t)))
-
-#define hm$geti_ts(t, k, temp) \
-    ((t) = cexds_hmget_key_ts( \
-         (t), \
-         sizeof *(t), \
-         (void*)mem$addressof((t)->key, (k)), \
-         sizeof(t)->key, \
-         &(temp), \
-         CEXDS_HM_BINARY \
-     ), \ (temp))
-
-*/
 
 #define hm$del(t, k)                                                                               \
     ({                                                                                             \
