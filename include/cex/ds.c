@@ -571,9 +571,8 @@ cexds_is_key_equal(
             return 0 == memcmp(key, hm_key, keysize);
 
         case _CexDsKeyType__charptr:
-            return 0 == strcmp((char*)key, *(char**)hm_key);
-
         case _CexDsKeyType__charbuf:
+            return 0 == strcmp(*(char**)key, *(char**)hm_key);
 
         case _CexDsKeyType__cexstr: {
             str_c* _k = (str_c*)key;
@@ -614,13 +613,13 @@ cexds_hmfree_func(void* a, size_t elemsize)
 }
 
 static ptrdiff_t
-cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
+cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset)
 {
     cexds_arr_integrity(a, CEXDS_HM_MAGIC);
-    void* raw_a = a;
-    cexds_hash_index* table = cexds_hash_table(raw_a);
-    size_t hash = cexds_hash(cexds_header(raw_a)->hm_key_type, key, keysize, table->seed);
+    cexds_hash_index* table = cexds_hash_table(a);
+    size_t hash = cexds_hash(cexds_header(a)->hm_key_type, key, keysize, table->seed);
     size_t step = CEXDS_BUCKET_LENGTH;
+    enum _CexDsKeyType_e key_type = cexds_header(a)->hm_key_type;
 
     if (hash < 2) {
         hash += 2; // stored hash values are forbidden from being 0, so we can detect empty slots
@@ -637,7 +636,7 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
         // tables that fit in cache
         for (size_t i = pos & CEXDS_BUCKET_MASK; i < CEXDS_BUCKET_LENGTH; ++i) {
             if (bucket->hash[i] == hash) {
-                if (cexds_is_key_equal(a, elemsize, key, keysize, keyoffset, mode, bucket->index[i])) {
+                if (cexds_is_key_equal(a, elemsize, key, keysize, keyoffset, key_type, bucket->index[i])) {
                     return (pos & ~CEXDS_BUCKET_MASK) + i;
                 }
             } else if (bucket->hash[i] == CEXDS_HASH_EMPTY) {
@@ -649,7 +648,7 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
         size_t limit = pos & CEXDS_BUCKET_MASK;
         for (size_t i = 0; i < limit; ++i) {
             if (bucket->hash[i] == hash) {
-                if (cexds_is_key_equal(a, elemsize, key, keysize, keyoffset, mode, bucket->index[i])) {
+                if (cexds_is_key_equal(a, elemsize, key, keysize, keyoffset, key_type, bucket->index[i])) {
                     return (pos & ~CEXDS_BUCKET_MASK) + i;
                 }
             } else if (bucket->hash[i] == CEXDS_HASH_EMPTY) {
@@ -672,7 +671,7 @@ cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
     if (table != NULL) {
         // FIX: cexds_hm_find_slot - mode arg!
-        ptrdiff_t slot = cexds_hm_find_slot(a, elemsize, key, keysize, keyoffset, 0);
+        ptrdiff_t slot = cexds_hm_find_slot(a, elemsize, key, keysize, keyoffset);
         if (slot >= 0) {
             cexds_hash_bucket* b = &table->storage[slot >> CEXDS_BUCKET_SHIFT];
             size_t idx = b->index[slot & CEXDS_BUCKET_MASK];
@@ -746,6 +745,7 @@ cexds_hmput_key(
     cexds_arr_integrity(a, CEXDS_HM_MAGIC);
 
     void** out_result = (void**)result;
+    enum _CexDsKeyType_e key_type = cexds_header(a)->hm_key_type;
     *out_result = NULL;
 
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
@@ -806,7 +806,7 @@ cexds_hmput_key(
                             key,
                             keysize,
                             keyoffset,
-                            0, // FIX: mode
+                        key_type,
                             bucket->index[i]
                         )) {
 
@@ -833,7 +833,7 @@ cexds_hmput_key(
                             key,
                             keysize,
                             keyoffset,
-                            0, // FIX: mode,
+                        key_type,
                             bucket->index[i]
                         )) {
                         *out_result = cexds_item_ptr(a, bucket->index[i], elemsize);
@@ -916,17 +916,18 @@ end:
 
 
 bool
-cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
+cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset)
 {
     cexds_arr_integrity(a, CEXDS_HM_MAGIC);
 
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
+
     uassert(cexds_header(a)->allocator != NULL);
     if (table == 0) {
         return false;
     }
 
-    ptrdiff_t slot = cexds_hm_find_slot(a, elemsize, key, keysize, keyoffset, mode);
+    ptrdiff_t slot = cexds_hm_find_slot(a, elemsize, key, keysize, keyoffset);
     if (slot < 0) {
         return false;
     }
@@ -967,12 +968,12 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
 
             case _CexDsKeyType__cexstr: {
                 str_c* s = (str_c*)((char*)a + elemsize * old_index + keyoffset);
-                key_data_p = s->buf;
+                key_data_p = s;
                 break;
             }
         }
         uassert(key_data_p != NULL);
-        slot = cexds_hm_find_slot(a, elemsize, key_data_p, keysize, keyoffset, mode);
+        slot = cexds_hm_find_slot(a, elemsize, key_data_p, keysize, keyoffset);
         uassert(slot >= 0);
         b = &table->storage[slot >> CEXDS_BUCKET_SHIFT];
         i = slot & CEXDS_BUCKET_MASK;

@@ -36,7 +36,7 @@ extern void cexds_hmclear_func(struct cexds_hash_index* t, struct cexds_hash_ind
 extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
 extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
 extern void* cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, void* full_elem, void* result);
-extern bool cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode);
+extern bool cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
 // clang-format on
 
 #define CEXDS_ARR_MAGIC 0xC001DAAD
@@ -354,8 +354,7 @@ struct cexds_hm_new_kwargs_s
             sizeof *(t),                                                                           \
             ((typeof((t)->key)[1]){ (k) }),                                                        \
             sizeof(t)->key,                                                                        \
-            offsetof(typeof(*t), key),                                                             \
-            0                                                                                      \
+            offsetof(typeof(*t), key)                                                              \
         );                                                                                         \
     })
 

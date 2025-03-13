@@ -99,11 +99,11 @@ test$case(test_array_struct)
     tassert_eqi(arr$cap(array), 128);
 
     my_struct s;
-    s = (my_struct){ 20, 5.0, "hello ", 0};
+    s = (my_struct){ 20, 5.0, "hello ", 0 };
     arr$push(array, s);
-    s = (my_struct){ 40, 2.5, "failure", 0};
+    s = (my_struct){ 40, 2.5, "failure", 0 };
     arr$push(array, s);
-    s = (my_struct){ 40, 1.1, "world!", 0};
+    s = (my_struct){ 40, 1.1, "world!", 0 };
     arr$push(array, s);
 
     for (usize i = 0; i < arr$len(array); ++i) {
@@ -640,7 +640,7 @@ test$case(test_hashmap_basic)
 
     tassert_eqi(hm$len(intmap), 0);
     // tassert_eqi(arr$len(intmap), 0);
-    int _v = {1};
+    int _v = { 1 };
 
     tassert(hm$set(intmap, 1, 3));
     tassert(hm$set(intmap, 100, _v));
@@ -650,7 +650,7 @@ test$case(test_hashmap_basic)
     tassert_eqi(hm$get(intmap, 1), 3);
     tassert_eqi(*hm$getp(intmap, 1), 3);
 
-    
+
     // returns default (all zeros)
     tassert_eqi(hm$get(intmap, -1), 0);
     tassert_eqi(hm$get(intmap64, -1, 999), 999);
@@ -683,8 +683,8 @@ test$case(test_hashmap_basic_struct)
 
     tassert_eqi(hm$len(intmap), 0);
 
-    struct test64_s s2 = (struct test64_s){.foo = 2};
-    tassert(hm$set(intmap, 1, (struct test64_s){.foo = 1}));
+    struct test64_s s2 = (struct test64_s){ .foo = 2 };
+    tassert(hm$set(intmap, 1, (struct test64_s){ .foo = 1 }));
     tassert(hm$set(intmap, 2, s2));
     // tassert(hm$set(intmap, 3, (struct test64_s){3, 4}));
 
@@ -709,20 +709,22 @@ test$case(test_hashmap_basic_struct)
     tassert_eqi(hm$getp(intmap, 3)[0].foo, 3);
 
     u32 n = 0;
-    for$arr(v, intmap) {
+    for$arr(v, intmap)
+    {
         tassert_eqi(intmap[n].key, v.key);
         // hasmap also supports bounds checked arr$at
         tassert_eqi(arr$at(intmap, n).value.foo, v.value.foo);
-        tassert_eqi(v.key, n+1);
+        tassert_eqi(v.key, n + 1);
         n++;
     }
     tassert_eqi(n, arr$len(intmap));
 
     n = 0;
-    for$arrp(v, intmap) {
+    for$arrp(v, intmap)
+    {
         tassert_eqi(intmap[n].key, v->key);
         tassert_eqi(intmap[n].value.foo, v->value.foo);
-        tassert_eqi(v->key, n+1);
+        tassert_eqi(v->key, n + 1);
         n++;
     }
     tassert_eqi(n, arr$len(intmap));
@@ -751,7 +753,7 @@ test$case(test_hashmap_struct_full_setget)
 
     tassert_eqi(hm$len(smap), 0);
 
-    tassert(hm$sets(smap, (struct test64_s){.key = 1, .fooa = 10}));
+    tassert(hm$sets(smap, (struct test64_s){ .key = 1, .fooa = 10 }));
     tassert_eqi(hm$len(smap), 1);
     tassert_eqi(smap[0].key, 1);
     tassert_eqi(smap[0].fooa, 10);
@@ -762,7 +764,7 @@ test$case(test_hashmap_struct_full_setget)
     tassert_eqi(r->key, 1);
     tassert_eqi(r->fooa, 10);
 
-    struct test64_s s2 = {.key = 2, .fooa = 200};
+    struct test64_s s2 = { .key = 2, .fooa = 200 };
     tassert(hm$sets(smap, s2));
     tassert_eqi(hm$len(smap), 2);
 
@@ -839,13 +841,15 @@ test$case(test_hashmap_hash)
     tassert(key_buf != key_str.buf);
 
     size_t seed = 27361;
-    size_t hash_key = cexds_hash(_CexDsKeyType__charptr, key, 10000, seed);
+    size_t hash_key = cexds_hash(_CexDsKeyType__charptr, &key, 10000, seed);
     tassert(hash_key > 0);
 
-    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, key_buf, sizeof(key_buf), seed), hash_key);
+    char* bufvar[1] = { key_buf };
+    char* bufvar2[1] = { key_buf2 };
+    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, &bufvar, sizeof(key_buf), seed), hash_key);
     tassert_eqi(cexds_hash(_CexDsKeyType__cexstr, &key_str, sizeof(key_str), seed), hash_key);
     // NOTE: This case is non \0 terminated buffer!
-    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, key_buf2, sizeof(key_buf2), seed), hash_key);
+    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, &bufvar2, sizeof(key_buf2), seed), hash_key);
 
     return EOK;
 }
@@ -873,23 +877,26 @@ test$case(test_hashmap_compare_strings_bounded)
 test$case(test_hashmap_string)
 {
     char key_buf[10] = "foobar";
-    char key_buf2[10] = "foo";
 
     hm$(const char*, int) smap = hm$new(smap, allocator);
 
     char* k = "foo";
     char* k2 = "baz";
+
+    char key_buf2[10] = "foo";
+    char* k3 = key_buf2;
     hm$set(smap, "foo", 3);
     tassert_eqi(hm$len(smap), 1);
     tassert_eqi(hm$get(smap, "foo"), 3);
-    tassert_eqi(hm$get(smap, key_buf2), 0);
     tassert_eqi(hm$get(smap, k), 3);
+    tassert_eqi(hm$get(smap, key_buf2), 3);
+    tassert_eqi(hm$get(smap, k3), 3);
 
     tassert_eqi(hm$get(smap, "bar"), 0);
     tassert_eqi(hm$get(smap, k2), 0);
     tassert_eqi(hm$get(smap, key_buf), 0);
 
-    tassert_eqi(hm$del(smap, k), 1);
+    tassert_eqi(hm$del(smap, key_buf2), 1);
     tassert_eqi(hm$len(smap), 0);
 
     hm$free(smap);
@@ -930,7 +937,7 @@ test$case(test_hashmap_bufkey)
             char(**): _Generic(                                                                    \
                 (k),                                                                               \
                 char*: (key_len = 0),                                                              \
-                str_c: (key = *(((size_t**)key) + 1)),                                                \
+                str_c: (key = *(((size_t**)key) + 1)),                                             \
                 default: (key = NULL)                                                              \
             ),                                                                                     \
             str_c*: (key_len = 0),                                                                 \
@@ -943,16 +950,23 @@ test$case(test_hashmap_cex_string)
 {
     hm$(str_c, int) smap = hm$new(smap, allocator);
 
-    hm$set(smap, str$("foo"), 3);
-    hm$set(smap, str.cstr("bar"), 5);
-    tassert_eqi(hm$len(smap), 2);
-    tassert_eqi(hm$get(smap, str$("foo")), 3);
-    tassert_eqi(hm$get(smap, str.cstr("foo")), 3);
+    char key_buf[10] = "bar";
+    char key_buf2[10] = "baz";
+
+    hm$set(smap, str$("foo"), 1);
+    hm$set(smap, str.cstr(key_buf), 2);
+    hm$set(smap, str.cstr(key_buf2), 3);
+
+    tassert_eqi(hm$len(smap), 3);
+    tassert_eqi(hm$get(smap, str$("foo")), 1);
+    tassert_eqi(hm$get(smap, str.cstr("bar")), 2);
+    tassert_eqi(hm$get(smap, str$("baz")), 3);
 
     // FIX: this ASAN failed
-    // tassert_eqi(hm$del(smap, str.cstr("foo")), 3);
-    // tassert_eqi(hm$del(smap, str$("bar")), 3);
-    // tassert_eqi(hm$len(smap), 0);
+    tassert_eqi(hm$del(smap, str.cstr("foo")), 1);
+    tassert_eqi(hm$del(smap, str$("bar")), 1);
+    tassert_eqi(hm$del(smap, str$("baz")), 1);
+    tassert_eqi(hm$len(smap), 0);
 
     hm$(int, int) imap;
     hm$(char*, int) cmap;
@@ -960,7 +974,7 @@ test$case(test_hashmap_cex_string)
 
     char* c = "foobar";
     str_c s = (str_c){ .buf = c, .len = 6 };
-    
+
 
     _hm$test(imap, 2);
 
@@ -993,7 +1007,7 @@ test$case(test_hashmap_basic_delete)
 
     tassert_eqi(hm$len(intmap), 3);
 
-    // check order 
+    // check order
     tassert_eqi(intmap[0].key, 1);
     tassert_eqi(intmap[1].key, 2);
     tassert_eqi(intmap[2].key, 3);
