@@ -185,27 +185,28 @@ struct cexds_arr_new_kwargs_s
         _Pragma("GCC diagnostic push");                                                            \
         /* NOTE: temporary disable syntax error to support both static array length and arr$(T) */ \
         _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\"");                                \
-        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0]))   /* check if array of ptr */ \
-            ? (cexds_arr_integrity(arr, 0), cexds_header(arr)->length) /* some pointer to array */ \
+        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0]))   /* check if array or ptr */ \
+            ? (cexds_arr_integrity(arr, 0), cexds_header(arr)->length) /* some pointer or arr$ */  \
             : (sizeof(arr) / sizeof((arr)[0])                          /* static array[] */        \
               );                                                                                   \
         _Pragma("GCC diagnostic pop");                                                             \
     })
 
 #define for$arr(v, array, array_len...)                                                            \
-    usize cex$tmpname(arr_length_opt)[] = { array_len };                                           \
+    usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
                                       : arr$len(array); /* prevents multi call of (length)*/       \
     typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
     usize cex$tmpname(arr_index) = 0;                                                              \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
-    for (typeof((array)[0]) v = { 0 }; cex$tmpname(arr_index) < cex$tmpname(arr_length) &&         \
-                                       ((v) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1);   \
+    for (typeof((array)[0]) v = { 0 };                                                             \
+         (cex$tmpname(arr_index) < cex$tmpname(arr_length) &&                                      \
+          ((v) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1));                               \
          cex$tmpname(arr_index)++)
 
 #define for$arrp(v, array, array_len...)                                                           \
-    usize cex$tmpname(arr_length_opt)[] = { array_len };                                           \
+    usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
                                       : arr$len(array); /* prevents multi call of (length)*/       \
@@ -215,11 +216,10 @@ struct cexds_arr_new_kwargs_s
     for (typeof((array)[0])* v = cex$tmpname(arr_arrp);                                            \
          cex$tmpname(arr_index) < cex$tmpname(arr_length);                                         \
          cex$tmpname(arr_index)++, v++)
+
 /*
  *                 HASH MAP
- *
  */
-
 
 #define hm$(_KeyType, _ValType)                                                                    \
     struct                                                                                         \
