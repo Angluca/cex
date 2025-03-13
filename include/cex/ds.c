@@ -676,7 +676,7 @@ cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
         if (slot >= 0) {
             cexds_hash_bucket* b = &table->storage[slot >> CEXDS_BUCKET_SHIFT];
             size_t idx = b->index[slot & CEXDS_BUCKET_MASK];
-            return ((char*)a + elemsize * idx + keyoffset);
+            return ((char*)a + elemsize * idx);
         }
     }
     return NULL;

@@ -740,33 +740,51 @@ test$case(test_hashmap_struct_full_setget)
 {
     struct test64_s
     {
+        usize fooa; // WARNING: key will be second to test key field offset
         usize key;
-        usize fooa;
     };
 
-    hm$s(struct test64_s) intmap = hm$new(intmap, allocator);
-    tassert(intmap != NULL);
+    hm$s(struct test64_s) smap = hm$new(smap, allocator);
+    tassert(smap != NULL);
 
-    tassert_eqi(hm$len(intmap), 0);
+    _Static_assert(offsetof(struct test64_s, key) == sizeof(usize), "unexp");
 
-    tassert(hm$sets(intmap, (struct test64_s){.key = 1, .fooa = 10}));
-    tassert_eqi(hm$len(intmap), 1);
-    struct test64_s s2 = {.key = 2, .fooa = 20};
-    tassert(hm$sets(intmap, s2));
+    tassert_eqi(hm$len(smap), 0);
 
-    struct test64_s* r = hm$gets(intmap, 1);
+    tassert(hm$sets(smap, (struct test64_s){.key = 1, .fooa = 10}));
+    tassert_eqi(hm$len(smap), 1);
+    tassert_eqi(smap[0].key, 1);
+    tassert_eqi(smap[0].fooa, 10);
+
+    struct test64_s* r = hm$gets(smap, 1);
+    tassert(r != NULL);
+    tassert(r == &smap[0]);
+    tassert_eqi(r->key, 1);
+    tassert_eqi(r->fooa, 10);
+
+    struct test64_s s2 = {.key = 2, .fooa = 200};
+    tassert(hm$sets(smap, s2));
+    tassert_eqi(hm$len(smap), 2);
+
+    r = hm$gets(smap, 1);
     tassert(r != NULL);
     tassert_eqi(r->key, 1);
     tassert_eqi(r->fooa, 10);
 
-    r = hm$gets(intmap, 2);
+    r = hm$gets(smap, 2);
     tassert(r != NULL);
     tassert_eqi(r->key, 2);
-    tassert_eqi(r->fooa, 20);
+    tassert_eqi(r->fooa, 200);
 
-    tassert(hm$gets(intmap, -1) == NULL);
+    tassert(hm$gets(smap, -1) == NULL);
 
-    hm$free(intmap);
+    tassert(hm$del(smap, 2));
+    tassert(hm$del(smap, 1));
+    tassert_eqi(hm$len(smap), 0);
+    tassert(hm$gets(smap, 1) == NULL);
+    tassert(hm$gets(smap, 2) == NULL);
+
+    hm$free(smap);
     return EOK;
 }
 
