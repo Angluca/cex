@@ -29,6 +29,7 @@ enum _CexDsKeyType_e
 };
 extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc);
 extern void cexds_arrfreef(void* a);
+extern bool cexds_arr_integrity(void* arr, size_t magic_num);
 extern void cexds_hmfree_func(void* p, size_t elemsize);
 extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
 extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
@@ -86,22 +87,22 @@ struct cexds_arr_new_kwargs_s
         (a) = (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);       \
     })
 
-#define arr$free(a) (arr$validate(a), cexds_arrfreef((a)), (a) = NULL)
+#define arr$free(a) (cexds_arr_integrity(a, CEXDS_ARR_MAGIC), cexds_arrfreef((a)), (a) = NULL)
 
-#define arr$setcap(a, n) (arr$validate(a), arr$grow(a, 0, n))
-#define arr$clear(a) (arr$validate(a), cexds_header(a)->length = 0)
+#define arr$setcap(a, n) (cexds_arr_integrity(a, CEXDS_ARR_MAGIC), arr$grow(a, 0, n))
+#define arr$clear(a) (cexds_arr_integrity(a, CEXDS_ARR_MAGIC), cexds_header(a)->length = 0)
 #define arr$cap(a) ((a) ? (cexds_header(a)->capacity) : 0)
 
 #define arr$del(a, i)                                                                              \
     ({                                                                                             \
-        arr$validate(a);                                                                           \
+        cexds_arr_integrity(a, CEXDS_ARR_MAGIC);                                                   \
         uassert((usize)i < cexds_header(a)->length && "out of bounds");                            \
         memmove(&(a)[i], &(a)[(i) + 1], sizeof *(a) * (cexds_header(a)->length - 1 - (i)));        \
         cexds_header(a)->length--;                                                                 \
     })
 #define arr$delswap(a, i)                                                                          \
     ({                                                                                             \
-        arr$validate(a);                                                                           \
+        cexds_arr_integrity(a, CEXDS_ARR_MAGIC);                                                   \
         uassert((usize)i < cexds_header(a)->length && "out of bounds");                            \
         (a)[i] = arr$last(a);                                                                      \
         cexds_header(a)->length -= 1;                                                              \
@@ -109,20 +110,20 @@ struct cexds_arr_new_kwargs_s
 
 #define arr$last(a)                                                                                \
     ({                                                                                             \
-        arr$validate(a);                                                                           \
+        cexds_arr_integrity(a, CEXDS_ARR_MAGIC);                                                   \
         uassert(cexds_header(a)->length > 0 && "empty array");                                     \
         (a)[cexds_header(a)->length - 1];                                                          \
     })
 #define arr$at(a, i)                                                                               \
     ({                                                                                             \
-        arr$validate(a);                                                                           \
+        cexds_arr_integrity(a, 0); /* may work also on hm$ */                                      \
         uassert((usize)i < cexds_header(a)->length && "out of bounds");                            \
         (a)[i];                                                                                    \
     })
 
 #define arr$pop(a)                                                                                 \
     ({                                                                                             \
-        arr$validate(a);                                                                           \
+        cexds_arr_integrity(a, CEXDS_ARR_MAGIC);                                                   \
         cexds_header(a)->length--;                                                                 \
         (a)[cexds_header(a)->length];                                                              \
     })
@@ -145,7 +146,7 @@ struct cexds_arr_new_kwargs_s
 
 #define arr$pusha(a, array, array_len...)                                                          \
     ({                                                                                             \
-        arr$validate(a);                                                                           \
+        cexds_arr_integrity(a, CEXDS_ARR_MAGIC);                                                   \
         uassert(array != NULL);                                                                    \
         usize _arr_len_va[] = { array_len };                                                       \
         (void)_arr_len_va;                                                                         \
@@ -174,30 +175,23 @@ struct cexds_arr_new_kwargs_s
     } while (0)
 
 #define arr$grow_check(a, add_extra)                                                               \
-    ((arr$validate(a) && cexds_header(a)->length + (add_extra) > cexds_header(a)->capacity)        \
+    ((cexds_arr_integrity(a, CEXDS_ARR_MAGIC) &&                                                   \
+      cexds_header(a)->length + (add_extra) > cexds_header(a)->capacity)                           \
          ? (arr$grow(a, add_extra, 0), a != NULL)                                                  \
          : true)
 
 #define arr$grow(a, add_len, min_cap)                                                              \
     ((a) = cexds_arrgrowf((a), sizeof *(a), (add_len), (min_cap), NULL))
 
-#define arr$validate(arr)                                                                          \
-    ({                                                                                             \
-        uassert(arr != NULL && "array uninitialized or out-of-mem");                               \
-        /* WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */    \
-        /*          when arr pointer is invalid arr$ type pointer                            */    \
-        uassert((cexds_header(arr)->magic_num == CEXDS_ARR_MAGIC) && "bad array pointer");         \
-        true;                                                                                      \
-    })
-
 #define arr$len(arr)                                                                               \
     ({                                                                                             \
         _Pragma("GCC diagnostic push");                                                            \
         /* NOTE: temporary disable syntax error to support both static array length and arr$(T) */ \
         _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\"");                                \
-        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0]))                               \
-            ? (arr$validate(arr), cexds_header(arr)->length)                                       \
-            : (sizeof(arr) / sizeof((arr)[0]));                                                    \
+        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0]))   /* check if array of ptr */ \
+            ? (cexds_arr_integrity(arr, 0), cexds_header(arr)->length) /* some pointer to array */ \
+            : (sizeof(arr) / sizeof((arr)[0])                          /* static array[] */        \
+              );                                                                                   \
         _Pragma("GCC diagnostic pop");                                                             \
     })
 
@@ -254,7 +248,7 @@ struct cexds_hm_new_kwargs_s
     ({                                                                                             \
         _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
         uassert(allocator != NULL);                                                                \
-        enum _CexDsKeyType_e _key_type = _Generic(                                                      \
+        enum _CexDsKeyType_e _key_type = _Generic(                                                 \
             &((t)->key),                                                                           \
             str_c *: _CexDsKeyType__cexstr,                                                        \
             char(**): _CexDsKeyType__charptr,                                                      \
@@ -346,26 +340,24 @@ struct cexds_hm_new_kwargs_s
 // #define hm$get(t, k) (hm$getp(t, k)->value)
 #define hm$get_ts(t, k, temp) (hm$getp_ts(t, k, temp)->value)
 #define hm$getp_null(t, k) (hm$geti(t, k) == -1 ? NULL : &(t)[cexds_temp((t))])
-#define hm$geti(t, k)                                                                              \
-    ((t) = cexds_hmget_key(                                                                        \
-         (t),                                                                                      \
-         sizeof *(t),                                                                              \
-         (void*)mem$addressof((t)->key, (k)),                                                      \
-         sizeof(t)->key,                                                                           \
-         CEXDS_HM_BINARY                                                                           \
-     ),                                                                                            \
-     cexds_temp((t)))
+#define hm$geti(t, k) \
+    ((t) = cexds_hmget_key( \
+         (t), \
+         sizeof *(t), \
+         (void*)mem$addressof((t)->key, (k)), \
+         sizeof(t)->key, \
+         CEXDS_HM_BINARY \
+     ), \ cexds_temp((t)))
 
-#define hm$geti_ts(t, k, temp)                                                                     \
-    ((t) = cexds_hmget_key_ts(                                                                     \
-         (t),                                                                                      \
-         sizeof *(t),                                                                              \
-         (void*)mem$addressof((t)->key, (k)),                                                      \
-         sizeof(t)->key,                                                                           \
-         &(temp),                                                                                  \
-         CEXDS_HM_BINARY                                                                           \
-     ),                                                                                            \
-     (temp))
+#define hm$geti_ts(t, k, temp) \
+    ((t) = cexds_hmget_key_ts( \
+         (t), \
+         sizeof *(t), \
+         (void*)mem$addressof((t)->key, (k)), \
+         sizeof(t)->key, \
+         &(temp), \
+         CEXDS_HM_BINARY \
+     ), \ (temp))
 
 */
 
@@ -388,69 +380,70 @@ struct cexds_hm_new_kwargs_s
 #define hm$len(t)                                                                                  \
     ({                                                                                             \
         uassert(t != NULL && "hashmap uninitialized or out-of-mem");                               \
-        /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */  \
+        /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on              \
+         * address" */                                                                             \
         uassert((cexds_header(t)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");          \
         cexds_header((t))->length;                                                                 \
     })
 
 /*
-#define cexds_shput(t, k, v)                                                                       \
-    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING),         \
+#define cexds_shput(t, k, v) \
+    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING), \
      (t)[cexds_temp((t) - 1)].value = (v))
 
-#define cexds_shputi(t, k, v)                                                                      \
-    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING),         \
-     (t)[cexds_temp((t) - 1)].value = (v),                                                         \
-     cexds_temp((t) - 1))
+#define cexds_shputi(t, k, v) \
+    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING), \
+     (t)[cexds_temp((t) - 1)].value = (v), \ cexds_temp((t) - 1))
 
-#define cexds_shputs(t, s)                                                                         \
-    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(s).key, sizeof(s).key, CEXDS_HM_STRING),      \
-     (t)[cexds_temp((t) - 1)] = (s),                                                               \
-     (t)[cexds_temp((t) - 1)].key = cexds_temp_key((t) - 1)                                        \
-    ) // above line overwrites whole structure, so must rewrite key here if it was allocated
+#define cexds_shputs(t, s) \
+    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(s).key, sizeof(s).key,
+CEXDS_HM_STRING),      \
+     (t)[cexds_temp((t) - 1)] = (s), \
+     (t)[cexds_temp((t) - 1)].key = cexds_temp_key((t) - 1) \ ) // above line overwrites
+whole structure, so must rewrite key here if it was allocated
       // internally
 
 #define cexds_pshput(t, p) \
     ((t \
-     ) = cexds_hmput_key((t), sizeof *(t), (void*)(p)->key, sizeof(p)->key, CEXDS_HM_PTR_TO_STRING),
+     ) = cexds_hmput_key((t), sizeof *(t), (void*)(p)->key, sizeof(p)->key,
+CEXDS_HM_PTR_TO_STRING),
 \ (t)[cexds_temp((t) - 1)] = (p))
 
-#define cexds_shgeti(t, k)                                                                         \
-    ((t) = cexds_hmget_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING),         \
+#define cexds_shgeti(t, k) \
+    ((t) = cexds_hmget_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING), \
      cexds_temp((t) - 1))
 
-#define cexds_pshgeti(t, k)                                                                        \
-    ((t                                                                                            \
-     ) = cexds_hmget_key((t), sizeof *(t), (void*)(k), sizeof(*(t))->key, CEXDS_HM_PTR_TO_STRING), \
-     cexds_temp((t) - 1))
+#define cexds_pshgeti(t, k) \
+    ((t \
+     ) = cexds_hmget_key((t), sizeof *(t), (void*)(k), sizeof(*(t))->key,
+CEXDS_HM_PTR_TO_STRING), \ cexds_temp((t) - 1))
 
 #define cexds_shgetp(t, k) ((void)cexds_shgeti(t, k), &(t)[cexds_temp((t) - 1)])
 
 #define cexds_pshget(t, k) ((void)cexds_pshgeti(t, k), (t)[cexds_temp((t) - 1)])
 
-#define cexds_shdel(t, k)                                                                          \
-    (((t) = cexds_hmdel_key(                                                                       \
-          (t),                                                                                     \
-          sizeof *(t),                                                                             \
-          (void*)(k),                                                                              \
-          sizeof(t)->key,                                                                          \
-          mem$offsetof((t), key),                                                                  \
-          CEXDS_HM_STRING                                                                          \
-      )),                                                                                          \
-     (t) ? cexds_temp((t) - 1) : 0)
-#define cexds_pshdel(t, k)                                                                         \
-    (((t) = cexds_hmdel_key(                                                                       \
-          (t),                                                                                     \
-          sizeof *(t),                                                                             \
-          (void*)(k),                                                                              \
-          sizeof(*(t))->key,                                                                       \
-          mem$offsetof(*(t), key),                                                                 \
-          CEXDS_HM_PTR_TO_STRING                                                                   \
-      )),                                                                                          \
-     (t) ? cexds_temp((t) - 1) : 0)
+#define cexds_shdel(t, k) \
+    (((t) = cexds_hmdel_key( \
+          (t), \
+          sizeof *(t), \
+          (void*)(k), \
+          sizeof(t)->key, \
+          mem$offsetof((t), key), \
+          CEXDS_HM_STRING \
+      )), \ (t) ? cexds_temp((t) - 1) : 0)
+#define cexds_pshdel(t, k) \
+    (((t) = cexds_hmdel_key( \
+          (t), \
+          sizeof *(t), \
+          (void*)(k), \
+          sizeof(*(t))->key, \
+          mem$offsetof(*(t), key), \
+          CEXDS_HM_PTR_TO_STRING \
+      )), \ (t) ? cexds_temp((t) - 1) : 0)
 
-#define cexds_sh_new_arena(t) ((t) = cexds_shmode_func_wrapper(t, sizeof *(t), CEXDS_SH_ARENA))
-#define cexds_sh_new_strdup(t) ((t) = cexds_shmode_func_wrapper(t, sizeof *(t), CEXDS_SH_STRDUP))
+#define cexds_sh_new_arena(t) ((t) = cexds_shmode_func_wrapper(t, sizeof *(t),
+CEXDS_SH_ARENA)) #define cexds_sh_new_strdup(t) ((t) = cexds_shmode_func_wrapper(t, sizeof
+*(t), CEXDS_SH_STRDUP))
 
 #define cexds_shdefault(t, v) hm$default(t, v)
 #define cexds_shdefaults(t, s) hm$defaults(t, s)
@@ -460,8 +453,8 @@ struct cexds_hm_new_kwargs_s
 
 #define cexds_shgets(t, k) (*cexds_shgetp(t, k))
 #define cexds_shget(t, k) (cexds_shgetp(t, k)->value)
-#define cexds_shgetp_null(t, k) (cexds_shgeti(t, k) == -1 ? NULL : &(t)[cexds_temp((t) - 1)])
-#define cexds_shlen hm$len
+#define cexds_shgetp_null(t, k) (cexds_shgeti(t, k) == -1 ? NULL : &(t)[cexds_temp((t) -
+1)]) #define cexds_shlen hm$len
 
 */
 

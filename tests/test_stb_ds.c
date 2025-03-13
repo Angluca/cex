@@ -341,15 +341,14 @@ test$case(test_array_len_unified)
     tassert_eqi(20, arr$len(iarr));
     tassert_eqi(3, arr$len(array));
     tassert_eqi(0, arr$len(buf_zero));
-    u32* p = &iarr[10];
+    u32* p = NULL;
     (void)p;
-    // u32 *p = NULL;
     // tassert_eqi(3, arr$len(NULL));
     // tassert_eqi(3, arr$len(p));
 
     // u32* p2 = malloc(100);
     // tassert(p2 != NULL);
-    // tassert_eqi(3, arr$len(p2));
+    // tassert_eqi(3, arr$len(p2 + 10));
 
     arr$free(array);
     return EOK;
@@ -731,8 +730,12 @@ test$case(test_hashmap_basic_struct)
     tassert(hm$set(intmap, 2, s2));
     tassert(hm$set(intmap, 3, (struct test64_s){3, 4}));
 
+    tassert_eqi(hm$len(intmap), 3);
+    tassert_eqi(arr$len(intmap), 3);
+
     tassert(hm$getp(intmap, -1) == NULL);
     tassert(hm$getp(intmap, 1) != NULL);
+
 
     tassert_eqi(hm$get(intmap, 1).foo, 1);
     tassert_eqi(hm$get(intmap, 2).foo, 2);

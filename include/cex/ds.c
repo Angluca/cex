@@ -1,7 +1,6 @@
 #include "ds.h"
 #include "cex.h"
 #include "mem.h"
-#include "str.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -26,6 +25,31 @@ size_t cexds_rehash_items;
 // cexds_arr implementation
 //
 
+bool
+cexds_arr_integrity(void* arr, size_t magic_num)
+{
+    (void)arr;
+    (void)magic_num;
+
+#ifndef NDEBUG
+
+    uassert(arr != NULL && "array uninitialized or out-of-mem");
+    // WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address"
+    //          when arr pointer is invalid arr$ / hm$ type pointer
+    if (magic_num == 0) {
+        uassert(
+            ((cexds_header(arr)->magic_num == CEXDS_ARR_MAGIC) ||
+             cexds_header(arr)->magic_num == CEXDS_HM_MAGIC)
+        );
+    } else {
+        uassert(cexds_header(arr)->magic_num == magic_num);
+    }
+
+#endif
+
+    return true;
+}
+
 void*
 cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc)
 {
@@ -39,12 +63,7 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Al
             abort();
         }
     } else {
-        uassert(allc == NULL && "you must pass NULL to allc, when array/hm initialized");
-        uassert(
-            (cexds_header(a)->magic_num == CEXDS_ARR_MAGIC ||
-             cexds_header(a)->magic_num == CEXDS_HM_MAGIC) &&
-            "bad array pointer"
-        );
+        cexds_arr_integrity(a, 0);
     }
     cexds_array_header temp = { 0 }; // force debugging
     size_t min_len = (a ? cexds_header(a)->length : 0) + addlen;
@@ -576,7 +595,7 @@ cexds_hmfree_func(void* a, size_t elemsize)
 static ptrdiff_t
 cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
 {
-    uassert(a != NULL);
+    cexds_arr_integrity(a, CEXDS_HM_MAGIC);                                                    \
     void* raw_a = a;
     cexds_hash_index* table = cexds_hash_table(raw_a);
     size_t hash = cexds_hash(cexds_header(raw_a)->hm_key_type, key, keysize, table->seed);
@@ -627,9 +646,7 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
 void*
 cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset)
 {
-    uassert(a != NULL);
-    /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */  \
-    uassert((cexds_header(a)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");
+    cexds_arr_integrity(a, CEXDS_HM_MAGIC);                                                    \
 
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
     if (table != NULL) {
@@ -685,11 +702,8 @@ cexds_hmput_key(
     void* result
 )
 {
-    (void)full_elem;
-    uassert(a != NULL);
     uassert(result != NULL);
-    /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */  \
-    uassert((cexds_header(a)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");
+    cexds_arr_integrity(a, CEXDS_HM_MAGIC);                                                    \
 
     void** out_result = (void**)result;
     *out_result = NULL;
@@ -878,7 +892,7 @@ void*
 cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
 {
     uassert(a != NULL);
-    /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */  \
+    /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */
     uassert((cexds_header(a)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");
 
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
