@@ -504,7 +504,7 @@ cexds_hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size
         case _CexDsKeyType__charptr:
             // NOTE: we can't know char* length without touching it,
             // 65536 is a max key length in case of char was not null term
-            return cexds_hash_string(key, 65536, seed);
+            return cexds_hash_string(*(char**)key, 65536, seed);
 
         case _CexDsKeyType__charbuf:
             return cexds_hash_string(key, key_size, seed);
@@ -571,8 +571,9 @@ cexds_is_key_equal(
             return 0 == memcmp(key, hm_key, keysize);
 
         case _CexDsKeyType__charptr:
-        case _CexDsKeyType__charbuf:
             return 0 == strcmp(*(char**)key, *(char**)hm_key);
+        case _CexDsKeyType__charbuf:
+            return 0 == strcmp((char*)key, (char*)hm_key);
 
         case _CexDsKeyType__cexstr: {
             str_c* _k = (str_c*)key;

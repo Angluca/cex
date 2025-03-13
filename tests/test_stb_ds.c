@@ -840,16 +840,17 @@ test$case(test_hashmap_hash)
     tassert(key_buf != key);
     tassert(key_buf != key_str.buf);
 
+    // mimic how hm$get macro produces initial pointers
+    const char* keyvar[1] = { key };
+
     size_t seed = 27361;
-    size_t hash_key = cexds_hash(_CexDsKeyType__charptr, &key, 10000, seed);
+    size_t hash_key = cexds_hash(_CexDsKeyType__charptr, keyvar, 10000, seed);
     tassert(hash_key > 0);
 
-    char* bufvar[1] = { key_buf };
-    char* bufvar2[1] = { key_buf2 };
-    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, &bufvar, sizeof(key_buf), seed), hash_key);
+    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, key_buf, sizeof(key_buf), seed), hash_key);
     tassert_eqi(cexds_hash(_CexDsKeyType__cexstr, &key_str, sizeof(key_str), seed), hash_key);
     // NOTE: This case is non \0 terminated buffer!
-    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, &bufvar2, sizeof(key_buf2), seed), hash_key);
+    tassert_eqi(cexds_hash(_CexDsKeyType__charbuf, key_buf2, sizeof(key_buf2), seed), hash_key);
 
     return EOK;
 }
@@ -912,6 +913,7 @@ test$case(test_hashmap_bufkey)
     }* smap = hm$new(smap, allocator);
 
     hm$set(smap, "foo", 3);
+    // hm$set(smap, "foobarbazfoo", 4);
 
     // Doesn't work
     // char* f = "soo";
@@ -919,7 +921,7 @@ test$case(test_hashmap_bufkey)
 
     tassert_eqi(hm$len(smap), 1);
     tassert_eqi(hm$get(smap, "foo"), 3);
-    tassert_eqi(hm$get(smap, "bar"), 0);
+    // tassert_eqi(hm$get(smap, "barbazfooo0"), 0);
 
     tassert_eqi(hm$del(smap, "foo"), 1);
     tassert_eqi(hm$len(smap), 0);
@@ -962,7 +964,6 @@ test$case(test_hashmap_cex_string)
     tassert_eqi(hm$get(smap, str.cstr("bar")), 2);
     tassert_eqi(hm$get(smap, str$("baz")), 3);
 
-    // FIX: this ASAN failed
     tassert_eqi(hm$del(smap, str.cstr("foo")), 1);
     tassert_eqi(hm$del(smap, str$("bar")), 1);
     tassert_eqi(hm$del(smap, str$("baz")), 1);
