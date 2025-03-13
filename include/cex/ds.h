@@ -31,12 +31,9 @@ extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_
 extern void cexds_arrfreef(void* a);
 extern void cexds_hmfree_func(void* p, size_t elemsize);
 extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
-extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, int mode);
-extern void* cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_t* temp, int mode);
-extern void* cexds_hmput_default(void* a, size_t elemsize);
-extern void* cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode);
+extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
+extern void* cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, void* result);
 extern void* cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode);
-extern void* cexds_shmode_func(size_t elemsize, int mode);
 // clang-format on
 
 #define CEXDS_ARR_MAGIC 0xC001DAAD
@@ -85,7 +82,7 @@ struct cexds_arr_new_kwargs_s
         _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
         uassert(allocator != NULL);                                                                \
         struct cexds_arr_new_kwargs_s _kwargs = { kwargs };                                        \
-        (a) = (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);             \
+        (a) = (typeof(*a)*)cexds_arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);       \
     })
 
 #define arr$free(a) (arr$validate(a), cexds_arrfreef((a)), (a) = NULL)
@@ -231,8 +228,8 @@ struct cexds_arr_new_kwargs_s
  *
  */
 
-#define CEXDS_HASH_TO_ARR(x, elemsize) ((char*)(x) - (elemsize))
-#define CEXDS_ARR_TO_HASH(x, elemsize) ((char*)(x) + (elemsize))
+// #define CEXDS_HASH_TO_ARR(x, elemsize) ((char*)(x) - (elemsize))
+// #define CEXDS_ARR_TO_HASH(x, elemsize) ((char*)(x) + (elemsize))
 #define cexds_hash_table(a) ((cexds_hash_index*)cexds_header(a)->hash_table)
 
 #define hm$(K, V)                                                                                  \
@@ -253,12 +250,12 @@ struct cexds_hm_new_kwargs_s
 #define _hm$keytype(t)                                                                             \
     _Generic(                                                                                      \
         &((t)->key),                                                                               \
-        str_c *: _CexDsKeyType__cexstr,                                                              \
-        char(**): _CexDsKeyType__charptr,                                                           \
-        const char(**): _CexDsKeyType__charptr,                                                           \
-        char(*)[]: _CexDsKeyType__charbuf,                                                           \
-        const char(*)[]: _CexDsKeyType__charbuf,                                                     \
-        default: _CexDsKeyType__generic                                                             \
+        str_c *: _CexDsKeyType__cexstr,                                                            \
+        char(**): _CexDsKeyType__charptr,                                                          \
+        const char(**): _CexDsKeyType__charptr,                                                    \
+        char(*)[]: _CexDsKeyType__charbuf,                                                         \
+        const char(*)[]: _CexDsKeyType__charbuf,                                                   \
+        default: _CexDsKeyType__generic                                                            \
     )
 
 #define hm$new(t, allocator, kwargs...)                                                            \
@@ -266,55 +263,82 @@ struct cexds_hm_new_kwargs_s
         _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
         uassert(allocator != NULL);                                                                \
         struct cexds_hm_new_kwargs_s _kwargs = { kwargs };                                         \
-        (t) = (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), _hm$keytype(t), &_kwargs);                              \
+        (t) = (typeof(*t)*)cexds_hminit(sizeof(*t), (allocator), _hm$keytype(t), &_kwargs);        \
     })
 
-#define hm$validate(hm)                                                                            \
+#define hm$validate(t)                                                                            \
     ({                                                                                             \
-        uassert(hm != NULL && "hashmap uninitialized or out-of-mem");                              \
+        uassert(t != NULL && "hashmap uninitialized or out-of-mem");                              \
         /* WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */    \
         /*          when arr pointer is invalid arr$ type pointer                            */    \
-        uassert(                                                                                   \
-            (cexds_header(CEXDS_HASH_TO_ARR(hm, sizeof(*hm)))->magic_num == CEXDS_HM_MAGIC) &&     \
-            "bad hashmap pointer"                                                                  \
-        );                                                                                         \
+        uassert((cexds_header(t)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");         \
         true;                                                                                      \
     })
 
-#define hm$default(t, v)                                                                           \
-    ({                                                                                             \
-        hm$validate(t);                                                                            \
-        uassert(hm$len(t) == 0 && "setting default allowed only when no elements added");          \
-        (t)[-1].value = (v);                                                                       \
-    })
-
+/*
+// #define hm$default(t, v) \
+//     ({ \
+//         hm$validate(t); \
+//         uassert(hm$len(t) == 0 && "setting default allowed only when no elements added"); \
+//         (t)[-1].value = (v); \
+//     })
 // #define hm$setdefs(t, s) ((t) = cexds_hmput_default((t), sizeof *(t)), (t)[-1] = (s))
+*/
 
 #define hm$set(t, k, v)                                                                            \
     ({                                                                                             \
         hm$validate(t);                                                                            \
+        typeof(t) result = NULL;                                                                   \
         (t) = cexds_hmput_key(                                                                     \
             (t),                                                                                   \
             sizeof *(t),                                                                           \
             (void*)mem$addressof((t)->key, (k)),                                                   \
             sizeof(t)->key,                                                                        \
-            0                                                                                      \
+            &result                                                                                \
         );                                                                                         \
-        (t)[cexds_temp((t) - 1)].key = (k);                                                        \
-        (t)[cexds_temp((t) - 1)].value = (v);                                                      \
+        (t)[cexds_temp((t))].key = (k);                                                            \
+        (t)[cexds_temp((t))].value = (v);                                                          \
+    })
+
+#define hm$get(t, k, def...)                                                                       \
+    ({                                                                                             \
+        hm$validate(t);                                                                            \
+        typeof(t) result = cexds_hmget_key(                                                        \
+            (t),                                                                                   \
+            sizeof *(t),                                                                           \
+            ((typeof((t)->key)[1]){ (k) }),                                                        \
+            sizeof(t)->key,                                                                        \
+            offsetof(typeof(*t), key)                                                              \
+        );                                                                                         \
+        typeof((t)->value) _def[1] = { def };                                                      \
+        result ? result->value : _def[0];                                                          \
+    })
+
+#define hm$getp(t, k)                                                                              \
+    ({                                                                                             \
+        hm$validate(t);                                                                            \
+        typeof(t) result = cexds_hmget_key(                                                        \
+            (t),                                                                                   \
+            sizeof *(t),                                                                           \
+            ((typeof((t)->key)[1]){ (k) }),                                                        \
+            sizeof(t)->key,                                                                        \
+            offsetof(typeof(*t), key)                                                              \
+        );                                                                                         \
+        result ? &result->value : NULL;                                                                                    \
     })
 
 #define hm$sets(t, s)                                                                              \
     ((t) = cexds_hmput_key((t), sizeof *(t), &(s).key, sizeof(s).key, CEXDS_HM_BINARY),            \
-     (t)[cexds_temp((t) - 1)] = (s))
+     (t)[cexds_temp((t))] = (s))
 
+/*
 
-#define hm$getp(t, k) ((void)hm$geti(t, k), &(t)[cexds_temp((t) - 1)])
+#define hm$getp(t, k) ((void)hm$geti(t, k), &(t)[cexds_temp((t))])
 #define hm$getp_ts(t, k, temp) ((void)hm$geti_ts(t, k, temp), &(t)[temp])
 #define hm$gets(t, k) (*hm$getp(t, k))
-#define hm$get(t, k) (hm$getp(t, k)->value)
+// #define hm$get(t, k) (hm$getp(t, k)->value)
 #define hm$get_ts(t, k, temp) (hm$getp_ts(t, k, temp)->value)
-#define hm$getp_null(t, k) (hm$geti(t, k) == -1 ? NULL : &(t)[cexds_temp((t) - 1)])
+#define hm$getp_null(t, k) (hm$geti(t, k) == -1 ? NULL : &(t)[cexds_temp((t))])
 #define hm$geti(t, k)                                                                              \
     ((t) = cexds_hmget_key(                                                                        \
          (t),                                                                                      \
@@ -323,7 +347,7 @@ struct cexds_hm_new_kwargs_s
          sizeof(t)->key,                                                                           \
          CEXDS_HM_BINARY                                                                           \
      ),                                                                                            \
-     cexds_temp((t) - 1))
+     cexds_temp((t)))
 
 #define hm$geti_ts(t, k, temp)                                                                     \
     ((t) = cexds_hmget_key_ts(                                                                     \
@@ -336,6 +360,7 @@ struct cexds_hm_new_kwargs_s
      ),                                                                                            \
      (temp))
 
+*/
 
 #define hm$del(t, k)                                                                               \
     ({                                                                                             \
@@ -352,10 +377,10 @@ struct cexds_hm_new_kwargs_s
     })
 
 
-#define hm$free(p) (cexds_hmfree_func((p) - 1, sizeof *(p)), (p) = NULL)
+#define hm$free(p) (cexds_hmfree_func((p), sizeof *(p)), (p) = NULL)
 
-#define hm$len(t) ((t) ? (ptrdiff_t)cexds_header((t) - 1)->length - 1 : 0)
-#define hm$lenu(t) ((t) ? cexds_header((t) - 1)->length - 1 : 0)
+#define hm$len(t) ((t) ? (ptrdiff_t)cexds_header((t))->length : 0)
+#define hm$lenu(t) ((t) ? cexds_header((t))->length : 0)
 
 /*
 #define cexds_shput(t, k, v)                                                                       \

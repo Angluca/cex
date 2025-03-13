@@ -572,7 +572,7 @@ static ptrdiff_t
 cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
 {
     uassert(a != NULL);
-    void* raw_a = CEXDS_HASH_TO_ARR(a, elemsize);
+    void* raw_a = a;
     cexds_hash_index* table = cexds_hash_table(raw_a);
     size_t hash = cexds_hash(cexds_header(raw_a)->hm_key_type, key, keysize, table->seed);
     size_t step = CEXDS_BUCKET_LENGTH;
@@ -620,34 +620,20 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
 }
 
 void*
-cexds_hmget_key_ts(void* a, size_t elemsize, void* key, size_t keysize, ptrdiff_t* temp, int mode)
+cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset)
 {
     uassert(a != NULL);
-    size_t keyoffset = 0;
-    void* raw_a = CEXDS_HASH_TO_ARR(a, elemsize);
-    cexds_hash_index* table = (cexds_hash_index*)cexds_header(raw_a)->hash_table;
-    if (table == NULL) {
-        *temp = -1;
-    } else {
-        ptrdiff_t slot = cexds_hm_find_slot(a, elemsize, key, keysize, keyoffset, mode);
-        if (slot < 0) {
-            *temp = CEXDS_INDEX_EMPTY;
-        } else {
+    cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
+    if (table != NULL) {
+        // FIX: cexds_hm_find_slot - mode arg!
+        ptrdiff_t slot = cexds_hm_find_slot(a, elemsize, key, keysize, keyoffset, 0);
+        if (slot >= 0) {
             cexds_hash_bucket* b = &table->storage[slot >> CEXDS_BUCKET_SHIFT];
-            *temp = b->index[slot & CEXDS_BUCKET_MASK];
+            size_t idx = b->index[slot & CEXDS_BUCKET_MASK];
+            return ((char*)a + elemsize * idx + keyoffset);
         }
     }
-    return a;
-}
-
-void*
-cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
-{
-    uassert(a != NULL);
-    ptrdiff_t temp;
-    void* p = cexds_hmget_key_ts(a, elemsize, key, keysize, &temp, mode);
-    cexds_temp(CEXDS_HASH_TO_ARR(p, elemsize)) = temp;
-    return p;
+    return NULL;
 }
 
 void*
@@ -669,34 +655,23 @@ cexds_hminit(
     if (a == NULL) {
         return NULL; // memory error
     }
-
-    cexds_header(a)->length += 1;
-    // element-0 is a default hashmap element!
-    memset(a, 0, elemsize);
-
+    
     uassert(cexds_header(a)->magic_num == CEXDS_ARR_MAGIC);
     cexds_header(a)->magic_num = CEXDS_HM_MAGIC;
     cexds_header(a)->hm_seed = hm_seed;
     cexds_header(a)->hm_key_type = key_type;
 
-    // a points to element-1
-    a = CEXDS_ARR_TO_HASH(a, elemsize);
     return a;
 }
 
 static char* cexds_strdup(char* str);
 
 void*
-cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
+cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, void* result)
 {
+    (void)result;
     uassert(a != NULL);
-
     size_t keyoffset = 0;
-    void* raw_a = a;
-
-    // adjust a to point to the default element
-    a = CEXDS_HASH_TO_ARR(a, elemsize);
-
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
 
     if (table == NULL || table->used_count >= table->used_count_threshold) {
@@ -714,7 +689,8 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
         if (table) {
             cexds_header(a)->allocator->free(table);
         } else {
-            nt->string.mode = mode >= CEXDS_HM_STRING ? CEXDS_SH_DEFAULT : 0;
+            // nt->string.mode = mode >= CEXDS_HM_STRING ? CEXDS_SH_DEFAULT : 0;
+            nt->string.mode = 0;
         }
         cexds_header(a)->hash_table = table = nt;
         CEXDS_STATS(++cexds_hash_grow);
@@ -745,20 +721,22 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
             for (i = pos & CEXDS_BUCKET_MASK; i < CEXDS_BUCKET_LENGTH; ++i) {
                 if (bucket->hash[i] == hash) {
                     if (cexds_is_key_equal(
-                            raw_a,
+                            a,
                             elemsize,
                             key,
                             keysize,
                             keyoffset,
-                            mode,
+                            0, // FIX: mode
                             bucket->index[i]
                         )) {
                         cexds_temp(a) = bucket->index[i];
-                        if (mode >= CEXDS_HM_STRING) {
+                        // FIX:
+                        // if (mode >= CEXDS_HM_STRING) {
+                        if (false){
                             cexds_temp_key(a
-                            ) = *(char**)((char*)raw_a + elemsize * bucket->index[i] + keyoffset);
+                            ) = *(char**)((char*)a + elemsize * bucket->index[i] + keyoffset);
                         }
-                        return CEXDS_ARR_TO_HASH(a, elemsize);
+                        return a;
                     }
                 } else if (bucket->hash[i] == 0) {
                     pos = (pos & ~CEXDS_BUCKET_MASK) + i;
@@ -775,16 +753,16 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
             for (i = 0; i < limit; ++i) {
                 if (bucket->hash[i] == hash) {
                     if (cexds_is_key_equal(
-                            raw_a,
+                            a,
                             elemsize,
                             key,
                             keysize,
                             keyoffset,
-                            mode,
+                            0, // FIX: mode, 
                             bucket->index[i]
                         )) {
                         cexds_temp(a) = bucket->index[i];
-                        return CEXDS_ARR_TO_HASH(a, elemsize);
+                        return a;
                     }
                 } else if (bucket->hash[i] == 0) {
                     pos = (pos & ~CEXDS_BUCKET_MASK) + i;
@@ -815,14 +793,15 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
             if ((size_t)i + 1 > arr$cap(a)) {
                 *(void**)&a = cexds_arrgrowf(a, elemsize, 1, 0, NULL);
             }
-            raw_a = CEXDS_ARR_TO_HASH(a, elemsize);
 
             uassert((size_t)i + 1 <= arr$cap(a));
             cexds_header(a)->length = i + 1;
             bucket = &table->storage[pos >> CEXDS_BUCKET_SHIFT];
             bucket->hash[pos & CEXDS_BUCKET_MASK] = hash;
-            bucket->index[pos & CEXDS_BUCKET_MASK] = i - 1;
-            cexds_temp(a) = i - 1;
+            // bucket->index[pos & CEXDS_BUCKET_MASK] = i - 1;
+            // cexds_temp(a) = i - 1;
+            bucket->index[pos & CEXDS_BUCKET_MASK] = i;
+            cexds_temp(a) = i;
 
             switch (table->string.mode) {
                 case CEXDS_SH_STRDUP:
@@ -841,7 +820,7 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
                     break;
             }
         }
-        return CEXDS_ARR_TO_HASH(a, elemsize);
+        return a;
     }
 }
 
@@ -863,10 +842,9 @@ void*
 cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
 {
     uassert(a != NULL);
-    void* raw_a = CEXDS_HASH_TO_ARR(a, elemsize);
-    cexds_hash_index* table = (cexds_hash_index*)cexds_header(raw_a)->hash_table;
-    uassert(cexds_header(raw_a)->allocator != NULL);
-    cexds_temp(raw_a) = 0;
+    cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
+    uassert(cexds_header(a)->allocator != NULL);
+    cexds_temp(a) = 0;
     if (table == 0) {
         return a;
     }
@@ -879,20 +857,19 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
     cexds_hash_bucket* b = &table->storage[slot >> CEXDS_BUCKET_SHIFT];
     int i = slot & CEXDS_BUCKET_MASK;
     ptrdiff_t old_index = b->index[i];
-    // minus one for the raw_a vs a, and minus one for 'last'
-    ptrdiff_t final_index = (ptrdiff_t)cexds_header(raw_a)->length - 1 - 1;
+    ptrdiff_t final_index = (ptrdiff_t)cexds_header(a)->length - 1;
     uassert(slot < (ptrdiff_t)table->slot_count);
     uassert(table->used_count > 0);
     --table->used_count;
     ++table->tombstone_count;
-    cexds_temp(raw_a) = 1;
+    cexds_temp(a) = 0;
     // uassert(table->tombstone_count < table->slot_count/4);
     b->hash[i] = CEXDS_HASH_DELETED;
     b->index[i] = CEXDS_INDEX_DELETED;
 
     if (mode == CEXDS_HM_STRING && table->string.mode == CEXDS_SH_STRDUP) {
         // FIX: this may conflict with static alloc
-        cexds_header(raw_a)->allocator->free(*(char**)((char*)a + elemsize * old_index));
+        cexds_header(a)->allocator->free(*(char**)((char*)a + elemsize * old_index));
     }
 
     // if indices are the same, memcpy is a no-op, but back-pointer-fixup will fail, so
@@ -927,26 +904,26 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
         uassert(b->index[i] == final_index);
         b->index[i] = old_index;
     }
-    cexds_header(raw_a)->length -= 1;
+    cexds_header(a)->length -= 1;
 
     if (table->used_count < table->used_count_shrink_threshold &&
         table->slot_count > CEXDS_BUCKET_LENGTH) {
-        cexds_header(raw_a)->hash_table = cexds_make_hash_index(
+        cexds_header(a)->hash_table = cexds_make_hash_index(
             table->slot_count >> 1,
             table,
-            cexds_header(raw_a)->allocator,
-            cexds_header(raw_a)->hm_seed
+            cexds_header(a)->allocator,
+            cexds_header(a)->hm_seed
         );
-        cexds_header(raw_a)->allocator->free(table);
+        cexds_header(a)->allocator->free(table);
         CEXDS_STATS(++cexds_hash_shrink);
     } else if (table->tombstone_count > table->tombstone_count_threshold) {
-        cexds_header(raw_a)->hash_table = cexds_make_hash_index(
+        cexds_header(a)->hash_table = cexds_make_hash_index(
             table->slot_count,
             table,
-            cexds_header(raw_a)->allocator,
-            cexds_header(raw_a)->hm_seed
+            cexds_header(a)->allocator,
+            cexds_header(a)->hm_seed
         );
-        cexds_header(raw_a)->allocator->free(table);
+        cexds_header(a)->allocator->free(table);
         CEXDS_STATS(++cexds_hash_rebuild);
     }
 
