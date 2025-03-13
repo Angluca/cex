@@ -90,6 +90,7 @@ typedef struct
     int key;
     float my_val;
     char* my_string;
+    int value;
 } my_struct;
 
 test$case(test_array_struct)
@@ -98,11 +99,11 @@ test$case(test_array_struct)
     tassert_eqi(arr$cap(array), 128);
 
     my_struct s;
-    s = (my_struct){ 20, 5.0, "hello " };
+    s = (my_struct){ 20, 5.0, "hello ", 0};
     arr$push(array, s);
-    s = (my_struct){ 40, 2.5, "failure" };
+    s = (my_struct){ 40, 2.5, "failure", 0};
     arr$push(array, s);
-    s = (my_struct){ 40, 1.1, "world!" };
+    s = (my_struct){ 40, 1.1, "world!", 0};
     arr$push(array, s);
 
     for (usize i = 0; i < arr$len(array); ++i) {
@@ -682,9 +683,13 @@ test$case(test_hashmap_basic)
 
     tassert_eqi(hm$len(intmap), 0);
     // tassert_eqi(arr$len(intmap), 0);
+    int _v = {1};
 
     tassert(hm$set(intmap, 1, 3));
-    tassert_eqi(hm$len(intmap), 1);
+    tassert(hm$set(intmap, 100, _v));
+    tassert(hm$set(intmap, 1, 3));
+
+    tassert_eqi(hm$len(intmap), 2);
     tassert_eqi(hm$get(intmap, 1), 3);
     tassert_eqi(*hm$getp(intmap, 1), 3);
 
@@ -694,13 +699,10 @@ test$case(test_hashmap_basic)
     tassert_eqi(hm$get(intmap64, -1, 999), 999);
     tassert(hm$getp(intmap, -1) == NULL);
 
-    tassert_eqi(hm$len(intmap), 1);
+    tassert_eqi(hm$len(intmap), 2);
     hm$del(intmap, 1);
+    hm$del(intmap, 100);
     tassert_eqi(hm$len(intmap), 0);
-
-    // TODO: fix
-    // hm$default(intmap, 2);
-    // tassert_eqi(hm$get(intmap, -1), 2);
 
     var h = cexds_header(intmap);
     tassert(h->hm_seed != 0);
@@ -711,29 +713,110 @@ test$case(test_hashmap_basic)
     return EOK;
 }
 
+test$case(test_hashmap_basic_struct)
+{
+    struct test64_s
+    {
+        usize foo;
+        usize bar;
+    };
+
+    hm$(int, struct test64_s) intmap = hm$new(intmap, allocator);
+    tassert(intmap != NULL);
+
+    tassert_eqi(hm$len(intmap), 0);
+
+    struct test64_s s2 = (struct test64_s){.foo = 2};
+    tassert(hm$set(intmap, 1, (struct test64_s){.foo = 1}));
+    tassert(hm$set(intmap, 2, s2));
+    tassert(hm$set(intmap, 3, (struct test64_s){3, 4}));
+
+    tassert(hm$getp(intmap, -1) == NULL);
+    tassert(hm$getp(intmap, 1) != NULL);
+
+    tassert_eqi(hm$get(intmap, 1).foo, 1);
+    tassert_eqi(hm$get(intmap, 2).foo, 2);
+    tassert_eqi(hm$get(intmap, 3).foo, 3);
+
+    tassert_eqi(hm$getp(intmap, 1)[0].foo, 1);
+    tassert_eqi(hm$getp(intmap, 2)[0].foo, 2);
+    tassert_eqi(hm$getp(intmap, 3)[0].foo, 3);
+
+    // ZII struct if not found
+    tassert_eqi(hm$get(intmap, -1).foo, 0);
+    tassert_eqi(hm$get(intmap, -1).bar, 0);
+    tassert_eqi(hm$get(intmap, -1, s2).foo, 2);
+
+    hm$free(intmap);
+    return EOK;
+}
+
+test$case(test_hashmap_struct_full_setget)
+{
+    struct test64_s
+    {
+        usize key;
+        usize fooa;
+    };
+
+    hm$s(struct test64_s) intmap = hm$new(intmap, allocator);
+    tassert(intmap != NULL);
+
+    tassert_eqi(hm$len(intmap), 0);
+
+    tassert(hm$sets(intmap, (struct test64_s){.key = 1, .fooa = 10}));
+    tassert_eqi(hm$len(intmap), 1);
+    struct test64_s s2 = {.key = 2, .fooa = 20};
+    tassert(hm$sets(intmap, s2));
+
+    struct test64_s* r = hm$gets(intmap, 1);
+    tassert(r != NULL);
+    tassert_eqi(r->key, 1);
+    tassert_eqi(r->fooa, 10);
+
+    r = hm$gets(intmap, 2);
+    tassert(r != NULL);
+    tassert_eqi(r->key, 2);
+    tassert_eqi(r->fooa, 20);
+
+    tassert(hm$gets(intmap, -1) == NULL);
+
+    hm$free(intmap);
+    return EOK;
+}
+
 test$case(test_hashmap_keytype)
 {
-    hm$(int, int) intmap = NULL;
-    hm$(i64, int) intmap64 = NULL;
-    hm$(char, int) map1 = NULL;
-    hm$(char*, int) map2 = NULL;
-    hm$(const char*, int) map3 = NULL;
+    hm$(int, int) intmap = hm$new(intmap, allocator);
+    hm$(i64, int) intmap64 = hm$new(intmap64, allocator);
+    hm$(char, int) map1 = hm$new(map1, allocator);
+    hm$(char*, int) map2 = hm$new(map2, allocator);
+    hm$(const char*, int) map3 = hm$new(map3, allocator);
 
     struct
     {
         char key[10];
         int value;
-    }* map4 = NULL;
+    }* map4 = hm$new(map4, allocator);
 
-    hm$(str_c, int) map5 = NULL;
+    hm$(str_c, int) map5 = hm$new(map5, allocator);
 
-    tassert_eqi(_hm$keytype(intmap), _CexDsKeyType__generic);
-    tassert_eqi(_hm$keytype(intmap64), _CexDsKeyType__generic);
-    tassert_eqi(_hm$keytype(map1), _CexDsKeyType__generic);
-    tassert_eqi(_hm$keytype(map2), _CexDsKeyType__charptr);
-    tassert_eqi(_hm$keytype(map3), _CexDsKeyType__charptr);
-    tassert_eqi(_hm$keytype(map4), _CexDsKeyType__charbuf);
-    tassert_eqi(_hm$keytype(map5), _CexDsKeyType__cexstr);
+    tassert_eqi(cexds_header(intmap)->hm_key_type, _CexDsKeyType__generic);
+    tassert_eqi(cexds_header(intmap64)->hm_key_type, _CexDsKeyType__generic);
+    tassert_eqi(cexds_header(map1)->hm_key_type, _CexDsKeyType__generic);
+    tassert_eqi(cexds_header(map2)->hm_key_type, _CexDsKeyType__charptr);
+    tassert_eqi(cexds_header(map3)->hm_key_type, _CexDsKeyType__charptr);
+    tassert_eqi(cexds_header(map4)->hm_key_type, _CexDsKeyType__charbuf);
+    tassert_eqi(cexds_header(map5)->hm_key_type, _CexDsKeyType__cexstr);
+
+    hm$free(intmap);
+    hm$free(intmap64);
+    hm$free(map1);
+    hm$free(map2);
+    hm$free(map3);
+    hm$free(map4);
+    hm$free(map5);
+
     return EOK;
 }
 
@@ -896,6 +979,8 @@ main(int argc, char* argv[])
     test$run(test_overaligned_struct64);
     test$run(test_smallest_alignment);
     test$run(test_hashmap_basic);
+    test$run(test_hashmap_basic_struct);
+    test$run(test_hashmap_struct_full_setget);
     test$run(test_hashmap_keytype);
     test$run(test_hashmap_hash);
     test$run(test_hashmap_compare_strings_bounded);

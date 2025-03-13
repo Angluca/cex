@@ -628,6 +628,9 @@ void*
 cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset)
 {
     uassert(a != NULL);
+    /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */  \
+    uassert((cexds_header(a)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");
+
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
     if (table != NULL) {
         // FIX: cexds_hm_find_slot - mode arg!
@@ -685,6 +688,8 @@ cexds_hmput_key(
     (void)full_elem;
     uassert(a != NULL);
     uassert(result != NULL);
+    /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */  \
+    uassert((cexds_header(a)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");
 
     void** out_result = (void**)result;
     *out_result = NULL;
@@ -843,7 +848,11 @@ process_key:
             // cexds_temp_key(a) = *(char**)((char*)a + elemsize * i) = (char*)key;
             break;
         default:
-            memcpy(((char*)*out_result) + keyoffset, key, keysize);
+            if (full_elem) {
+                memcpy(((char*)*out_result), full_elem, elemsize);
+            } else {
+                memcpy(((char*)*out_result) + keyoffset, key, keysize);
+            }
             break;
     }
 
@@ -869,6 +878,9 @@ void*
 cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode)
 {
     uassert(a != NULL);
+    /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on address" */  \
+    uassert((cexds_header(a)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");
+
     cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
     uassert(cexds_header(a)->allocator != NULL);
     cexds_temp(a) = 0;
