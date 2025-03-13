@@ -1,6 +1,7 @@
 #include "ds.h"
 #include "cex.h"
 #include "mem.h"
+#include "str.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -302,9 +303,9 @@ static inline size_t
 cexds_hash_string(const char* str, size_t str_cap, size_t seed)
 {
     size_t hash = seed;
-    // NOTE: using max buffer capacity capping, this allows using hash 
+    // NOTE: using max buffer capacity capping, this allows using hash
     //       on char buf[N] - without stack overflowing
-    for(size_t i = 0; i < str_cap && *str; i++) {
+    for (size_t i = 0; i < str_cap && *str; i++) {
         hash = CEXDS_ROTATE_LEFT(hash, 9) + (unsigned char)*str++;
     }
 
@@ -456,45 +457,92 @@ cexds_hash_bytes(const void* p, size_t len, size_t seed)
 }
 
 static inline size_t
-cexds_hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size_t seed) {
-    switch(key_type) {
-        case _CexDsKeyType__generic: 
+cexds_hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size_t seed)
+{
+    switch (key_type) {
+        case _CexDsKeyType__generic:
             return cexds_hash_bytes(key, key_size, seed);
 
-        case _CexDsKeyType__charptr: 
-            // NOTE: we can't know char* length without touching it, 
+        case _CexDsKeyType__charptr:
+            // NOTE: we can't know char* length without touching it,
             // 65536 is a max key length in case of char was not null term
             return cexds_hash_string(key, 65536, seed);
 
-        case _CexDsKeyType__charbuf: 
+        case _CexDsKeyType__charbuf:
             return cexds_hash_string(key, key_size, seed);
-        
+
         case _CexDsKeyType__cexstr: {
-            str_c s = *(str_c*)key;
-            uassert(s.buf != NULL && "NULL str_c not allowed");
-            return cexds_hash_string(s.buf, s.len, seed);
+            str_c* s = (str_c*)key;
+            return cexds_hash_string(s->buf, s->len, seed);
         }
     }
     uassert(false && "unexpected key type");
     abort();
 }
 
-static int
+static bool
+cexds_compare_strings_bounded(const char* a_str, const char* b_str, size_t a_capacity, size_t b_capacity)
+{
+    size_t i = 0;
+    size_t min_cap = a_capacity;
+    const char* long_str = NULL;
+
+    if(a_capacity != b_capacity){
+        if (a_capacity > b_capacity) {
+            min_cap = b_capacity;
+            long_str = a_str;
+        } else {
+            min_cap = a_capacity;
+            long_str = b_str;
+        }
+    } 
+    while (i < min_cap) {
+        if (a_str[i] != b_str[i]) {
+            return false;
+        } else if (a_str[i] == '\0'){
+            // both are equal and zero term
+             return true;
+        }
+        i++;
+    }
+    // Edge case when buf capacity are equal (long_str is NULL)
+    // or  buf[3] ="foo" / buf[100] = "foo", ensure that buf[100] ends with '\0'
+    return !long_str || long_str[i] == '\0';
+}
+
+static bool
 cexds_is_key_equal(
     void* a,
     size_t elemsize,
     void* key,
     size_t keysize,
     size_t keyoffset,
-    int mode,
+    enum _CexDsKeyType_e key_type,
     size_t i
 )
 {
-    if (mode >= CEXDS_HM_STRING) {
-        return 0 == strcmp((char*)key, *(char**)((char*)a + elemsize * i + keyoffset));
-    } else {
-        return 0 == memcmp(key, (char*)a + elemsize * i + keyoffset, keysize);
+    void* hm_item = ((char*)a + elemsize * i + keyoffset);
+
+    switch (key_type) {
+        case _CexDsKeyType__generic:
+            return 0 == memcmp(key, hm_item, keysize);
+
+        case _CexDsKeyType__charptr:
+            return 0 == strcmp((char*)key, *(char**)hm_item);
+
+        case _CexDsKeyType__charbuf:
+
+        case _CexDsKeyType__cexstr: {
+            str_c* _k = (str_c*)key;
+            str_c* _hm = (str_c*)hm_item;
+            if (_k->len != _hm->len) {
+                return false;
+            }
+            return 0 == memcmp(_k->buf, _hm->buf, _k->len);
+        }
     }
+    uassert(false && "unexpected key type");
+    abort();
 }
 
 void
@@ -526,7 +574,7 @@ cexds_hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t k
     uassert(a != NULL);
     void* raw_a = CEXDS_HASH_TO_ARR(a, elemsize);
     cexds_hash_index* table = cexds_hash_table(raw_a);
-    size_t hash = cexds_hash(cexds_header(raw_a)->hm_key_type,key, keysize, table->seed);
+    size_t hash = cexds_hash(cexds_header(raw_a)->hm_key_type, key, keysize, table->seed);
     size_t step = CEXDS_BUCKET_LENGTH;
 
     if (hash < 2) {
@@ -660,6 +708,8 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, int mode)
             cexds_header(a)->allocator,
             cexds_header(a)->hm_seed
         );
+
+        uassert(nt != NULL && "TODO: memory error");
 
         if (table) {
             cexds_header(a)->allocator->free(table);

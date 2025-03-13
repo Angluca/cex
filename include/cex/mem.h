@@ -18,6 +18,6 @@ s;\
 
 #define mem$platform() __SIZEOF_SIZE_T__*8
 
-#define mem$addressof(typevar, value)  ((typeof(typevar)[1]){ value })
+#define mem$addressof(typevar, value)  ((typeof(typevar)[1]){ (value) })
 
 #define mem$offsetof(var, field) ((char*)&(var)->field - (char*)(var))

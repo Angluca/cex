@@ -760,6 +760,125 @@ test$case(test_hashmap_hash)
 
     return EOK;
 }
+
+test$case(test_hashmap_compare_strings_bounded)
+{
+    // We created the same string, but stored in different places
+    char key_buf[10] = "foobar";
+    char key_buf2[6] = "foobar";
+    char key_buf3[6] = "foobar";
+    char key_buf4[5] = "fooba";
+    char key_buf5[] = "";
+    tassert_eqi(sizeof(key_buf2), 6);
+    tassert_eqi(sizeof(key_buf), 10);
+    tassert(cexds_compare_strings_bounded(key_buf, key_buf2, sizeof(key_buf), sizeof(key_buf2)));
+    tassert(cexds_compare_strings_bounded(key_buf2, key_buf, sizeof(key_buf2), sizeof(key_buf)));
+
+    tassert(cexds_compare_strings_bounded(key_buf2, key_buf3, sizeof(key_buf2), sizeof(key_buf3)));
+    tassert(!cexds_compare_strings_bounded(key_buf3, key_buf4, sizeof(key_buf3), sizeof(key_buf4)));
+    tassert(!cexds_compare_strings_bounded(key_buf3, key_buf5, sizeof(key_buf3), sizeof(key_buf5)));
+    tassert(cexds_compare_strings_bounded(key_buf5, key_buf5, sizeof(key_buf5), sizeof(key_buf5)));
+    return EOK;
+}
+
+test$case(test_hashmap_string)
+{
+    char key_buf[10] = "foobar";
+    char key_buf2[10] = "foo";
+
+    hm$(const char*, int) smap = hm$new(smap, allocator);
+
+    hm$set(smap, "foo", 3);
+    tassert_eqi(hm$len(smap), 1);
+    tassert_eqi(hm$get(smap, "foo"), 3);
+    tassert_eqi(hm$get(smap, key_buf2), 0);
+
+    tassert_eqi(hm$get(smap, "bar"), 0);
+    tassert_eqi(hm$get(smap, key_buf), 0);
+
+    hm$free(smap);
+    return EOK;
+}
+// TODO: /home/ubertrader/code/cex/include/cex/ds.h:303:38: error: assignment to expression with
+// array type 303 |         (t)[cexds_temp((t) - 1)].key = (k); test$case(test_hashmap_bufkey)
+// {
+//     struct
+//     {
+//         char key[10];
+//         int value;
+//     }* smap = hm$new(smap, allocator);
+//
+//     hm$set(smap, "foo", 3);
+//     tassert_eqi(hm$len(smap), 1);
+//     tassert_eqi(hm$get(smap, "foo"), 3);
+//
+//     tassert_eqi(hm$get(smap, "bar"), 0);
+//
+//     hm$free(smap);
+//     return EOK;
+// }
+
+static inline void
+_test_str_c(str_c* k, void** out_ptr, size_t* out_len)
+{
+    str_c* s = k;
+    *out_ptr = s->buf;
+    *out_len = s->len;
+}
+static inline void
+_test_char_ptr(char** k, void** out_ptr, size_t* out_len)
+{
+    *out_ptr = *k;
+    *out_len = strlen(*k);
+}
+static inline void
+_test_def(void* k, void** out_ptr, size_t* out_len)
+{
+    (void)out_len;
+    *out_ptr = k;
+    printf("default\n"); \
+}
+
+#define _hm$test(t, k)                                                                             \
+    ({                                                                                             \
+        void* key = NULL;                                                                          \
+        size_t key_len = sizeof((t)->key);                                                         \
+        _Generic(&((t)->key), char(**): _test_char_ptr, str_c *: _test_str_c, default: _test_def)(                         \
+            mem$addressof((t)->key, (k)),                                                          \
+            &key,                                                                                  \
+            &key_len                                                                               \
+        );                                                                                         \
+        printf("key: %p, key_len: %ld\n", key, key_len);                                           \
+        key;                                                                                       \
+    })
+
+test$case(test_hashmap_cex_string)
+{
+    hm$(str_c, int) smap = hm$new(smap, allocator);
+
+    hm$set(smap, str$("foo"), 3);
+    hm$set(smap, str.cstr("bar"), 5);
+    // hm$set(smap, {.buf = "goo", .len = 2}, 7);
+    tassert_eqi(hm$len(smap), 2);
+    // tassert_eqi(hm$get(smap, str$("foo")), 3);
+    tassert_eqi(hm$get(smap, str.cstr("foo")), 3);
+
+    hm$(int, int) imap;
+    hm$(char*, int) cmap;
+
+    char* s = (str_c){.buf = "zx", .len = 2}.buf;
+
+    // _hm$test(smap, str.cstr("bar"));
+    _hm$test(smap, str$("bar"));
+    _hm$test(cmap, s);
+    _hm$test(imap, 2);
+    _hm$test(cmap, "foobar");
+    _hm$test(cmap, str$("xxxyyyzzz").buf);
+
+
+    hm$free(smap);
+    return EOK;
+}
 int
 main(int argc, char* argv[])
 {
@@ -784,6 +903,9 @@ main(int argc, char* argv[])
     test$run(test_hashmap_basic);
     test$run(test_hashmap_keytype);
     test$run(test_hashmap_hash);
+    test$run(test_hashmap_compare_strings_bounded);
+    test$run(test_hashmap_string);
+    test$run(test_hashmap_cex_string);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
