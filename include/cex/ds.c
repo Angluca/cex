@@ -481,13 +481,18 @@ cexds_hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size
 }
 
 static bool
-cexds_compare_strings_bounded(const char* a_str, const char* b_str, size_t a_capacity, size_t b_capacity)
+cexds_compare_strings_bounded(
+    const char* a_str,
+    const char* b_str,
+    size_t a_capacity,
+    size_t b_capacity
+)
 {
     size_t i = 0;
     size_t min_cap = a_capacity;
     const char* long_str = NULL;
 
-    if(a_capacity != b_capacity){
+    if (a_capacity != b_capacity) {
         if (a_capacity > b_capacity) {
             min_cap = b_capacity;
             long_str = a_str;
@@ -495,13 +500,13 @@ cexds_compare_strings_bounded(const char* a_str, const char* b_str, size_t a_cap
             min_cap = a_capacity;
             long_str = b_str;
         }
-    } 
+    }
     while (i < min_cap) {
         if (a_str[i] != b_str[i]) {
             return false;
-        } else if (a_str[i] == '\0'){
+        } else if (a_str[i] == '\0') {
             // both are equal and zero term
-             return true;
+            return true;
         }
         i++;
     }
@@ -521,20 +526,20 @@ cexds_is_key_equal(
     size_t i
 )
 {
-    void* hm_item = ((char*)a + elemsize * i + keyoffset);
+    void* hm_key = cexds_item_ptr(a, i, elemsize) + keyoffset;
 
     switch (key_type) {
         case _CexDsKeyType__generic:
-            return 0 == memcmp(key, hm_item, keysize);
+            return 0 == memcmp(key, hm_key, keysize);
 
         case _CexDsKeyType__charptr:
-            return 0 == strcmp((char*)key, *(char**)hm_item);
+            return 0 == strcmp((char*)key, *(char**)hm_key);
 
         case _CexDsKeyType__charbuf:
 
         case _CexDsKeyType__cexstr: {
             str_c* _k = (str_c*)key;
-            str_c* _hm = (str_c*)hm_item;
+            str_c* _hm = (str_c*)hm_key;
             if (_k->len != _hm->len) {
                 return false;
             }
@@ -655,7 +660,7 @@ cexds_hminit(
     if (a == NULL) {
         return NULL; // memory error
     }
-    
+
     uassert(cexds_header(a)->magic_num == CEXDS_ARR_MAGIC);
     cexds_header(a)->magic_num = CEXDS_HM_MAGIC;
     cexds_header(a)->hm_seed = hm_seed;
@@ -667,13 +672,24 @@ cexds_hminit(
 static char* cexds_strdup(char* str);
 
 void*
-cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, void* result)
+cexds_hmput_key(
+    void* a,
+    size_t elemsize,
+    void* key,
+    size_t keysize,
+    size_t keyoffset,
+    void* full_elem,
+    void* result
+)
 {
-    (void)result;
+    (void)full_elem;
     uassert(a != NULL);
-    size_t keyoffset = 0;
-    cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
+    uassert(result != NULL);
 
+    void** out_result = (void**)result;
+    *out_result = NULL;
+
+    cexds_hash_index* table = (cexds_hash_index*)cexds_header(a)->hash_table;
     if (table == NULL || table->used_count >= table->used_count_threshold) {
 
         size_t slot_count = (table == NULL) ? CEXDS_BUCKET_LENGTH : table->slot_count * 2;
@@ -684,11 +700,16 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, void* resul
             cexds_header(a)->hm_seed
         );
 
-        uassert(nt != NULL && "TODO: memory error");
+        if (nt == NULL) {
+            uassert(nt != NULL && "new hash table memory error");
+            *out_result = NULL;
+            goto end;
+        }
 
         if (table) {
             cexds_header(a)->allocator->free(table);
         } else {
+            // NEW Table initialization here
             // nt->string.mode = mode >= CEXDS_HM_STRING ? CEXDS_SH_DEFAULT : 0;
             nt->string.mode = 0;
         }
@@ -729,14 +750,9 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, void* resul
                             0, // FIX: mode
                             bucket->index[i]
                         )) {
-                        cexds_temp(a) = bucket->index[i];
-                        // FIX:
-                        // if (mode >= CEXDS_HM_STRING) {
-                        if (false){
-                            cexds_temp_key(a
-                            ) = *(char**)((char*)a + elemsize * bucket->index[i] + keyoffset);
-                        }
-                        return a;
+
+                        *out_result = cexds_item_ptr(a, bucket->index[i], elemsize);
+                        goto process_key;
                     }
                 } else if (bucket->hash[i] == 0) {
                     pos = (pos & ~CEXDS_BUCKET_MASK) + i;
@@ -758,11 +774,11 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, void* resul
                             key,
                             keysize,
                             keyoffset,
-                            0, // FIX: mode, 
+                            0, // FIX: mode,
                             bucket->index[i]
                         )) {
-                        cexds_temp(a) = bucket->index[i];
-                        return a;
+                        *out_result = cexds_item_ptr(a, bucket->index[i], elemsize);
+                        goto process_key;
                     }
                 } else if (bucket->hash[i] == 0) {
                     pos = (pos & ~CEXDS_BUCKET_MASK) + i;
@@ -792,36 +808,47 @@ cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, void* resul
             // something of the right type
             if ((size_t)i + 1 > arr$cap(a)) {
                 *(void**)&a = cexds_arrgrowf(a, elemsize, 1, 0, NULL);
+                if (a == NULL) {
+                    uassert(a != NULL && "new array for table memory error");
+                    *out_result = NULL;
+                    goto end;
+                }
             }
 
             uassert((size_t)i + 1 <= arr$cap(a));
             cexds_header(a)->length = i + 1;
             bucket = &table->storage[pos >> CEXDS_BUCKET_SHIFT];
             bucket->hash[pos & CEXDS_BUCKET_MASK] = hash;
-            // bucket->index[pos & CEXDS_BUCKET_MASK] = i - 1;
-            // cexds_temp(a) = i - 1;
             bucket->index[pos & CEXDS_BUCKET_MASK] = i;
-            cexds_temp(a) = i;
-
-            switch (table->string.mode) {
-                case CEXDS_SH_STRDUP:
-                    cexds_temp_key(a) = *(char**)((char*)a + elemsize * i) = cexds_strdup((char*)key
-                    );
-                    break;
-                case CEXDS_SH_ARENA:
-                    cexds_temp_key(a) = *(char**)((char*)a + elemsize * i
-                    ) = cexds_stralloc(&table->string, (char*)key);
-                    break;
-                case CEXDS_SH_DEFAULT:
-                    cexds_temp_key(a) = *(char**)((char*)a + elemsize * i) = (char*)key;
-                    break;
-                default:
-                    memcpy((char*)a + elemsize * i, key, keysize);
-                    break;
-            }
+            *out_result = cexds_item_ptr(a, i, elemsize);
         }
-        return a;
+        goto process_key;
     }
+
+process_key:
+    uassert(*out_result != NULL);
+    switch (table->string.mode) {
+        case CEXDS_SH_STRDUP:
+            uassert(false);
+            // cexds_temp_key(a) = *(char**)((char*)a + elemsize * i) = cexds_strdup((char*)key
+            // );
+            break;
+        case CEXDS_SH_ARENA:
+            uassert(false);
+            // cexds_temp_key(a) = *(char**)((char*)a + elemsize * i
+            // ) = cexds_stralloc(&table->string, (char*)key);
+            break;
+        case CEXDS_SH_DEFAULT:
+            uassert(false);
+            // cexds_temp_key(a) = *(char**)((char*)a + elemsize * i) = (char*)key;
+            break;
+        default:
+            memcpy(((char*)*out_result) + keyoffset, key, keysize);
+            break;
+    }
+
+end:
+    return a;
 }
 
 // void*

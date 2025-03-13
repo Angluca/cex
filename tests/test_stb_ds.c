@@ -680,11 +680,10 @@ test$case(test_hashmap_basic)
     tassert(intmap != NULL);
     tassert(intmap64 != NULL);
 
-    hm$validate(intmap);
     tassert_eqi(hm$len(intmap), 0);
     // tassert_eqi(arr$len(intmap), 0);
 
-    hm$set(intmap, 1, 3);
+    tassert(hm$set(intmap, 1, 3));
     tassert_eqi(hm$len(intmap), 1);
     tassert_eqi(hm$get(intmap, 1), 3);
     tassert_eqi(*hm$getp(intmap, 1), 3);
