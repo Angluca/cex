@@ -189,140 +189,98 @@ test$case(test_orig_arr)
 
     return EOK;
 }
-// test$case(test_orig_hashmap)
-// {
-//     int i = 1;
-//     const int testsize = 100000;
-//     hm$(int, int) intmap = hm$new(intmap, allocator);
-//     hm$(stbds_struct, int) map = hm$new(map, allocator);
-//     tassert(intmap != NULL);
-//
-//     ptrdiff_t temp;
-//
-//     tassert(hm$geti(intmap, i) == -1);
-//     hm$default(intmap, -2);
-//     tassert(hm$geti(intmap, i) == -1);
-//     tassert(hm$get(intmap, i) == -2);
-//     for (i = 0; i < testsize; i += 2) {
-//         hm$set(intmap, i, i * 5);
-//     }
-//     for (i = 0; i < testsize; i += 1) {
-//         if (i & 1) {
-//             tassert(hm$get(intmap, i) == -2);
-//         } else {
-//             tassert(hm$get(intmap, i) == i * 5);
-//         }
-//         if (i & 1) {
-//             tassert(hm$get_ts(intmap, i, temp) == -2);
-//         } else {
-//             tassert(hm$get_ts(intmap, i, temp) == i * 5);
-//         }
-//     }
-//     for (i = 0; i < testsize; i += 2) {
-//         hm$set(intmap, i, i * 3);
-//     }
-//     for (i = 0; i < testsize; i += 1) {
-//         if (i & 1) {
-//             tassert(hm$get(intmap, i) == -2);
-//         } else {
-//             tassert(hm$get(intmap, i) == i * 3);
-//         }
-//     }
-//     for (i = 2; i < testsize; i += 4) {
-//         (void)hm$del(intmap, i); // delete half the entries
-//     }
-//     for (i = 0; i < testsize; i += 1) {
-//         if (i & 3) {
-//             tassert(hm$get(intmap, i) == -2);
-//         } else {
-//             tassert(hm$get(intmap, i) == i * 3);
-//         }
-//     }
-//     for (i = 0; i < testsize; i += 1) {
-//         (void)hm$del(intmap, i); // delete the rest of the entries
-//     }
-//     for (i = 0; i < testsize; i += 1) {
-//         tassert(hm$get(intmap, i) == -2);
-//     }
-//     hm$free(intmap);
-//     tassert(intmap == NULL);
-//
-//     intmap = hm$new(intmap, allocator);
-//
-//     for (i = 0; i < testsize; i += 2) {
-//         hm$set(intmap, i, i * 3);
-//     }
-//     hm$free(intmap);
-//
-//     intmap = hm$new(intmap, allocator);
-//     hm$set(intmap, 15, 7);
-//     hm$set(intmap, 11, 3);
-//     hm$set(intmap, 9, 5);
-//     tassert(hm$get(intmap, 9) == 5);
-//     tassert(hm$get(intmap, 11) == 3);
-//     tassert(hm$get(intmap, 15) == 7);
-//     hm$free(intmap);
-//
-//     intmap = hm$new(intmap, allocator);
-//     for (i = 0; i < testsize; i += 2) {
-//         stbds_struct s = { i, i * 2, i * 3, i * 4 };
-//         hm$set(map, s, i * 5);
-//         tassert(map != NULL);
-//     }
-//     hm$free(intmap);
-//
-//     for (i = 0; i < testsize; i += 1) {
-//         stbds_struct s = { i, i * 2, i * 3, i * 4 };
-//         // stbds_struct t = { i, i * 2, i * 3 + 1, i * 4 };
-//         if (i & 1) {
-//             tassert(hm$get(map, s) == 0);
-//         } else {
-//             tassert(hm$get(map, s) == i * 5);
-//         }
-//         if (i & 1) {
-//             tassert(hm$get_ts(map, s, temp) == 0);
-//         } else {
-//             tassert(hm$get_ts(map, s, temp) == i * 5);
-//         }
-//         // tassert(hm$get(map, t.key) == 0);
-//     }
-//
-//     stbds_struct* map2 = hm$new(map2, allocator);
-//     for (i = 0; i < testsize; i += 2) {
-//         stbds_struct s = { i, i * 2, i * 3, i * 4 };
-//         hm$sets(map2, s);
-//     }
-//     hm$free(map2);
-//     hm$free(map);
-//     //
-//     // for (i = 0; i < testsize; i += 1) {
-//     //     stbds_struct s = { i, i * 2, i * 3, i * 4 };
-//     //     // stbds_struct t = { i, i * 2, i * 3 + 1, i * 4 };
-//     //     if (i & 1) {
-//     //         tassert(hm$gets(map2, s.key).d == 0);
-//     //     } else {
-//     //         tassert(hm$gets(map2, s.key).d == i * 4);
-//     //     }
-//     //     // tassert(hm$getp(map2, t.key) == 0);
-//     // }
-//     // hm$free(map2);
-//     //
-//     // for (i = 0; i < testsize; i += 2) {
-//     //     stbds_struct2 s = { { i, i * 2 }, i * 3, i * 4, i * 5 };
-//     //     hm$sets(map3, s);
-//     // }
-//     // for (i = 0; i < testsize; i += 1) {
-//     //     stbds_struct2 s = { { i, i * 2 }, i * 3, i * 4, i * 5 };
-//     //     // stbds_struct2 t = { { i, i * 2 }, i * 3 + 1, i * 4, i * 5 };
-//     //     if (i & 1) {
-//     //         tassert(hm$gets(map3, s.key).d == 0);
-//     //     } else {
-//     //         tassert(hm$gets(map3, s.key).d == i * 5);
-//     //     }
-//     //     // tassert(hm$getp(map3, t.key) == 0);
-//     // }
-//     return EOK;
-// }
+
+test$case(test_orig_hashmap)
+{
+    int i = 1;
+    const int testsize = 100000;
+    hm$(int, int) intmap = hm$new(intmap, allocator);
+    hm$(stbds_struct, int) map = hm$new(map, allocator);
+    tassert(intmap != NULL);
+
+    tassert(hm$get(intmap, i) == 0);
+    for (i = 0; i < testsize; i += 2) {
+        hm$set(intmap, i, i * 5);
+    }
+    for (i = 0; i < testsize; i += 1) {
+        if (i & 1) {
+            tassert(hm$get(intmap, i, -2) == -2);
+        } else {
+            tassert(hm$get(intmap, i) == i * 5);
+        }
+    }
+    for (i = 0; i < testsize; i += 2) {
+        hm$set(intmap, i, i * 3);
+    }
+    for (i = 0; i < testsize; i += 1) {
+        if (i & 1) {
+            tassert(hm$get(intmap, i, -2) == -2);
+        } else {
+            tassert(hm$get(intmap, i) == i * 3);
+        }
+    }
+    for (i = 2; i < testsize; i += 4) {
+        (void)hm$del(intmap, i); // delete half the entries
+    }
+    for (i = 0; i < testsize; i += 1) {
+        if (i & 3) {
+            tassert(hm$get(intmap, i) == 0);
+        } else {
+            tassert(hm$get(intmap, i) == i * 3);
+        }
+    }
+    for (i = 0; i < testsize; i += 1) {
+        (void)hm$del(intmap, i); // delete the rest of the entries
+    }
+    for (i = 0; i < testsize; i += 1) {
+        tassert(hm$get(intmap, i) == 0);
+    }
+    hm$free(intmap);
+    tassert(intmap == NULL);
+
+    intmap = hm$new(intmap, allocator);
+
+    for (i = 0; i < testsize; i += 2) {
+        hm$set(intmap, i, i * 3);
+    }
+    hm$free(intmap);
+
+    intmap = hm$new(intmap, allocator);
+    hm$set(intmap, 15, 7);
+    hm$set(intmap, 11, 3);
+    hm$set(intmap, 9, 5);
+    tassert(hm$get(intmap, 9) == 5);
+    tassert(hm$get(intmap, 11) == 3);
+    tassert(hm$get(intmap, 15) == 7);
+    hm$free(intmap);
+
+    intmap = hm$new(intmap, allocator);
+    for (i = 0; i < testsize; i += 2) {
+        stbds_struct s = { i, i * 2, i * 3, i * 4 };
+        hm$set(map, s, i * 5);
+        tassert(map != NULL);
+    }
+    hm$free(intmap);
+
+    for (i = 0; i < testsize; i += 1) {
+        stbds_struct s = { i, i * 2, i * 3, i * 4 };
+        if (i & 1) {
+            tassert(hm$get(map, s) == 0);
+        } else {
+            tassert(hm$get(map, s) == i * 5);
+        }
+    }
+
+    stbds_struct* map2 = hm$new(map2, allocator);
+    for (i = 0; i < testsize; i += 2) {
+        stbds_struct s = { i, i * 2, i * 3, i * 4 };
+        hm$sets(map2, s);
+    }
+    hm$free(map2);
+    hm$free(map);
+
+    return EOK;
+}
 
 test$case(test_array_len_unified)
 {
@@ -985,6 +943,60 @@ test$case(test_hashmap_cex_string)
     hm$free(smap);
     return EOK;
 }
+
+test$case(test_hashmap_basic_delete)
+{
+    hm$(int, int) intmap = hm$new(intmap, allocator);
+    tassert(intmap != NULL);
+    tassert_eqi(hm$del(intmap, -1), 0);
+
+    tassert_eqi(hm$len(intmap), 0);
+
+    tassert(hm$set(intmap, 1, 10));
+    tassert(hm$set(intmap, 2, 20));
+    tassert(hm$set(intmap, 3, 30));
+
+    tassert_eqi(hm$len(intmap), 3);
+
+    // check order 
+    tassert_eqi(intmap[0].key, 1);
+    tassert_eqi(intmap[1].key, 2);
+    tassert_eqi(intmap[2].key, 3);
+
+    // not deleted/found
+    tassert_eqi(hm$del(intmap, -1), 0);
+
+    tassert_eqi(hm$del(intmap, 3), 1);
+    tassert_eqi(2, hm$len(intmap));
+    tassert_eqi(intmap[0].key, 1);
+    tassert_eqi(intmap[1].key, 2);
+
+    tassert_eqi(hm$del(intmap, 2), 1);
+    tassert_eqi(1, hm$len(intmap));
+    tassert_eqi(intmap[0].key, 1);
+
+    tassert_eqi(hm$del(intmap, 1), 1);
+    tassert_eqi(0, hm$len(intmap));
+    // NOTE: this key is not nullified typically out-of-bounds access
+    tassert_eqi(intmap[0].key, 1);
+
+    tassert_eqi(hm$del(intmap, 1), 0);
+
+
+    tassert(hm$set(intmap, 1, 10));
+    tassert(hm$set(intmap, 2, 20));
+    tassert(hm$set(intmap, 3, 30));
+    tassert_eqi(hm$del(intmap, 1), 1);
+
+    // NOTE: swap delete
+    tassert_eqi(hm$len(intmap), 2);
+    tassert_eqi(intmap[0].key, 3);
+    tassert_eqi(intmap[1].key, 2);
+
+    hm$free(intmap);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -995,6 +1007,7 @@ main(int argc, char* argv[])
     test$run(test_array_char_ptr);
     test$run(test_array_struct);
     test$run(test_orig_arr);
+    test$run(test_orig_hashmap);
     test$run(test_array_len_unified);
     test$run(test_for_arr);
     test$run(test_slice);
@@ -1013,6 +1026,7 @@ main(int argc, char* argv[])
     test$run(test_hashmap_compare_strings_bounded);
     test$run(test_hashmap_string);
     test$run(test_hashmap_cex_string);
+    test$run(test_hashmap_basic_delete);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

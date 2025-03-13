@@ -34,7 +34,7 @@ extern void cexds_hmfree_func(void* p, size_t elemsize);
 extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
 extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
 extern void* cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, void* full_elem, void* result);
-extern void* cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode);
+extern bool cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, int mode);
 // clang-format on
 
 #define CEXDS_ARR_MAGIC 0xC001DAAD
@@ -220,9 +220,6 @@ struct cexds_arr_new_kwargs_s
  *
  */
 
-// #define CEXDS_HASH_TO_ARR(x, elemsize) ((char*)(x) - (elemsize))
-// #define CEXDS_ARR_TO_HASH(x, elemsize) ((char*)(x) + (elemsize))
-#define cexds_hash_table(a) ((cexds_hash_index*)cexds_header(a)->hash_table)
 
 #define hm$(_KeyType, _ValType)                                                                    \
     struct                                                                                         \
@@ -346,7 +343,7 @@ struct cexds_hm_new_kwargs_s
 
 #define hm$del(t, k)                                                                               \
     ({                                                                                             \
-        (t) = cexds_hmdel_key(                                                                     \
+        cexds_hmdel_key(                                                                           \
             (t),                                                                                   \
             sizeof *(t),                                                                           \
             ((typeof((t)->key)[1]){ (k) }),                                                        \
@@ -354,92 +351,16 @@ struct cexds_hm_new_kwargs_s
             offsetof(typeof(*t), key),                                                             \
             0                                                                                      \
         );                                                                                         \
-        /* TODO: implement return bool flag if deleted key existed*/                               \
     })
 
 
-#define hm$free(p) (cexds_hmfree_func((p), sizeof *(p)), (p) = NULL)
+#define hm$free(t) (cexds_hmfree_func((t), sizeof *(t)), (t) = NULL)
 
 #define hm$len(t)                                                                                  \
     ({                                                                                             \
-        uassert(t != NULL && "hashmap uninitialized or out-of-mem");                               \
-        /* IMPORTANT: next can trigger sanitizer with "stack/heap-buffer-underflow on              \
-         * address" */                                                                             \
-        uassert((cexds_header(t)->magic_num == CEXDS_HM_MAGIC) && "bad hashmap pointer");          \
+        cexds_arr_integrity(t, CEXDS_HM_MAGIC);                                                    \
         cexds_header((t))->length;                                                                 \
     })
-
-/*
-#define cexds_shput(t, k, v) \
-    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING), \
-     (t)[cexds_temp((t) - 1)].value = (v))
-
-#define cexds_shputi(t, k, v) \
-    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING), \
-     (t)[cexds_temp((t) - 1)].value = (v), \ cexds_temp((t) - 1))
-
-#define cexds_shputs(t, s) \
-    ((t) = cexds_hmput_key((t), sizeof *(t), (void*)(s).key, sizeof(s).key,
-CEXDS_HM_STRING),      \
-     (t)[cexds_temp((t) - 1)] = (s), \
-     (t)[cexds_temp((t) - 1)].key = cexds_temp_key((t) - 1) \ ) // above line overwrites
-whole structure, so must rewrite key here if it was allocated
-      // internally
-
-#define cexds_pshput(t, p) \
-    ((t \
-     ) = cexds_hmput_key((t), sizeof *(t), (void*)(p)->key, sizeof(p)->key,
-CEXDS_HM_PTR_TO_STRING),
-\ (t)[cexds_temp((t) - 1)] = (p))
-
-#define cexds_shgeti(t, k) \
-    ((t) = cexds_hmget_key((t), sizeof *(t), (void*)(k), sizeof(t)->key, CEXDS_HM_STRING), \
-     cexds_temp((t) - 1))
-
-#define cexds_pshgeti(t, k) \
-    ((t \
-     ) = cexds_hmget_key((t), sizeof *(t), (void*)(k), sizeof(*(t))->key,
-CEXDS_HM_PTR_TO_STRING), \ cexds_temp((t) - 1))
-
-#define cexds_shgetp(t, k) ((void)cexds_shgeti(t, k), &(t)[cexds_temp((t) - 1)])
-
-#define cexds_pshget(t, k) ((void)cexds_pshgeti(t, k), (t)[cexds_temp((t) - 1)])
-
-#define cexds_shdel(t, k) \
-    (((t) = cexds_hmdel_key( \
-          (t), \
-          sizeof *(t), \
-          (void*)(k), \
-          sizeof(t)->key, \
-          mem$offsetof((t), key), \
-          CEXDS_HM_STRING \
-      )), \ (t) ? cexds_temp((t) - 1) : 0)
-#define cexds_pshdel(t, k) \
-    (((t) = cexds_hmdel_key( \
-          (t), \
-          sizeof *(t), \
-          (void*)(k), \
-          sizeof(*(t))->key, \
-          mem$offsetof(*(t), key), \
-          CEXDS_HM_PTR_TO_STRING \
-      )), \ (t) ? cexds_temp((t) - 1) : 0)
-
-#define cexds_sh_new_arena(t) ((t) = cexds_shmode_func_wrapper(t, sizeof *(t),
-CEXDS_SH_ARENA)) #define cexds_sh_new_strdup(t) ((t) = cexds_shmode_func_wrapper(t, sizeof
-*(t), CEXDS_SH_STRDUP))
-
-#define cexds_shdefault(t, v) hm$default(t, v)
-#define cexds_shdefaults(t, s) hm$defaults(t, s)
-
-#define cexds_shfree hm$free
-#define cexds_shlenu hm$lenu
-
-#define cexds_shgets(t, k) (*cexds_shgetp(t, k))
-#define cexds_shget(t, k) (cexds_shgetp(t, k)->value)
-#define cexds_shgetp_null(t, k) (cexds_shgeti(t, k) == -1 ? NULL : &(t)[cexds_temp((t) -
-1)]) #define cexds_shlen hm$len
-
-*/
 
 typedef struct cexds_string_block
 {
@@ -454,9 +375,6 @@ struct cexds_string_arena
     unsigned char block;
     unsigned char mode; // this isn't used by the string arena itself
 };
-
-#define CEXDS_HM_BINARY 0
-#define CEXDS_HM_STRING 1
 
 enum
 {
