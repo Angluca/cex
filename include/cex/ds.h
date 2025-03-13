@@ -20,6 +20,7 @@ extern void cexds_strreset(cexds_string_arena* a);
 // clang-format off
 struct cexds_hm_new_kwargs_s;
 struct cexds_arr_new_kwargs_s;
+struct cexds_hash_index;
 enum _CexDsKeyType_e
 {
     _CexDsKeyType__generic,
@@ -31,6 +32,7 @@ extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_
 extern void cexds_arrfreef(void* a);
 extern bool cexds_arr_integrity(void* arr, size_t magic_num);
 extern void cexds_hmfree_func(void* p, size_t elemsize);
+extern void cexds_hmclear_func(struct cexds_hash_index* t, struct cexds_hash_index* old_table, size_t cexds_hash_seed);
 extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
 extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
 extern void* cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, void* full_elem, void* result);
@@ -62,13 +64,9 @@ typedef struct
 _Static_assert(alignof(cexds_array_header) == alignof(void*), "align");
 _Static_assert(sizeof(cexds_array_header) <= CEXDS_HDR_PAD, "size too high");
 _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
-
 _Static_assert(sizeof(cexds_array_header) == 48, "size");
 
-
 #define cexds_header(t) ((cexds_array_header*)(((char*)(t)) - sizeof(cexds_array_header)))
-#define cexds_base(t) ((char*)(t) - CEXDS_HDR_PAD)
-#define cexds_item_ptr(t, i, elemsize) ((char*)a + elemsize * i)
 
 #define arr$(T) T*
 
@@ -339,6 +337,14 @@ struct cexds_hm_new_kwargs_s
             offsetof(typeof(*t), key)                                                              \
         );                                                                                         \
         result;                                                                                    \
+    })
+
+#define hm$clear(t)                                                                                \
+    ({                                                                                             \
+        cexds_arr_integrity(t, CEXDS_HM_MAGIC);                                                    \
+        cexds_hmclear_func(cexds_header((t))->hash_table, NULL, cexds_header(t)->hm_seed);         \
+        cexds_header(t)->length = 0;                                                               \
+        true;                                                                                      \
     })
 
 #define hm$del(t, k)                                                                               \

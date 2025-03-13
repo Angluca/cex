@@ -25,6 +25,9 @@ size_t cexds_rehash_items;
 // cexds_arr implementation
 //
 
+#define cexds_base(t) ((char*)(t) - CEXDS_HDR_PAD)
+#define cexds_item_ptr(t, i, elemsize) ((char*)a + elemsize * i)
+
 bool
 cexds_arr_integrity(void* arr, size_t magic_num)
 {
@@ -150,7 +153,7 @@ typedef struct
                      // 64-byte cache line
 _Static_assert(sizeof(cexds_hash_bucket) == 128, "cacheline aligned");
 
-typedef struct
+typedef struct cexds_hash_index
 {
     char* temp_key; // this MUST be the first field of the hash table
     size_t slot_count;
@@ -199,6 +202,42 @@ cexds_log2(size_t slot_count)
     return n;
 }
 
+void
+cexds_hmclear_func(struct cexds_hash_index* t, cexds_hash_index* old_table, size_t cexds_hash_seed)
+{
+    if (t == NULL) {
+        // typically external call of uninitialized table
+        return;
+    }
+
+    uassert(t->slot_count > 0);
+    t->tombstone_count = 0;
+    t->used_count = 0;
+
+    // TODO: cleanup strings from old table???
+
+    if (old_table) {
+        t->string = old_table->string;
+        // reuse old seed so we can reuse old hashes so below "copy out old data" doesn't do any
+        // hashing
+        t->seed = old_table->seed;
+    } else {
+        memset(&t->string, 0, sizeof(t->string));
+        t->seed = cexds_hash_seed;
+    }
+
+    size_t i, j;
+    for (i = 0; i < t->slot_count >> CEXDS_BUCKET_SHIFT; ++i) {
+        cexds_hash_bucket* b = &t->storage[i];
+        for (j = 0; j < CEXDS_BUCKET_LENGTH; ++j) {
+            b->hash[j] = CEXDS_HASH_EMPTY;
+        }
+        for (j = 0; j < CEXDS_BUCKET_LENGTH; ++j) {
+            b->index[j] = CEXDS_INDEX_EMPTY;
+        }
+    }
+}
+
 static cexds_hash_index*
 cexds_make_hash_index(
     size_t slot_count,
@@ -230,28 +269,8 @@ cexds_make_hash_index(
     // terminate probes
     uassert(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
     CEXDS_STATS(++cexds_hash_alloc);
-    if (old_table) {
-        t->string = old_table->string;
-        // reuse old seed so we can reuse old hashes so below "copy out old data" doesn't do any
-        // hashing
-        t->seed = old_table->seed;
-    } else {
-        memset(&t->string, 0, sizeof(t->string));
-        t->seed = cexds_hash_seed;
-    }
 
-    {
-        size_t i, j;
-        for (i = 0; i < slot_count >> CEXDS_BUCKET_SHIFT; ++i) {
-            cexds_hash_bucket* b = &t->storage[i];
-            for (j = 0; j < CEXDS_BUCKET_LENGTH; ++j) {
-                b->hash[j] = CEXDS_HASH_EMPTY;
-            }
-            for (j = 0; j < CEXDS_BUCKET_LENGTH; ++j) {
-                b->index[j] = CEXDS_INDEX_EMPTY;
-            }
-        }
-    }
+    cexds_hmclear_func(t, old_table, cexds_hash_seed);
 
     // copy out the old data, if any
     if (old_table) {

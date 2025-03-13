@@ -997,6 +997,73 @@ test$case(test_hashmap_basic_delete)
     return EOK;
 }
 
+test$case(test_hashmap_basic_clear)
+{
+    hm$(int, int) intmap = hm$new(intmap, allocator);
+    tassert(intmap != NULL);
+
+    tassert(hm$set(intmap, 1, 10));
+    tassert(hm$set(intmap, 2, 20));
+    tassert(hm$set(intmap, 3, 30));
+
+    tassert_eqi(hm$len(intmap), 3);
+    tassert(hm$getp(intmap, 1) != NULL);
+    tassert(hm$getp(intmap, 2) != NULL);
+    tassert(hm$getp(intmap, 3) != NULL);
+
+    tassert(hm$clear(intmap));
+    tassert_eqi(hm$len(intmap), 0);
+    tassert(hm$getp(intmap, 1) == NULL);
+    tassert(hm$getp(intmap, 2) == NULL);
+    tassert(hm$getp(intmap, 3) == NULL);
+
+    hm$free(intmap);
+    return EOK;
+}
+
+test$case(test_orig_del_add_clear)
+{
+    int i = 1;
+    const int testsize = 100000;
+    hm$(int, int) intmap = hm$new(intmap, allocator);
+    tassert(intmap != NULL);
+
+    tassert(hm$get(intmap, i) == 0);
+    for (i = 0; i < testsize; i += 2) {
+        hm$set(intmap, i, i * 5);
+    }
+    hm$clear(intmap);
+
+    for (i = 0; i < testsize; i += 2) {
+        hm$set(intmap, i, i * 3);
+    }
+    for (i = 0; i < testsize; i += 1) {
+        if (i & 1) {
+            tassert(hm$get(intmap, i, -2) == -2);
+        } else {
+            tassert(hm$get(intmap, i) == i * 3);
+        }
+    }
+    for (i = 2; i < testsize; i += 4) {
+        (void)hm$del(intmap, i); // delete half the entries
+    }
+    hm$clear(intmap);
+
+    for (i = 0; i < testsize; i += 2) {
+        hm$set(intmap, i, i * 3);
+    }
+    for (i = 0; i < testsize; i += 1) {
+        if (i & 1) {
+            tassert(hm$get(intmap, i, -2) == -2);
+        } else {
+            tassert(hm$get(intmap, i) == i * 3);
+        }
+    }
+
+    hm$free(intmap);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -1027,6 +1094,8 @@ main(int argc, char* argv[])
     test$run(test_hashmap_string);
     test$run(test_hashmap_cex_string);
     test$run(test_hashmap_basic_delete);
+    test$run(test_hashmap_basic_clear);
+    test$run(test_orig_del_add_clear);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
