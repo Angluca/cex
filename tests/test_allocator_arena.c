@@ -45,6 +45,7 @@ test$case(test_allocator_arena_alloc_size)
     tassert(alloc_cmp(5, 0, .size = 5, .ptr_padding = 3, .ptr_offset = 8));
     tassert(alloc_cmp(8, 0, .size = 8, .ptr_padding = 8, .ptr_offset = 8));
     tassert(alloc_cmp(16, 0, .size = 16, .ptr_padding = 8, .ptr_offset = 8));
+    tassert(alloc_cmp(100, 0, .size = 100, .ptr_padding = 4, .ptr_offset = 8));
 
     tassert(alloc_cmp(8, 8, .size = 8, .ptr_padding = 8, .ptr_offset = 8));
     tassert(alloc_cmp(16, 8, .size = 16, .ptr_padding = 8, .ptr_offset = 8));
@@ -103,26 +104,26 @@ test$case(test_allocator_arena_create_destroy)
     return EOK;
 }
 
-// test$case(test_allocator_arena_malloc)
-// {
-//
-//     IAllocator arena = AllocatorArena_create(4096);
-//     tassert(arena != NULL);
-//
-//     AllocatorArena_c* allc = (AllocatorArena_c*)arena;
-//
-//     mem$scope(arena, _)
-//     {
-//         char* p = mem$malloc(arena, 100);
-//         tassert(p != NULL);
-//         tassert_eqi(allc->stats.bytes_alloc, 100);
-//         f
-//
-//     }
-//
-//     AllocatorArena_destroy(arena);
-//     return EOK;
-// }
+test$case(test_allocator_arena_malloc)
+{
+
+    IAllocator arena = AllocatorArena_create(4096);
+    tassert(arena != NULL);
+
+    AllocatorArena_c* allc = (AllocatorArena_c*)arena;
+
+    mem$scope(arena, _)
+    {
+        char* p = mem$malloc(arena, 100);
+        tassert(p != NULL);
+        // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
+        tassert_eqi(allc->stats.bytes_alloc, 112);
+        tassert_eqi(allc->used, 112);
+    }
+
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
 
 int
 main(int argc, char* argv[])
@@ -132,6 +133,7 @@ main(int argc, char* argv[])
     
     test$run(test_allocator_arena_alloc_size);
     test$run(test_allocator_arena_create_destroy);
+    test$run(test_allocator_arena_malloc);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

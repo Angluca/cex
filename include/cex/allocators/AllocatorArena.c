@@ -24,6 +24,7 @@ _cex_alloc_estimate_page_size(usize page_size, usize alloc_size)
 
     if (alloc_size > 0.7 * base_page_size) {
         if (alloc_size > 1024 * 1024) {
+            // TODO: align to closest system page size ? 4096 maybe?
             return alloc_size * 1.1 + sizeof(allocator_arena_page_s) + 64;
         } else {
             usize result = mem$next_pow2(alloc_size + sizeof(allocator_arena_page_s) + 64);
@@ -76,12 +77,17 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
     };
 }
 
-static allocator_arena_page_s*
+static bool
 _cex_allocator_arena__new_page(AllocatorArena_c* self, usize page_size)
 {
+    if (page_size == 0 || page_size > CEX_ARENA_MAX_ALLOC) {
+        uassert(page_size > 0 && "page_size is zero");
+        uassert(page_size <= CEX_ARENA_MAX_ALLOC && "page_size is to big");
+        return false;
+    }
     allocator_arena_page_s* page = mem$->calloc(mem$, 1, page_size, alignof(allocator_arena_page_s));
     if (page == NULL) {
-        return NULL; // memory error
+        return false; // memory error
     }
     uassert(mem$aligned_pointer(page, alignof(allocator_arena_page_s)) == page);
 
@@ -89,7 +95,7 @@ _cex_allocator_arena__new_page(AllocatorArena_c* self, usize page_size)
     page->used_start = self->used;
     page->capacity = page_size - sizeof(allocator_arena_page_s);
     mem$asan_poison(page->__poison_area, sizeof(page->__poison_area));
-
+    self->last_page = page;
     return page;
 }
 
@@ -104,22 +110,33 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     if (rec.size == 0) {
         return NULL;
     }
+    usize req_size = rec.size + rec.ptr_offset + rec.ptr_padding;
 
     // TODO: check if existing page has enough capacity
     if (self->last_page == NULL) {
-
-        usize _page_size = _cex_alloc_estimate_page_size(self->page_size, size);
-        if (_page_size > CEX_ARENA_MAX_ALLOC) {
-            uassert(_page_size <= CEX_ARENA_MAX_ALLOC && "_page_size is to big");
-            return NULL;
-        }
-
-        self->last_page = _cex_allocator_arena__new_page(self, _page_size);
-        if (self->last_page == NULL) {
+        usize _page_size = _cex_alloc_estimate_page_size(self->page_size, req_size);
+        if(!_cex_allocator_arena__new_page(self, _page_size)) {
             return NULL; // memory error
         }
     }
-    return malloc(size);
+    allocator_arena_page_s* page = self->last_page;
+    uassert(page->capacity - page->cursor >= req_size);
+
+    allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
+    uassert(mem$aligned_pointer(page_rec, 8) == page_rec && "unaligned properly!");
+    _Static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
+    _Static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
+
+    *page_rec = rec;
+    void* result = ((char*)page_rec) + rec.ptr_offset;
+    mem$asan_poison(page_rec->__poison_area, sizeof(page_rec->__poison_area));
+    if (page_rec->ptr_padding) {
+        // poison trailing data if any padding allowed
+        mem$asan_poison(((char*)result)+rec.size, rec.ptr_padding); 
+    }
+    self->used += req_size;
+    self->stats.bytes_alloc += req_size;
+    return result;
 }
 static void*
 _cex_allocator_arena__calloc(IAllocator allc, usize nmemb, usize size, usize alignment)
@@ -223,5 +240,22 @@ AllocatorArena_destroy(IAllocator self)
 {
     _cex_allocator_arena__validate(self);
     AllocatorArena_c* allc = (AllocatorArena_c*)self;
+
+    allocator_arena_page_s* page = allc->last_page;
+    while(page) {
+        var tpage = page->prev_page;
+        mem$free(mem$, page);
+        page = tpage;
+    }
     mem$free(mem$, allc);
+}
+
+bool
+AllocatorArena_sanitize(IAllocator self)
+{
+    _cex_allocator_arena__validate(self);
+    AllocatorArena_c* allc = (AllocatorArena_c*)self;
+    mem$free(mem$, allc);
+
+    return true;
 }
