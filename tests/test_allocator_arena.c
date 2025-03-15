@@ -124,6 +124,7 @@ test$case(test_allocator_arena_malloc)
         tassert_eqi(allc->scope_stack[2], 0);
         tassert_eqi(allc->last_page->used_start, 0);
         tassert_eqi(allc->last_page->cursor, 112);
+        tassert(allc->last_page->last_alloc == p);
 
         mem$scope(arena, _)
         {
@@ -136,6 +137,8 @@ test$case(test_allocator_arena_malloc)
             tassert(p2 != NULL);
             tassert_eqi(allc->stats.bytes_alloc, 112 + 16);
             tassert_eqi(allc->used, 112 + 16);
+            tassert_eqi(allc->last_page->cursor, 112 + 16);
+            tassert(allc->last_page->last_alloc == p2);
 
             mem$scope(arena, _)
             {
@@ -143,14 +146,25 @@ test$case(test_allocator_arena_malloc)
                 tassert(p3 != NULL);
                 tassert_eqi(allc->stats.bytes_alloc, 112 + 16 + 16);
                 tassert_eqi(allc->used, 112 + 16 + 16);
+                tassert_eqi(allc->last_page->cursor, 112 + 16 + 16);
 
                 tassert_eqi(allc->scope_depth, 3);
                 tassert_eqi(allc->scope_stack[0], 0);
                 tassert_eqi(allc->scope_stack[1], 112);
                 tassert_eqi(allc->scope_stack[2], 112 + 16);
+                tassert(allc->last_page->last_alloc == p3);
             }
+            // Unwinding arena
+            tassert_eqi(allc->used, 112 + 16);
+            tassert_eqi(allc->last_page->cursor, 112 + 16);
         }
+        // Unwinding arena
+        tassert_eqi(allc->used, 112);
+        tassert_eqi(allc->last_page->cursor, 112);
     }
+    // Unwinding arena
+    tassert_eqi(allc->used, 0);
+    tassert_eqi(allc->last_page->cursor, 0);
 
     AllocatorArena_destroy(arena);
     return EOK;

@@ -139,8 +139,9 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(
         (char*)result - (((char*)page_rec) + (isize)sizeof(allocator_arena_rec_s)) <= (isize)alignment
     );
+    // NOTE: rec.ptr_offset expected to be largest possible alignment, real aligned pointer 
+    //       position expected <= rec.ptr_offset, but keep req_size at upper bound for simplicity
     page_rec->ptr_offset = (char*)result - (char*)page_rec;
-    req_size = page_rec->size + page_rec->ptr_offset + page_rec->ptr_padding;
 
     mem$asan_poison(page_rec->__poison_area, sizeof(page_rec->__poison_area));
     if (page_rec->ptr_padding) {
@@ -150,7 +151,9 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     self->used += req_size;
     self->stats.bytes_alloc += req_size;
     page->cursor += req_size;
+    page->last_alloc = result;
     uassert(page->cursor % 8 == 0);
+    uassert(self->used % 8 == 0); 
     uassert(alignment == 0 || ((usize)(result) & ((alignment)-1)) == 0);
 
     return result;
@@ -185,6 +188,7 @@ static void*
 _cex_allocator_arena__free(IAllocator allc, void* ptr)
 {
     (void)ptr;
+    // NOTE: this intentionally does nothing, all memory releasing in scope_exit()
     _cex_allocator_arena__validate(allc);
     return NULL;
 }
@@ -214,12 +218,26 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
         return;
     }
     usize used_mark = self->scope_stack[self->scope_depth];
-    (void)used_mark;
 
     allocator_arena_page_s* page = self->last_page;
     while (page) {
         var tpage = page->prev_page;
-        page->last_alloc = NULL; // TODO: invalid?
+        if (page->used_start <= used_mark) {
+            // last page, just set mark and poison
+            usize free_offset = (used_mark - page->used_start);
+            uassert(page->cursor >= free_offset);
+
+            usize free_len = page->cursor - free_offset;
+            page->cursor = used_mark;
+            mem$asan_poison(&page->data[free_offset], free_len);
+
+            uassert(self->used >= free_len);
+            self->used -= free_len;
+            break;  // we are done
+        } else {
+            uassert(false && "TODO: free full page");
+        }
+        // page->last_alloc = NULL; // TODO: invalid?
 
         // if (page->used_start + page->cursor)
         // mem$free(mem$, page);
@@ -291,6 +309,7 @@ AllocatorArena_destroy(IAllocator self)
 bool
 AllocatorArena_sanitize(IAllocator self)
 {
+    (void)self;
     _cex_allocator_arena__validate(self);
     AllocatorArena_c* allc = (AllocatorArena_c*)self;
     (void)allc;
