@@ -117,6 +117,39 @@ test$case(test_allocator_arena_malloc)
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
         tassert_eqi(allc->stats.bytes_alloc, 112);
         tassert_eqi(allc->used, 112);
+
+        tassert_eqi(allc->scope_depth, 1);
+        tassert_eqi(allc->scope_stack[0], 0);
+        tassert_eqi(allc->scope_stack[1], 0);
+        tassert_eqi(allc->scope_stack[2], 0);
+        tassert_eqi(allc->last_page->used_start, 0);
+        tassert_eqi(allc->last_page->cursor, 112);
+
+        mem$scope(arena, _)
+        {
+            tassert_eqi(allc->scope_depth, 2);
+            tassert_eqi(allc->scope_stack[0], 0);
+            tassert_eqi(allc->scope_stack[1], 112);
+            tassert_eqi(allc->scope_stack[2], 0);
+
+            char* p2 = mem$malloc(arena, 4);
+            tassert(p2 != NULL);
+            tassert_eqi(allc->stats.bytes_alloc, 112 + 16);
+            tassert_eqi(allc->used, 112 + 16);
+
+            mem$scope(arena, _)
+            {
+                char* p3 = mem$malloc(arena, 4);
+                tassert(p3 != NULL);
+                tassert_eqi(allc->stats.bytes_alloc, 112 + 16 + 16);
+                tassert_eqi(allc->used, 112 + 16 + 16);
+
+                tassert_eqi(allc->scope_depth, 3);
+                tassert_eqi(allc->scope_stack[0], 0);
+                tassert_eqi(allc->scope_stack[1], 112);
+                tassert_eqi(allc->scope_stack[2], 112 + 16);
+            }
+        }
     }
 
     AllocatorArena_destroy(arena);
@@ -138,15 +171,19 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
         }
         u32 align[] = { 8, 16, 32, 64 };
 
-        for$arr(alignment, align)
-        {
-            tassert(alignment >= 8);
-            tassert(alignment <= 64);
-            for (int i = 0; i < 100; i++) {
-                char* p = arena->malloc(arena, alignment * (i % 4 + 1), alignment);
+        for (int i = 0; i < 100; i++) {
+            for$arr(alignment, align)
+            {
+                tassert(alignment >= 8);
+                tassert(alignment <= 64);
+                usize alloc_size = alignment * (i % 4 + 1);
+                char* p = arena->malloc(arena, alloc_size, alignment);
                 tassert(p != NULL);
                 // ensure returned pointers are aligned
-                tassert((usize)alignment * (((usize)p + (usize)alignment - 1) / (usize)alignment) == (usize)p);
+                tassert(
+                    (usize)alignment * (((usize)p + (usize)alignment - 1) / (usize)alignment) ==
+                    (usize)p
+                );
             }
         }
     }

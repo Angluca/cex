@@ -2,7 +2,6 @@
 #include "cex/cex.h"
 #include "cex/ds.h"
 #include <cex/all.c>
-#include <cex/ds.c>
 #include <cex/list.c>
 #include <cex/test/fff.h>
 #include <cex/test/test.h>

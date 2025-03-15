@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 
 /*
@@ -193,7 +194,7 @@ __cex__fprintf_dummy(void)
  * @brief Non disposable assert, returns Error.assert CEX exception when failed
  */
 #define e$assert(A)                                                                                \
-    ({                                                                                           \
+    ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(stdout, "[ASSERT] ", __FILE_NAME__, __LINE__, __func__, "%s\n", #A);    \
             return Error.assert;                                                                   \
@@ -202,7 +203,7 @@ __cex__fprintf_dummy(void)
 
 
 #define e$assertf(A, format, ...)                                                                  \
-    ({                                                                                           \
+    ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
                 stdout,                                                                            \
@@ -219,7 +220,7 @@ __cex__fprintf_dummy(void)
 #else // #if CEX_LOG_LVL > 0
 #define __cex__traceback(uerr, fail_func) __cex__fprintf_dummy()
 #define e$assert(A)                                                                                \
-    ({                                                                                           \
+    ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             return Error.assert;                                                                   \
         }                                                                                          \
@@ -227,7 +228,7 @@ __cex__fprintf_dummy(void)
 
 
 #define e$assertf(A, format, ...)                                                                  \
-    ({                                                                                           \
+    ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             return Error.assert;                                                                   \
         }                                                                                          \
@@ -278,20 +279,28 @@ int __cex_test_uassert_enabled = 1;
 #define __cex_test_postmortem_exists() 0
 #endif
 
+#ifndef __cex__abort
+#ifdef CEXTEST
+#define __cex__abort() raise(SIGTRAP)
+#else
+#define __cex__abort() abort()
+#endif
+#endif
+
 #ifndef __cex__assert
 #define __cex__assert()                                                                            \
-    ({                                                                                           \
+    ({                                                                                             \
         fflush(stdout);                                                                            \
         fflush(stderr);                                                                            \
         sanitizer_stack_trace();                                                                   \
-        if (__cex_test_postmortem_exists()) {                                                             \
-            fprintf(stderr, "=========== POSTMORTEM ===========\n");                \
+        if (__cex_test_postmortem_exists()) {                                                      \
+            fprintf(stderr, "=========== POSTMORTEM ===========\n");                               \
             __cex_test_postmortem_f(__cex_test_postmortem_ctx);                                    \
-            fflush(stdout);                                                                            \
-            fflush(stderr);                                                                            \
-            fprintf(stderr, "=========== POSTMORTEM END ===========\n");                \
+            fflush(stdout);                                                                        \
+            fflush(stderr);                                                                        \
+            fprintf(stderr, "=========== POSTMORTEM END ===========\n");                           \
         }                                                                                          \
-        abort();                                                                                   \
+        __cex__abort();                                                                            \
     })
 #endif
 
@@ -301,7 +310,7 @@ int __cex_test_uassert_enabled = 1;
  * @brief Custom assertion, with support of sanitizer call stack printout at failure.
  */
 #define uassert(A)                                                                                 \
-    ({                                                                                           \
+    ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
                 __CEX_OUT_STREAM,                                                                  \
@@ -319,7 +328,7 @@ int __cex_test_uassert_enabled = 1;
     })
 
 #define uassertf(A, format, ...)                                                                   \
-    ({                                                                                           \
+    ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
                 __CEX_OUT_STREAM,                                                                  \
@@ -366,19 +375,19 @@ int __cex_test_uassert_enabled = 1;
     if (unlikely(((_expression) == NULL) && log$error("`%s` returned NULL", #_expression)))
 
 #define e$ret(_func)                                                                               \
-    for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                \
-             (cex$tmpname(__cex_err_traceback_) != EOK) &&                                       \
-             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                       \
+    for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
+             (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
+             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                         \
          );                                                                                        \
-         cex$tmpname(__cex_err_traceback_) = EOK)                                                \
+         cex$tmpname(__cex_err_traceback_) = EOK)                                                  \
     return cex$tmpname(__cex_err_traceback_)
 
 #define e$goto(_func, _label)                                                                      \
-    for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                \
-             (cex$tmpname(__cex_err_traceback_) != EOK) &&                                       \
-             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                       \
+    for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
+             (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
+             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                         \
          );                                                                                        \
-         cex$tmpname(__cex_err_traceback_) = EOK)                                                \
+         cex$tmpname(__cex_err_traceback_) = EOK)                                                  \
     goto _label
 
 
@@ -449,29 +458,29 @@ struct _cex_arr_slice
  * @brief Iterates through array: itvar is struct {eltype* val, usize idx}
  */
 #define for$array(it, array, length)                                                               \
-    struct cex$tmpname(__cex_arriter_)                                                           \
+    struct cex$tmpname(__cex_arriter_)                                                             \
     {                                                                                              \
         typeof(*array)* val;                                                                       \
         usize idx;                                                                                 \
     };                                                                                             \
-    usize cex$tmpname(__cex_arriter__length) = (length); /* prevents multi call of (length)*/    \
-    for (struct cex$tmpname(__cex_arriter_) it = { .val = array, .idx = 0 };                     \
-         it.idx < cex$tmpname(__cex_arriter__length);                                            \
+    usize cex$tmpname(__cex_arriter__length) = (length); /* prevents multi call of (length)*/      \
+    for (struct cex$tmpname(__cex_arriter_) it = { .val = array, .idx = 0 };                       \
+         it.idx < cex$tmpname(__cex_arriter__length);                                              \
          it.val++, it.idx++)
 
 /**
  * @brief Iterates through array (reverse order): itvar is struct {eltype* val, usize idx}
  */
 #define for$array_rev(it, array, length)                                                           \
-    struct cex$tmpname(__cex_arriter_)                                                           \
+    struct cex$tmpname(__cex_arriter_)                                                             \
     {                                                                                              \
         typeof(*array)* val;                                                                       \
         usize idx;                                                                                 \
     };                                                                                             \
-    usize cex$tmpname(__cex_arriter__length) = (length); /* prevents multi call of (length)*/    \
-    for (struct cex$tmpname(__cex_arriter_)                                                      \
-             it = { .val = (array) + cex$tmpname(__cex_arriter__length),                         \
-                    .idx = cex$tmpname(__cex_arriter__length) };                                 \
+    usize cex$tmpname(__cex_arriter__length) = (length); /* prevents multi call of (length)*/      \
+    for (struct cex$tmpname(__cex_arriter_)                                                        \
+             it = { .val = (array) + cex$tmpname(__cex_arriter__length),                           \
+                    .idx = cex$tmpname(__cex_arriter__length) };                                   \
          it.idx-- > 0 && (it.val--);)
 
 /**
@@ -507,7 +516,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
  * for$iter(u32, it, array_iterator(arr2, arr$len(arr2), &it.iterator))
  */
 #define for$iter(eltype, it, iter_func)                                                            \
-    union cex$tmpname(__cex_iter_)                                                               \
+    union cex$tmpname(__cex_iter_)                                                                 \
     {                                                                                              \
         cex_iterator_s iterator;                                                                   \
         struct /* NOTE:  iterator above and this struct shadow each other */                       \
@@ -526,7 +535,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
         };                                                                                         \
     };                                                                                             \
                                                                                                    \
-    for (union cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; it.val != NULL;             \
+    for (union cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; it.val != NULL;               \
          it.val = (iter_func))
 
 

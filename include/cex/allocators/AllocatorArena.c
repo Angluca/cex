@@ -66,6 +66,7 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
 #endif
     uassert(size - alloc_size >= sizeof(allocator_arena_rec_s));
     uassert(size - alloc_size <= 255 - sizeof(allocator_arena_rec_s) && "ptr_offset oveflow");
+    uassert(size < alloc_size + 128 && "weird overflow");
 
     return (allocator_arena_rec_s){
         .size = alloc_size, // original size of allocation
@@ -88,7 +89,7 @@ _cex_allocator_arena__new_page(AllocatorArena_c* self, usize page_size)
     if (page == NULL) {
         return false; // memory error
     }
-    uassert(mem$aligned_pointer(page, alignof(allocator_arena_page_s)) == page);
+    uassert(mem$aligned_pointer(page, 64) == page);
 
     page->prev_page = self->last_page;
     page->used_start = self->used;
@@ -114,13 +115,14 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     // TODO: check if existing page has enough capacity + adding extra pages
     if (self->last_page == NULL) {
         usize _page_size = _cex_alloc_estimate_page_size(self->page_size, req_size);
-        if(!_cex_allocator_arena__new_page(self, _page_size)) {
+        if (!_cex_allocator_arena__new_page(self, _page_size)) {
             return NULL; // memory error
         }
     }
     allocator_arena_page_s* page = self->last_page;
     // TODO: adding new pages if needed
     uassert(page->capacity - page->cursor >= req_size);
+    uassert(page->cursor % 8 == 0);
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
     uassert(mem$aligned_pointer(page_rec, 8) == page_rec && "unaligned properly!");
@@ -128,14 +130,29 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     _Static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
 
     *page_rec = rec;
-    void* result = ((char*)page_rec) + rec.ptr_offset;
+    if (alignment == 0) {
+        alignment = alignof(void*);
+    }
+    void* result = mem$aligned_pointer((char*)page_rec + sizeof(allocator_arena_rec_s), alignment);
+
+    uassert((char*)result >= ((char*)page_rec) + sizeof(allocator_arena_rec_s));
+    uassert(
+        (char*)result - (((char*)page_rec) + (isize)sizeof(allocator_arena_rec_s)) <= (isize)alignment
+    );
+    page_rec->ptr_offset = (char*)result - (char*)page_rec;
+    req_size = page_rec->size + page_rec->ptr_offset + page_rec->ptr_padding;
+
     mem$asan_poison(page_rec->__poison_area, sizeof(page_rec->__poison_area));
     if (page_rec->ptr_padding) {
         // poison trailing data if any padding allowed
-        mem$asan_poison(((char*)result)+rec.size, rec.ptr_padding); 
+        mem$asan_poison(((char*)result) + rec.size, rec.ptr_padding);
     }
     self->used += req_size;
     self->stats.bytes_alloc += req_size;
+    page->cursor += req_size;
+    uassert(page->cursor % 8 == 0);
+    uassert(alignment == 0 || ((usize)(result) & ((alignment)-1)) == 0);
+
     return result;
 }
 static void*
@@ -177,6 +194,8 @@ _cex_allocator_arena__scope_enter(IAllocator allc)
 {
     _cex_allocator_arena__validate(allc);
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
+    // NOTE: If scope_depth is higher CEX_ALLOCATOR_MAX_SCOPE_STACK, we stop marking
+    //  all memory will be released after exiting scope_depth == CEX_ALLOCATOR_MAX_SCOPE_STACK
     if (self->scope_depth < arr$len(self->scope_stack)) {
         self->scope_stack[self->scope_depth] = self->used;
     }
@@ -190,6 +209,22 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     uassert(self->scope_depth > 0);
     self->scope_depth--;
+    if (self->scope_depth >= arr$len(self->scope_stack)) {
+        // Scope overflow, wait until we reach CEX_ALLOCATOR_MAX_SCOPE_STACK
+        return;
+    }
+    usize used_mark = self->scope_stack[self->scope_depth];
+    (void)used_mark;
+
+    allocator_arena_page_s* page = self->last_page;
+    while (page) {
+        var tpage = page->prev_page;
+        page->last_alloc = NULL; // TODO: invalid?
+
+        // if (page->used_start + page->cursor)
+        // mem$free(mem$, page);
+        page = tpage;
+    }
 }
 static u32
 _cex_allocator_arena__scope_depth(IAllocator allc)
@@ -245,7 +280,7 @@ AllocatorArena_destroy(IAllocator self)
     AllocatorArena_c* allc = (AllocatorArena_c*)self;
 
     allocator_arena_page_s* page = allc->last_page;
-    while(page) {
+    while (page) {
         var tpage = page->prev_page;
         mem$free(mem$, page);
         page = tpage;

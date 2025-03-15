@@ -142,7 +142,6 @@ cexds_arrfreef(void* a)
 #define CEXDS_BUCKET_MASK (CEXDS_BUCKET_LENGTH - 1)
 #define CEXDS_CACHE_LINE_SIZE 64
 
-#define CEXDS_ALIGN_FWD(n, a) (((n) + (a) - 1) & ~((a) - 1))
 #define cexds_hash_table(a) ((cexds_hash_index*)cexds_header(a)->hash_table)
 
 typedef struct
@@ -251,7 +250,7 @@ cexds_make_hash_index(
         (slot_count >> CEXDS_BUCKET_SHIFT) * sizeof(cexds_hash_bucket) + sizeof(cexds_hash_index) +
             CEXDS_CACHE_LINE_SIZE - 1
     );
-    t->storage = (cexds_hash_bucket*)CEXDS_ALIGN_FWD((size_t)(t + 1), CEXDS_CACHE_LINE_SIZE);
+    t->storage = (cexds_hash_bucket*)mem$aligned_pointer((size_t)(t + 1), CEXDS_CACHE_LINE_SIZE);
     t->slot_count = slot_count;
     t->slot_count_log2 = cexds_log2(slot_count);
     t->tombstone_count = 0;
