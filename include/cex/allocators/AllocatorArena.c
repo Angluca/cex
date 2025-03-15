@@ -233,6 +233,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
 
             uassert(self->used >= free_len);
             self->used -= free_len;
+            self->stats.bytes_free += free_len;
             break;  // we are done
         } else {
             uassert(false && "TODO: free full page");
@@ -291,11 +292,30 @@ AllocatorArena_create(usize page_size)
     return &self->alloc;
 }
 
+bool
+AllocatorArena_sanitize(IAllocator allc)
+{
+    (void)allc;
+    _cex_allocator_arena__validate(allc);
+    AllocatorArena_c* self = (AllocatorArena_c*)allc;
+    if (self->scope_depth == 0) {
+        if (self->stats.bytes_alloc != self->stats.bytes_free) {
+            uassert(self->stats.bytes_alloc == self->stats.bytes_free && "memory leaks?");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void
 AllocatorArena_destroy(IAllocator self)
 {
     _cex_allocator_arena__validate(self);
     AllocatorArena_c* allc = (AllocatorArena_c*)self;
+    #ifdef CEXTEST
+    uassert(AllocatorArena_sanitize(self));
+    #endif
 
     allocator_arena_page_s* page = allc->last_page;
     while (page) {
@@ -304,15 +324,4 @@ AllocatorArena_destroy(IAllocator self)
         page = tpage;
     }
     mem$free(mem$, allc);
-}
-
-bool
-AllocatorArena_sanitize(IAllocator self)
-{
-    (void)self;
-    _cex_allocator_arena__validate(self);
-    AllocatorArena_c* allc = (AllocatorArena_c*)self;
-    (void)allc;
-
-    return true;
 }
