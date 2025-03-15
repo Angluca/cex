@@ -1,6 +1,7 @@
 
 #include <cex/all.c>
 #include <cex/allocator2.c>
+#include <cex/ds.c>
 #include <cex/allocators/AllocatorArena.c>
 #include <cex/mem.h>
 #include <cex/test/fff.h>
@@ -28,13 +29,13 @@ test$setup()
         int cmp_res = memcmp(&res, &exp, sizeof(allocator_arena_rec_s));                           \
         if (cmp_res != 0) {                                                                        \
             printf(                                                                                \
-                "Wrong result: {.size = %d, .ptr_offset=%d, .ptr_padding=%d}\n",                     \
+                "Wrong result: {.size = %d, .ptr_offset=%d, .ptr_padding=%d}\n",                   \
                 res.size,                                                                          \
                 res.ptr_offset,                                                                    \
                 res.ptr_padding                                                                    \
             );                                                                                     \
         }                                                                                          \
-        cmp_res == 0;                                                                                   \
+        cmp_res == 0;                                                                              \
     })
 
 test$case(test_allocator_arena_alloc_size)
@@ -125,6 +126,38 @@ test$case(test_allocator_arena_malloc)
     return EOK;
 }
 
+test$case(test_allocator_arena_malloc_pointer_alignment)
+{
+
+    IAllocator arena = AllocatorArena_create(4096 * 100);
+    tassert(arena != NULL);
+
+    mem$scope(arena, _)
+    {
+        for (int i = 0; i < 100; i++) {
+            char* p = mem$malloc(arena, i % 32 + 1);
+            tassert(p != NULL);
+            tassert(mem$aligned_pointer(p, 8) == p);
+        }
+        u32 align[] = { 8, 16, 32, 64 };
+
+        for$arr(alignment, align)
+        {
+            tassert(alignment >= 8);
+            tassert(alignment <= 64);
+            for (int i = 0; i < 100; i++) {
+                char* p = arena->malloc(arena, alignment * (i % 4 + 1), alignment);
+                tassert(p != NULL);
+                // ensure returned pointers are aligned
+                tassert((usize)alignment * (((usize)p + (usize)alignment - 1) / (usize)alignment) == (usize)p);
+            }
+        }
+    }
+
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -134,6 +167,7 @@ main(int argc, char* argv[])
     test$run(test_allocator_arena_alloc_size);
     test$run(test_allocator_arena_create_destroy);
     test$run(test_allocator_arena_malloc);
+    test$run(test_allocator_arena_malloc_pointer_alignment);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
