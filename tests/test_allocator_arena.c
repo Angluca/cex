@@ -153,6 +153,7 @@ test$case(test_allocator_arena_malloc)
                 tassert_eqi(allc->scope_stack[1], 112);
                 tassert_eqi(allc->scope_stack[2], 112 + 16);
                 tassert(allc->last_page->last_alloc == p3);
+                AllocatorArena_sanitize(arena);
             }
             // Unwinding arena
             tassert_eqi(allc->used, 112 + 16);

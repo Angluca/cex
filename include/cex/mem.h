@@ -19,3 +19,19 @@
 
 // TODO: add sanitizer checks and if safe build #ifdefs
 #define mem$asan_poison(addr, len) ({ memset((addr), 0xf7, (len)); })
+
+#define mem$asan_unpoison(addr, len) ({ memset((addr), 0x00, (len)); })
+
+#define mem$asan_poison_check(addr, len)                                                           \
+    ({                                                                                             \
+        usize _len = (len);                                                                        \
+        u8* _addr = (void*)(addr);                                                               \
+        bool result = _addr != NULL && _len > 0;                                                   \
+        for (usize i = 0; i < _len; i++) {                                                         \
+            if (_addr[i] != 0xf7) {                                                                \
+                result = false;                                                                    \
+                break;                                                                             \
+            }                                                                                      \
+        }                                                                                          \
+        result;                                                                                    \
+    })
