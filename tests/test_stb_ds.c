@@ -54,6 +54,12 @@ test$case(test_array)
     tassert(array != NULL);
     tassert_eqi(arr$cap(array), 16);
 
+    int z = 200;
+    int* zp = &z;
+    size_t s = {z};
+    size_t s2 = {(*zp)};
+    tassert_eqi(s, 200);
+    tassert_eqi(s2, 200);
 
     add_to_arr(&array);
     add_to_str(&array2);

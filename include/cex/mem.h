@@ -11,7 +11,7 @@ s;\
     _Static_assert(alignment <= 1024, "alignment is too high");\
     _Static_assert(mem$is_power_of2(alignment), "must be pow2");\
     usize s = (usize)(size); \
-    alignment * ((s + alignment - 1) / alignment);\
+    (usize)alignment * ((s + (usize)alignment - 1) / (usize)alignment);\
 })
 
 #define mem$aligned_pointer(p, alignment) (void*)mem$aligned_round(p, alignment)
@@ -21,3 +21,10 @@ s;\
 #define mem$addressof(typevar, value)  ((typeof(typevar)[1]){ (value) })
 
 #define mem$offsetof(var, field) ((char*)&(var)->field - (char*)(var))
+
+#define mem$asan_enabled() 1
+
+// TODO: add sanitizer checks and if safe build #ifdefs
+#define mem$asan_poison(addr, len) ({\
+    memset((addr), 0xf7, (len)); \
+})

@@ -3,6 +3,10 @@
 #include <stddef.h>
 #include <threads.h>
 
+#define CEX_ALLOCATOR_HEAP_MAGIC 0xF00dBa01
+#define CEX_ALLOCATOR_TEMP_MAGIC 0xF00dBeef
+#define CEX_ALLOCATOR_ARENA_MAGIC 0xFeedF001
+
 // clang-format off
 #define IAllocator const struct Allocator2_i* const 
 typedef struct Allocator2_i
@@ -14,8 +18,7 @@ typedef struct Allocator2_i
     void* (*const free)(IAllocator self, void* ptr);
     const struct Allocator2_i* (*const scope_enter)(IAllocator self);   /* Only for arenas/temp alloc! */
     void (*const scope_exit)(IAllocator self);    /* Only for arenas/temp alloc! */
-    // FILE* (*const fopen)(const char* filename, const char* mode);
-    // int (*const open)(const char* pathname, int flags, unsigned int mode);
+    u32 (*const scope_depth)(IAllocator self);  /* Current mem$scope depth */
     struct {
         u32 magic_id;
         bool is_arena;
@@ -54,7 +57,7 @@ _cex_allocator_memscope_cleanup(IAllocator* allc)
 }
 
 extern thread_local AllocatorHeap_c _cex__default_global__allocator_temp;
-#define tmem$ ((IAllocator) & (_cex__default_global__allocator_temp.alloc))
+#define tmem$ ((IAllocator)(&_cex__default_global__allocator_temp.alloc))
 
 #define mem$ _cex__default_global__allocator_heap__allc
 #define mem$malloc(alloc, size) (alloc)->malloc((alloc), size, 0)
@@ -64,6 +67,9 @@ extern thread_local AllocatorHeap_c _cex__default_global__allocator_temp;
         (ptr) = NULL;                                                                              \
         (ptr);                                                                                     \
     })
+
+// TODO: IDEA -- add optional argument (count)
+#define mem$new(alloc, T) (typeof(T)*)(alloc)->calloc((alloc), 1, sizeof(T), _Alignof(T))
 /*
  */
 
