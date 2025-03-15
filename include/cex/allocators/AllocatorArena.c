@@ -1,5 +1,4 @@
 #include "AllocatorArena.h"
-#include <cex/mem.h>
 
 #define CEX_ARENA_MAX_ALLOC UINT32_MAX - 1000
 
@@ -112,7 +111,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     }
     usize req_size = rec.size + rec.ptr_offset + rec.ptr_padding;
 
-    // TODO: check if existing page has enough capacity
+    // TODO: check if existing page has enough capacity + adding extra pages
     if (self->last_page == NULL) {
         usize _page_size = _cex_alloc_estimate_page_size(self->page_size, req_size);
         if(!_cex_allocator_arena__new_page(self, _page_size)) {
@@ -120,6 +119,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
         }
     }
     allocator_arena_page_s* page = self->last_page;
+    // TODO: adding new pages if needed
     uassert(page->capacity - page->cursor >= req_size);
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
@@ -177,6 +177,9 @@ _cex_allocator_arena__scope_enter(IAllocator allc)
 {
     _cex_allocator_arena__validate(allc);
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
+    if (self->scope_depth < arr$len(self->scope_stack)) {
+        self->scope_stack[self->scope_depth] = self->used;
+    }
     self->scope_depth++;
     return allc;
 }
@@ -255,7 +258,7 @@ AllocatorArena_sanitize(IAllocator self)
 {
     _cex_allocator_arena__validate(self);
     AllocatorArena_c* allc = (AllocatorArena_c*)self;
-    mem$free(mem$, allc);
+    (void)allc;
 
     return true;
 }

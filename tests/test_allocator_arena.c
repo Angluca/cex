@@ -1,9 +1,6 @@
-
 #include <cex/all.c>
 #include <cex/allocator2.c>
-#include <cex/ds.c>
 #include <cex/allocators/AllocatorArena.c>
-#include <cex/mem.h>
 #include <cex/test/fff.h>
 #include <cex/test/test.h>
 
@@ -154,6 +151,7 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
         }
     }
 
+    AllocatorArena_sanitize(arena);
     AllocatorArena_destroy(arena);
     return EOK;
 }

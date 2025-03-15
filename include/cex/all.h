@@ -5,4 +5,6 @@
 #include "sbuf.h"
 #include "str.h"
 #include "io.h"
+#include "ds.h"
+#include "mem.h"
 

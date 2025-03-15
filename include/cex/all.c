@@ -6,5 +6,7 @@
 #include "sbuf.c"
 #include "str.c"
 #include "io.c"
+#include "mem.h"
+#include "ds.c"
 
 
