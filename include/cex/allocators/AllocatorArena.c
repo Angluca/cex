@@ -160,6 +160,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
 
     mem$asan_unpoison(((char*)result) - 1, rec.size + 1);
     *(((char*)result) - 1) = rec.ptr_offset;
+
     usize bytes_alloc = rec.ptr_offset + rec.size + rec.ptr_padding;
     self->used += bytes_alloc;
     self->stats.bytes_alloc += bytes_alloc;

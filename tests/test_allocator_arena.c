@@ -199,7 +199,7 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
                 tassert(p != NULL);
                 // ensure returned pointers are aligned
 
-                uassert(((usize)(p) & ((alignment) - 1)) == 0);
+                uassert(((usize)(p) & ((alignment)-1)) == 0);
                 allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
                 tassert_eqi(rec->ptr_alignment, alignment);
                 tassert_eqi(rec->size, alloc_size);
@@ -210,9 +210,60 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
                 tassert_eqi(rec->is_free, 1);
 
                 AllocatorArena_sanitize(arena);
-
             }
         }
+    }
+
+    AllocatorArena_sanitize(arena);
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
+test$case(test_allocator_arena_scope_sanitization)
+{
+
+    IAllocator arena = AllocatorArena_create(4096 * 100);
+    tassert(arena != NULL);
+
+    mem$scope(arena, _)
+    {
+        u32 align[] = { 8, 16, 32, 64 };
+
+
+        for (int i = 0; i < 10; i++) {
+            mem$scope(arena, _)
+            {
+                char* p = mem$malloc(arena, i % 32 + 1);
+                tassert(p != NULL);
+                tassert(mem$aligned_pointer(p, 8) == p);
+
+                for$arr(alignment, align)
+                {
+                    tassert(alignment >= 8);
+                    tassert(alignment <= 64);
+                    tassert(mem$is_power_of2(alignment));
+                    usize alloc_size = alignment * (i % 4 + 1);
+                    char* p = arena->malloc(arena, alloc_size, alignment);
+                    memset(p, 0xAA, alloc_size);
+                    tassert(p != NULL);
+                    // ensure returned pointers are aligned
+
+                    uassert(((usize)(p) & ((alignment)-1)) == 0);
+                    allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
+                    tassert_eqi(rec->ptr_alignment, alignment);
+                    tassert_eqi(rec->size, alloc_size);
+                    tassert_eqi(rec->is_free, 0);
+
+                    tassert(arena->free(arena, p) == NULL);
+                    tassert(mem$asan_poison_check(p, alloc_size));
+                    tassert_eqi(rec->is_free, 1);
+
+                    AllocatorArena_sanitize(arena);
+                }
+            }
+            AllocatorArena_sanitize(arena);
+        }
+        AllocatorArena_sanitize(arena);
     }
 
     AllocatorArena_sanitize(arena);
@@ -230,6 +281,7 @@ main(int argc, char* argv[])
     test$run(test_allocator_arena_create_destroy);
     test$run(test_allocator_arena_malloc);
     test$run(test_allocator_arena_malloc_pointer_alignment);
+    test$run(test_allocator_arena_scope_sanitization);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
