@@ -340,12 +340,14 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
             self->stats.bytes_free += free_len;
             break; // we are done
         } else {
-            uassert(false && "TODO: free full page");
-        }
-        // page->last_alloc = NULL; // TODO: invalid?
+            usize free_len = page->cursor;
+            uassert(self->used >= free_len);
 
-        // if (page->used_start + page->cursor)
-        // mem$free(mem$, page);
+            self->used -= free_len;
+            self->stats.bytes_free += free_len;
+            self->last_page = page->prev_page;
+            mem$free(mem$, page);
+        }
         page = tpage;
     }
 }

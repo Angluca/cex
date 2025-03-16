@@ -383,16 +383,36 @@ test$case(test_allocator_arena_multiple_pages)
     IAllocator arena = AllocatorArena_create(1024);
     AllocatorArena_c* allc = (AllocatorArena_c*)arena;
     tassert(arena != NULL);
+    allocator_arena_page_s* page = NULL;
 
     mem$scope(arena, _)
     {
         char* p = mem$malloc(arena, 1000);
         tassert(p != NULL);
 
-        allocator_arena_page_s* page = allc->last_page;
+        page = allc->last_page;
         tassert(page != NULL);
         tassert(page->prev_page == NULL);
+        tassert_eqi(allc->used, 1016);
+        tassert_eqi(page->cursor, 1016);
+
+
+        // next allocated on next page 
+        char* p2 = mem$malloc(arena, 1200);
+        tassert(p2 != NULL);
+        tassert(page != NULL);
+        tassert(allc->last_page != NULL);
+        tassert(allc->last_page != page);
+        tassert(page->prev_page == NULL);
+        tassert(allc->last_page->prev_page == page);
+        tassert_eqi(allc->used, 2232);
     }
+
+    tassert(allc->last_page != NULL);
+    tassert(allc->last_page == page); // replaced by first!
+    tassert(allc->last_page->prev_page == NULL);
+    tassert(allc->last_page->cursor == 0);
+    tassert_eqi(allc->used, 0);
 
     AllocatorArena_sanitize(arena);
     AllocatorArena_destroy(arena);
