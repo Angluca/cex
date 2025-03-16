@@ -1,6 +1,7 @@
 #include "AllocatorArena.h"
 
 #define CEX_ARENA_MAX_ALLOC UINT32_MAX - 1000
+#define CEX_ARENA_MAX_ALIGN 64
 
 static void
 _cex_allocator_arena__validate(IAllocator self)
@@ -19,14 +20,16 @@ static inline usize
 _cex_alloc_estimate_page_size(usize page_size, usize alloc_size)
 {
     uassert(alloc_size < CEX_ARENA_MAX_ALLOC && "allocation is to big");
-    usize base_page_size = page_size + sizeof(allocator_arena_page_s) + 64;
+    usize base_page_size = page_size + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN;
 
     if (alloc_size > 0.7 * base_page_size) {
         if (alloc_size > 1024 * 1024) {
             // TODO: align to closest system page size ? 4096 maybe?
-            return alloc_size * 1.1 + sizeof(allocator_arena_page_s) + 64;
+            return alloc_size * 1.1 + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN;
         } else {
-            usize result = mem$next_pow2(alloc_size + sizeof(allocator_arena_page_s) + 64);
+            usize result = mem$next_pow2(
+                alloc_size + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN
+            );
             uassert(mem$is_power_of2(result));
             return result;
         }
@@ -37,10 +40,10 @@ _cex_alloc_estimate_page_size(usize page_size, usize alloc_size)
 static allocator_arena_rec_s
 _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
 {
-    if (alloc_size == 0 || alloc_size > CEX_ARENA_MAX_ALLOC || alignment > 64) {
+    if (alloc_size == 0 || alloc_size > CEX_ARENA_MAX_ALLOC || alignment > CEX_ARENA_MAX_ALIGN) {
         uassert(alloc_size > 0);
         uassert(alloc_size <= CEX_ARENA_MAX_ALLOC && "allocation size is too high");
-        uassert(alignment <= 64);
+        uassert(alignment <= CEX_ARENA_MAX_ALIGN);
         return (allocator_arena_rec_s){ 0 };
     }
     usize size = alloc_size;
@@ -52,7 +55,7 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
         size = mem$aligned_round(alloc_size, 8);
     } else {
         uassert(mem$is_power_of2(alignment) && "must be pow2");
-        if ((alloc_size & (alignment-1)) != 0) {
+        if ((alloc_size & (alignment - 1)) != 0) {
             uassert(alloc_size % alignment == 0 && "requested size is not aligned");
             return (allocator_arena_rec_s){ 0 };
         }
@@ -126,30 +129,36 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(page->cursor % 8 == 0);
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
-    uassert(mem$aligned_pointer(page_rec, 8) == page_rec && "unaligned properly!");
+    uassert((((usize)(page_rec) & ((8) - 1)) == 0) && "unaligned pointer");
     _Static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
     _Static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
 
     mem$asan_unpoison(page_rec, sizeof(allocator_arena_rec_s));
     *page_rec = rec;
 
-    void* result = mem$aligned_pointer((char*)page_rec + sizeof(allocator_arena_rec_s), page_rec->ptr_alignment);
+    void* result = mem$aligned_pointer(
+        (char*)page_rec + sizeof(allocator_arena_rec_s),
+        rec.ptr_alignment
+    );
 
     uassert((char*)result >= ((char*)page_rec) + sizeof(allocator_arena_rec_s));
-    // NOTE: rec.ptr_offset expected to be largest possible alignment, real aligned pointer
-    //       position expected <= rec.ptr_offset, but keep req_size at upper bound for simplicity
-    page_rec->ptr_offset = (char*)result - (char*)page_rec;
-    uassert(page_rec->ptr_offset <= page_rec->ptr_alignment);
+    rec.ptr_offset = (char*)result - (char*)page_rec;
+    uassert(rec.ptr_offset <= rec.ptr_alignment);
+
+    page_rec->ptr_offset = rec.ptr_offset;
+    uassert(rec.ptr_alignment <= CEX_ARENA_MAX_ALIGN);
+    uassert(rec.ptr_padding <= 8);
 
     mem$asan_poison(page_rec->__poison_area, sizeof(page_rec->__poison_area));
-    mem$asan_unpoison((char*)result, page_rec->size);
+    mem$asan_unpoison(((char*)result) - 1, rec.size + 1);
+    *(((char*)result) - 1) = rec.ptr_offset;
     self->used += req_size;
     self->stats.bytes_alloc += req_size;
     page->cursor += req_size;
     page->last_alloc = result;
     uassert(page->cursor % 8 == 0);
     uassert(self->used % 8 == 0);
-    uassert(((usize)(result) & ((page_rec->ptr_alignment)-1)) == 0);
+    uassert(((usize)(result) & ((rec.ptr_alignment) - 1)) == 0);
 
     return result;
 }
@@ -309,15 +318,20 @@ AllocatorArena_sanitize(IAllocator allc)
             allocator_arena_rec_s* rec = (allocator_arena_rec_s*)&page->data[i];
             uassert(rec->size <= page->capacity);
             uassert(rec->size <= page->cursor);
-            uassert(rec->ptr_offset <= 128);
-            uassert(rec->ptr_padding <= 32);
+            uassert(rec->ptr_offset <= CEX_ARENA_MAX_ALIGN);
+            uassert(rec->ptr_padding <= 8);
+            uassert(rec->ptr_alignment <= CEX_ARENA_MAX_ALIGN);
+            uassert(mem$is_power_of2(rec->ptr_alignment));
             uassert(
                 mem$asan_poison_check(rec->__poison_area, sizeof(rec->__poison_area)) &&
                 "poison data overwrite at allocator_arena_rec_s"
             );
 
+            char* alloc_p = ((char*)rec) + rec->ptr_offset;
+            u8 poffset = alloc_p[-1];
+            uassert(poffset==rec->ptr_offset && "near pointer offset mismatch to rec.ptr_offset");
+
             if (rec->ptr_padding) {
-                char* alloc_p = ((char*)rec) + rec->ptr_offset;
                 uassert(
                     mem$asan_poison_check(alloc_p + rec->size, rec->ptr_padding) &&
                     "poison data overwrite past allocated item"
