@@ -190,18 +190,20 @@ static void*
 _cex_allocator_arena__calloc(IAllocator allc, usize nmemb, usize size, usize alignment)
 {
     _cex_allocator_arena__validate(allc);
-
-    if (alignment <= alignof(usize)) {
-        return calloc(nmemb, size);
+    if (nmemb > CEX_ARENA_MAX_ALLOC) {
+        uassert(nmemb < CEX_ARENA_MAX_ALLOC);
+        return NULL;
+    }
+    if (size > CEX_ARENA_MAX_ALLOC) {
+        uassert(size < CEX_ARENA_MAX_ALLOC);
+        return NULL;
+    }
+    usize alloc_size = nmemb * size;
+    void* result = _cex_allocator_arena__malloc(allc, alloc_size, alignment);
+    if (result != NULL) {
+        memset(result, 0, alloc_size);
     }
 
-#ifdef _WIN32
-    void* result = _aligned_malloc(alignment, size * nmemb);
-#else
-    void* result = aligned_alloc(alignment, size * nmemb);
-#endif
-
-    memset(result, 0, size * nmemb);
     return result;
 }
 

@@ -200,7 +200,10 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
                 tassert(alignment <= 64);
                 tassert(mem$is_power_of2(alignment));
                 usize alloc_size = alignment * (i % 4 + 1);
-                char* ptr_algn = arena->malloc(arena, alloc_size, alignment);
+                char* ptr_algn = arena->calloc(arena, 1, alloc_size, alignment);
+                for(u32 j = 0; j < alloc_size; j++){
+                    tassert(ptr_algn[j] == 0);
+                }
                 memset(ptr_algn, 0xAA, alloc_size);
                 tassert(ptr_algn != NULL);
                 // ensure returned pointers are aligned
