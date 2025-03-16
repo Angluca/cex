@@ -200,6 +200,10 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
                     (usize)alignment * (((usize)p + (usize)alignment - 1) / (usize)alignment) ==
                     (usize)p
                 );
+                allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
+                tassert_eqi(rec->ptr_alignment, alignment);
+                tassert_eqi(rec->size, alloc_size);
+                tassert(mem$asan_poison_check(rec->__poison_area, sizeof(rec->__poison_area)));
             }
         }
     }

@@ -80,6 +80,15 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
     };
 }
 
+static inline allocator_arena_rec_s*
+_cex_alloc_arena__get_rec(void* alloc_pointer) 
+{
+    uassert(alloc_pointer != NULL);
+    u8 offset = *((u8*)alloc_pointer - 1);
+    uassert(offset <= CEX_ARENA_MAX_ALIGN);
+    return (allocator_arena_rec_s*)((char*)alloc_pointer - offset);
+}
+
 static bool
 _cex_allocator_arena__new_page(AllocatorArena_c* self, usize page_size)
 {
