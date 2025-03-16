@@ -1,5 +1,5 @@
 #pragma once
-#include <cex/all.h>
+#include "all.h"
 #include <stddef.h>
 
 #define CEX_ALLOCATOR_MAX_SCOPE_STACK 16
@@ -55,3 +55,5 @@ typedef struct allocator_arena_rec_s
 } allocator_arena_rec_s;
 _Static_assert(sizeof(allocator_arena_rec_s) == 8, "size!");
 _Static_assert(offsetof(allocator_arena_rec_s, ptr_offset) == 7, "ptr_offset must be last");
+
+extern thread_local AllocatorArena_c _cex__default_global__allocator_temp;

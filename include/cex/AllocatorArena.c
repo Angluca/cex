@@ -3,6 +3,7 @@
 #define CEX_ARENA_MAX_ALLOC UINT32_MAX - 1000
 #define CEX_ARENA_MAX_ALIGN 64
 
+
 static void
 _cex_allocator_arena__validate(IAllocator self)
 {
@@ -489,3 +490,21 @@ AllocatorArena_destroy(IAllocator self)
     }
     mem$free(mem$, allc);
 }
+
+thread_local AllocatorArena_c _cex__default_global__allocator_temp = {
+    .alloc = {
+        .malloc = _cex_allocator_arena__malloc,
+        .realloc = _cex_allocator_arena__realloc,
+        .calloc = _cex_allocator_arena__calloc,
+        .free = _cex_allocator_arena__free,
+        .scope_enter = _cex_allocator_arena__scope_enter,
+        .scope_exit = _cex_allocator_arena__scope_exit,
+        .scope_depth = _cex_allocator_arena__scope_depth,
+        .meta = {
+            .magic_id = CEX_ALLOCATOR_TEMP_MAGIC,
+            .is_arena = true,  // coming... soon
+            .is_temp = true, 
+        }, 
+    },
+    .page_size = CEX_ALLOCATOR_TEMP_PAGE_SIZE,
+};

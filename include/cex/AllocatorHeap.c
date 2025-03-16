@@ -1,6 +1,4 @@
-#pragma once
-#include "allocator.h"
-
+#include "AllocatorHeap.h"
 
 // clang-format off
 static void* _cex_allocator_heap__malloc(IAllocator self,usize size, usize alignment);
@@ -30,23 +28,6 @@ AllocatorHeap_c _cex__default_global__allocator_heap = {
 };
 IAllocator const _cex__default_global__allocator_heap__allc = &_cex__default_global__allocator_heap.alloc;
 
-thread_local AllocatorHeap_c _cex__default_global__allocator_temp = {
-    .alloc = {
-        .malloc = _cex_allocator_heap__malloc,
-        .realloc = _cex_allocator_heap__realloc,
-        .calloc = _cex_allocator_heap__calloc,
-        .free = _cex_allocator_heap__free,
-        .scope_enter = _cex_allocator_heap__scope_enter,
-        .scope_exit = _cex_allocator_heap__scope_exit,
-        .scope_depth = _cex_allocator_heap__scope_depth,
-        .meta = {
-            // .magic_id = CEX_ALLOCATOR_TEMP_MAGIC, // TODO: another magic for temp
-            .magic_id = CEX_ALLOCATOR_HEAP_MAGIC,
-            .is_arena = true,  // coming... soon
-            .is_temp = true, 
-        }
-    },
-};
 
 static void
 _cex_allocator_heap__validate(IAllocator self)

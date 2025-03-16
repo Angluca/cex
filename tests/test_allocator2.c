@@ -46,7 +46,7 @@ test$case(test_allocator_api)
 test$case(test_allocator_temp)
 {
     void* p = mem$malloc(tmem$, 100);
-    tassert_eqi(_cex__default_global__allocator_temp.stats.n_allocs, 1);
+    tassert_eqi(_cex__default_global__allocator_temp.stats.bytes_alloc, 100);
 
     tassert(p != NULL);
     p = mem$free(tmem$, p);
