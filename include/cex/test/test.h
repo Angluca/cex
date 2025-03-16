@@ -322,6 +322,12 @@ __cex_test_run_postmortem()
  *  TEST FUNCTIONS
  *
  */
+#ifndef CEXTEST
+#define test$env_check()                                                                           \
+    uassert(false && "CEXTEST was not defined, pass -DCEXTEST or #define CEXTEST")
+#else
+#define test$env_check() (void)0
+#endif
 
 #define test$setup()                                                                               \
     struct __CexTestContext_s __CexTestContext = {                                                 \
@@ -461,6 +467,7 @@ __cex_test_run_postmortem()
 //
 #define test$args_parse(argc, argv)                                                                \
     do {                                                                                           \
+        test$env_check();                                                                          \
         if (argc == 1)                                                                             \
             break;                                                                                 \
         if (argc > 3) {                                                                            \
