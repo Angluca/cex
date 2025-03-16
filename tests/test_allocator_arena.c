@@ -176,41 +176,63 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
 {
 
     IAllocator arena = AllocatorArena_create(4096 * 100);
+    AllocatorArena_c* allc = (AllocatorArena_c*)arena;
     tassert(arena != NULL);
 
     mem$scope(arena, _)
     {
+        char* _p = mem$malloc(arena, 100);
+        tassert(_p != NULL);
+        allocator_arena_page_s* page = allc->last_page;
+        tassert(page != NULL);
+
+        u32 align[] = { 8, 16, 32, 64 };
+
         for (int i = 0; i < 100; i++) {
             char* p = mem$malloc(arena, i % 32 + 1);
             tassert(p != NULL);
             tassert(mem$aligned_pointer(p, 8) == p);
-        }
-        u32 align[] = { 8, 16, 32, 64 };
 
-        for (int i = 0; i < 100; i++) {
             for$arr(alignment, align)
             {
+                tassert(page == allc->last_page && "this test case expected to use one page");
                 tassert(alignment >= 8);
                 tassert(alignment <= 64);
                 tassert(mem$is_power_of2(alignment));
                 usize alloc_size = alignment * (i % 4 + 1);
-                char* p = arena->malloc(arena, alloc_size, alignment);
-                memset(p, 0xAA, alloc_size);
-                tassert(p != NULL);
+                char* ptr_algn = arena->malloc(arena, alloc_size, alignment);
+                memset(ptr_algn, 0xAA, alloc_size);
+                tassert(ptr_algn != NULL);
                 // ensure returned pointers are aligned
 
-                uassert(((usize)(p) & ((alignment)-1)) == 0);
-                allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
+                uassert(((usize)(ptr_algn) & ((alignment)-1)) == 0);
+                allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(ptr_algn);
                 tassert_eqi(rec->ptr_alignment, alignment);
                 tassert_eqi(rec->size, alloc_size);
                 tassert_eqi(rec->is_free, 0);
 
-                tassert(arena->free(arena, p) == NULL);
-                tassert(mem$asan_poison_check(p, alloc_size));
-                tassert_eqi(rec->is_free, 1);
+                if (i % 2 == 0) {
+                    tassert(arena->free(arena, ptr_algn) == NULL);
+                    tassert(mem$asan_poison_check(ptr_algn, alloc_size));
+                    tassert_eqi(rec->is_free, 1);
+                } else {
+                    usize alloc_size2 = alignment * (i % 4 + 2);
+                    tassert(alloc_size2 > alloc_size);
+
+                    char* ptr_algn2 = arena->realloc(arena, ptr_algn, alloc_size2, alignment);
+                    tassert(ptr_algn2);
+                    tassert_eqi(rec->ptr_alignment, alignment);
+                    tassert_eqi(rec->size, alloc_size2);
+                    tassert_eqi(rec->is_free, 0);
+                }
 
                 AllocatorArena_sanitize(arena);
             }
+
+            char* p2 = mem$realloc(arena, p, i % 32 + 100);
+            tassert(p2 != NULL);
+            tassert(mem$aligned_pointer(p2, 8) == p2);
+            AllocatorArena_sanitize(arena);
         }
     }
 

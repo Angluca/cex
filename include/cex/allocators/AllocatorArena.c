@@ -243,8 +243,8 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
     }
 
     if (size <= rec->size) {
-        uassert(size >= rec->ptr_alignment);
         uassert(false && "TODO: implement shrinking");
+        uassert(size >= rec->ptr_alignment);
         return old_ptr;
     }
 
