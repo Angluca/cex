@@ -271,6 +271,48 @@ test$case(test_allocator_arena_scope_sanitization)
     return EOK;
 }
 
+test$case(test_allocator_arena_realloc)
+{
+
+    IAllocator arena = AllocatorArena_create(4096);
+    tassert(arena != NULL);
+
+    AllocatorArena_c* allc = (AllocatorArena_c*)arena;
+
+    mem$scope(arena, _)
+    {
+        char* p = mem$malloc(arena, 100);
+        tassert(p != NULL);
+        // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
+        tassert_eqi(allc->stats.bytes_alloc, 112);
+        tassert_eqi(allc->used, 112);
+
+        char* p2 = mem$malloc(arena, 100);
+        tassert(p2 != NULL);
+        tassert_eqi(allc->stats.bytes_alloc, 112 + 112);
+        tassert_eqi(allc->used, 112 + 112);
+
+        char* p3 = mem$realloc(arena, p, 200);
+        tassert(p3 != NULL);
+        tassert(p3 != p);
+        tassert_eqi(allc->stats.bytes_alloc, 112 + 112 + 216);
+        tassert_eqi(allc->used, 112 + 112 + 216);
+
+        allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
+        tassert_eqi(rec->ptr_alignment, 8);
+        tassert_eqi(rec->size, 100);
+        tassert_eqi(rec->is_free, 1);
+
+        rec = _cex_alloc_arena__get_rec(p3);
+        tassert_eqi(rec->ptr_alignment, 8);
+        tassert_eqi(rec->size, 200);
+        tassert_eqi(rec->is_free, 0);
+    }
+
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -282,6 +324,7 @@ main(int argc, char* argv[])
     test$run(test_allocator_arena_malloc);
     test$run(test_allocator_arena_malloc_pointer_alignment);
     test$run(test_allocator_arena_scope_sanitization);
+    test$run(test_allocator_arena_realloc);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

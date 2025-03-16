@@ -190,13 +190,6 @@ _cex_allocator_arena__calloc(IAllocator allc, usize nmemb, usize size, usize ali
     memset(result, 0, size * nmemb);
     return result;
 }
-static void*
-_cex_allocator_arena__realloc(IAllocator allc, void* ptr, usize size, usize alignment)
-{
-    _cex_allocator_arena__validate(allc);
-    uassert(alignment <= alignof(size_t) && "TODO: implement aligned version");
-    return realloc(ptr, size);
-}
 
 static void*
 _cex_allocator_arena__free(IAllocator allc, void* ptr)
@@ -215,6 +208,41 @@ _cex_allocator_arena__free(IAllocator allc, void* ptr)
 
     return NULL;
 }
+
+static void*
+_cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize alignment)
+{
+    _cex_allocator_arena__validate(allc);
+    uassert(old_ptr != NULL);
+    uassert(size > 0);
+    AllocatorArena_c* self = (AllocatorArena_c*)allc;
+    uassert(self->scope_depth > 0 && "arena allocation must be performed in mem$scope() block!");
+
+    allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(old_ptr);
+    uassert(!rec->is_free && "trying to realloc() already freed pointer");
+
+    if (size <= rec->size) {
+        uassert(size >= rec->ptr_alignment);
+        uassert(false && "TODO: implement shrinking");
+        return old_ptr;
+    }
+
+    if (self->last_page && self->last_page->last_alloc == old_ptr) {
+        // TODO: implement shrinking too!
+        uassert(false && "TODO: implement extending last pointer");
+        return NULL;
+    } else {
+        void* new_ptr = _cex_allocator_arena__malloc(allc, size, alignment);
+        if (new_ptr == NULL) {
+            return NULL;
+        }
+        memcpy(new_ptr, old_ptr, rec->size);
+        memset((char*)new_ptr + rec->size, 0, size - rec->size);
+        _cex_allocator_arena__free(allc, old_ptr);
+        return new_ptr;
+    }
+}
+
 
 static const struct Allocator2_i*
 _cex_allocator_arena__scope_enter(IAllocator allc)
@@ -348,6 +376,13 @@ AllocatorArena_sanitize(IAllocator allc)
                 uassert(
                     mem$asan_poison_check(alloc_p + rec->size, rec->ptr_padding) &&
                     "poison data overwrite past allocated item"
+                );
+            }
+
+            if (rec->is_free) {
+                uassert(
+                    mem$asan_poison_check(alloc_p, rec->size) &&
+                    "poison data corruction in freed item area"
                 );
             }
             i += rec->ptr_padding + rec->ptr_offset + rec->size;

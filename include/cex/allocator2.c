@@ -92,6 +92,7 @@ static void*
 _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize alignment)
 {
     _cex_allocator_heap__validate(self);
+    uassert(ptr != NULL);
     uassert(alignment <= alignof(size_t) && "TODO: implement aligned version");
     return realloc(ptr, size);
 }

@@ -61,6 +61,7 @@ extern thread_local AllocatorHeap_c _cex__default_global__allocator_temp;
 
 #define mem$ _cex__default_global__allocator_heap__allc
 #define mem$malloc(alloc, size) (alloc)->malloc((alloc), size, 0)
+#define mem$realloc(alloc, old_ptr, size) (alloc)->realloc((alloc), old_ptr, size, 0)
 #define mem$free(alloc, ptr)                                                                       \
     ({                                                                                             \
         (ptr) = (alloc)->free((alloc), ptr);                                                       \
