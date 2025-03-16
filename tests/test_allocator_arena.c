@@ -247,7 +247,7 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
 test$case(test_allocator_arena_scope_sanitization)
 {
 
-    IAllocator arena = AllocatorArena_create(4096 * 100);
+    IAllocator arena = AllocatorArena_create(4096);
     tassert(arena != NULL);
 
     mem$scope(arena, _)
@@ -421,6 +421,62 @@ test$case(test_allocator_arena_multiple_pages)
     return EOK;
 }
 
+test$case(test_allocator_arena_realloc_shrink)
+{
+
+    IAllocator arena = AllocatorArena_create(4096);
+    tassert(arena != NULL);
+
+    AllocatorArena_c* allc = (AllocatorArena_c*)arena;
+
+    mem$scope(arena, _)
+    {
+        char* p = mem$malloc(arena, 100);
+        tassert(p != NULL);
+        memset(p, 0xAA, 100);
+        // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
+        tassert_eqi(allc->stats.bytes_alloc, 112);
+        tassert_eqi(allc->used, 112);
+        AllocatorArena_sanitize(arena);
+
+        allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
+        tassert_eqi(rec->ptr_alignment, 8);
+        tassert_eqi(rec->size, 100);
+        tassert_eqi(rec->ptr_padding, 4);
+        tassert_eqi(rec->is_free, 0);
+        tassert(mem$asan_poison_check(p + rec->size, rec->ptr_padding));
+
+        // same size just ignored
+        char* p2 = mem$realloc(arena, p, 100);
+        tassert(p2 != NULL);
+        tassert(p2 == p);
+        tassert_eqi(allc->stats.bytes_alloc, 112);
+        tassert_eqi(allc->used, 112);
+        tassert_eqi(rec->ptr_alignment, 8);
+        tassert_eqi(rec->size, 100);
+        tassert_eqi(rec->ptr_padding, 4);
+        tassert_eqi(rec->is_free, 0);
+        tassert(mem$asan_poison_check(p + rec->size, rec->ptr_padding));
+        AllocatorArena_sanitize(arena);
+
+        char* p3 = mem$realloc(arena, p, 50);
+        tassert(p3 != NULL);
+        tassert(p3 == p);
+        tassert(p3 == p2);
+        tassert_eqi(allc->stats.bytes_alloc, 112);
+        tassert_eqi(allc->used, 112);
+        // only poisoning, other fields untouched
+        tassert(mem$asan_poison_check(p + 50, rec->size-50+rec->ptr_padding));
+        tassert_eqi(rec->size, 100);
+        tassert_eqi(rec->ptr_padding, 4);
+        tassert_eqi(rec->is_free, 0);
+        AllocatorArena_sanitize(arena);
+    }
+
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -435,6 +491,7 @@ main(int argc, char* argv[])
     test$run(test_allocator_arena_realloc);
     test$run(test_allocator_arena_page_size);
     test$run(test_allocator_arena_multiple_pages);
+    test$run(test_allocator_arena_realloc_shrink);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

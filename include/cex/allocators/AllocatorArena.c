@@ -240,6 +240,8 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
     _cex_allocator_arena__validate(allc);
     uassert(old_ptr != NULL);
     uassert(size > 0);
+    uassert(size < CEX_ARENA_MAX_ALLOC);
+
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     uassert(self->scope_depth > 0 && "arena allocation must be performed in mem$scope() block!");
 
@@ -253,9 +255,13 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
         uassert(((usize)(size) & ((alignment)-1)) == 0 && "size is not aligned as expected");
     }
 
-    if (size <= rec->size) {
-        uassert(false && "TODO: implement shrinking");
-        uassert(size >= rec->ptr_alignment);
+    if (unlikely(size <= rec->size)) {
+        if (size == rec->size) {
+            return old_ptr;
+        }
+        // we cant change size/padding of this allocation, because this will break iterating
+        // ptr_padding is only u8 size, we cant store size, change, so we currently poison new size
+        mem$asan_poison((char*)old_ptr + size, rec->size - size);
         return old_ptr;
     }
 
