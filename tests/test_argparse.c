@@ -1,7 +1,6 @@
 #include <cex/test/test.h>
 #include <cex/all.c>
 #include <cex/argparse/argparse.c>
-#include <cex/ds.c>
 #include <cex/test/fff.h>
 #include <stdio.h>
 #include <x86intrin.h>

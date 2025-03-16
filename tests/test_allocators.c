@@ -2,7 +2,6 @@
 #include <cex/test/test.h>
 #include <cex/all.c>
 #include <cex/test/fff.h>
-#include <cex/ds.c>
 #include <cex/allocators/AllocatorStaticArena.c>
 
 #include <alloca.h>

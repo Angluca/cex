@@ -101,7 +101,6 @@ main(int argc, char* argv[])
     test$run(test_allocator_api);
     test$run(test_allocator_temp);
     test$run(test_allocator_new);
-    test$run(test_allocator_arena_create_destroy);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

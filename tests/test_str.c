@@ -1,6 +1,5 @@
 #include <cex/all.c>
 #include <cex/str.c>
-#include <cex/ds.c>
 #include <cex/test/fff.h>
 #include <cex/test/test.h>
 #include <stdio.h>
