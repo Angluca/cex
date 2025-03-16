@@ -1,5 +1,5 @@
 #pragma once
-#include "cex.h"
+#include "all.h"
 
 typedef char* sbuf_c;
 
@@ -13,7 +13,7 @@ typedef struct
     } header;
     u32 length;
     u32 capacity;
-    const Allocator_i* allocator;
+    const Allocator2_i* allocator;
 } __attribute__((packed)) sbuf_head_s;
 
 _Static_assert(alignof(sbuf_head_s) == 1, "align");
@@ -26,7 +26,7 @@ struct __module__sbuf
     // clang-format off
 
 Exception
-(*create)(sbuf_c* self, u32 capacity, const Allocator_i* allocator);
+(*create)(sbuf_c* self, u32 capacity, IAllocator allocator);
 
 Exception
 (*create_static)(sbuf_c* self, char* buf, usize buf_size);

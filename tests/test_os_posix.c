@@ -2,28 +2,24 @@
 #include <cex/io.c>
 #include <limits.h>
 #include <cex/all.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
+#include <cex/test.h>
 
-const Allocator_i* allocator;
 
 test$teardown()
 {
-    allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable(); // re-enable if you disabled it in some test case
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 
 test$case(test_os_listdir)
 {
     sbuf_c listdir = { 0 };
-    tassert_eqe(EOK, sbuf.create(&listdir, 1024, allocator));
+    tassert_eqe(EOK, sbuf.create(&listdir, 1024, mem$));
 
     tassert_eqe(EOK, os.listdir(str$("tests/data/"), &listdir));
     tassert(sbuf.len(&listdir) > 0);
@@ -69,7 +65,7 @@ test$case(test_os_listdir)
 test$case(test_os_getcwd)
 {
     sbuf_c s = { 0 };
-    tassert_eqe(EOK, sbuf.create(&s, 10, allocator));
+    tassert_eqe(EOK, sbuf.create(&s, 10, mem$));
     tassert_eqe(EOK, os.getcwd(&s));
     io.printf("'%S'\n", sbuf.to_str(&s));
     tassert_eqi(true, str.ends_with(sbuf.to_str(&s), str$("cex")));
@@ -111,7 +107,7 @@ test$case(test_os_path_exists)
 test$case(test_os_path_join)
 {
     sbuf_c s = { 0 };
-    tassert_eqe(EOK, sbuf.create(&s, 10, allocator));
+    tassert_eqe(EOK, sbuf.create(&s, 10, mem$));
     tassert_eqe(EOK, os.path.join(&s, "%S/%s_%d.txt", str$("cexstr"), "foo", 10));
     tassert_eqs("cexstr/foo_10.txt", s);
     sbuf.destroy(&s);

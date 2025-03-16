@@ -1,5 +1,5 @@
 #pragma once
-#include "cex.h"
+#include "all.h"
 #include <stdio.h>
 
 
@@ -9,7 +9,7 @@ typedef struct io_c
     usize _fsize;
     char* _fbuf;
     usize _fbuf_size;
-    const Allocator_i* _allocator;
+    IAllocator _allocator;
     struct
     {
         u32 is_attached : 1;
@@ -24,10 +24,10 @@ struct __module__io
     // clang-format off
 
 Exception
-(*fopen)(io_c* self, const char* filename, const char* mode, const Allocator_i* allocator);
+(*fopen)(io_c* self, const char* filename, const char* mode, IAllocator allocator);
 
 Exception
-(*fattach)(io_c* self, FILE* fh, const Allocator_i* allocator);
+(*fattach)(io_c* self, FILE* fh, IAllocator allocator);
 
 int
 (*fileno)(io_c* self);

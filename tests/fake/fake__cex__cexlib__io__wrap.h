@@ -6,9 +6,9 @@
 #include <_cexcore/io.h>
 
 // IMPORTANT: wrapping works only with gcc  `-Wl,--wrap=Shmem_new,--wrap=Protocol_event_emitter_new`  flag
-FAKE_VALUE_FUNC(Exc, __wrap_io_fopen, io_c*, const char*, const char*, const Allocator_i*)Exception __real_io_fopen(io_c*, const char*, const char*, const Allocator_i*);
+FAKE_VALUE_FUNC(Exc, __wrap_io_fopen, io_c*, const char*, const char*, IAllocator)Exception __real_io_fopen(io_c*, const char*, const char*, IAllocator);
 
-FAKE_VALUE_FUNC(Exc, __wrap_io_fattach, io_c*, FILE*, const Allocator_i*)Exception __real_io_fattach(io_c*, FILE*, const Allocator_i*);
+FAKE_VALUE_FUNC(Exc, __wrap_io_fattach, io_c*, FILE*, IAllocator)Exception __real_io_fattach(io_c*, FILE*, IAllocator);
 
 FAKE_VALUE_FUNC(int, __wrap_io_fileno, io_c*)int __real_io_fileno(io_c*);
 

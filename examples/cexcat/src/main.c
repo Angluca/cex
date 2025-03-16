@@ -8,7 +8,7 @@ main(int argc, char* argv[])
 {
   i32 ret_code = EXIT_SUCCESS;
   App_c app = { 0 };
-  var allocator = AllocatorGeneric.create();
+  var allocator = mem$;
 
   e$except_silent(err, App.create(&app, argc, argv, allocator))
   {

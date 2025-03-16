@@ -105,7 +105,7 @@ _cex_deque_create(
     _cex_deque_c* self,
     usize elsize,
     usize elalign,
-    const Allocator_i* allocator,
+    IAllocator allocator,
     deque_new_kwargs_s* kwargs
 )
 {
@@ -148,7 +148,7 @@ _cex_deque_create(
     usize alloc_size = _cex_deque__alloc_size(capacity, elsize, elalign);
 
     _Static_assert(alignof(_cex_deque_head_s) == 64, "align");
-    _cex_deque_head_s* que = allocator->malloc_aligned(alignof(_cex_deque_head_s), alloc_size);
+    _cex_deque_head_s* que = mem$malloc(allocator,  alloc_size, alignof(_cex_deque_head_s));
 
     if (que == NULL) {
         return Error.memory;
@@ -283,7 +283,7 @@ _cex_deque_append(_cex_deque_c* self, const void* item)
                 head->header.elsize,
                 head->header.elalign
             );
-            head = head->allocator->realloc_aligned(head, alignof(_cex_deque_head_s), alloc_size);
+            head = mem$realloc(head->allocator, head, alloc_size, alignof(_cex_deque_head_s));
             if (head == NULL) {
                 return Error.memory;
             }
@@ -391,7 +391,7 @@ _cex_deque_destroy(_cex_deque_c* self)
     if (self != NULL) {
         _cex_deque_head_s* head = _cex_deque__head(*self);
         if (head->allocator != NULL) {
-            head->allocator->free(head);
+            mem$free(head->allocator, head);
         }
         *self = NULL;
     }

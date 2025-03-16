@@ -6,7 +6,7 @@
 #include <cex/sbuf.h>
 
 Exception
-App_create(App_c* app, i32 argc, char* argv[], const Allocator_i* allocator)
+App_create(App_c* app, i32 argc, char* argv[], IAllocator allocator)
 {
     uassert(allocator != NULL && "expected allocator");
 
@@ -151,7 +151,7 @@ fail:
 }
 
 Exception
-App_main(App_c* app, const Allocator_i* allocator)
+App_main(App_c* app, IAllocator allocator)
 {
     (void)allocator;
     Exc result = EOK;
@@ -181,7 +181,7 @@ fail:
 }
 
 void
-App_destroy(App_c* app, const Allocator_i* allocator)
+App_destroy(App_c* app, IAllocator allocator)
 {
     (void)app;
     (void)allocator;

@@ -6,7 +6,7 @@
 #include <_cexcore/list.h>
 
 // IMPORTANT: wrapping works only with gcc  `-Wl,--wrap=Shmem_new,--wrap=Protocol_event_emitter_new`  flag
-FAKE_VALUE_FUNC(Exc, __wrap_list_create, list_c*, usize, usize, usize, const Allocator_i*)Exception __real_list_create(list_c*, usize, usize, usize, const Allocator_i*);
+FAKE_VALUE_FUNC(Exc, __wrap_list_create, list_c*, usize, usize, usize, IAllocator)Exception __real_list_create(list_c*, usize, usize, usize, IAllocator);
 
 FAKE_VALUE_FUNC(Exc, __wrap_list_create_static, list_c*, void*, usize, usize, usize)Exception __real_list_create_static(list_c*, void*, usize, usize, usize);
 

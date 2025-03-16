@@ -1,20 +1,17 @@
-#include <cex/test/test.h>
+#include <cex/test.h>
 #include <cex/all.c>
 #include <stdio.h>
 
-const Allocator_i* allocator;
 /*
 * SUITE INIT / SHUTDOWN
 */
 test$teardown(){
-    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable();
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 
@@ -59,7 +56,7 @@ sprintf_to_cap(sbuf_c* s){
 test$case(test_sbuf_new)
 {
     sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -68,7 +65,7 @@ test$case(test_sbuf_new)
     tassert_eqi(head->header.elsize, 1);
     tassert_eqi(head->header.magic, 0xf00e);
     tassert_eqi(head->header.nullterm, 0);
-    tassert(head->allocator == allocator);
+    tassert(head->allocator == mem$);
     tassert_eqs(s, "");
     tassert_eqi(s[head->capacity], 0);
     tassert_eqi(s[0], 0);
@@ -117,7 +114,7 @@ test$case(test_sbuf_append_char_grow)
 {
     sbuf_c s;
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -145,7 +142,7 @@ test$case(test_sbuf_append_str_grow)
 {
     sbuf_c s;
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -172,7 +169,7 @@ test$case(test_sbuf_clear)
 {
     sbuf_c s;
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s));
 
@@ -268,7 +265,7 @@ test$case(test_sbuf_replace_resize)
 {
     sbuf_c s;
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -292,7 +289,7 @@ test$case(test_sbuf_replace_error_checks)
 {
     sbuf_c s;
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -318,7 +315,7 @@ test$case(test_sbuf_sprintf)
 {
     sbuf_c s;
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -366,7 +363,7 @@ test$case(test_sbuf_sprintf_long_growth)
 {
     sbuf_c s;
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     char buf[16];
@@ -401,7 +398,7 @@ test$case(test_sbuf_sprintf_long_growth_prebuild_buffer)
 {
     sbuf_c s;
 
-    tassert_eqs(EOK, sbuf.create(&s, 1024*1024, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 1024*1024, mem$));
     tassert_eqi(sbuf.capacity(&s), 1024*1024 - sizeof(sbuf_head_s) - 1);
 
     char buf[16];
@@ -597,7 +594,7 @@ test$case(test_iter_split)
 test$case(test_sbuf__is_valid__no_null_term)
 {
     sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -607,7 +604,7 @@ test$case(test_sbuf__is_valid__no_null_term)
     tassert_eqi(sbuf.isvalid(&s), false);
 
     // manual free (because s.destroy() does sanity checks of head)
-    allocator->free(head);
+    mem$->free(mem$, head);
     return EOK;
 
 }
@@ -615,7 +612,7 @@ test$case(test_sbuf__is_valid__no_null_term)
 test$case(test_sbuf__is_valid__len_gt_cap)
 {
     sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -626,7 +623,7 @@ test$case(test_sbuf__is_valid__len_gt_cap)
     tassert_eqi(sbuf.isvalid(&s), false);
 
     // manual free (because s.destroy() does sanity checks of head)
-    allocator->free(head);
+    mem$->free(mem$, head);
     return EOK;
 
 }
@@ -634,7 +631,7 @@ test$case(test_sbuf__is_valid__len_gt_cap)
 test$case(test_sbuf__is_valid__zero_cap)
 {
     sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -644,7 +641,7 @@ test$case(test_sbuf__is_valid__zero_cap)
     tassert_eqi(sbuf.isvalid(&s), false);
 
     // manual free (because s.destroy() does sanity checks of head)
-    allocator->free(head);
+    mem$->free(mem$, head);
     return EOK;
 
 }
@@ -652,7 +649,7 @@ test$case(test_sbuf__is_valid__zero_cap)
 test$case(test_sbuf__is_valid__bad_magic)
 {
     sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -662,7 +659,7 @@ test$case(test_sbuf__is_valid__bad_magic)
     tassert_eqi(sbuf.isvalid(&s), false);
 
     // manual free (because s.destroy() does sanity checks of head)
-    allocator->free(head);
+    mem$->free(mem$, head);
     return EOK;
 
 }

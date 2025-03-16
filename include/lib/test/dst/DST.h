@@ -3,8 +3,8 @@
  * @brief Deterministic Simulation Tester
  */
 #pragma once
-#include <cex/cex.h>
-#include <cex/random/Random.h>
+#include <cex/all.h>
+#include <lib/random/Random.h>
 #include <stdatomic.h>
 #include <time.h>
 

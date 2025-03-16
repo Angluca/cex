@@ -51,7 +51,7 @@ static allocator_staticarena_s
  * @param capacity - capacity of a buffer (minimal requires is 1024)
  * @return  allocator instance
  */
-const Allocator_i*
+IAllocator
 AllocatorStaticArena_create(char* buffer, usize capacity)
 {
     uassert(allocator__staticarena_data.magic == 0 && "Already initialized");
@@ -82,7 +82,7 @@ AllocatorStaticArena_create(char* buffer, usize capacity)
     return &a->base;
 }
 
-const Allocator_i*
+IAllocator
 AllocatorStaticArena_destroy(void)
 {
     uassert(allocator__staticarena_data.magic != 0 && "Allocator not initialized");

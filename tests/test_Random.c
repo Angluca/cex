@@ -1,10 +1,6 @@
-
 #include <cex/all.c>
-#include <cex/random/Random.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
-
-const Allocator_i* allocator;
+#include <lib/random/Random.c>
+#include <cex/test.h>
 
 struct foo {
     i32 arr[10];
@@ -14,14 +10,12 @@ struct foo {
 
 test$teardown()
 {
-    allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable(); // re-enable if you disabled it in some test case
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 

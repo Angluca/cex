@@ -6,8 +6,8 @@
 #include <_cexcore/io.h>
 
 
-FAKE_VALUE_FUNC(Exc, io_fopen, io_c*, const char*, const char*, const Allocator_i*)
-FAKE_VALUE_FUNC(Exc, io_fattach, io_c*, FILE*, const Allocator_i*)
+FAKE_VALUE_FUNC(Exc, io_fopen, io_c*, const char*, const char*, IAllocator)
+FAKE_VALUE_FUNC(Exc, io_fattach, io_c*, FILE*, IAllocator)
 FAKE_VALUE_FUNC(int, io_fileno, io_c*)
 FAKE_VALUE_FUNC(bool, io_isatty, io_c*)
 FAKE_VALUE_FUNC(Exc, io_flush, io_c*)

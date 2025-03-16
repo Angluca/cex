@@ -1,6 +1,6 @@
-#include <cex/test/test.h>
+#include <cex/test.h>
 #include <cex/all.c>
-#include <cex/test/fff.h>
+// #include <cex/test/fff.h>
 
 #define USE_STB 1
 
@@ -33,8 +33,6 @@
 #define CHECK1(str, v1                                ) { int ret = SPRINTF(buf, v1                                ); CHECK_END(str); }
 // clang-format on
 
-const Allocator_i* allocator;
-
 
 static char* ret_null_char(){
     return NULL;
@@ -43,14 +41,12 @@ static char* ret_null_char(){
 * SUITE INIT / SHUTDOWN
 */
 test$teardown(){
-    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable();
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 
@@ -63,7 +59,7 @@ test$case(stb_sprintf_str)
 {
 
     sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 128, allocator));
+    tassert_eqs(EOK, sbuf.create(&s, 128, mem$));
     tassert_eqs(EOK, sbuf.sprintf(&s, "%s11", "abcdefgh"));
     tassert_eqs(s, "abcdefgh11");
 

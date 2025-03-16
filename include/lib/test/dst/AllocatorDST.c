@@ -1,7 +1,7 @@
 #pragma once
 #include "AllocatorDST.h"
 #include "DST.h"
-#include <cex/random/Random.h>
+#include <lib/random/Random.h>
 #include <fcntl.h>
 #include <malloc.h>
 #include <stdlib.h>
@@ -42,7 +42,7 @@ static allocator_dst_s
 /**
  * @brief  heap-based allocator (simple proxy for malloc/free/realloc)
  */
-const Allocator_i*
+IAllocator
 AllocatorDST_create(void)
 {
     uassert(allocator__dst_data.magic == 0 && "Already initialized");
@@ -56,7 +56,7 @@ AllocatorDST_create(void)
     return &allocator__dst_data.base;
 }
 
-const Allocator_i*
+IAllocator
 AllocatorDST_destroy(void)
 {
     uassert(allocator__dst_data.magic != 0 && "Already destroyed");

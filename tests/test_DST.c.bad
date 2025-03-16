@@ -1,23 +1,20 @@
 #include <cex/all.c>
-#include <cex/random/Random.c>
-#include <cex/test/dst/AllocatorDST.c>
-#include <cex/test/dst/DST.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
+#include <lib/random/Random.c>
+#include <lib/test/dst/AllocatorDST.c>
+#include <lib/test/dst/DST.c>
+#include <lib/test/fff.h>
+#include <cex/test.h>
 
-const Allocator_i* allocator;
 
 test$teardown()
 {
     DST.destroy();
-    allocator = AllocatorDST.destroy(); // this also nullifies allocator
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable(); // re-enable if you disabled it in some test case
-    allocator = AllocatorDST.create();
     return EOK;
 }
 
@@ -31,11 +28,11 @@ test$case(test_malloc_dst_zero_prob)
 
     u32 n_failed = 0;
     for (u32 i = 0; i < 1000; i++) {
-        void* a = allocator->malloc(100);
+        void* a = mem$malloc(mem$, 100);
         if (a == NULL) {
             n_failed++;
         }
-        allocator->free(a);
+        mem$free(mem$, a);
     }
     tassert_eqi(n_failed, 0);
 
@@ -118,11 +115,11 @@ test$case(test_malloc_dst)
     u32 n_failed = 0;
     u32 n_ticked = 0;
     while (DST.tick(1000)) {
-        void* a = allocator->malloc(100);
+        void* a = mem$malloc(mem$, 100);
         if (a == NULL) {
             n_failed++;
         }
-        allocator->free(a);
+        mem$free(mem$, a);
         n_ticked++;
     }
     tassert(n_failed > 0);

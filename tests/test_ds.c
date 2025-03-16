@@ -1,26 +1,19 @@
-#include "_generic_defs.h"
-#include "cex/cex.h"
-#include "cex/ds.h"
+#include "cex/all.h"
+#include "cex/test.h"
 #include <cex/all.c>
-#include <cex/list.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
 #include <stdio.h>
 
-const Allocator_i* allocator;
 /*
  * SUITE INIT / SHUTDOWN
  */
 test$teardown()
 {
-    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable();
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 
@@ -48,8 +41,8 @@ add_to_str(arr$(const char*) * arr)
 
 test$case(test_array)
 {
-    arr$(const char*) array2 = arr$new(array2, allocator);
-    arr$(int) array = arr$new(array, allocator);
+    arr$(const char*) array2 = arr$new(array2, mem$);
+    arr$(int) array = arr$new(array, mem$);
     tassert(array != NULL);
     tassert_eqi(arr$cap(array), 16);
 
@@ -77,7 +70,7 @@ test$case(test_array)
 
 test$case(test_array_char_ptr)
 {
-    arr$(char*) array = arr$new(array, allocator);
+    arr$(char*) array = arr$new(array, mem$);
     arr$push(array, "foo");
     arr$push(array, "bar");
     arr$push(array, "baz");
@@ -100,7 +93,7 @@ typedef struct
 
 test$case(test_array_struct)
 {
-    arr$(my_struct) array = arr$new(array, allocator, .capacity = 128);
+    arr$(my_struct) array = arr$new(array, mem$, .capacity = 128);
     tassert_eqi(arr$cap(array), 128);
 
     my_struct s;
@@ -146,7 +139,7 @@ test$case(test_orig_arr)
     int i, j;
 
     for (i = 0; i < 20000; i += 50) {
-        arr$(int) arr = arr$new(arr, allocator);
+        arr$(int) arr = arr$new(arr, mem$);
 
         for (j = 0; j < i; ++j) {
             arr$push(arr, j);
@@ -156,7 +149,7 @@ test$case(test_orig_arr)
     }
 
     for (i = 0; i < 4; ++i) {
-        arr$(int) arr = arr$new(arr, allocator);
+        arr$(int) arr = arr$new(arr, mem$);
         arr$push(arr, 1);
         arr$push(arr, 2);
         arr$push(arr, 3);
@@ -165,7 +158,7 @@ test$case(test_orig_arr)
         arr$free(arr);
         tassert(arr == NULL);
 
-        arr = arr$new(arr, allocator);
+        arr = arr$new(arr, mem$);
         tassert(arr != NULL);
         arr$push(arr, 1);
         arr$push(arr, 2);
@@ -177,7 +170,7 @@ test$case(test_orig_arr)
     }
 
     for (i = 0; i < 5; ++i) {
-        arr$(int) arr = arr$new(arr, allocator);
+        arr$(int) arr = arr$new(arr, mem$);
         arr$push(arr, 1);
         arr$push(arr, 2);
         arr$push(arr, 3);
@@ -199,8 +192,8 @@ test$case(test_orig_hashmap)
 {
     int i = 1;
     const int testsize = 100000;
-    hm$(int, int) intmap = hm$new(intmap, allocator);
-    hm$(stbds_struct, int) map = hm$new(map, allocator);
+    hm$(int, int) intmap = hm$new(intmap, mem$);
+    hm$(stbds_struct, int) map = hm$new(map, mem$);
     tassert(intmap != NULL);
 
     tassert(hm$get(intmap, i) == 0);
@@ -243,14 +236,14 @@ test$case(test_orig_hashmap)
     hm$free(intmap);
     tassert(intmap == NULL);
 
-    intmap = hm$new(intmap, allocator);
+    intmap = hm$new(intmap, mem$);
 
     for (i = 0; i < testsize; i += 2) {
         hm$set(intmap, i, i * 3);
     }
     hm$free(intmap);
 
-    intmap = hm$new(intmap, allocator);
+    intmap = hm$new(intmap, mem$);
     hm$set(intmap, 15, 7);
     hm$set(intmap, 11, 3);
     hm$set(intmap, 9, 5);
@@ -259,7 +252,7 @@ test$case(test_orig_hashmap)
     tassert(hm$get(intmap, 15) == 7);
     hm$free(intmap);
 
-    intmap = hm$new(intmap, allocator);
+    intmap = hm$new(intmap, mem$);
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
         hm$set(map, s, i * 5);
@@ -276,7 +269,7 @@ test$case(test_orig_hashmap)
         }
     }
 
-    stbds_struct* map2 = hm$new(map2, allocator);
+    stbds_struct* map2 = hm$new(map2, mem$);
     for (i = 0; i < testsize; i += 2) {
         stbds_struct s = { i, i * 2, i * 3, i * 4 };
         hm$sets(map2, s);
@@ -292,7 +285,7 @@ test$case(test_array_len_unified)
     char buf[10];
     u32 iarr[20];
     char buf_zero[0];
-    arr$(char*) array = arr$new(array, allocator);
+    arr$(char*) array = arr$new(array, mem$);
     tassert_eqi(0, arr$len(array));
     tassert(mem$aligned_pointer(array, 64) == array);
 
@@ -326,7 +319,7 @@ test$case(test_for_arr)
         (void)v;
         tassert(false && "must not happen!");
     }
-    arr$(char*) array = arr$new(array, allocator);
+    arr$(char*) array = arr$new(array, mem$);
     tassert(mem$aligned_pointer(array, 64) == array);
     for$arr(v, array)
     {
@@ -401,7 +394,7 @@ test$case(test_slice)
     tassert_eqi(b.arr[0], 'b');
     tassert_eqi(b.len, 2);
 
-    arr$(int) array = arr$new(array, allocator);
+    arr$(int) array = arr$new(array, mem$);
     arr$push(array, 1);
     arr$push(array, 2);
     arr$push(array, 3);
@@ -416,7 +409,7 @@ test$case(test_slice)
 test$case(test_for_arr_custom_size)
 {
 
-    arr$(char*) array = arr$new(array, allocator);
+    arr$(char*) array = arr$new(array, mem$);
     for$arr(v, array)
     {
         (void)v;
@@ -451,7 +444,7 @@ test$case(test_for_arr_custom_size)
 
 test$case(test_for_arr_for_struct)
 {
-    arr$(my_struct) array = arr$new(array, allocator);
+    arr$(my_struct) array = arr$new(array, mem$);
     tassert_eqi(arr$cap(array), 16);
     for$arr(v, array)
     {
@@ -495,7 +488,7 @@ test$case(test_for_arr_for_struct)
 
 test$case(test_arr_insert_pop)
 {
-    arr$(int) arr = arr$new(arr, allocator);
+    arr$(int) arr = arr$new(arr, mem$);
     arr$ins(arr, 0, 5);
     arr$ins(arr, 0, 4);
     arr$ins(arr, 0, 3);
@@ -523,8 +516,8 @@ test$case(test_arr_insert_pop)
 
 test$case(test_arr_pushm)
 {
-    arr$(int) arr = arr$new(arr, allocator);
-    arr$(int) arr2 = arr$new(arr2, allocator);
+    arr$(int) arr = arr$new(arr, mem$);
+    arr$(int) arr2 = arr$new(arr2, mem$);
     tassert(mem$aligned_pointer(arr, 64) == arr);
 
     arr$pushm(arr2, 10, 6, 7, 8, 9, 0);
@@ -560,7 +553,7 @@ test$case(test_overaligned_struct)
         alignas(32) usize s;
     };
 
-    arr$(struct test32_s) arr = arr$new(arr, allocator);
+    arr$(struct test32_s) arr = arr$new(arr, mem$);
     struct test32_s f = { .s = 100 };
     tassert(mem$aligned_pointer(arr, 64) == arr);
 
@@ -591,7 +584,7 @@ test$case(test_overaligned_struct64)
         alignas(64) usize s;
     };
 
-    arr$(struct test64_s) arr = arr$new(arr, allocator);
+    arr$(struct test64_s) arr = arr$new(arr, mem$);
     struct test64_s f = { .s = 100 };
     tassert(mem$aligned_pointer(arr, 64) == arr);
 
@@ -615,7 +608,7 @@ test$case(test_overaligned_struct64)
 test$case(test_smallest_alignment)
 {
     arr$(char) arr;
-    tassert(arr$new(arr, allocator) != NULL);
+    tassert(arr$new(arr, mem$) != NULL);
     tassert(mem$aligned_pointer(arr, 64) == arr);
 
     for (u32 i = 0; i < 1000; i++) {
@@ -637,9 +630,9 @@ test$case(test_smallest_alignment)
 test$case(test_hashmap_basic)
 {
     hm$(int, int) intmap;
-    hm$new(intmap, allocator);
+    hm$new(intmap, mem$);
 
-    hm$(i64, int) intmap64 = hm$new(intmap64, allocator);
+    hm$(i64, int) intmap64 = hm$new(intmap64, mem$);
     tassert(intmap != NULL);
     tassert(intmap64 != NULL);
 
@@ -683,7 +676,7 @@ test$case(test_hashmap_basic_struct)
         usize bar;
     };
 
-    hm$(int, struct test64_s) intmap = hm$new(intmap, allocator);
+    hm$(int, struct test64_s) intmap = hm$new(intmap, mem$);
     tassert(intmap != NULL);
 
     tassert_eqi(hm$len(intmap), 0);
@@ -751,7 +744,7 @@ test$case(test_hashmap_struct_full_setget)
         usize key;
     };
 
-    hm$s(struct test64_s) smap = hm$new(smap, allocator);
+    hm$s(struct test64_s) smap = hm$new(smap, mem$);
     tassert(smap != NULL);
 
     _Static_assert(offsetof(struct test64_s, key) == sizeof(usize), "unexp");
@@ -797,19 +790,19 @@ test$case(test_hashmap_struct_full_setget)
 
 test$case(test_hashmap_keytype)
 {
-    hm$(int, int) intmap = hm$new(intmap, allocator);
-    hm$(i64, int) intmap64 = hm$new(intmap64, allocator);
-    hm$(char, int) map1 = hm$new(map1, allocator);
-    hm$(char*, int) map2 = hm$new(map2, allocator);
-    hm$(const char*, int) map3 = hm$new(map3, allocator);
+    hm$(int, int) intmap = hm$new(intmap, mem$);
+    hm$(i64, int) intmap64 = hm$new(intmap64, mem$);
+    hm$(char, int) map1 = hm$new(map1, mem$);
+    hm$(char*, int) map2 = hm$new(map2, mem$);
+    hm$(const char*, int) map3 = hm$new(map3, mem$);
 
     struct
     {
         char key[10];
         int value;
-    }* map4 = hm$new(map4, allocator);
+    }* map4 = hm$new(map4, mem$);
 
-    hm$(str_c, int) map5 = hm$new(map5, allocator);
+    hm$(str_c, int) map5 = hm$new(map5, mem$);
 
     tassert_eqi(cexds_header(intmap)->hm_key_type, _CexDsKeyType__generic);
     tassert_eqi(cexds_header(intmap64)->hm_key_type, _CexDsKeyType__generic);
@@ -884,7 +877,7 @@ test$case(test_hashmap_string)
 {
     char key_buf[10] = "foobar";
 
-    hm$(const char*, int) smap = hm$new(smap, allocator);
+    hm$(const char*, int) smap = hm$new(smap, mem$);
 
     char* k = "foo";
     char* k2 = "baz";
@@ -915,7 +908,7 @@ test$case(test_hashmap_bufkey)
     {
         char key[10];
         int value;
-    }* smap = hm$new(smap, allocator);
+    }* smap = hm$new(smap, mem$);
 
     hm$set(smap, "foo", 3);
     // hm$set(smap, "foobarbazfoo", 4);
@@ -955,7 +948,7 @@ test$case(test_hashmap_bufkey)
 
 test$case(test_hashmap_cex_string)
 {
-    hm$(str_c, int) smap = hm$new(smap, allocator);
+    hm$(str_c, int) smap = hm$new(smap, mem$);
 
     char key_buf[10] = "bar";
     char key_buf2[10] = "baz";
@@ -1001,7 +994,7 @@ test$case(test_hashmap_cex_string)
 
 test$case(test_hashmap_basic_delete)
 {
-    hm$(int, int) intmap = hm$new(intmap, allocator);
+    hm$(int, int) intmap = hm$new(intmap, mem$);
     tassert(intmap != NULL);
     tassert_eqi(hm$del(intmap, -1), 0);
 
@@ -1054,7 +1047,7 @@ test$case(test_hashmap_basic_delete)
 
 test$case(test_hashmap_basic_clear)
 {
-    hm$(int, int) intmap = hm$new(intmap, allocator);
+    hm$(int, int) intmap = hm$new(intmap, mem$);
     tassert(intmap != NULL);
 
     tassert(hm$set(intmap, 1, 10));
@@ -1080,7 +1073,7 @@ test$case(test_orig_del_add_clear)
 {
     int i = 1;
     const int testsize = 100000;
-    hm$(int, int) intmap = hm$new(intmap, allocator);
+    hm$(int, int) intmap = hm$new(intmap, mem$);
     tassert(intmap != NULL);
 
     tassert(hm$get(intmap, i) == 0);

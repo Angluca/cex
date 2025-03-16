@@ -8,7 +8,7 @@
 #define CEX_ALLOCATOR_ARENA_MAGIC 0xFeedF001
 
 // clang-format off
-#define IAllocator const struct Allocator2_i* const 
+#define IAllocator const struct Allocator2_i* 
 typedef struct Allocator2_i
 {
     // >>> cacheline
@@ -47,7 +47,7 @@ _Static_assert(sizeof(AllocatorHeap_c) == 128, "size!");
 _Static_assert(offsetof(AllocatorHeap_c, alloc) == 0, "base must be the 1st struct member");
 
 extern AllocatorHeap_c _cex__default_global__allocator_heap;
-extern IAllocator _cex__default_global__allocator_heap__allc;
+extern IAllocator const _cex__default_global__allocator_heap__allc;
 
 void
 _cex_allocator_memscope_cleanup(IAllocator* allc)
@@ -58,10 +58,24 @@ _cex_allocator_memscope_cleanup(IAllocator* allc)
 
 extern thread_local AllocatorHeap_c _cex__default_global__allocator_temp;
 #define tmem$ ((IAllocator)(&_cex__default_global__allocator_temp.alloc))
-
 #define mem$ _cex__default_global__allocator_heap__allc
-#define mem$malloc(alloc, size) (alloc)->malloc((alloc), size, 0)
-#define mem$realloc(alloc, old_ptr, size) (alloc)->realloc((alloc), old_ptr, size, 0)
+#define mem$malloc(alloc, size, alignment...)                                                      \
+    ({                                                                                             \
+        usize _alignment[] = { alignment };                                                        \
+        (alloc)->malloc((alloc), size, (sizeof(_alignment) > 0) ? _alignment[0] : 0);              \
+    })
+#define mem$calloc(alloc, nmemb, size, alignment...)                                               \
+    ({                                                                                             \
+        usize _alignment[] = { alignment };                                                        \
+        (alloc)->calloc((alloc), nmemb, size, (sizeof(_alignment) > 0) ? _alignment[0] : 0);       \
+    })
+
+#define mem$realloc(alloc, old_ptr, size, alignment...)                                            \
+    ({                                                                                             \
+        usize _alignment[] = { alignment };                                                        \
+        (alloc)->realloc((alloc), old_ptr, size, (sizeof(_alignment) > 0) ? _alignment[0] : 0);    \
+    })
+
 #define mem$free(alloc, ptr)                                                                       \
     ({                                                                                             \
         (ptr) = (alloc)->free((alloc), ptr);                                                       \

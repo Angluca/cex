@@ -6,7 +6,7 @@
 #include <_cexcore/list.h>
 
 
-FAKE_VALUE_FUNC(Exc, list_create, list_c*, usize, usize, usize, const Allocator_i*)
+FAKE_VALUE_FUNC(Exc, list_create, list_c*, usize, usize, usize, IAllocator)
 FAKE_VALUE_FUNC(Exc, list_create_static, list_c*, void*, usize, usize, usize)
 FAKE_VALUE_FUNC(Exc, list_insert, void*, void*, usize)
 FAKE_VALUE_FUNC(Exc, list_del, void*, usize)

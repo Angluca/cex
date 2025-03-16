@@ -1,9 +1,9 @@
 #include <cex/all.c>
-#include <cex/fsm/fsm.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
+#include <lib/fsm/fsm.c>
+#include <lib/test/fff.h>
+#include <cex/test.h>
 
-const Allocator_i* allocator;
+IAllocator allocator;
 
 DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(Exc, state_1, fsm_c*, const fsm_event_s*);
@@ -56,7 +56,6 @@ state_2_sideeff(fsm_c* self, const fsm_event_s* e)
 
 test$teardown()
 {
-    allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
     return EOK;
 }
 
@@ -67,7 +66,6 @@ test$setup()
     RESET_FAKE(state_2);
     RESET_FAKE(state_3);
     RESET_FAKE(state_super);
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 

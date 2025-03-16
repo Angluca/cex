@@ -1,21 +1,14 @@
 #include <cex/all.c>
-#include <cex/allocator2.c>
-#include <cex/allocators/AllocatorArena.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
-
-const Allocator_i* allocator;
+#include <cex/test.h>
 
 test$teardown()
 {
-    allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable(); // re-enable if you disabled it in some test case
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 

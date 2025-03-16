@@ -11,7 +11,7 @@ import io
 TEMPLATE = r"""
 #include <cex.c>
 
-const Allocator_i* allocator;
+IAllocator allocator;
 
 cextest$teardown(){
     allocator = allocators.heap.destroy(); // this also nullifies allocator

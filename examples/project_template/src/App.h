@@ -7,7 +7,7 @@ typedef struct App_c {
     char* name_arg;
     char** args;
     u32 args_count;
-    const Allocator_i* allocator;
+    IAllocator allocator;
 } App_c;
 
 struct __class__App
@@ -16,13 +16,13 @@ struct __class__App
     // clang-format off
 
 Exception
-(*create)(App_c* app, i32 argc, char* argv[], const Allocator_i* allocator);
+(*create)(App_c* app, i32 argc, char* argv[], IAllocator allocator);
 
 Exception
-(*main)(App_c* app, const Allocator_i* allocator);
+(*main)(App_c* app, IAllocator allocator);
 
 void
-(*destroy)(App_c* app, const Allocator_i* allocator);
+(*destroy)(App_c* app, IAllocator allocator);
 
     // clang-format on
 };

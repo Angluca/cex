@@ -1,6 +1,5 @@
 #pragma once
 #include <cex/all.h>
-#include <cex/allocator2.h>
 #include <stddef.h>
 
 #define CEX_ALLOCATOR_MAX_SCOPE_STACK 16

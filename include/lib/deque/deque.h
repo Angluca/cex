@@ -1,5 +1,5 @@
 #pragma once
-#include <cex/cex.h>
+#include <cex/all.h>
 
 typedef struct deque_new_kwargs_s
 {
@@ -21,7 +21,7 @@ typedef struct
     usize idx_tail;
     usize max_capacity; // maximum capacity when deque stops growing (must be pow of 2!)
     usize capacity;
-    const Allocator_i* allocator; // can be NULL for static deque
+    IAllocator allocator; // can be NULL for static deque
 } _cex_deque_head_s;
 _Static_assert(sizeof(_cex_deque_head_s) == 64, "size");
 _Static_assert(alignof(_cex_deque_head_s) == 64, "align");
@@ -113,7 +113,7 @@ typedef struct __cex_deque_c* _cex_deque_c;
 
 // clang-format off
 Exception _cex_deque_validate(_cex_deque_c *self);
-Exception _cex_deque_create(_cex_deque_c* self, usize elsize, usize elalign, const Allocator_i* allocator, deque_new_kwargs_s* kwargs);
+Exception _cex_deque_create(_cex_deque_c* self, usize elsize, usize elalign, IAllocator allocator, deque_new_kwargs_s* kwargs);
 Exception _cex_deque_create_static(_cex_deque_c* self, void* buf, usize buf_len, usize elsize, usize elalign, deque_new_kwargs_s* kwargs);
 Exception _cex_deque_append(_cex_deque_c* self, const void* item);
 Exception _cex_deque_enqueue(_cex_deque_c* self, const void* item);

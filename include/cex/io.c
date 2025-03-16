@@ -1,13 +1,13 @@
 #pragma once
 #include "io.h"
-#include "_stb_sprintf.h"
 #include "_stb_sprintf.c"
+#include "_stb_sprintf.h"
 #include "cex.h"
 #include <errno.h>
 #include <unistd.h>
 
 Exception
-io_fopen(io_c* self, const char* filename, const char* mode, const Allocator_i* allocator)
+io_fopen(io_c* self, const char* filename, const char* mode, IAllocator allocator)
 {
     if (self == NULL) {
         uassert(self != NULL);
@@ -28,7 +28,7 @@ io_fopen(io_c* self, const char* filename, const char* mode, const Allocator_i* 
 
 
     *self = (io_c){
-        ._fh = allocator->fopen(filename, mode),
+        ._fh = fopen(filename, mode),
         ._allocator = allocator,
     };
 
@@ -43,11 +43,10 @@ io_fopen(io_c* self, const char* filename, const char* mode, const Allocator_i* 
     } else {
         return Error.ok;
     }
-
 }
 
 Exception
-io_fattach(io_c* self, FILE* fh, const Allocator_i* allocator)
+io_fattach(io_c* self, FILE* fh, IAllocator allocator)
 {
     if (self == NULL) {
         uassert(self != NULL);
@@ -248,11 +247,11 @@ io_readall(io_c* self, str_c* s)
     usize exp_size = self->_fsize + 1 + 15;
 
     if (self->_fbuf == NULL) {
-        self->_fbuf = self->_allocator->malloc(exp_size);
+        self->_fbuf = mem$malloc(self->_allocator, exp_size);
         self->_fbuf_size = exp_size;
     } else {
         if (self->_fbuf_size < exp_size) {
-            self->_fbuf = self->_allocator->realloc(self->_fbuf, exp_size);
+            self->_fbuf = mem$realloc(self->_allocator, self->_fbuf, exp_size);
             self->_fbuf_size = exp_size;
         }
     }
@@ -315,7 +314,7 @@ io_readline(io_c* self, str_c* s)
             if (self->_fbuf == NULL) {
                 uassert(cursor == 0 && "no buf, cursor expected 0");
 
-                self->_fbuf = buf = self->_allocator->malloc(4096);
+                self->_fbuf = buf = mem$malloc(self->_allocator, 4096);
                 if (self->_fbuf == NULL) {
                     result = Error.memory;
                     goto fail;
@@ -333,7 +332,8 @@ io_readline(io_c* self, str_c* s)
                 }
 
                 // Grow initial size by factor of 2
-                self->_fbuf = buf = self->_allocator->realloc(
+                self->_fbuf = buf = mem$realloc(
+                    self->_allocator,
                     self->_fbuf,
                     (self->_fbuf_size + 1) * 2
                 );
@@ -442,12 +442,12 @@ io_close(io_c* self)
         if (self->_fh != NULL && !self->_flags.is_attached) {
             uassert(self->_allocator != NULL && "allocator not set");
             // prevent closing attached FILE* (i.e. stdin/out or other)
-            self->_allocator->fclose(self->_fh);
+            fclose(self->_fh);
         }
 
         if (self->_fbuf != NULL) {
             uassert(self->_allocator != NULL && "allocator not set");
-            self->_allocator->free(self->_fbuf);
+            mem$free(self->_allocator, self->_fbuf);
         }
 
         memset(self, 0, sizeof(*self));

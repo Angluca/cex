@@ -8,7 +8,7 @@
 // IMPORTANT: wrapping works only with gcc  `-Wl,--wrap=Shmem_new,--wrap=Protocol_event_emitter_new`  flag
 FAKE_VALUE_FUNC(Exc, __wrap_deque_validate, deque_c)Exception __real_deque_validate(deque_c);
 
-FAKE_VALUE_FUNC(Exc, __wrap_deque_create, deque_c*, usize, bool, usize, usize, const Allocator_i*)Exception __real_deque_create(deque_c*, usize, bool, usize, usize, const Allocator_i*);
+FAKE_VALUE_FUNC(Exc, __wrap_deque_create, deque_c*, usize, bool, usize, usize, IAllocator)Exception __real_deque_create(deque_c*, usize, bool, usize, usize, IAllocator);
 
 FAKE_VALUE_FUNC(Exc, __wrap_deque_create_static, deque_c*, void*, usize, bool, usize, usize)Exception __real_deque_create_static(deque_c*, void*, usize, bool, usize, usize);
 

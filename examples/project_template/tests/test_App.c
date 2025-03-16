@@ -4,7 +4,7 @@
 #include "src/App.c"
 #include "lib/mylib.c"
 
-const Allocator_i* allocator;
+IAllocator allocator;
 
 test$teardown(){
     allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
@@ -13,7 +13,7 @@ test$teardown(){
 
 test$setup(){
     uassert_enable(); // re-enable if you disabled it in some test case
-    allocator = AllocatorGeneric.create();
+    allocator = mem$;
     return EOK;
 }
 

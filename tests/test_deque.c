@@ -1,28 +1,26 @@
-#include "_generic_defs.h"
 #include <cex/all.c>
-#include <cex/deque/deque.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
+#include <lib/deque/deque.h>
+#include <lib/deque/deque.c>
+#include <lib/test/fff.h>
+#include <cex/test.h>
 #include <stdalign.h>
 #include <stdio.h>
 
 
+deque$typedef(deque_int, int, false);
 deque$impl(deque_int);
 
-const Allocator_i* allocator;
 /*
  * SUITE INIT / SHUTDOWN
  */
 test$teardown()
 {
-    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable();
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 
@@ -50,7 +48,7 @@ test$case(testlist_alloc_capacity)
 test$case(test_deque_new)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator))
+    e$except(err, deque$new(&a, mem$))
     {
         tassert(false && "deque$new fail");
     }
@@ -68,7 +66,7 @@ test$case(test_deque_new)
     tassert_eqi(head->idx_head, 0);
     tassert_eqi(head->idx_tail, 0);
     tassert_eqi(head->header.elsize, sizeof(int));
-    tassert(head->allocator == allocator);
+    tassert(head->allocator == mem$);
 
     deque_int.destroy(&a);
     return EOK;
@@ -86,7 +84,7 @@ test$case(test_element_alignment_16)
     deque$typedef(deque_foo, struct foo16, true);
     deque_foo_c a;
 
-    e$except(err, deque$new(&a, allocator))
+    e$except(err, deque$new(&a, mem$))
     {
         tassert(false && "deque$new fail");
     }
@@ -98,7 +96,7 @@ test$case(test_element_alignment_16)
     tassert_eqi(head->header.elsize, 16);
     tassert_eqi(head->header.eloffset, 64);
     tassert_eqi(head->capacity, 16);
-    tassert(head->allocator == allocator);
+    tassert(head->allocator == mem$);
     tassert_eqi(deque_foo.len(&a), 0);
 
     for (u32 i = 0; i < 16; i++) {
@@ -142,7 +140,7 @@ test$case(test_element_alignment_64)
     deque$typedef(deque_foo, struct foo64, true);
     deque_foo_c a;
 
-    e$except(err, deque$new(&a, allocator))
+    e$except(err, deque$new(&a, mem$))
     {
         tassert(false && "deque$new fail");
     }
@@ -154,7 +152,7 @@ test$case(test_element_alignment_64)
     tassert_eqi(head->header.elsize, 64);
     tassert_eqi(head->header.eloffset, 64);
     tassert_eqi(head->capacity, 16);
-    tassert(head->allocator == allocator);
+    tassert(head->allocator == mem$);
     tassert_eqi(deque_foo.len(&a), 0);
 
     for (u32 i = 0; i < 16; i++) {
@@ -191,7 +189,7 @@ test$case(test_element_alignment_64)
 test$case(test_deque_new_append_pop)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator))
+    e$except(err, deque$new(&a, mem$))
     {
         tassert(false && "deque$new fail");
     }
@@ -242,7 +240,7 @@ test$case(test_deque_new_append_pop)
 test$case(test_deque_new_append_roll_over)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator))
+    e$except(err, deque$new(&a, mem$))
     {
         tassert(false && "deque$new fail");
     }
@@ -301,7 +299,7 @@ test$case(test_deque_new_append_roll_over)
 test$case(test_deque_new_append_grow)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator))
+    e$except(err, deque$new(&a, mem$))
     {
         tassert(false && "deque$new fail");
     }
@@ -345,7 +343,7 @@ test$case(test_deque_new_append_grow)
 test$case(test_deque_new_append_max_cap_wrap)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator, .max_capacity = 16))
+    e$except(err, deque$new(&a, mem$, .max_capacity = 16))
     {
         tassert(false && "deque$new fail");
     }
@@ -410,7 +408,7 @@ test$case(test_deque_new_append_max_cap_wrap)
 test$case(test_deque_new_append_max_cap__rewrite_overflow)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator, .max_capacity = 16, .rewrite_overflowed = true))
+    e$except(err, deque$new(&a, mem$, .max_capacity = 16, .rewrite_overflowed = true))
     {
         tassert(false && "deque$new fail");
     }
@@ -447,7 +445,7 @@ test$case(test_deque_new_append_max_cap__rewrite_overflow)
 test$case(test_deque_new_append_max_cap__rewrite_overflow_with_rollover)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator, .max_capacity = 16, .rewrite_overflowed = true))
+    e$except(err, deque$new(&a, mem$, .max_capacity = 16, .rewrite_overflowed = true))
     {
         tassert(false && "deque$new fail");
     }
@@ -501,7 +499,7 @@ test$case(test_deque_new_append_max_cap__rewrite_overflow_with_rollover)
 test$case(test_deque_new_append_max_cap__rewrite_overflow__multiloop)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator, .max_capacity = 16, .rewrite_overflowed = true))
+    e$except(err, deque$new(&a, mem$, .max_capacity = 16, .rewrite_overflowed = true))
     {
         tassert(false && "deque$new fail");
     }
@@ -532,7 +530,7 @@ test$case(test_deque_new_append_max_cap__rewrite_overflow__multiloop)
 test$case(test_deque_new_append_multi_resize)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator))
+    e$except(err, deque$new(&a, mem$))
     {
         tassert(false && "deque$new fail");
     }
@@ -568,7 +566,7 @@ test$case(test_deque_new_append_multi_resize)
 test$case(test_deque_iter_get)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator, .max_capacity = 16, .rewrite_overflowed = true))
+    e$except(err, deque$new(&a, mem$, .max_capacity = 16, .rewrite_overflowed = true))
     {
         tassert(false && "deque$new fail");
     }
@@ -623,7 +621,7 @@ test$case(test_deque_iter_get)
 test$case(test_deque_iter_fetch)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator, .max_capacity = 16, .rewrite_overflowed = true))
+    e$except(err, deque$new(&a, mem$, .max_capacity = 16, .rewrite_overflowed = true))
     {
         tassert(false && "deque$new fail");
     }
@@ -672,7 +670,7 @@ test$case(test_deque_iter_fetch)
 test$case(test_deque_iter_fetch_reversed)
 {
     deque_int_c a;
-    e$except(err, deque$new(&a, allocator, .rewrite_overflowed = true, .max_capacity = 16))
+    e$except(err, deque$new(&a, mem$, .rewrite_overflowed = true, .max_capacity = 16))
     {
         tassert(false && "deque$new fail");
     }
@@ -927,7 +925,7 @@ test$case(test_deque_generic_new_append_pop)
     deque$typedef(deque_i32, int, true);
 
     deque_i32_c a;
-    tassert_eqe(EOK, deque$new(&a, allocator));
+    tassert_eqe(EOK, deque$new(&a, mem$));
     tassert_eqs(EOK, _cex_deque_validate(&a.base));
 
     _cex_deque_head_s* head = &a.base->_head;

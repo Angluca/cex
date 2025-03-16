@@ -1,7 +1,5 @@
-#include <cex/cex.c>
-#include <cex/mem.h>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
+#include <cex/all.c>
+#include <cex/test.h>
 #include <unistd.h>
 #include <x86intrin.h>
 

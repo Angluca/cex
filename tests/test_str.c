@@ -1,23 +1,18 @@
 #include <cex/all.c>
-#include <cex/str.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
+#include <cex/test.h>
 #include <stdio.h>
 
-const Allocator_i* allocator;
 /*
  * SUITE INIT / SHUTDOWN
  */
 test$teardown()
 {
-    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
     uassert_enable();
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 
@@ -62,7 +57,7 @@ test$case(test_cstr_sdollar)
     const char* cstr = "hello";
 
     sbuf_c sb;
-    tassert_eqs(EOK, sbuf.create(&sb, 10, allocator));
+    tassert_eqs(EOK, sbuf.create(&sb, 10, mem$));
     tassert_eqs(EOK, sbuf.append(&sb, str$("hello")));
     sbuf.destroy(&sb);
 

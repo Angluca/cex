@@ -1,5 +1,5 @@
 #pragma once
-#include "allocator2.h"
+#include "allocator.h"
 
 
 // clang-format off
@@ -28,7 +28,7 @@ AllocatorHeap_c _cex__default_global__allocator_heap = {
         }
     },
 };
-IAllocator _cex__default_global__allocator_heap__allc = &_cex__default_global__allocator_heap.alloc;
+IAllocator const _cex__default_global__allocator_heap__allc = &_cex__default_global__allocator_heap.alloc;
 
 thread_local AllocatorHeap_c _cex__default_global__allocator_temp = {
     .alloc = {

@@ -39,7 +39,7 @@ static allocator_generic_s
 /**
  * @brief  heap-based allocator (simple proxy for malloc/free/realloc)
  */
-const Allocator_i*
+IAllocator
 AllocatorGeneric_create(void)
 {
     uassert(allocator__generic_data.magic == 0 && "Already initialized");
@@ -53,7 +53,7 @@ AllocatorGeneric_create(void)
     return &allocator__generic_data.base;
 }
 
-const Allocator_i*
+IAllocator
 AllocatorGeneric_destroy(void)
 {
     uassert(allocator__generic_data.magic != 0 && "Already destroyed");

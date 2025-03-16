@@ -45,10 +45,10 @@ struct __class__AllocatorStaticArena
  * @param capacity - capacity of a buffer (minimal requires is 1024)
  * @return  allocator instance
  */
-const Allocator_i*
+IAllocator
 (*create)(char* buffer, usize capacity);
 
-const Allocator_i*
+IAllocator
 (*destroy)(void);
 
     // clang-format on

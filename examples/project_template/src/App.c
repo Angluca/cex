@@ -4,7 +4,7 @@
 #include <cex/cex.h>
 
 Exception
-App_create(App_c* app, i32 argc, char* argv[], const Allocator_i* allocator)
+App_create(App_c* app, i32 argc, char* argv[], IAllocator allocator)
 {
     memset(app, 0, sizeof(*app));
 
@@ -46,7 +46,7 @@ App_create(App_c* app, i32 argc, char* argv[], const Allocator_i* allocator)
 
 
 Exception
-App_main(App_c* app, const Allocator_i* allocator)
+App_main(App_c* app, IAllocator allocator)
 {
     (void)allocator;
 
@@ -69,7 +69,7 @@ App_main(App_c* app, const Allocator_i* allocator)
 }
 
 void
-App_destroy(App_c* app, const Allocator_i* allocator)
+App_destroy(App_c* app, IAllocator allocator)
 {
     (void)app;
     (void)allocator;

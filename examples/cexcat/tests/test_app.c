@@ -4,7 +4,7 @@
 #include <cex/all.c>
 #include <cex/test/test.h>
 
-const Allocator_i* allocator;
+IAllocator allocator;
 
 test$teardown()
 {
@@ -15,7 +15,7 @@ test$teardown()
 test$setup()
 {
     uassert_enable(); // re-enable if you disabled it in some test case
-    allocator = AllocatorGeneric.create();
+    allocator = mem$;
     return EOK;
 }
 

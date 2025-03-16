@@ -1,7 +1,6 @@
-#include <cex/test/test.h>
+#include <cex/test.h>
 #include <cex/all.c>
-#include <cex/argparse/argparse.c>
-#include <cex/test/fff.h>
+#include <cex/argparse.c>
 #include <stdio.h>
 #include <x86intrin.h>
 
@@ -9,18 +8,15 @@
 #define PERM_WRITE (1 << 1)
 #define PERM_EXEC (1 << 2)
 
-const Allocator_i* allocator;
 /*
 * SUITE INIT / SHUTDOWN
 */
 test$teardown(){
-    allocator = AllocatorGeneric.destroy();
     return EOK;
 }
 
 test$setup()
 {
-    allocator = AllocatorGeneric.create();
     return EOK;
 }
 

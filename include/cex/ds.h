@@ -1,8 +1,5 @@
-#ifndef INCLUDE_STB_DS_H
-#define INCLUDE_STB_DS_H
-
-#include "cex.h"
-#include "mem.h"
+#pragma once
+#include "all.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -28,12 +25,12 @@ enum _CexDsKeyType_e
     _CexDsKeyType__charbuf,
     _CexDsKeyType__cexstr,
 };
-extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, const Allocator_i* allc);
+extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocator allc);
 extern void cexds_arrfreef(void* a);
 extern bool cexds_arr_integrity(void* arr, size_t magic_num);
 extern void cexds_hmfree_func(void* p, size_t elemsize);
 extern void cexds_hmclear_func(struct cexds_hash_index* t, struct cexds_hash_index* old_table, size_t cexds_hash_seed);
-extern void* cexds_hminit(size_t elemsize, const Allocator_i* allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
+extern void* cexds_hminit(size_t elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
 extern void* cexds_hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
 extern void* cexds_hmput_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, void* full_elem, void* result);
 extern bool cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
@@ -54,7 +51,7 @@ _Static_assert(mem$is_power_of2(CEXDS_HDR_PAD), "expected pow of 2");
 typedef struct
 {
     void* hash_table;
-    const Allocator_i* allocator;
+    IAllocator allocator;
     u32 magic_num;
     enum _CexDsKeyType_e hm_key_type;
     size_t hm_seed;
@@ -391,5 +388,3 @@ enum
 
 #define cexds_arrgrowf cexds_arrgrowf
 #define cexds_shmode_func_wrapper(t, e, m) cexds_shmode_func(e, m)
-
-#endif // INCLUDE_STB_DS_H

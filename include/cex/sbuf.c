@@ -58,7 +58,7 @@ sbuf__grow_buffer(sbuf_c* self, u32 length)
     }
 
     u32 new_capacity = sbuf__alloc_capacity(length);
-    head = head->allocator->realloc(head, new_capacity);
+    head = mem$realloc(head->allocator, head, new_capacity);
     if (unlikely(head == NULL)) {
         *self = NULL;
         return Error.memory;
@@ -71,7 +71,7 @@ sbuf__grow_buffer(sbuf_c* self, u32 length)
 }
 
 Exception
-sbuf_create(sbuf_c* self, u32 capacity, const Allocator_i* allocator)
+sbuf_create(sbuf_c* self, u32 capacity, IAllocator allocator)
 {
     uassert(self != NULL);
     uassert(capacity != 0);
@@ -83,7 +83,7 @@ sbuf_create(sbuf_c* self, u32 capacity, const Allocator_i* allocator)
         capacity = sbuf__alloc_capacity(capacity);
     }
 
-    char* buf = allocator->malloc(capacity);
+    char* buf = mem$malloc(allocator, capacity);
 
     if (buf == NULL) {
         return Error.memory;
@@ -313,7 +313,7 @@ sbuf_destroy(sbuf_c* self)
 
         if (head->allocator != NULL) {
             // allocator is NULL for static sbuf
-            head->allocator->free(head);
+            mem$free(head->allocator, head);
         }
         memset(self, 0, sizeof(*self));
     }
