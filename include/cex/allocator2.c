@@ -55,8 +55,7 @@ _cex_allocator_heap__validate(IAllocator self)
 #ifndef NDEBUG
     uassert(self != NULL);
     uassert(
-        self->meta.magic_id == CEX_ALLOCATOR_HEAP_MAGIC &&
-        "bad allocator pointer or mem corruption"
+        self->meta.magic_id == CEX_ALLOCATOR_HEAP_MAGIC && "bad allocator pointer or mem corruption"
     );
 #endif
 }
@@ -68,7 +67,16 @@ _cex_allocator_heap__malloc(IAllocator self, usize size, usize alignment)
     uassert(alignment <= alignof(size_t) && "TODO: implement aligned version");
     AllocatorHeap_c* a = (AllocatorHeap_c*)self;
     a->stats.n_allocs++;
-    return malloc(size);
+    void* result = malloc(size);
+
+#ifdef CEXTEST
+    // intentionally set malloc to 0xf7 pattern to mark uninitialized data
+    if (result) {
+        memset(result, 0xf7, size);
+    }
+#endif
+
+    return result;
 }
 static void*
 _cex_allocator_heap__calloc(IAllocator self, usize nmemb, usize size, usize alignment)
@@ -80,12 +88,12 @@ _cex_allocator_heap__calloc(IAllocator self, usize nmemb, usize size, usize alig
     }
 
 #ifdef _WIN32
-    void* result = _aligned_malloc(alignment, size*nmemb);
+    void* result = _aligned_malloc(alignment, size * nmemb);
 #else
-    void* result = aligned_alloc(alignment, size*nmemb);
+    void* result = aligned_alloc(alignment, size * nmemb);
 #endif
 
-    memset(result, 0, size*nmemb);    
+    memset(result, 0, size * nmemb);
     return result;
 }
 static void*
@@ -107,7 +115,7 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
     return NULL;
 }
 
-static const struct Allocator2_i*  
+static const struct Allocator2_i*
 _cex_allocator_heap__scope_enter(IAllocator self)
 {
     _cex_allocator_heap__validate(self);

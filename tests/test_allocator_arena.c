@@ -477,6 +477,25 @@ test$case(test_allocator_arena_realloc_shrink)
     return EOK;
 }
 
+test$case(test_allocator_arena_malloc_mem_pattern)
+{
+
+    IAllocator arena = AllocatorArena_create(4096);
+    tassert(arena != NULL);
+
+    mem$scope(arena, _)
+    {
+        u8* p = mem$malloc(arena, 100);
+        tassert(p != NULL);
+        for(u32 i = 0; i < 100; i++){
+            tassert(p[i] == 0xf7);
+        }
+    }
+
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -492,6 +511,7 @@ main(int argc, char* argv[])
     test$run(test_allocator_arena_page_size);
     test$run(test_allocator_arena_multiple_pages);
     test$run(test_allocator_arena_realloc_shrink);
+    test$run(test_allocator_arena_malloc_mem_pattern);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

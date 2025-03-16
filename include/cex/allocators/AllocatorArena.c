@@ -193,6 +193,12 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(self->used % 8 == 0);
     uassert(((usize)(result) & ((rec.ptr_alignment) - 1)) == 0);
 
+
+#ifdef CEXTEST
+    // intentionally set malloc to 0xf7 pattern to mark uninitialized data
+    memset(result, 0xf7, rec.size);
+#endif
+
     return result;
 }
 static void*
