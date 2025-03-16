@@ -194,6 +194,7 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
                 tassert(alignment <= 64);
                 usize alloc_size = alignment * (i % 4 + 1);
                 char* p = arena->malloc(arena, alloc_size, alignment);
+                memset(p, 0xAA, alloc_size);
                 tassert(p != NULL);
                 // ensure returned pointers are aligned
                 tassert(
@@ -204,6 +205,9 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
                 tassert_eqi(rec->ptr_alignment, alignment);
                 tassert_eqi(rec->size, alloc_size);
                 tassert(mem$asan_poison_check(rec->__poison_area, sizeof(rec->__poison_area)));
+
+                tassert(arena->free(arena, p) == NULL);
+                tassert(mem$asan_poison_check(p, alloc_size));
             }
         }
     }

@@ -81,7 +81,7 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
 }
 
 static inline allocator_arena_rec_s*
-_cex_alloc_arena__get_rec(void* alloc_pointer) 
+_cex_alloc_arena__get_rec(void* alloc_pointer)
 {
     uassert(alloc_pointer != NULL);
     u8 offset = *((u8*)alloc_pointer - 1);
@@ -204,7 +204,12 @@ _cex_allocator_arena__free(IAllocator allc, void* ptr)
     // NOTE: this intentionally does nothing, all memory releasing in scope_exit()
     _cex_allocator_arena__validate(allc);
 
-    // FIX: TODO poison this allocation with mem$asan_poison
+    if (ptr == NULL) {
+        return NULL;
+    }
+
+    allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(ptr);
+    mem$asan_poison(ptr, rec->size + rec->size);
 
     return NULL;
 }
@@ -338,7 +343,7 @@ AllocatorArena_sanitize(IAllocator allc)
 
             char* alloc_p = ((char*)rec) + rec->ptr_offset;
             u8 poffset = alloc_p[-1];
-            uassert(poffset==rec->ptr_offset && "near pointer offset mismatch to rec.ptr_offset");
+            uassert(poffset == rec->ptr_offset && "near pointer offset mismatch to rec.ptr_offset");
 
             if (rec->ptr_padding) {
                 uassert(
