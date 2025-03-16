@@ -192,22 +192,25 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
             {
                 tassert(alignment >= 8);
                 tassert(alignment <= 64);
+                tassert(mem$is_power_of2(alignment));
                 usize alloc_size = alignment * (i % 4 + 1);
                 char* p = arena->malloc(arena, alloc_size, alignment);
                 memset(p, 0xAA, alloc_size);
                 tassert(p != NULL);
                 // ensure returned pointers are aligned
-                tassert(
-                    (usize)alignment * (((usize)p + (usize)alignment - 1) / (usize)alignment) ==
-                    (usize)p
-                );
+
+                uassert(((usize)(p) & ((alignment) - 1)) == 0);
                 allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
                 tassert_eqi(rec->ptr_alignment, alignment);
                 tassert_eqi(rec->size, alloc_size);
-                tassert(mem$asan_poison_check(rec->__poison_area, sizeof(rec->__poison_area)));
+                tassert_eqi(rec->is_free, 0);
 
                 tassert(arena->free(arena, p) == NULL);
                 tassert(mem$asan_poison_check(p, alloc_size));
+                tassert_eqi(rec->is_free, 1);
+
+                AllocatorArena_sanitize(arena);
+
             }
         }
     }

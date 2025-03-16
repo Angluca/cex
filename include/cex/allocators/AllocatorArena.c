@@ -158,12 +158,12 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(rec.ptr_alignment <= CEX_ARENA_MAX_ALIGN);
     uassert(rec.ptr_padding <= 8);
 
-    mem$asan_poison(page_rec->__poison_area, sizeof(page_rec->__poison_area));
     mem$asan_unpoison(((char*)result) - 1, rec.size + 1);
     *(((char*)result) - 1) = rec.ptr_offset;
-    self->used += req_size;
-    self->stats.bytes_alloc += req_size;
-    page->cursor += req_size;
+    usize bytes_alloc = rec.ptr_offset + rec.size + rec.ptr_padding;
+    self->used += bytes_alloc;
+    self->stats.bytes_alloc += bytes_alloc;
+    page->cursor += bytes_alloc;
     page->last_alloc = result;
     uassert(page->cursor % 8 == 0);
     uassert(self->used % 8 == 0);
@@ -209,6 +209,7 @@ _cex_allocator_arena__free(IAllocator allc, void* ptr)
     }
 
     allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(ptr);
+    rec->is_free = true;
     mem$asan_poison(ptr, rec->size + rec->size);
 
     return NULL;
@@ -335,11 +336,8 @@ AllocatorArena_sanitize(IAllocator allc)
             uassert(rec->ptr_offset <= CEX_ARENA_MAX_ALIGN);
             uassert(rec->ptr_padding <= 8);
             uassert(rec->ptr_alignment <= CEX_ARENA_MAX_ALIGN);
+            uassert(rec->is_free <= 1);
             uassert(mem$is_power_of2(rec->ptr_alignment));
-            uassert(
-                mem$asan_poison_check(rec->__poison_area, sizeof(rec->__poison_area)) &&
-                "poison data overwrite at allocator_arena_rec_s"
-            );
 
             char* alloc_p = ((char*)rec) + rec->ptr_offset;
             u8 poffset = alloc_p[-1];

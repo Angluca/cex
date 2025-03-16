@@ -49,7 +49,7 @@ typedef struct allocator_arena_rec_s
     u32 size;            // allocation size
     u8 ptr_padding;      // padding in bytes to next rec (also poisoned!)
     u8 ptr_alignment;    // requested pointer alignment
-    u8 __poison_area[1]; // for sanitizer
+    u8 is_free;          // indication that address has been free()'d
     u8 ptr_offset;       // byte offset for allocated pointer for this item
 } allocator_arena_rec_s;
 _Static_assert(sizeof(allocator_arena_rec_s) == 8, "size!");
