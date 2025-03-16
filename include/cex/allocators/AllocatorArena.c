@@ -20,19 +20,26 @@ static inline usize
 _cex_alloc_estimate_page_size(usize page_size, usize alloc_size)
 {
     uassert(alloc_size < CEX_ARENA_MAX_ALLOC && "allocation is to big");
-    usize base_page_size = page_size + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN;
+    usize base_page_size = mem$aligned_round(
+        page_size + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN,
+        alignof(allocator_arena_page_s)
+    );
+    uassert(base_page_size % alignof(allocator_arena_page_s) == 0 && "expected to be 64 aligned");
 
     if (alloc_size > 0.7 * base_page_size) {
         if (alloc_size > 1024 * 1024) {
-            // TODO: align to closest system page size ? 4096 maybe?
-            return alloc_size * 1.1 + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN;
+            alloc_size *= 1.1;
+            alloc_size += sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN;
         } else {
-            usize result = mem$next_pow2(
-                alloc_size + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN
-            );
-            uassert(mem$is_power_of2(result));
-            return result;
+            alloc_size *= 2;
         }
+
+        usize result = mem$aligned_round(
+            alloc_size + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN,
+            alignof(allocator_arena_page_s)
+        );
+        uassert(result % alignof(allocator_arena_page_s) == 0 && "expected to be 64 aligned");
+        return result;
     } else {
         return base_page_size;
     }
@@ -143,7 +150,6 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
         return NULL;
     }
 
-    // TODO: check if existing page has enough capacity + adding extra pages
     allocator_arena_page_s* page = _cex_allocator_arena__request_page_size(self, rec, NULL);
     if (page == NULL) {
         return NULL;

@@ -201,7 +201,7 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
                 tassert(mem$is_power_of2(alignment));
                 usize alloc_size = alignment * (i % 4 + 1);
                 char* ptr_algn = arena->calloc(arena, 1, alloc_size, alignment);
-                for(u32 j = 0; j < alloc_size; j++){
+                for (u32 j = 0; j < alloc_size; j++) {
                     tassert(ptr_algn[j] == 0);
                 }
                 memset(ptr_algn, 0xAA, alloc_size);
@@ -352,6 +352,53 @@ test$case(test_allocator_arena_realloc)
     return EOK;
 }
 
+test$case(test_allocator_arena_page_size)
+{
+    usize page_size = 1024;
+    for (u32 i = 0; i < 10000; i += 10) {
+        usize est_page_size = _cex_alloc_estimate_page_size(page_size, i);
+        usize base_page_size = mem$aligned_round(
+            page_size + sizeof(allocator_arena_page_s) + CEX_ARENA_MAX_ALIGN,
+            alignof(allocator_arena_page_s)
+        );
+
+        tassert(est_page_size >= page_size);
+        if (i > 0.7 * base_page_size) {
+            if (i > 1024*1024) {
+                uassert(est_page_size <= i * 1.2 + CEX_ARENA_MAX_ALIGN * 3);
+            } else {
+                uassert(est_page_size <= i * 2 + CEX_ARENA_MAX_ALIGN * 3);
+            }
+        } else {
+            uassert(est_page_size == base_page_size);
+        }
+        tassert(est_page_size % alignof(allocator_arena_page_s) == 0);
+    }
+    return EOK;
+}
+
+test$case(test_allocator_arena_multiple_pages)
+{
+
+    IAllocator arena = AllocatorArena_create(1024);
+    AllocatorArena_c* allc = (AllocatorArena_c*)arena;
+    tassert(arena != NULL);
+
+    mem$scope(arena, _)
+    {
+        char* p = mem$malloc(arena, 1000);
+        tassert(p != NULL);
+
+        allocator_arena_page_s* page = allc->last_page;
+        tassert(page != NULL);
+        tassert(page->prev_page == NULL);
+    }
+
+    AllocatorArena_sanitize(arena);
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -364,6 +411,8 @@ main(int argc, char* argv[])
     test$run(test_allocator_arena_malloc_pointer_alignment);
     test$run(test_allocator_arena_scope_sanitization);
     test$run(test_allocator_arena_realloc);
+    test$run(test_allocator_arena_page_size);
+    test$run(test_allocator_arena_multiple_pages);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

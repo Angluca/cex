@@ -1,7 +1,5 @@
 #include "cex.h"
 
-#define mem$next_pow2(s) ({ s; })
-
 #define mem$is_power_of2(s) (((s) != 0) && (((s) & ((s) - 1)) == 0))
 
 #define mem$aligned_round(size, alignment)                                                         \
