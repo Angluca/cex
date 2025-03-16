@@ -26,10 +26,11 @@ test$setup()
         int cmp_res = memcmp(&res, &exp, sizeof(allocator_arena_rec_s));                           \
         if (cmp_res != 0) {                                                                        \
             printf(                                                                                \
-                "Wrong result: {.size = %d, .ptr_offset=%d, .ptr_padding=%d}\n",                   \
+                "Wrong result: {.size = %d, .ptr_offset=%d, .ptr_padding=%d, .ptr_alignmet=%d}\n", \
                 res.size,                                                                          \
                 res.ptr_offset,                                                                    \
-                res.ptr_padding                                                                    \
+                res.ptr_padding,                                                                   \
+                res.ptr_alignment                                                                  \
             );                                                                                     \
         }                                                                                          \
         cmp_res == 0;                                                                              \
@@ -39,24 +40,24 @@ test$case(test_allocator_arena_alloc_size)
 {
     tassert_eqi(sizeof(allocator_arena_rec_s), 8);
 
-    tassert(alloc_cmp(1, 0, .size = 1, .ptr_padding = 7, .ptr_offset = 8));
-    tassert(alloc_cmp(5, 0, .size = 5, .ptr_padding = 3, .ptr_offset = 8));
-    tassert(alloc_cmp(8, 0, .size = 8, .ptr_padding = 8, .ptr_offset = 8));
-    tassert(alloc_cmp(16, 0, .size = 16, .ptr_padding = 8, .ptr_offset = 8));
-    tassert(alloc_cmp(100, 0, .size = 100, .ptr_padding = 4, .ptr_offset = 8));
+    tassert(alloc_cmp(1, 0, .size = 1, .ptr_padding = 7, .ptr_alignment = 8));
+    tassert(alloc_cmp(5, 0, .size = 5, .ptr_padding = 3, .ptr_alignment = 8));
+    tassert(alloc_cmp(8, 0, .size = 8, .ptr_padding = 8, .ptr_alignment = 8));
+    tassert(alloc_cmp(16, 0, .size = 16, .ptr_padding = 8, .ptr_alignment = 8));
+    tassert(alloc_cmp(100, 0, .size = 100, .ptr_padding = 4, .ptr_alignment = 8));
 
-    tassert(alloc_cmp(8, 8, .size = 8, .ptr_padding = 8, .ptr_offset = 8));
-    tassert(alloc_cmp(16, 8, .size = 16, .ptr_padding = 8, .ptr_offset = 8));
+    tassert(alloc_cmp(8, 8, .size = 8, .ptr_padding = 8, .ptr_alignment = 8));
+    tassert(alloc_cmp(16, 8, .size = 16, .ptr_padding = 8, .ptr_alignment = 8));
 
-    tassert(alloc_cmp(16, 16, .size = 16, .ptr_padding = 8, .ptr_offset = 16));
-    tassert(alloc_cmp(32, 16, .size = 32, .ptr_padding = 8, .ptr_offset = 16));
-    tassert(alloc_cmp(48, 16, .size = 48, .ptr_padding = 8, .ptr_offset = 16));
-    tassert(alloc_cmp(64, 16, .size = 64, .ptr_padding = 8, .ptr_offset = 16));
+    tassert(alloc_cmp(16, 16, .size = 16, .ptr_padding = 8, .ptr_alignment = 16));
+    tassert(alloc_cmp(32, 16, .size = 32, .ptr_padding = 8, .ptr_alignment = 16));
+    tassert(alloc_cmp(48, 16, .size = 48, .ptr_padding = 8, .ptr_alignment = 16));
+    tassert(alloc_cmp(64, 16, .size = 64, .ptr_padding = 8, .ptr_alignment = 16));
 
-    tassert(alloc_cmp(64, 64, .size = 64, .ptr_padding = 8, .ptr_offset = 64));
-    tassert(alloc_cmp(128, 64, .size = 128, .ptr_padding = 8, .ptr_offset = 64));
-    tassert(alloc_cmp(192, 64, .size = 192, .ptr_padding = 8, .ptr_offset = 64));
-    tassert(alloc_cmp(256, 64, .size = 256, .ptr_padding = 8, .ptr_offset = 64));
+    tassert(alloc_cmp(64, 64, .size = 64, .ptr_padding = 8, .ptr_alignment = 64));
+    tassert(alloc_cmp(128, 64, .size = 128, .ptr_padding = 8, .ptr_alignment = 64));
+    tassert(alloc_cmp(192, 64, .size = 192, .ptr_padding = 8, .ptr_alignment = 64));
+    tassert(alloc_cmp(256, 64, .size = 256, .ptr_padding = 8, .ptr_alignment = 64));
 
     return EOK;
 }

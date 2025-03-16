@@ -51,12 +51,13 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
         alignment = 8;
         size = mem$aligned_round(alloc_size, 8);
     } else {
-        if (alloc_size % alignment != 0) {
-            uassert(mem$is_power_of2(alignment) && "must be pow2");
+        uassert(mem$is_power_of2(alignment) && "must be pow2");
+        if ((alloc_size & (alignment-1)) != 0) {
             uassert(alloc_size % alignment == 0 && "requested size is not aligned");
             return (allocator_arena_rec_s){ 0 };
         }
     }
+
     size += sizeof(allocator_arena_rec_s);
 
 #if mem$asan_enabled()
@@ -70,9 +71,8 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
 
     return (allocator_arena_rec_s){
         .size = alloc_size, // original size of allocation
-        // offset from end allocator_arena_rec_s struct end
-        .ptr_offset = alignment,
-        // offset from end of allocated data to the next possible allocator_arena_rec_s
+        .ptr_offset = 0,    // offset from allocator_arena_rec_s to pointer (will be set later!)
+        .ptr_alignment = alignment, // expected pointer alignment
         .ptr_padding = size - alloc_size - sizeof(allocator_arena_rec_s),
     };
 }
@@ -111,7 +111,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     if (rec.size == 0) {
         return NULL;
     }
-    usize req_size = rec.size + rec.ptr_offset + rec.ptr_padding;
+    usize req_size = rec.size + rec.ptr_alignment + rec.ptr_padding;
 
     // TODO: check if existing page has enough capacity + adding extra pages
     if (self->last_page == NULL) {
@@ -132,20 +132,14 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
 
     mem$asan_unpoison(page_rec, sizeof(allocator_arena_rec_s));
     *page_rec = rec;
-    if (alignment == 0) {
-        alignment = alignof(void*);
-    }
 
-    void* result = mem$aligned_pointer((char*)page_rec + sizeof(allocator_arena_rec_s), alignment);
+    void* result = mem$aligned_pointer((char*)page_rec + sizeof(allocator_arena_rec_s), page_rec->ptr_alignment);
 
     uassert((char*)result >= ((char*)page_rec) + sizeof(allocator_arena_rec_s));
-    uassert(
-        (char*)result - (((char*)page_rec) + (isize)sizeof(allocator_arena_rec_s)) <=
-        (isize)alignment
-    );
     // NOTE: rec.ptr_offset expected to be largest possible alignment, real aligned pointer
     //       position expected <= rec.ptr_offset, but keep req_size at upper bound for simplicity
     page_rec->ptr_offset = (char*)result - (char*)page_rec;
+    uassert(page_rec->ptr_offset <= page_rec->ptr_alignment);
 
     mem$asan_poison(page_rec->__poison_area, sizeof(page_rec->__poison_area));
     mem$asan_unpoison((char*)result, page_rec->size);
@@ -155,7 +149,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     page->last_alloc = result;
     uassert(page->cursor % 8 == 0);
     uassert(self->used % 8 == 0);
-    uassert(alignment == 0 || ((usize)(result) & ((alignment)-1)) == 0);
+    uassert(((usize)(result) & ((page_rec->ptr_alignment)-1)) == 0);
 
     return result;
 }
@@ -191,6 +185,9 @@ _cex_allocator_arena__free(IAllocator allc, void* ptr)
     (void)ptr;
     // NOTE: this intentionally does nothing, all memory releasing in scope_exit()
     _cex_allocator_arena__validate(allc);
+
+    // FIX: TODO poison this allocation with mem$asan_poison
+
     return NULL;
 }
 

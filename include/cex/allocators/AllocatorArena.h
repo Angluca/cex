@@ -1,7 +1,7 @@
 #pragma once
+#include <cex/all.h>
 #include <cex/allocator2.h>
 #include <stddef.h>
-#include <cex/all.h>
 
 #define CEX_ALLOCATOR_MAX_SCOPE_STACK 16
 
@@ -47,8 +47,10 @@ _Static_assert(sizeof(allocator_arena_page_s) == 64, "size!");
 typedef struct allocator_arena_rec_s
 {
     u32 size;            // allocation size
-    u8 ptr_offset;       // byte offset for allocated pointer for this item
     u8 ptr_padding;      // padding in bytes to next rec (also poisoned!)
-    u8 __poison_area[2]; // for sanitizer
+    u8 ptr_alignment;    // requested pointer alignment
+    u8 __poison_area[1]; // for sanitizer
+    u8 ptr_offset;       // byte offset for allocated pointer for this item
 } allocator_arena_rec_s;
 _Static_assert(sizeof(allocator_arena_rec_s) == 8, "size!");
+_Static_assert(offsetof(allocator_arena_rec_s, ptr_offset) == 7, "ptr_offset must be last");
