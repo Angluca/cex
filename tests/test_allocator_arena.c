@@ -283,20 +283,26 @@ test$case(test_allocator_arena_realloc)
     {
         char* p = mem$malloc(arena, 100);
         tassert(p != NULL);
+        memset(p, 0xAA, 100);
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
         tassert_eqi(allc->stats.bytes_alloc, 112);
         tassert_eqi(allc->used, 112);
+        AllocatorArena_sanitize(arena);
 
         char* p2 = mem$malloc(arena, 100);
         tassert(p2 != NULL);
+        memset(p2, 0xAA, 100);
         tassert_eqi(allc->stats.bytes_alloc, 112 + 112);
         tassert_eqi(allc->used, 112 + 112);
+        AllocatorArena_sanitize(arena);
 
         char* p3 = mem$realloc(arena, p, 200);
         tassert(p3 != NULL);
         tassert(p3 != p);
+        memset(p3, 0xAA, 100);
         tassert_eqi(allc->stats.bytes_alloc, 112 + 112 + 216);
         tassert_eqi(allc->used, 112 + 112 + 216);
+        AllocatorArena_sanitize(arena);
 
         allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
         tassert_eqi(rec->ptr_alignment, 8);
@@ -307,6 +313,14 @@ test$case(test_allocator_arena_realloc)
         tassert_eqi(rec->ptr_alignment, 8);
         tassert_eqi(rec->size, 200);
         tassert_eqi(rec->is_free, 0);
+        tassert(allc->last_page->last_alloc == p3);
+
+        // Extending last pointer!
+        char* p4 = mem$realloc(arena, p3, 300);
+        tassert(p4 != NULL);
+        tassert(p3 == p4);
+        memset(p3, 0xAA, 300);
+        AllocatorArena_sanitize(arena);
     }
 
     AllocatorArena_destroy(arena);
