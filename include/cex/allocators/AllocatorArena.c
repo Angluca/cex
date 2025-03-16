@@ -121,14 +121,17 @@ _cex_allocator_arena__request_page_size(
         if (page == NULL) {
             return NULL; // memory error
         }
+
         uassert(mem$aligned_pointer(page, 64) == page);
 
         page->prev_page = self->last_page;
         page->used_start = self->used;
         page->capacity = page_size - sizeof(allocator_arena_page_s);
-        self->last_page = page;
         mem$asan_poison(page->__poison_area, sizeof(page->__poison_area));
         mem$asan_poison(&page->data, page->capacity);
+
+        self->last_page = page;
+        self->stats.pages_created++;
 
         if (out_is_allocated) {
             *out_is_allocated = true;
@@ -346,6 +349,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
             self->used -= free_len;
             self->stats.bytes_free += free_len;
             self->last_page = page->prev_page;
+            self->stats.pages_free++;
             mem$free(mem$, page);
         }
         page = tpage;

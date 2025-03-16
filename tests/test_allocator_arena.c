@@ -413,6 +413,8 @@ test$case(test_allocator_arena_multiple_pages)
     tassert(allc->last_page->prev_page == NULL);
     tassert(allc->last_page->cursor == 0);
     tassert_eqi(allc->used, 0);
+    tassert_eqi(allc->stats.pages_created, 2);
+    tassert_eqi(allc->stats.pages_free, 1); // last page should be still active
 
     AllocatorArena_sanitize(arena);
     AllocatorArena_destroy(arena);

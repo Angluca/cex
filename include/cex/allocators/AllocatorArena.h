@@ -22,6 +22,8 @@ typedef struct
         usize bytes_alloc;
         usize bytes_realloc;
         usize bytes_free;
+        u32 pages_created;
+        u32 pages_free;
     } stats;
 
     // each mark is a `used` value at alloc.scope_enter()
