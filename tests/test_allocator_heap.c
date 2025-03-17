@@ -263,10 +263,17 @@ test$case(test_allocator_heap_realloc_random_align)
             tassert((usize)a % al == 0 && "expected aligned to al");
         }
 
+        // fprintf(stderr, "i: %d size: %ld align: %ld p: %p\n", i, size, al, a);
         // u8* old_a = a;
         usize new_size = (i % 2 == 0) ? size * 2 : size / 2;
+        if (al > 1 && i % 2 != 0) {
+            new_size = ((size / al) / 2) * 2 * al;            
+            tassert(new_size <= size);
+            tassert(new_size % al == 0);
+        }
 
-        a = mem$realloc(mem$, a, new_size);
+
+        a = mem$realloc(mem$, a, new_size, al);
         tassert(a != NULL);
         tassert(a[0] == 0xCD);
         if (new_size > size) {
@@ -274,6 +281,10 @@ test$case(test_allocator_heap_realloc_random_align)
             {
                 tassert(v == 'Z');
             }
+            // for(u32 j = size; j < new_size-1; j++)
+            // {
+            //     tassert_eqi(a[j], 0xf7);
+            // }
         } else {
             for$arr(v, a + 1, new_size - 1)
             {
@@ -294,7 +305,6 @@ test$case(test_allocator_heap_realloc_random_align)
 
         memset(a, 'Z', new_size);
 
-        // printf("size: %ld align: %ld p: %p\n", size, al, a);
         mem$free(mem$, a);
         mem$free(mem$, b);
     }

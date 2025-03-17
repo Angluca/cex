@@ -89,6 +89,9 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
         alignment = 8;
     } else {
         uassert(mem$is_power_of2(alignment) && "must be pow2");
+
+        size += alignment;
+
         if ((alloc_size & (alignment - 1)) != 0) {
             uassert(alloc_size % alignment == 0 && "requested size is not aligned");
             return 0;
@@ -201,39 +204,41 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     u8 old_alignment = _cex_allocator_heap__hdr_get_alignment(old_hdr);
     uassert((old_alignment >= 8 && old_alignment <= 64) && "corrupted header?");
     uassert(old_offset <= 64 + sizeof(u64) * 2 && "corrupted header?");
-
+    if (unlikely(
+            (alignment <= 8 && old_alignment != 8) || (alignment > 8 && alignment != old_alignment)
+        )) {
+        uassert(alignment == old_alignment && "given alignment doesn't match to old one");
+        return NULL;
+    }
 
     u64 new_hdr = _cex_allocator_heap__hdr_make(size, alignment);
     if (unlikely(new_hdr == 0)) {
         return NULL;
     }
-    u8 new_alignment = _cex_allocator_heap__hdr_get_alignment(old_hdr);
-    if (unlikely(new_alignment != old_alignment)) {
-        uassert(new_alignment == old_alignment && "given alignment doesn't match to old one");
-        return NULL;
-    }
     usize new_full_size = _cex_allocator_heap__hdr_get_size(new_hdr);
+    uassert(new_full_size > size);
 
     u8* raw_result = realloc(p - old_offset, new_full_size);
     if (unlikely(raw_result == NULL)) {
         return NULL;
     }
-    u8* result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, new_alignment);
+    u8* result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
     uassert(mem$aligned_pointer(result, 8) == result);
-    uassert(mem$aligned_pointer(result, new_alignment) == result);
+    uassert(mem$aligned_pointer(result, old_alignment) == result);
+
+    usize ptr_offset = result - raw_result;
+    uassert(ptr_offset <= 64 + 16);
+    uassert(ptr_offset <= old_alignment + sizeof(u64) * 2);
 
 #ifdef CEXTEST
     a->stats.n_reallocs++;
-    // if (old_size < size) {
-    //     // intentionally set unallocated to 0xf7 pattern to mark uninitialized data
-    //     memset(result + old_size, 0xf7, size-old_size);
-    // }
+    if (old_size < size) {
+        // intentionally set unallocated to 0xf7 pattern to mark uninitialized data
+        memset(result + old_size, 0xf7, size - old_size);
+    }
 #endif
-    usize ptr_offset = result - raw_result;
-    uassert(ptr_offset <= 64 + 16);
-    uassert(ptr_offset <= new_alignment + sizeof(u64) * 2);
     mem$asan_poison(result - sizeof(u64), sizeof(u64));
-    ((u64*)result)[-2] = _cex_allocator_heap__hdr_set(size, ptr_offset, new_alignment);
+    ((u64*)result)[-2] = _cex_allocator_heap__hdr_set(size, ptr_offset, old_alignment);
 
     return result;
 }
