@@ -72,11 +72,9 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
 
     size += sizeof(allocator_arena_rec_s);
 
-#if mem$asan_enabled()
     if (size - alloc_size == sizeof(allocator_arena_rec_s)) {
         size += sizeof(allocator_arena_rec_s); // adding extra bytes for ASAN poison
     }
-#endif
     uassert(size - alloc_size >= sizeof(allocator_arena_rec_s));
     uassert(size - alloc_size <= 255 - sizeof(allocator_arena_rec_s) && "ptr_offset oveflow");
     uassert(size < alloc_size + 128 && "weird overflow");

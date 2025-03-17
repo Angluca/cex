@@ -106,8 +106,14 @@ test$case(test_allocator_arena_malloc)
 
     mem$scope(arena, _)
     {
-        char* p = mem$malloc(arena, 100);
+        u8* p = mem$malloc(arena, 100);
         tassert(p != NULL);
+        tassert(mem$asan_enabled());
+        // p[-2] = 1;
+        // tassert_eqi(p[100], 1); //   GOOD ASAN poison! 
+        // tassert_eqi(p[-3], 0xf7);   //GOOD ASAN poison! 
+
+
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
         tassert_eqi(allc->stats.bytes_alloc, 112);
         tassert_eqi(allc->used, 112);

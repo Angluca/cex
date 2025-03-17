@@ -18,9 +18,10 @@ test$case(test_allocator_api)
 {
     // mem$->scope_enter = NULL; // GOOD: compiler error
     // mem$ = NULL; // GOOD: compiler error
-    void* p = mem$malloc(mem$, 100);
+    u8* p = mem$malloc(mem$, 100);
     tassert_eqi(_cex__default_global__allocator_heap.stats.n_allocs, 1);
     tassert_eqi(mem$->scope_depth(mem$), 1);
+
 
     tassert(p != NULL);
     p = mem$->free(mem$, p);
@@ -35,7 +36,7 @@ test$case(test_allocator_api)
     tassert(p == NULL);
 
     p = mem$malloc(mem$, 100);
-    void** pp = &p;
+    u8** pp = &p;
     tassert(p != NULL);
     // mem$free always nullifies pointer
     mem$free(mem$, *pp);
@@ -273,6 +274,7 @@ test$case(test_allocator_heap_realloc_random_align)
 
 
         a = mem$realloc(mem$, a, new_size, al);
+        // tassert_eqi(a[-1], 1);  // ASAN poison check 
         tassert(a != NULL);
         tassert(a[0] == 0xCD);
         if (new_size > size) {
@@ -303,8 +305,6 @@ test$case(test_allocator_heap_realloc_random_align)
         }
 
         memset(a, 'Z', new_size);
-        // a[new_size] = 0;
-        // tassert(false);
 
         mem$free(mem$, a);
         mem$free(mem$, b);
