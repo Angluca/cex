@@ -777,6 +777,11 @@ cexds_hmput_key(
     if (table == NULL || table->used_count >= table->used_count_threshold) {
 
         size_t slot_count = (table == NULL) ? CEXDS_BUCKET_LENGTH : table->slot_count * 2;
+        cexds_array_header* hdr = cexds_header(a);
+        uassert(
+            hdr->allocator->scope_depth(hdr->allocator) == hdr->allocator_scope_depth &&
+            "passing object between different mem$scope() will lead to use-after-free / ASAN poison issues"
+        );
         cexds_hash_index* nt = cexds_make_hash_index(
             slot_count,
             table,
@@ -1012,6 +1017,11 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
 
     if (table->used_count < table->used_count_shrink_threshold &&
         table->slot_count > CEXDS_BUCKET_LENGTH) {
+        cexds_array_header* hdr = cexds_header(a);
+        uassert(
+            hdr->allocator->scope_depth(hdr->allocator) == hdr->allocator_scope_depth &&
+            "passing object between different mem$scope() will lead to use-after-free / ASAN poison issues"
+        );
         cexds_header(a)->hash_table = cexds_make_hash_index(
             table->slot_count >> 1,
             table,
@@ -1021,6 +1031,11 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
         cexds_header(a)->allocator->free(cexds_header(a)->allocator, table);
         CEXDS_STATS(++cexds_hash_shrink);
     } else if (table->tombstone_count > table->tombstone_count_threshold) {
+        cexds_array_header* hdr = cexds_header(a);
+        uassert(
+            hdr->allocator->scope_depth(hdr->allocator) == hdr->allocator_scope_depth &&
+            "passing object between different mem$scope() will lead to use-after-free / ASAN poison issues"
+        );
         cexds_header(a)->hash_table = cexds_make_hash_index(
             table->slot_count,
             table,
