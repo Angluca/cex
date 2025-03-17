@@ -89,14 +89,42 @@ void _cex_allocator_memscope_cleanup(IAllocator* allc);
 
 #define mem$offsetof(var, field) ((char*)&(var)->field - (char*)(var))
 
+
+#ifndef NDEBUG
 #ifndef CEX_DISABLE_POISON
 #define CEX_DISABLE_POISON 0
+#endif
+#else // #ifndef NDEBUG
+#ifndef CEX_DISABLE_POISON
+#define CEX_DISABLE_POISON 1
+#endif
 #endif
 
 #if defined(__SANITIZE_ADDRESS__)
 #define mem$asan_enabled() 1
 #else
 #define mem$asan_enabled() 0
+#endif
+
+#ifdef CEXTEST
+#define _mem$asan_poison_mark(addr, c, size) memset(addr, c, size)
+#define _mem$asan_poison_check_mark(addr, len)                                                     \
+    ({                                                                                             \
+        usize _len = (len);                                                                        \
+        u8* _addr = (void*)(addr);                                                                 \
+        bool result = _addr != NULL && _len > 0;                                                   \
+        for (usize i = 0; i < _len; i++) {                                                         \
+            if (_addr[i] != 0xf7) {                                                                \
+                result = false;                                                                    \
+                break;                                                                             \
+            }                                                                                      \
+        }                                                                                          \
+        result;                                                                                    \
+    })
+
+#else // #ifdef CEXTEST
+#define _mem$asan_poison_mark(addr, c, size) (void)0
+#define _mem$asan_poison_check_mark(addr, len) (1)
 #endif
 
 #if !CEX_DISABLE_POISON
@@ -110,7 +138,7 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
         void* _addr = (addr);                                                                      \
         size_t _size = (size);                                                                     \
         if (__asan_region_is_poisoned(_addr, (size)) == NULL) {                                    \
-            memset(_addr, 0xf7, _size);                                                            \
+            _mem$asan_poison_mark(_addr, 0xf7, _size); /* Marks are only enabled in CEXTEST */     \
         }                                                                                          \
         __asan_poison_memory_region(_addr, _size);                                                 \
     })
@@ -119,7 +147,7 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
         void* _addr = (addr);                                                                      \
         size_t _size = (size);                                                                     \
         __asan_unpoison_memory_region(_addr, _size);                                               \
-        memset(_addr, 0x00, _size);                                                                \
+        _mem$asan_poison_mark(_addr, 0x00, _size); /* Marks are only enabled in CEXTEST */         \
     })
 #define mem$asan_poison_check(addr, size)                                                          \
     ({                                                                                             \
@@ -130,25 +158,19 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
 #else // #if defined(__SANITIZE_ADDRESS__)
 
 #define mem$asan_enabled() 0
-#define mem$asan_poison(addr, len) ({ memset((addr), 0xf7, (len)); })
-#define mem$asan_unpoison(addr, len) ({ memset((addr), 0x00, (len)); })
-#define mem$asan_poison_check(addr, len)                                                           \
-    ({                                                                                             \
-        usize _len = (len);                                                                        \
-        u8* _addr = (void*)(addr);                                                                 \
-        bool result = _addr != NULL && _len > 0;                                                   \
-        for (usize i = 0; i < _len; i++) {                                                         \
-            if (_addr[i] != 0xf7) {                                                                \
-                result = false;                                                                    \
-                break;                                                                             \
-            }                                                                                      \
-        }                                                                                          \
-        result;                                                                                    \
-    })
+#define mem$asan_poison(addr, len) _mem$asan_poison_mark((addr), 0xf7, (len))
+#define mem$asan_unpoison(addr, len) _mem$asan_poison_mark((addr), 0x00, (len))
+
+#ifdef CEXTEST
+#define mem$asan_poison_check(addr, len) _mem$asan_poison_check_mark((addr), (len))
+#else // #ifdef CEXTEST
+#define mem$asan_poison_check(addr, len) (1)
+#endif
+
 #endif // #if defined(__SANITIZE_ADDRESS__)
 
-#else  // #if !CEX_DISABLE_POISON
-#define mem$asan_poison(addr, len) 
-#define mem$asan_unpoison(addr, len)  
-#define mem$asan_poison_check(addr, len) (1) 
+#else // #if !CEX_DISABLE_POISON
+#define mem$asan_poison(addr, len)
+#define mem$asan_unpoison(addr, len)
+#define mem$asan_poison_check(addr, len) (1)
 #endif // #if !CEX_DISABLE_POISON

@@ -244,6 +244,7 @@ __cex__fprintf_dummy(void)
 #ifdef NDEBUG
 #define uassertf(cond, format, ...) ((void)(0))
 #define uassert(cond) ((void)(0))
+#define __cex_test_postmortem_exists() 0
 #else
 
 
@@ -274,7 +275,6 @@ int __cex_test_uassert_enabled = 1;
 #define uassert_enable() (void)0
 #define uassert_is_enabled() true
 #define __CEX_OUT_STREAM stderr
-#define __cex_test_postmortem_f(...) (void)0
 #define __cex_test_postmortem_ctx NULL
 #define __cex_test_postmortem_exists() 0
 #endif

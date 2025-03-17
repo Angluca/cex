@@ -29,8 +29,9 @@ size_t cexds_rehash_items;
 bool
 cexds_arr_integrity(void* arr, size_t magic_num)
 {
-    (void)arr;
     (void)magic_num;
+    cexds_array_header* hdr = cexds_header(arr);
+    (void)hdr;
 
 #ifndef NDEBUG
 
@@ -39,14 +40,17 @@ cexds_arr_integrity(void* arr, size_t magic_num)
     //          when arr pointer is invalid arr$ / hm$ type pointer
     if (magic_num == 0) {
         uassert(
-            ((cexds_header(arr)->magic_num == CEXDS_ARR_MAGIC) ||
-             cexds_header(arr)->magic_num == CEXDS_HM_MAGIC)
+            ((hdr->magic_num == CEXDS_ARR_MAGIC) ||
+             hdr->magic_num == CEXDS_HM_MAGIC)
         );
     } else {
-        uassert(cexds_header(arr)->magic_num == magic_num);
+        uassert(hdr->magic_num == magic_num);
     }
 
+    uassert(mem$asan_poison_check(hdr->__poison_area, sizeof(hdr->__poison_area)));
+
 #endif
+
 
     return true;
 }
@@ -110,15 +114,18 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocat
     }
 
     b = (char*)b + CEXDS_HDR_PAD;
+    cexds_array_header* hdr = cexds_header(b);
     if (a == NULL) {
-        cexds_header(b)->length = 0;
-        cexds_header(b)->hash_table = NULL;
-        cexds_header(b)->allocator = allc;
-        cexds_header(b)->magic_num = CEXDS_ARR_MAGIC;
+        hdr->length = 0;
+        hdr->hash_table = NULL;
+        hdr->allocator = allc;
+        hdr->magic_num = CEXDS_ARR_MAGIC;
+        mem$asan_poison(hdr->__poison_area, sizeof(hdr->__poison_area));
     } else {
+        mem$asan_poison(hdr->__poison_area, sizeof(hdr->__poison_area));
         CEXDS_STATS(++cexds_array_grow);
     }
-    cexds_header(b)->capacity = min_cap;
+    hdr->capacity = min_cap;
 
     return b;
 }

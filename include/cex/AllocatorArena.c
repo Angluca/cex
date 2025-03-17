@@ -441,6 +441,7 @@ AllocatorArena_sanitize(IAllocator allc)
 
             char* alloc_p = ((char*)rec) + rec->ptr_offset;
             u8 poffset = alloc_p[-1];
+            (void)poffset;
             uassert(poffset == rec->ptr_offset && "near pointer offset mismatch to rec.ptr_offset");
 
             if (rec->ptr_padding) {
