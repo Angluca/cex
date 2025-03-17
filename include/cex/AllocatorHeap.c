@@ -90,8 +90,6 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
     } else {
         uassert(mem$is_power_of2(alignment) && "must be pow2");
 
-        size += alignment;
-
         if ((alloc_size & (alignment - 1)) != 0) {
             uassert(alloc_size % alignment == 0 && "requested size is not aligned");
             return 0;
@@ -147,10 +145,17 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
         }
 #endif
         usize ptr_offset = result - raw_result;
+        uassert(ptr_offset >= sizeof(u64) * 2);
         uassert(ptr_offset <= 64 + 16);
         uassert(ptr_offset <= alignment + sizeof(u64) * 2);
+        // poison area after header and before allocated pointer 
         mem$asan_poison(result - sizeof(u64), sizeof(u64));
         ((u64*)result)[-2] = _cex_allocator_heap__hdr_set(size, ptr_offset, alignment);
+
+        if (ptr_offset + size < full_size) {
+            // Adding padding poison for non 8-byte aligned data
+            mem$asan_poison(result + size, full_size - size - ptr_offset);
+        }
     }
 
     return result;
@@ -229,6 +234,7 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     usize ptr_offset = result - raw_result;
     uassert(ptr_offset <= 64 + 16);
     uassert(ptr_offset <= old_alignment + sizeof(u64) * 2);
+    uassert(ptr_offset + size <= new_full_size);
 
 #ifdef CEXTEST
     a->stats.n_reallocs++;
@@ -240,6 +246,11 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     mem$asan_poison(result - sizeof(u64), sizeof(u64));
     ((u64*)result)[-2] = _cex_allocator_heap__hdr_set(size, ptr_offset, old_alignment);
 
+    if (ptr_offset + size < new_full_size) {
+        // Adding padding poison for non 8-byte aligned data
+        mem$asan_poison(result + size, new_full_size - size - ptr_offset);
+    }
+
     return result;
 }
 
@@ -249,7 +260,6 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
     _cex_allocator_heap__validate(self);
     if (ptr != NULL) {
         AllocatorHeap_c* a = (AllocatorHeap_c*)self;
-        a->stats.n_free++;
 
         char* p = ptr;
         uassert(
@@ -260,8 +270,22 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
         uassert(hdr > 0 && "bad poitner or corrupted malloced header?");
         u8 offset = _cex_allocator_heap__hdr_get_offset(hdr);
         u8 alignment = _cex_allocator_heap__hdr_get_alignment(hdr);
-        uassert((alignment >= 8 && alignment <= 64) && "corrupted header?");
-        uassert(offset <= 64 + sizeof(u64) * 2 && "corrupted header?");
+        uassert(alignment >= 8 && "corrupted header?");
+        uassert(alignment <= 64 && "corrupted header?");
+        uassert(offset >= 16 && "corrupted header?");
+        uassert(offset <= 64 && "corrupted header?");
+
+#ifdef CEXTEST
+        a->stats.n_free++;
+        u64 size = _cex_allocator_heap__hdr_get_size(hdr);
+        u32 padding = mem$aligned_round(size + offset, alignment) - size - offset;
+        if (padding > 0) {
+            uassert(
+                mem$asan_poison_check(p + size, padding) &&
+                "corrupted area after unallocated size by mem$"
+            );
+        }
+#endif
 
         free(p - offset);
     }

@@ -233,7 +233,6 @@ test$case(test_allocator_heap_realloc)
 
 test$case(test_allocator_heap_realloc_random_align)
 {
-
     usize align_arr[] = { 0, 1, 2, 4, 8, 16, 32, 64 };
     srand(20250317);
 
@@ -281,10 +280,10 @@ test$case(test_allocator_heap_realloc_random_align)
             {
                 tassert(v == 'Z');
             }
-            // for(u32 j = size; j < new_size-1; j++)
-            // {
-            //     tassert_eqi(a[j], 0xf7);
-            // }
+            for(u32 j = size; j < new_size; j++)
+            {
+                tassert_eqi(a[j], 0xf7);
+            }
         } else {
             for$arr(v, a + 1, new_size - 1)
             {
@@ -304,6 +303,8 @@ test$case(test_allocator_heap_realloc_random_align)
         }
 
         memset(a, 'Z', new_size);
+        // a[new_size] = 0;
+        // tassert(false);
 
         mem$free(mem$, a);
         mem$free(mem$, b);
