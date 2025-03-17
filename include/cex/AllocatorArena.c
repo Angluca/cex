@@ -11,7 +11,8 @@ _cex_allocator_arena__validate(IAllocator self)
 #ifndef NDEBUG
     uassert(self != NULL);
     uassert(
-        self->meta.magic_id == CEX_ALLOCATOR_ARENA_MAGIC &&
+        (self->meta.magic_id == CEX_ALLOCATOR_ARENA_MAGIC ||
+         self->meta.magic_id == CEX_ALLOCATOR_TEMP_MAGIC) &&
         "bad allocator pointer or mem corruption"
     );
 #endif
@@ -84,7 +85,7 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
         .size = alloc_size, // original size of allocation
         .ptr_offset = 0,    // offset from allocator_arena_rec_s to pointer (will be set later!)
         .ptr_alignment = alignment, // expected pointer alignment
-        .ptr_padding = size - alloc_size - sizeof(allocator_arena_rec_s),
+        .ptr_padding = size - alloc_size - sizeof(allocator_arena_rec_s), // from last data to next
     };
 }
 
