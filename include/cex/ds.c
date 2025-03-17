@@ -39,10 +39,7 @@ cexds_arr_integrity(void* arr, size_t magic_num)
     // WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address"
     //          when arr pointer is invalid arr$ / hm$ type pointer
     if (magic_num == 0) {
-        uassert(
-            ((hdr->magic_num == CEXDS_ARR_MAGIC) ||
-             hdr->magic_num == CEXDS_HM_MAGIC)
-        );
+        uassert(((hdr->magic_num == CEXDS_ARR_MAGIC) || hdr->magic_num == CEXDS_HM_MAGIC));
     } else {
         uassert(hdr->magic_num == magic_num);
     }
@@ -100,6 +97,11 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocat
             CEXDS_HDR_PAD
         );
     } else {
+        cexds_array_header* hdr = cexds_header(a);
+        uassert(
+            hdr->allocator->scope_depth(hdr->allocator) == hdr->allocator_scope_depth &&
+            "passing object between different mem$scope() will lead to use-after-free / ASAN poison issues"
+        );
         b = mem$realloc(
             cexds_header(a)->allocator,
             cexds_base(a),
@@ -120,6 +122,7 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocat
         hdr->hash_table = NULL;
         hdr->allocator = allc;
         hdr->magic_num = CEXDS_ARR_MAGIC;
+        hdr->allocator_scope_depth = allc->scope_depth(allc);
         mem$asan_poison(hdr->__poison_area, sizeof(hdr->__poison_area));
     } else {
         mem$asan_poison(hdr->__poison_area, sizeof(hdr->__poison_area));

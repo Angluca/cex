@@ -48,8 +48,8 @@ test$case(test_array)
 
     int z = 200;
     int* zp = &z;
-    size_t s = {z};
-    size_t s2 = {(*zp)};
+    size_t s = { z };
+    size_t s2 = { (*zp) };
     tassert_eqi(s, 200);
     tassert_eqi(s2, 200);
 
@@ -1112,6 +1112,40 @@ test$case(test_orig_del_add_clear)
     return EOK;
 }
 
+test$case(test_mem_scope_lifetime_test)
+{
+    // NOTE: no mem leak! Temp allocator auto cleanup!
+    mem$scope(tmem$, ta)
+    {
+        arr$(u32) arr = arr$new(arr, ta);
+        void* old_arr = arr;
+        tassert(old_arr != NULL);
+        tassert_eqi(arr$cap(arr), 16);
+        for (u32 i = 0; i < 16; i++) {
+            arr$push(arr, i);
+        }
+        tassert_eqi(arr$len(arr), 16);
+        tassert_eqi(arr$cap(arr), 16);
+        mem$scope(tmem$, ta)
+        {
+            uassert_disable();
+            arr$pushm(arr, 170, 180, 190);
+            // tassert(old_arr = arr);
+
+            tassert_eqi(arr$len(arr), 19);
+            tassert_eqi(arr$cap(arr), 32);
+
+            tassert_eqi(arr[16], 170);
+            tassert_eqi(arr[17], 180);
+            tassert_eqi(arr[18], 190);
+        }
+        // WARNING: mem$scope exited => new allocation for arr$pushm marked as poisoned
+        //          you'll trigger weird use-after-poison ASAN failure
+        tassert(mem$asan_poison_check(&arr[18], sizeof(u32)*3));
+    }
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -1145,6 +1179,7 @@ main(int argc, char* argv[])
     test$run(test_hashmap_basic_delete);
     test$run(test_hashmap_basic_clear);
     test$run(test_orig_del_add_clear);
+    test$run(test_mem_scope_lifetime_test);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

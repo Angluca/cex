@@ -50,19 +50,20 @@ _Static_assert(mem$is_power_of2(CEXDS_HDR_PAD), "expected pow of 2");
 //
 typedef struct
 {
-    void* hash_table;
+    alignas(64) void* hash_table;
     IAllocator allocator;
+    u32 allocator_scope_depth;
     u32 magic_num;
     enum _CexDsKeyType_e hm_key_type;
     size_t hm_seed;
     size_t capacity;
-    size_t length; // This MUST BE LAST
+    size_t length; // This MUST BE LAST before __poison_area
     u8 __poison_area[sizeof(size_t)];
 } cexds_array_header;
-_Static_assert(alignof(cexds_array_header) == alignof(void*), "align");
-_Static_assert(sizeof(cexds_array_header) <= CEXDS_HDR_PAD, "size too high");
+_Static_assert(alignof(cexds_array_header) == 64, "align");
+_Static_assert(alignof(cexds_array_header) == CEXDS_HDR_PAD, "size too high");
 _Static_assert(sizeof(cexds_array_header) % alignof(size_t) == 0, "align size");
-_Static_assert(sizeof(cexds_array_header) == 56, "size");
+_Static_assert(sizeof(cexds_array_header) == 64, "size");
 
 #define cexds_header(t) ((cexds_array_header*)(((char*)(t)) - sizeof(cexds_array_header)))
 
