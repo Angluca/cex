@@ -18,6 +18,7 @@ _cex_allocator_arena__validate(IAllocator self)
 #endif
 }
 
+
 static inline usize
 _cex_alloc_estimate_page_size(usize page_size, usize alloc_size)
 {
@@ -94,6 +95,37 @@ _cex_alloc_arena__get_rec(void* alloc_pointer)
     u8 offset = *((u8*)alloc_pointer - 1);
     uassert(offset <= CEX_ARENA_MAX_ALIGN);
     return (allocator_arena_rec_s*)((char*)alloc_pointer - offset);
+}
+
+static bool
+_cex_allocator_arena__check_pointer_valid(AllocatorArena_c* self, void* old_ptr)
+{
+    uassert(self->scope_depth > 0);
+    allocator_arena_page_s* page = self->last_page;
+    allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(old_ptr);
+    while (page) {
+        var tpage = page->prev_page;
+        if ((char*)rec > (char*)page &&
+            (char*)rec < (((char*)page) + sizeof(allocator_arena_page_s) + page->capacity)) {
+            uassert((char*)rec >= (char*)page + sizeof(allocator_arena_page_s));
+
+            u32 ptr_scope_mark =
+                (((char*)rec) - ((char*)page) - sizeof(allocator_arena_page_s) + page->used_start);
+
+            if (self->scope_depth < arr$len(self->scope_stack)) {
+                if (ptr_scope_mark < self->scope_stack[self->scope_depth - 1]) {
+                    uassert(
+                        ptr_scope_mark >= self->scope_stack[self->scope_depth - 1] &&
+                        "trying to operate on pointer from different mem$scope() it will lead to use-after-free / ASAN poison issues"
+                    );
+                    return false; // using pointer out of scope of previous page
+                }
+            }
+            return true;
+        }
+        page = tpage;
+    }
+    return false;
 }
 
 static allocator_arena_page_s*
@@ -233,6 +265,10 @@ _cex_allocator_arena__free(IAllocator allc, void* ptr)
         return NULL;
     }
 
+    AllocatorArena_c* self = (AllocatorArena_c*)allc;
+    uassert(
+        _cex_allocator_arena__check_pointer_valid(self, ptr) && "pointer doesn't belong to arena"
+    );
     allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(ptr);
     rec->is_free = true;
     mem$asan_poison(ptr, rec->size);
@@ -260,6 +296,11 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
         uassert(((usize)(old_ptr) & ((alignment)-1)) == 0 && "weird old_ptr not aligned");
         uassert(((usize)(size) & ((alignment)-1)) == 0 && "size is not aligned as expected");
     }
+
+    uassert(
+        _cex_allocator_arena__check_pointer_valid(self, old_ptr) &&
+        "pointer doesn't belong to arena"
+    );
 
     if (unlikely(size <= rec->size)) {
         if (size == rec->size) {

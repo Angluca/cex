@@ -110,8 +110,8 @@ test$case(test_allocator_arena_malloc)
         tassert(p != NULL);
         tassert(mem$asan_enabled());
         // p[-2] = 1;
-        // tassert_eqi(p[100], 1); //   GOOD ASAN poison! 
-        // tassert_eqi(p[-3], 0xf7);   //GOOD ASAN poison! 
+        // tassert_eqi(p[100], 1); //   GOOD ASAN poison!
+        // tassert_eqi(p[-3], 0xf7);   //GOOD ASAN poison!
 
 
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
@@ -363,7 +363,7 @@ test$case(test_allocator_arena_page_size)
 
         tassert(est_page_size >= page_size);
         if (i > 0.7 * base_page_size) {
-            if (i > 1024*1024) {
+            if (i > 1024 * 1024) {
                 uassert(est_page_size <= i * 1.2 + CEX_ARENA_MAX_ALIGN * 3);
             } else {
                 uassert(est_page_size <= i * 2 + CEX_ARENA_MAX_ALIGN * 3);
@@ -396,7 +396,7 @@ test$case(test_allocator_arena_multiple_pages)
         tassert_eqi(page->cursor, 1016);
 
 
-        // next allocated on next page 
+        // next allocated on next page
         char* p2 = mem$malloc(arena, 1200);
         tassert(p2 != NULL);
         tassert(page != NULL);
@@ -465,7 +465,7 @@ test$case(test_allocator_arena_realloc_shrink)
         tassert_eqi(allc->stats.bytes_alloc, 112);
         tassert_eqi(allc->used, 112);
         // only poisoning, other fields untouched
-        tassert(mem$asan_poison_check(p + 50, rec->size-50+rec->ptr_padding));
+        tassert(mem$asan_poison_check(p + 50, rec->size - 50 + rec->ptr_padding));
         tassert_eqi(rec->size, 100);
         tassert_eqi(rec->ptr_padding, 4);
         tassert_eqi(rec->is_free, 0);
@@ -486,8 +486,45 @@ test$case(test_allocator_arena_malloc_mem_pattern)
     {
         u8* p = mem$malloc(arena, 100);
         tassert(p != NULL);
-        for(u32 i = 0; i < 100; i++){
+        for (u32 i = 0; i < 100; i++) {
             tassert(p[i] == 0xf7);
+        }
+    }
+
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
+test$case(test_allocator_arena_pointer_lifetime)
+{
+
+    IAllocator arena = AllocatorArena_create(4096);
+    tassert(arena != NULL);
+    AllocatorArena_c* allc = (AllocatorArena_c*)arena;
+
+    mem$scope(arena, _)
+    {
+        u8* p = mem$malloc(arena, 100);
+        allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
+        tassert(p != NULL);
+        tassert((void*)rec > (void*)allc->last_page);
+        tassert(
+            (void*)rec <
+            (void*)allc->last_page + sizeof(allocator_arena_page_s) + allc->last_page->capacity
+        );
+        mem$scope(arena, _)
+        {
+            u8* p2 = mem$malloc(arena, 100);
+            tassert(p2 != NULL);
+            allocator_arena_rec_s* rec2 = _cex_alloc_arena__get_rec(p2);
+            tassert((void*)rec2 > (void*)allc->last_page);
+            tassert(
+                (void*)rec2 <
+                (void*)allc->last_page + sizeof(allocator_arena_page_s) + allc->last_page->capacity
+            );
+            tassert(_cex_allocator_arena__check_pointer_valid(allc, p2));
+            uassert_disable();
+            tassert(!_cex_allocator_arena__check_pointer_valid(allc, p));
         }
     }
 
@@ -511,6 +548,7 @@ main(int argc, char* argv[])
     test$run(test_allocator_arena_multiple_pages);
     test$run(test_allocator_arena_realloc_shrink);
     test$run(test_allocator_arena_malloc_mem_pattern);
+    test$run(test_allocator_arena_pointer_lifetime);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
