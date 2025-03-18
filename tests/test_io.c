@@ -25,20 +25,20 @@ test$setup()
 test$case(test_io)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.not_found, io.fopen(&file, "test_not_exist.txt", "r", mem$));
+    tassert_eqs(Error.not_found, io.open(&file, "test_not_exist.txt", "r", mem$));
 
     uassert_disable();
-    tassert_eqs(Error.argument, io.fopen(&file, "test_not_exist.txt", "r", NULL));
-    tassert_eqs(Error.argument, io.fopen(&file, "test_not_exist.txt", NULL, mem$));
-    tassert_eqs(Error.argument, io.fopen(&file, NULL, "r", mem$));
-    tassert_eqs(Error.argument, io.fopen(NULL, "test.txt", "r", mem$));
+    tassert_eqs(Error.argument, io.open(&file, "test_not_exist.txt", "r", NULL));
+    tassert_eqs(Error.argument, io.open(&file, "test_not_exist.txt", NULL, mem$));
+    tassert_eqs(Error.argument, io.open(&file, NULL, "r", mem$));
+    tassert_eqs(Error.argument, io.open(NULL, "test.txt", "r", mem$));
     return EOK;
 }
 
 test$case(test_readall)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_50b.txt", "r", mem$));
     tassert(file.file != NULL);
     tassert_eql(file._fsize, 0); // not calculated yet!
     tassert(file._fbuf == NULL);
@@ -71,7 +71,7 @@ test$case(test_readall)
 test$case(test_readall_empty)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_empty.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_empty.txt", "r", mem$));
 
     tassert(file.file != NULL);
     tassert_eql(file._fsize, 0); // not calculated yet!
@@ -94,8 +94,7 @@ test$case(test_readall_empty)
 
 test$case(test_readall_stdin)
 {
-    io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fattach(&file, stdin, mem$));
+    io_c file = io.fattach(stdin, mem$);
     tassert(file.file == stdin);
     tassert_eql(file._fsize, 0); // not calculated yet!
     tassert(file._fbuf == NULL);
@@ -120,7 +119,7 @@ test$case(test_readall_stdin)
 test$case(test_read_line)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_50b.txt", "r", mem$));
 
     str_c content;
     tassert_eqs(Error.ok, io.readline(&file, &content));
@@ -156,7 +155,7 @@ test$case(test_read_line)
 test$case(test_read_line_empty_file)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_empty.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_empty.txt", "r", mem$));
 
     str_c content;
     tassert_eqs(Error.eof, io.readline(&file, &content));
@@ -170,7 +169,7 @@ test$case(test_read_line_empty_file)
 test$case(test_read_line_binary_file_with_zero_char)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_zero_byte.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_zero_byte.txt", "r", mem$));
 
     str_c content;
     tassert_eqs(Error.ok, io.readline(&file, &content));
@@ -188,7 +187,7 @@ test$case(test_read_line_binary_file_with_zero_char)
 test$case(test_read_line_win_new_line)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_win_newline.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_win_newline.txt", "r", mem$));
 
     str_c content;
     tassert_eqs(Error.ok, io.readline(&file, &content));
@@ -222,7 +221,7 @@ test$case(test_read_line_win_new_line)
 test$case(test_read_line_only_new_lines)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_only_newline.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_only_newline.txt", "r", mem$));
 
     str_c content;
     tassert_eqs(Error.ok, io.readline(&file, &content));
@@ -252,7 +251,7 @@ test$case(test_read_line_only_new_lines)
 test$case(test_read_all_then_read_line)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_50b.txt", "r", mem$));
     tassert(file.file != NULL);
     tassert_eql(file._fsize, 0); // not calculated yet!
     tassert(file._fbuf == NULL);
@@ -281,7 +280,7 @@ test$case(test_read_all_then_read_line)
 test$case(test_read_long_line)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_line_4095.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_line_4095.txt", "r", mem$));
     tassert(file.file != NULL);
     tassert_eql(file._fsize, 0); // not calculated yet!
     tassert(file._fbuf == NULL);
@@ -315,7 +314,7 @@ test$case(test_read_long_line)
 test$case(test_readall_realloc)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_line_4095.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_line_4095.txt", "r", mem$));
     tassert(file.file != NULL);
     tassert_eql(file._fsize, 0); // not calculated yet!
     tassert(file._fbuf == NULL);
@@ -347,7 +346,7 @@ test$case(test_readall_realloc)
 test$case(test_read)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_line_4095.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_line_4095.txt", "r", mem$));
 
     char buf[128];
     memset(buf, 'z', arr$len(buf));
@@ -365,7 +364,7 @@ test$case(test_read)
 test$case(test_read_empty)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_empty.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_empty.txt", "r", mem$));
 
     char buf[128];
     memset(buf, 'z', arr$len(buf));
@@ -382,7 +381,7 @@ test$case(test_read_empty)
 test$case(test_read_not_all)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_50b.txt", "r", mem$));
 
     char buf[128];
     memset(buf, 'z', arr$len(buf));
@@ -413,8 +412,7 @@ test$case(test_read_not_all)
 
 test$case(test_fprintf)
 {
-    io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fattach(&file, stdout, mem$));
+    io_c file = io.fattach(stdout, mem$);
     tassert(file.file == stdout);
     tassert(file._fbuf == NULL);
     tassert(file._fbuf_size == 0);
@@ -422,7 +420,7 @@ test$case(test_fprintf)
     tassert_eqi(0, io.size(&file));
 
 
-    tassert_eqs(EOK, io.fprintf(&file, "Hi there it's a io.fprintf\n"));
+    tassert_eqs(EOK, io.fprintf(file.file, "Hi there it's a io.fprintf\n"));
 
     io.close(&file);
     return EOK;
@@ -431,13 +429,14 @@ test$case(test_fprintf)
 test$case(test_fprintf_to_file)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_fprintf.txt", "w+", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_fprintf.txt", "w+", mem$));
 
     char buf[4] = { "1234" };
     str_c s1 = str.cbuf(buf, 4);
     tassert_eqi(s1.len, 4);
     tassert_eqi(s1.buf[3], '4');
-    tassert_eqs(EOK, io.fprintf(&file, "io.fprintf: str_c: %S\n", s1));
+
+    tassert_eqs(EOK, io.fprintf(file.file, "io.fprintf: str_c: %S\n", s1));
 
     str_c content;
     io.rewind(&file);
@@ -453,7 +452,7 @@ test$case(test_fprintf_to_file)
 test$case(test_write)
 {
     io_c file = { 0 };
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_write.txt", "w+", mem$));
+    tassert_eqs(Error.ok, io.open(&file, "tests/data/text_file_write.txt", "w+", mem$));
 
     char buf[4] = { "1234" };
 
