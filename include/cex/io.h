@@ -5,7 +5,7 @@
 
 typedef struct io_c
 {
-    FILE* _fh;
+    FILE* file;
     usize _fsize;
     char* _fbuf;
     usize _fbuf_size;
@@ -24,10 +24,10 @@ struct __module__io
     // clang-format off
 
 Exception
-(*fopen)(io_c* self, const char* filename, const char* mode, IAllocator allocator);
+(*open)(io_c* self, const char* filename, const char* mode, IAllocator allocator);
 
-Exception
-(*fattach)(io_c* self, FILE* fh, IAllocator allocator);
+io_c
+(*fattach)(FILE* fh, IAllocator allocator);
 
 int
 (*fileno)(io_c* self);
@@ -60,7 +60,7 @@ Exception
 (*readline)(io_c* self, str_c* s);
 
 Exception
-(*fprintf)(io_c* self, const char* format, ...);
+(*fprintf)(FILE* stream, const char* format, ...);
 
 void
 (*printf)(const char* format, ...);
@@ -70,6 +70,9 @@ Exception
 
 void
 (*close)(io_c* self);
+
+Exception
+(*fload)(const char* path, str_c* out_content, IAllocator allc);
 
     // clang-format on
 };

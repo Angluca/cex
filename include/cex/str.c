@@ -1,10 +1,9 @@
 #pragma once
-#include "str.h"
 #include "_sprintf.h"
+#include "all.h"
 #include <ctype.h>
 #include <float.h>
 #include <math.h>
-
 
 static inline bool
 str__isvalid(const str_c* s)
@@ -36,7 +35,7 @@ str__index(str_c* s, const char* c, u8 clen)
     return result;
 }
 
-str_c
+static str_c
 str_cstr(const char* ccharptr)
 {
     if (unlikely(ccharptr == NULL)) {
@@ -49,7 +48,7 @@ str_cstr(const char* ccharptr)
     };
 }
 
-str_c
+static str_c
 str_cbuf(char* s, usize length)
 {
     if (unlikely(s == NULL)) {
@@ -62,7 +61,7 @@ str_cbuf(char* s, usize length)
     };
 }
 
-str_c
+static str_c
 str_sub(str_c s, isize start, isize end)
 {
     slice$define(*s.buf) slice = { 0 };
@@ -76,7 +75,7 @@ str_sub(str_c s, isize start, isize end)
     };
 }
 
-Exception
+static Exception
 str_copy(str_c s, char* dest, usize destlen)
 {
     uassert(dest != s.buf && "self copy is not allowed");
@@ -106,7 +105,7 @@ str_copy(str_c s, char* dest, usize destlen)
     return Error.ok;
 }
 
-str_c
+static str_c
 str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
 {
     str_c out = { .buf = NULL, .len = 0 };
@@ -122,7 +121,7 @@ str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
     return out;
 }
 
-str_c
+static str_c
 str_sprintf(char* dest, usize dest_len, const char* format, ...)
 {
     va_list va;
@@ -133,19 +132,19 @@ str_sprintf(char* dest, usize dest_len, const char* format, ...)
 }
 
 
-usize
+static usize
 str_len(str_c s)
 {
     return s.len;
 }
 
-bool
+static bool
 str_is_valid(str_c s)
 {
     return str__isvalid(&s);
 }
 
-char*
+static char*
 str_iter(str_c s, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
@@ -178,7 +177,7 @@ str_iter(str_c s, cex_iterator_s* iterator)
     return iterator->val;
 }
 
-isize
+static isize
 str_find(str_c s, str_c needle, usize start, usize end)
 {
     if (needle.len == 0 || needle.len > s.len) {
@@ -209,7 +208,7 @@ str_find(str_c s, str_c needle, usize start, usize end)
     return -1;
 }
 
-isize
+static isize
 str_rfind(str_c s, str_c needle, usize start, usize end)
 {
     if (needle.len == 0 || needle.len > s.len) {
@@ -240,19 +239,19 @@ str_rfind(str_c s, str_c needle, usize start, usize end)
     return -1;
 }
 
-bool
+static bool
 str_contains(str_c s, str_c needle)
 {
     return str_find(s, needle, 0, 0) != -1;
 }
 
-bool
+static bool
 str_starts_with(str_c s, str_c needle)
 {
     return str_find(s, needle, 0, needle.len) != -1;
 }
 
-bool
+static bool
 str_ends_with(str_c s, str_c needle)
 {
     if (needle.len > s.len) {
@@ -262,7 +261,7 @@ str_ends_with(str_c s, str_c needle)
     return str_find(s, needle, s.len - needle.len, 0) != -1;
 }
 
-str_c
+static str_c
 str_remove_prefix(str_c s, str_c prefix)
 {
     isize idx = str_find(s, prefix, 0, prefix.len);
@@ -276,7 +275,7 @@ str_remove_prefix(str_c s, str_c prefix)
     };
 }
 
-str_c
+static str_c
 str_remove_suffix(str_c s, str_c suffix)
 {
     if (suffix.len > s.len) {
@@ -334,7 +333,7 @@ str__strip_right(str_c* s)
 }
 
 
-str_c
+static str_c
 str_lstrip(str_c s)
 {
     if (s.buf == NULL) {
@@ -359,7 +358,7 @@ str_lstrip(str_c s)
     return result;
 }
 
-str_c
+static str_c
 str_rstrip(str_c s)
 {
     if (s.buf == NULL) {
@@ -384,7 +383,7 @@ str_rstrip(str_c s)
     return result;
 }
 
-str_c
+static str_c
 str_strip(str_c s)
 {
     if (s.buf == NULL) {
@@ -410,7 +409,7 @@ str_strip(str_c s)
     return result;
 }
 
-int
+static int
 str_cmp(str_c self, str_c other)
 {
     if (unlikely(self.buf == NULL)) {
@@ -444,7 +443,7 @@ str_cmp(str_c self, str_c other)
     return cmp;
 }
 
-int
+static int
 str_cmpi(str_c self, str_c other)
 {
     if (unlikely(self.buf == NULL)) {
@@ -489,7 +488,7 @@ str_cmpi(str_c self, str_c other)
     return cmp;
 }
 
-str_c*
+static str_c*
 str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
@@ -563,7 +562,7 @@ str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
 }
 
 
-Exception
+static Exception
 str__to_signed_num(str_c self, i64* num, i64 num_min, i64 num_max)
 {
     _Static_assert(sizeof(i64) == 8, "unexpected u64 size");
@@ -650,7 +649,7 @@ str__to_signed_num(str_c self, i64* num, i64 num_min, i64 num_max)
     return Error.ok;
 }
 
-Exception
+static Exception
 str__to_unsigned_num(str_c self, u64* num, u64 num_max)
 {
     _Static_assert(sizeof(u64) == 8, "unexpected u64 size");
@@ -732,7 +731,7 @@ str__to_unsigned_num(str_c self, u64* num, u64 num_max)
     return Error.ok;
 }
 
-Exception
+static Exception
 str__to_double(str_c self, double* num, i32 exp_min, i32 exp_max)
 {
     _Static_assert(sizeof(double) == 8, "unexpected double precision");
@@ -908,7 +907,7 @@ str__to_double(str_c self, double* num, i32 exp_min, i32 exp_max)
     return Error.ok;
 }
 
-Exception
+static Exception
 str_to_f32(str_c self, f32* num)
 {
     f64 res = 0;
@@ -917,13 +916,13 @@ str_to_f32(str_c self, f32* num)
     return r;
 }
 
-Exception
+static Exception
 str_to_f64(str_c self, f64* num)
 {
     return str__to_double(self, num, -307, 308);
 }
 
-Exception
+static Exception
 str_to_i8(str_c self, i8* num)
 {
     i64 res = 0;
@@ -932,7 +931,7 @@ str_to_i8(str_c self, i8* num)
     return r;
 }
 
-Exception
+static Exception
 str_to_i16(str_c self, i16* num)
 {
     i64 res = 0;
@@ -941,7 +940,7 @@ str_to_i16(str_c self, i16* num)
     return r;
 }
 
-Exception
+static Exception
 str_to_i32(str_c self, i32* num)
 {
     i64 res = 0;
@@ -951,7 +950,7 @@ str_to_i32(str_c self, i32* num)
 }
 
 
-Exception
+static Exception
 str_to_i64(str_c self, i64* num)
 {
     i64 res = 0;
@@ -961,7 +960,7 @@ str_to_i64(str_c self, i64* num)
     return r;
 }
 
-Exception
+static Exception
 str_to_u8(str_c self, u8* num)
 {
     u64 res = 0;
@@ -970,7 +969,7 @@ str_to_u8(str_c self, u8* num)
     return r;
 }
 
-Exception
+static Exception
 str_to_u16(str_c self, u16* num)
 {
     u64 res = 0;
@@ -979,7 +978,7 @@ str_to_u16(str_c self, u16* num)
     return r;
 }
 
-Exception
+static Exception
 str_to_u32(str_c self, u32* num)
 {
     u64 res = 0;
@@ -988,7 +987,7 @@ str_to_u32(str_c self, u32* num)
     return r;
 }
 
-Exception
+static Exception
 str_to_u64(str_c self, u64* num)
 {
     u64 res = 0;
@@ -997,6 +996,99 @@ str_to_u64(str_c self, u64* num)
 
     return r;
 }
+
+static char*
+str__fmt_callback(const char* buf, void* user, u32 len)
+{
+    (void)buf;
+    cexsp__context* ctx = user;
+    if (unlikely(ctx->has_error)) {
+        return NULL;
+    }
+
+    if (unlikely(
+            len >= CEX_SPRINTF_MIN && (ctx->buf == NULL || ctx->length + len >= ctx->capacity)
+        )) {
+
+        if (len > INT32_MAX || ctx->length + len > INT32_MAX) {
+            ctx->has_error = true;
+            return NULL;
+        }
+
+        uassert(ctx->allc != NULL);
+
+        if (ctx->buf == NULL) {
+            ctx->buf = mem$calloc(ctx->allc, 1, CEX_SPRINTF_MIN * 2);
+            if (ctx->buf == NULL) {
+                ctx->has_error = true;
+                return NULL;
+            }
+            ctx->capacity = CEX_SPRINTF_MIN * 2;
+        } else {
+            ctx->buf = mem$realloc(ctx->allc, ctx->buf, ctx->capacity + CEX_SPRINTF_MIN * 2);
+            if (ctx->buf == NULL) {
+                ctx->has_error = true;
+                return NULL;
+            }
+            ctx->capacity += CEX_SPRINTF_MIN * 2;
+        }
+    }
+    ctx->length += len;
+
+    // fprintf(stderr, "len: %d, total_len: %d capacity: %d\n", len, ctx->length, ctx->capacity);
+    if (len > 0) {
+        if (ctx->buf) {
+            if (buf == ctx->tmp) {
+                uassert(ctx->length <= CEX_SPRINTF_MIN);
+                memcpy(ctx->buf, buf, len);
+            }
+        }
+    }
+
+
+    return (ctx->buf != NULL) ? &ctx->buf[ctx->length] : ctx->tmp;
+}
+
+static str_c
+str__fmt__va(IAllocator allc, const char* format, va_list va)
+{
+    cexsp__context ctx = {
+        .allc = allc,
+    };
+    cexsp__vsprintfcb(str__fmt_callback, &ctx, ctx.tmp, format, va);
+    va_end(va);
+
+    if (unlikely(ctx.has_error)) {
+        mem$free(allc, ctx.buf);
+        return (str_c){0};
+    }
+
+    if (ctx.buf) {
+        uassert(ctx.length < ctx.capacity);
+        ctx.buf[ctx.length] = '\0';
+        ctx.buf[ctx.capacity - 1] = '\0';
+    } else {
+        uassert(ctx.length < arr$len(ctx.tmp) - 1);
+        ctx.buf = mem$malloc(allc, ctx.length + 1);
+        if (ctx.buf == NULL) {
+            return (str_c){0};
+        }
+        memcpy(ctx.buf, ctx.tmp, ctx.length);
+        ctx.buf[ctx.length] = '\0';
+    }
+    return (str_c){ .buf = ctx.buf, .len = ctx.length };
+}
+
+static str_c
+str_fmt(IAllocator allc, const char* format, ...)
+{
+    va_list va;
+    va_start(va, format);
+    str_c result = str__fmt__va(allc, format, va);
+    va_end(va);
+    return result;
+}
+
 const struct __module__str str = {
     // Autogenerated by CEX
     // clang-format off
@@ -1032,5 +1124,6 @@ const struct __module__str str = {
     .to_u16 = str_to_u16,
     .to_u32 = str_to_u32,
     .to_u64 = str_to_u64,
+    .fmt = str_fmt,
     // clang-format on
 };

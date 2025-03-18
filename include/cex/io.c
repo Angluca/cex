@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 Exception
-io_fopen(io_c* self, const char* filename, const char* mode, IAllocator allocator)
+io_open(io_c* self, const char* filename, const char* mode, IAllocator allocator)
 {
     if (self == NULL) {
         uassert(self != NULL);
@@ -27,11 +27,11 @@ io_fopen(io_c* self, const char* filename, const char* mode, IAllocator allocato
 
 
     *self = (io_c){
-        ._fh = fopen(filename, mode),
+        .file = fopen(filename, mode),
         ._allocator = allocator,
     };
 
-    if (self->_fh == NULL) {
+    if (self->file == NULL) {
         *self = (io_c){ 0 };
         switch (errno) {
             case ENOENT:
@@ -44,56 +44,48 @@ io_fopen(io_c* self, const char* filename, const char* mode, IAllocator allocato
     }
 }
 
-Exception
-io_fattach(io_c* self, FILE* fh, IAllocator allocator)
+io_c
+io_fattach(FILE* fh, IAllocator allocator)
 {
-    if (self == NULL) {
-        uassert(self != NULL);
-        return Error.argument;
-    }
     if (allocator == NULL) {
         uassert(allocator != NULL);
-        return Error.argument;
     }
     if (fh == NULL) {
         uassert(fh != NULL);
-        return Error.argument;
     }
 
-    *self = (io_c){ ._fh = fh,
-                    ._allocator = allocator,
-                    ._flags = {
-                        .is_attached = true,
-                    } };
-
-    return Error.ok;
+    return (io_c){ .file = fh,
+                   ._allocator = allocator,
+                   ._flags = {
+                       .is_attached = true,
+                   } };
 }
 
 int
 io_fileno(io_c* self)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
-    return fileno(self->_fh);
+    return fileno(self->file);
 }
 
 bool
 io_isatty(io_c* self)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
-    return isatty(fileno(self->_fh)) == 1;
+    return isatty(fileno(self->file)) == 1;
 }
 
 Exception
 io_flush(io_c* self)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
-    int ret = fflush(self->_fh);
+    int ret = fflush(self->file);
     if (unlikely(ret == -1)) {
         return Error.io;
     } else {
@@ -105,9 +97,9 @@ Exception
 io_seek(io_c* self, long offset, int whence)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
-    int ret = fseek(self->_fh, offset, whence);
+    int ret = fseek(self->file, offset, whence);
     if (unlikely(ret == -1)) {
         if (errno == EINVAL) {
             return Error.argument;
@@ -123,18 +115,18 @@ void
 io_rewind(io_c* self)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
-    rewind(self->_fh);
+    rewind(self->file);
 }
 
 Exception
 io_tell(io_c* self, usize* size)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
-    long ret = ftell(self->_fh);
+    long ret = ftell(self->file);
     if (unlikely(ret < 0)) {
         if (errno == EINVAL) {
             return Error.argument;
@@ -152,7 +144,7 @@ usize
 io_size(io_c* self)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
     if (self->_fsize == 0) {
         // Do some caching
@@ -182,7 +174,7 @@ Exception
 io_read(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
     if (obj_buffer == NULL) {
         return Error.argument;
@@ -194,10 +186,10 @@ io_read(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize* obj_cou
         return Error.argument;
     }
 
-    const usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, self->_fh);
+    const usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, self->file);
 
     if (ret_count != *obj_count) {
-        if (ferror(self->_fh)) {
+        if (ferror(self->file)) {
             *obj_count = 0;
             return Error.io;
         } else {
@@ -213,7 +205,7 @@ Exception
 io_readall(io_c* self, str_c* s)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
     uassert(s != NULL);
 
     // invalidate result if early exit
@@ -284,13 +276,13 @@ Exception
 io_readline(io_c* self, str_c* s)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
     uassert(s != NULL);
 
 
     Exc result = Error.ok;
     usize cursor = 0;
-    FILE* fh = self->_fh;
+    FILE* fh = self->file;
     char* buf = self->_fbuf;
     usize buf_size = self->_fbuf_size;
 
@@ -353,7 +345,7 @@ io_readline(io_c* self, str_c* s)
         self->_fbuf[cursor] = '\0';
     }
 
-    if (ferror(self->_fh)) {
+    if (ferror(self->file)) {
         result = Error.io;
         goto fail;
     }
@@ -364,7 +356,7 @@ io_readline(io_c* self, str_c* s)
             .buf = "",
             .len = cursor,
         };
-        return (feof(self->_fh) ? Error.eof : Error.ok);
+        return (feof(self->file) ? Error.eof : Error.ok);
     } else {
         *s = (str_c){
             .buf = self->_fbuf,
@@ -382,14 +374,13 @@ fail:
 }
 
 Exception
-io_fprintf(io_c* self, const char* format, ...)
+io_fprintf(FILE* stream, const char* format, ...)
 {
-    uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(stream != NULL);
 
     va_list va;
     va_start(va, format);
-    int result = cexsp__vfprintf(self->_fh, format, va);
+    int result = cexsp__vfprintf(stream, format, va);
     va_end(va);
 
     if (result == -1) {
@@ -412,7 +403,7 @@ Exception
 io_write(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize obj_count)
 {
     uassert(self != NULL);
-    uassert(self->_fh != NULL);
+    uassert(self->file != NULL);
 
     if (obj_buffer == NULL) {
         return Error.argument;
@@ -424,7 +415,7 @@ io_write(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize obj_cou
         return Error.argument;
     }
 
-    const usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, self->_fh);
+    const usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, self->file);
 
     if (ret_count != obj_count) {
         return Error.io;
@@ -438,10 +429,10 @@ io_close(io_c* self)
 {
     if (self != NULL) {
 
-        if (self->_fh != NULL && !self->_flags.is_attached) {
+        if (self->file != NULL && !self->_flags.is_attached) {
             uassert(self->_allocator != NULL && "allocator not set");
             // prevent closing attached FILE* (i.e. stdin/out or other)
-            fclose(self->_fh);
+            fclose(self->file);
         }
 
         if (self->_fbuf != NULL) {
@@ -454,10 +445,36 @@ io_close(io_c* self)
 }
 
 
+Exception
+io_fload(const char* path, str_c* out_content, IAllocator allc)
+{
+    // invalidate result if early exit
+    *out_content = (str_c){
+        .buf = NULL,
+        .len = 0,
+    };
+    io_c self = { 0 };
+    e$except_silent(err, io_open(&self, path, "r", allc))
+    {
+        return err;
+    }
+
+    e$except_silent(err, io_readall(&self, out_content))
+    {
+        if (err == Error.eof && out_content->buf != NULL) {
+            return EOK;
+        }
+        return err;
+    }
+
+    return EOK;
+}
+
+
 const struct __module__io io = {
     // Autogenerated by CEX
     // clang-format off
-    .fopen = io_fopen,
+    .open = io_open,
     .fattach = io_fattach,
     .fileno = io_fileno,
     .isatty = io_isatty,
@@ -473,5 +490,6 @@ const struct __module__io io = {
     .printf = io_printf,
     .write = io_write,
     .close = io_close,
+    .fload = io_fload,
     // clang-format on
 };

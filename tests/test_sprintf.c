@@ -1,11 +1,8 @@
-#include <cex/test.h>
 #include <cex/all.c>
-// #include <cex/test/fff.h>
 
 #define USE_STB 1
 
 #if USE_STB
-#define SPRINTF cexsp__sprintf
 #define SNPRINTF cexsp__snprintf
 #else
 #include <locale.h>
@@ -21,15 +18,15 @@
     }
 
 // clang-format off
-#define CHECK9(str, v1, v2, v3, v4, v5, v6, v7, v8, v9) { int ret = SPRINTF(buf, v1, v2, v3, v4, v5, v6, v7, v8, v9); CHECK_END(str); }
-#define CHECK8(str, v1, v2, v3, v4, v5, v6, v7, v8    ) { int ret = SPRINTF(buf, v1, v2, v3, v4, v5, v6, v7, v8    ); CHECK_END(str); }
-#define CHECK7(str, v1, v2, v3, v4, v5, v6, v7        ) { int ret = SPRINTF(buf, v1, v2, v3, v4, v5, v6, v7        ); CHECK_END(str); }
-#define CHECK6(str, v1, v2, v3, v4, v5, v6            ) { int ret = SPRINTF(buf, v1, v2, v3, v4, v5, v6            ); CHECK_END(str); }
-#define CHECK5(str, v1, v2, v3, v4, v5                ) { int ret = SPRINTF(buf, v1, v2, v3, v4, v5                ); CHECK_END(str); }
-#define CHECK4(str, v1, v2, v3, v4                    ) { int ret = SPRINTF(buf, v1, v2, v3, v4                    ); CHECK_END(str); }
-#define CHECK3(str, v1, v2, v3                        ) { int ret = SPRINTF(buf, v1, v2, v3                        ); CHECK_END(str); }
-#define CHECK2(str, v1, v2                            ) { int ret = SPRINTF(buf, v1, v2                            ); CHECK_END(str); }
-#define CHECK1(str, v1                                ) { int ret = SPRINTF(buf, v1                                ); CHECK_END(str); }
+#define CHECK9(str, v1, v2, v3, v4, v5, v6, v7, v8, v9) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7, v8, v9); CHECK_END(str); }
+#define CHECK8(str, v1, v2, v3, v4, v5, v6, v7, v8    ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7, v8    ); CHECK_END(str); }
+#define CHECK7(str, v1, v2, v3, v4, v5, v6, v7        ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7        ); CHECK_END(str); }
+#define CHECK6(str, v1, v2, v3, v4, v5, v6            ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5, v6            ); CHECK_END(str); }
+#define CHECK5(str, v1, v2, v3, v4, v5                ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5                ); CHECK_END(str); }
+#define CHECK4(str, v1, v2, v3, v4                    ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4                    ); CHECK_END(str); }
+#define CHECK3(str, v1, v2, v3                        ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3                        ); CHECK_END(str); }
+#define CHECK2(str, v1, v2                            ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2                            ); CHECK_END(str); }
+#define CHECK1(str, v1                                ) { int ret = SNPRINTF(buf, arr$len(buf), v1                                ); CHECK_END(str); }
 // clang-format on
 
 
@@ -205,8 +202,6 @@ test$case(stb_sprintf_orig)
     tassert_eqi(strlen(buf), 0);
 
     // stb_sprintf uses internal buffer of 512 chars - test longer string
-    tassert(SPRINTF(buf, "%d  %600s", 3, "abc") == 603);
-    tassert(strlen(buf) == 603);
     SNPRINTF(buf, 550, "%d  %600s", 3, "abc");
     tassert(strlen(buf) == 549);
     tassert(SNPRINTF(buf, 600, "%510s     %c", "a", 'b') == 516);

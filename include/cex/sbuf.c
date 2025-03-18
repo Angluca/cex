@@ -10,8 +10,8 @@ struct _sbuf__sprintf_ctx
     sbuf_head_s* head;
     char* buf;
     Exc err;
-    int count;
-    int length;
+    u32 count;
+    u32 length;
     char tmp[CEX_SPRINTF_MIN];
 };
 
@@ -320,7 +320,7 @@ sbuf_destroy(sbuf_c* self)
 }
 
 static char*
-sbuf__sprintf_callback(const char* buf, void* user, int len)
+sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 {
     struct _sbuf__sprintf_ctx* ctx = (struct _sbuf__sprintf_ctx*)user;
     sbuf_c sbuf = ((char*)ctx->head + sizeof(sbuf_head_s));
@@ -335,7 +335,7 @@ sbuf__sprintf_callback(const char* buf, void* user, int len)
     if (unlikely(ctx->length + len > ctx->count)) {
         bool buf_is_tmp = buf != ctx->buf;
 
-        if (len < 0 || ctx->length + len > INT32_MAX) {
+        if (len > INT32_MAX || ctx->length + len > (u32)INT32_MAX) {
             ctx->err = Error.integrity;
             return ctx->tmp;
         }

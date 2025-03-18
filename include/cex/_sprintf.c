@@ -1156,20 +1156,8 @@ done:
 // ============================================================================
 //   wrapper functions
 
-CEXSP__PUBLICDEF int
-cexsp__sprintf(char* buf, char const* fmt, ...)
-{
-    int result;
-    va_list va;
-    va_start(va, fmt);
-    result = cexsp__vsprintfcb(0, 0, buf, fmt, va);
-    va_end(va);
-    return result;
-}
-
-
 static char*
-cexsp__clamp_callback(const char* buf, void* user, int len)
+cexsp__clamp_callback(const char* buf, void* user, u32 len)
 {
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;
@@ -1223,6 +1211,7 @@ cexsp__vsnprintf(char* buf, int count, char const* fmt, va_list va)
             l = count - 1;
         }
         buf[l] = 0;
+        uassert(c.length <= INT32_MAX && "length overflow");
     }
 
     return c.length;
@@ -1241,14 +1230,8 @@ cexsp__snprintf(char* buf, int count, char const* fmt, ...)
     return result;
 }
 
-CEXSP__PUBLICDEF int
-cexsp__vsprintf(char* buf, char const* fmt, va_list va)
-{
-    return cexsp__vsprintfcb(0, 0, buf, fmt, va);
-}
-
 static char*
-cexsp__fprintf_callback(const char* buf, void* user, int len)
+cexsp__fprintf_callback(const char* buf, void* user, u32 len)
 {
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;
@@ -1266,8 +1249,9 @@ cexsp__vfprintf(FILE* stream, const char* format, va_list va)
     cexsp__context c = { .file = stream, .length = 0 };
 
     cexsp__vsprintfcb(cexsp__fprintf_callback, &c, cexsp__fprintf_callback(0, &c, 0), format, va);
+    uassert(c.length <= INT32_MAX && "length overflow");
 
-    return c.has_error == 0 ? c.length : -1;
+    return c.has_error == 0 ? (i32)c.length : -1;
 }
 
 CEXSP__PUBLICDEF int

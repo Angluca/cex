@@ -111,6 +111,9 @@ Exception
 Exception
 (*to_u64)(str_c self, u64* num);
 
+str_c
+(*fmt)(IAllocator allc, const char* format, ...);
+
     // clang-format on
 };
 extern const struct __module__str str; // CEX Autogen
