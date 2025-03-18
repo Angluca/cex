@@ -64,27 +64,6 @@ It compiles to roughly 8K with float support, and 4K without.
 As a comparison, when using MSVC static libs, calling sprintf drags
 in 16K.
 
-API:
-====
-int stbsp_sprintf( char * buf, char const * fmt, ... )
-int stbsp_snprintf( char * buf, int count, char const * fmt, ... )
-  Convert an arg list into a buffer.  stbsp_snprintf always returns
-  a zero-terminated string (unlike regular snprintf).
-
-int stbsp_vsprintf( char * buf, char const * fmt, va_list va )
-int stbsp_vsnprintf( char * buf, int count, char const * fmt, va_list va )
-  Convert a va_list arg list into a buffer.  stbsp_vsnprintf always returns
-  a zero-terminated string (unlike regular snprintf).
-
-int stbsp_vsprintfcb( STBSP_SPRINTFCB * callback, void * user, char * buf, char const * fmt, va_list
-va ) typedef char * STBSP_SPRINTFCB( char const * buf, void * user, int len ); Convert into a
-buffer, calling back every STB_SPRINTF_MIN chars. Your callback can then copy the chars out, print
-them or whatever. This function is actually the workhorse for everything else. The buffer you pass
-in must hold at least STB_SPRINTF_MIN characters.
-    // you return the next buffer to use or 0 to stop converting
-
-void stbsp_set_separators( char comma, char period )
-  Set the comma and period characters to use.
 
 FLOATS/DOUBLES:
 ===============
@@ -149,54 +128,54 @@ PERFORMANCE vs MSVC 2008 32-/64-bit (GCC is even slower than MSVC):
 #if defined(__has_feature) && defined(__has_attribute)
 #if __has_feature(address_sanitizer)
 #if __has_attribute(__no_sanitize__)
-#define STBSP__ASAN __attribute__((__no_sanitize__("address")))
+#define CEXSP__ASAN __attribute__((__no_sanitize__("address")))
 #elif __has_attribute(__no_sanitize_address__)
-#define STBSP__ASAN __attribute__((__no_sanitize_address__))
+#define CEXSP__ASAN __attribute__((__no_sanitize_address__))
 #elif __has_attribute(__no_address_safety_analysis__)
-#define STBSP__ASAN __attribute__((__no_address_safety_analysis__))
+#define CEXSP__ASAN __attribute__((__no_address_safety_analysis__))
 #endif
 #endif
 #endif
 #elif defined(__GNUC__) && (__GNUC__ >= 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
 #if defined(__SANITIZE_ADDRESS__) && __SANITIZE_ADDRESS__
-#define STBSP__ASAN __attribute__((__no_sanitize_address__))
+#define CEXSP__ASAN __attribute__((__no_sanitize_address__))
 #endif
 #endif
 
-#ifndef STBSP__ASAN
-#define STBSP__ASAN
+#ifndef CEXSP__ASAN
+#define CEXSP__ASAN
 #endif
 
 #ifdef STB_SPRINTF_STATIC
-#define STBSP__PUBLICDEC static
-#define STBSP__PUBLICDEF static STBSP__ASAN
+#define CEXSP__PUBLICDEC static
+#define CEXSP__PUBLICDEF static CEXSP__ASAN
 #else
 #ifdef __cplusplus
-#define STBSP__PUBLICDEC extern "C"
-#define STBSP__PUBLICDEF extern "C" STBSP__ASAN
+#define CEXSP__PUBLICDEC extern "C"
+#define CEXSP__PUBLICDEF extern "C" CEXSP__ASAN
 #else
-#define STBSP__PUBLICDEC extern
-#define STBSP__PUBLICDEF STBSP__ASAN
+#define CEXSP__PUBLICDEC extern
+#define CEXSP__PUBLICDEF CEXSP__ASAN
 #endif
 #endif
 
 #if defined(__has_attribute)
 #if __has_attribute(format)
-#define STBSP__ATTRIBUTE_FORMAT(fmt, va) __attribute__((format(printf, fmt, va)))
+#define CEXSP__ATTRIBUTE_FORMAT(fmt, va) __attribute__((format(printf, fmt, va)))
 #endif
 #endif
 
-#ifndef STBSP__ATTRIBUTE_FORMAT
-#define STBSP__ATTRIBUTE_FORMAT(fmt, va)
+#ifndef CEXSP__ATTRIBUTE_FORMAT
+#define CEXSP__ATTRIBUTE_FORMAT(fmt, va)
 #endif
 
 #ifdef _MSC_VER
-#define STBSP__NOTUSED(v) (void)(v)
+#define CEXSP__NOTUSED(v) (void)(v)
 #else
-#define STBSP__NOTUSED(v) (void)sizeof(v)
+#define CEXSP__NOTUSED(v) (void)sizeof(v)
 #endif
 
-#include "str.h"    // NOTE: CEX
+#include "all.h"    // NOTE: CEX
 #include <stdarg.h> // for va_arg(), va_list()
 #include <stddef.h> // size_t, ptrdiff_t
 
@@ -210,26 +189,26 @@ typedef char* STBSP_SPRINTFCB(const char* buf, void* user, int len);
     stbsp_##name // define this before including if you want to change the names
 #endif
 
-STBSP__PUBLICDEF int
+CEXSP__PUBLICDEF int
 STB_SPRINTF_DECORATE(vfprintf)(FILE* stream, const char* format, va_list va);
-STBSP__PUBLICDEF int
+CEXSP__PUBLICDEF int
 STB_SPRINTF_DECORATE(fprintf)(FILE* stream, const char* format, ...);
 
-STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsprintf)(char* buf, char const* fmt, va_list va);
-STBSP__PUBLICDEC int
+CEXSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsprintf)(char* buf, char const* fmt, va_list va);
+CEXSP__PUBLICDEC int
     STB_SPRINTF_DECORATE(vsnprintf)(char* buf, int count, char const* fmt, va_list va);
-STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(sprintf)(char* buf, char const* fmt, ...)
-    STBSP__ATTRIBUTE_FORMAT(2, 3);
-STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(snprintf)(char* buf, int count, char const* fmt, ...)
-    STBSP__ATTRIBUTE_FORMAT(3, 4);
+CEXSP__PUBLICDEC int STB_SPRINTF_DECORATE(sprintf)(char* buf, char const* fmt, ...)
+    CEXSP__ATTRIBUTE_FORMAT(2, 3);
+CEXSP__PUBLICDEC int STB_SPRINTF_DECORATE(snprintf)(char* buf, int count, char const* fmt, ...)
+    CEXSP__ATTRIBUTE_FORMAT(3, 4);
 
-STBSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsprintfcb)(
+CEXSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsprintfcb)(
     STBSP_SPRINTFCB* callback,
     void* user,
     char* buf,
     char const* fmt,
     va_list va
 );
-STBSP__PUBLICDEC void STB_SPRINTF_DECORATE(set_separators)(char comma, char period);
+CEXSP__PUBLICDEC void STB_SPRINTF_DECORATE(set_separators)(char comma, char period);
 
 #endif // STB_SPRINTF_H_INCLUDE
