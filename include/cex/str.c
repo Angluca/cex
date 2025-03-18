@@ -1060,7 +1060,7 @@ str__fmtva(IAllocator allc, const char* format, va_list va)
 
     if (unlikely(ctx.has_error)) {
         mem$free(allc, ctx.buf);
-        return (str_c){0};
+        return (str_c){ 0 };
     }
 
     if (ctx.buf) {
@@ -1071,7 +1071,7 @@ str__fmtva(IAllocator allc, const char* format, va_list va)
         uassert(ctx.length <= arr$len(ctx.tmp) - 1);
         ctx.buf = mem$malloc(allc, ctx.length + 1);
         if (ctx.buf == NULL) {
-            return (str_c){0};
+            return (str_c){ 0 };
         }
         memcpy(ctx.buf, ctx.tmp, ctx.length);
         ctx.buf[ctx.length] = '\0';
@@ -1106,6 +1106,101 @@ str_tfmt(const char* format, ...)
     str_c result = str__fmtva(tmem$, format, va);
     va_end(va);
     return result.buf;
+}
+
+static char*
+str_tnew(str_c s)
+{
+    if (s.buf == NULL) {
+        return NULL;
+    }
+    char* result = mem$malloc(tmem$, s.len + 1);
+    if (result) {
+        memcpy(result, s.buf, s.len);
+        result[s.len] = '\0';
+    }
+    return result;
+}
+
+static char*
+str_tcopy(char* s)
+{
+    if (s == NULL) {
+        return NULL;
+    }
+    usize slen = strlen(s);
+    uassert(slen < PTRDIFF_MAX);
+
+    char* result = mem$malloc(tmem$, slen + 1);
+    if (result) {
+        memcpy(result, s, slen);
+        result[slen] = '\0';
+    }
+    return result;
+}
+
+static arr$(char*) str_tsplit(char* s, const char* split_by)
+{
+    str_c src = str_cstr(s);
+    if (src.buf == NULL || split_by == NULL) {
+        return NULL;
+    }
+    arr$(char*) result = arr$new(result, tmem$);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    for$iter(str_c, it, str_iter_split(src, split_by, &it.iterator))
+    {
+        char* tok = str_tnew(*it.val);
+        arr$push(result, tok);
+    }
+
+    return result;
+}
+
+static char*
+str_tjoin(arr$(char*) str_arr, const char* join_by)
+{
+    if (str_arr == NULL || join_by == NULL) {
+        return NULL;
+    }
+
+    usize jlen = strlen(join_by);
+    if (jlen == 0) {
+        return NULL;
+    }
+
+    char* result = NULL;
+    usize cursor = 0;
+    for$arr(s, str_arr)
+    {
+        if (s == NULL) {
+            return NULL;
+        }
+        usize slen = strlen(s);
+        if (result == NULL) {
+            result = mem$malloc(tmem$, slen + jlen + 1);
+        } else {
+            result = mem$realloc(tmem$, result, cursor + slen + jlen + 1);
+        }
+        if (result == NULL) {
+            return NULL; // memory error
+        }
+
+        if (cursor > 0) {
+            memcpy(&result[cursor], join_by, jlen);
+            cursor += jlen;
+        }
+
+        memcpy(&result[cursor], s, slen);
+        cursor += slen;
+    }
+    if (result) {
+        result[cursor] = '\0';
+    }
+
+    return result;
 }
 
 const struct __module__str str = {
@@ -1146,5 +1241,9 @@ const struct __module__str str = {
     .fmt = str_fmt,
     .cfmt = str_cfmt,
     .tfmt = str_tfmt,
+    .tnew = str_tnew,
+    .tcopy = str_tcopy,
+    .tsplit = str_tsplit,
+    .tjoin = str_tjoin,
     // clang-format on
 };

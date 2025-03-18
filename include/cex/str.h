@@ -4,7 +4,7 @@
  */
 
 #pragma once
-#include "cex.h"
+#include "all.h"
 #include <stdalign.h>
 #include <stdint.h>
 
@@ -119,6 +119,18 @@ char*
 
 char*
 (*tfmt)(const char* format, ...);
+
+char*
+(*tnew)(str_c s);
+
+char*
+(*tcopy)(char* s);
+
+arr$(char*)
+(*tsplit)(char* s, const char* split_by);
+
+char*
+(*tjoin)(arr$(char*) str_arr, const char* join_by);
 
     // clang-format on
 };
