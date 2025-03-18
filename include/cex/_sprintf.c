@@ -1,4 +1,3 @@
-#pragma once
 /*
 This code is based on refactored stb_sprintf.h
 
@@ -8,8 +7,8 @@ ALTERNATIVE A - MIT License
 stb_sprintf - v1.10 - public domain snprintf() implementation
 Copyright (c) 2017 Sean Barrett
 */
-#include "_sprintf.h"
 #include "all.h"
+#include "_sprintf.h"
 
 #ifndef STB_SPRINTF_MSVC_MODE // used for MSVC2013 and earlier (MSVC2015 matches GCC)
 #if defined(_MSC_VER) && (_MSC_VER < 1900)

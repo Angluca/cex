@@ -26,8 +26,7 @@
 //
 //   See end of file for license information.
 
-#ifndef STB_SPRINTF_H_INCLUDE
-#define STB_SPRINTF_H_INCLUDE
+#pragma once
 
 /*
 Single file sprintf replacement.
@@ -179,5 +178,3 @@ CEXSP__PUBLICDEC int cexsp__vsprintfcb(
     va_list va
 );
 CEXSP__PUBLICDEC void cexsp__set_separators(char comma, char period);
-
-#endif // STB_SPRINTF_H_INCLUDE

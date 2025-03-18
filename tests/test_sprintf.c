@@ -5,7 +5,6 @@
 #define USE_STB 1
 
 #if USE_STB
-#include <cex/_sprintf.c>
 #define SPRINTF cexsp__sprintf
 #define SNPRINTF cexsp__snprintf
 #else
