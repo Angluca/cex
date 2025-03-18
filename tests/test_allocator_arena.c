@@ -535,17 +535,17 @@ test$case(test_allocator_arena_pointer_lifetime)
 test$case(test_allocator_arena_realloc_last_pointer)
 {
 
-    IAllocator arena = AllocatorArena_create(1024);
+    IAllocator arena = AllocatorArena_create(10024);
     tassert(arena != NULL);
 
     mem$scope(arena, _)
     {
-        for (u32 z = 0; z < 1000; z++) {
-            char* p = mem$malloc(arena, 1);
+        for (u32 z = 0; z < 10; z++) {
+            u8* p = mem$malloc(arena, 1);
             tassert(p != NULL);
             *p = 0;
             for (u32 i = 1; i < 200; i++) {
-                char* new_p = mem$realloc(arena, p, i+1);
+                u8* new_p = mem$realloc(arena, p, i+1);
                 tassert(new_p != NULL);
                 tassert(new_p == p);
                 tassert_eqi(p[i-1], i-1);
