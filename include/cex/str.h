@@ -114,6 +114,12 @@ Exception
 str_c
 (*fmt)(IAllocator allc, const char* format, ...);
 
+char*
+(*cfmt)(IAllocator allc, const char* format, ...);
+
+char*
+(*tfmt)(const char* format, ...);
+
     // clang-format on
 };
 extern const struct __module__str str; // CEX Autogen

@@ -1749,6 +1749,72 @@ test$case(test_sfmt)
 
     return EOK;
 }
+
+test$case(test_cfmt)
+{
+    mem$scope(tmem$, _){
+        // loading this test!
+        str_c fcontent;
+        e$ret(io.fload(__FILE__, &fcontent, tmem$));
+        tassert(fcontent.buf != NULL);
+        tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
+
+        // NOTE: even smalls strings were allocated on mem$
+        char* s = str.cfmt(mem$, "%s", "foo");
+        tassert(s != NULL);
+        tassert_eqi(3, strlen(s));
+        tassert_eqs("foo", s);
+        mem$free(mem$, s);
+
+        char* s2 = str.cfmt(mem$, "%S", fcontent);
+        tassert(s2 != NULL);
+        tassert_eqi(strlen(s2), fcontent.len);
+        for (u32 i = 0; i < fcontent.len; i++) {
+            tassertf(
+                s2[i] == fcontent.buf[i],
+                "i=%d s2['%c'] != fcontent['%c']",
+                i,
+                s2[i],
+                fcontent.buf[i]
+            );
+        }
+        mem$free(mem$, s2);
+    }
+
+    return EOK;
+}
+
+test$case(test_tfmt)
+{
+    mem$scope(tmem$, _){
+        // loading this test!
+        str_c fcontent;
+        e$ret(io.fload(__FILE__, &fcontent, tmem$));
+        tassert(fcontent.buf != NULL);
+        tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
+
+        // NOTE: even smalls strings were allocated on mem$
+        char* s = str.tfmt("%s", "foo");
+        tassert(s != NULL);
+        tassert_eqi(3, strlen(s));
+        tassert_eqs("foo", s);
+
+        char* s2 = str.tfmt( "%S", fcontent);
+        tassert(s2 != NULL);
+        tassert_eqi(strlen(s2), fcontent.len);
+        for (u32 i = 0; i < fcontent.len; i++) {
+            tassertf(
+                s2[i] == fcontent.buf[i],
+                "i=%d s2['%c'] != fcontent['%c']",
+                i,
+                s2[i],
+                fcontent.buf[i]
+            );
+        }
+    }
+
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -1791,6 +1857,8 @@ main(int argc, char* argv[])
     test$run(test_str_sprintf);
     test$run(test_s_macros);
     test$run(test_sfmt);
+    test$run(test_cfmt);
+    test$run(test_tfmt);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

@@ -1050,7 +1050,7 @@ str__fmt_callback(const char* buf, void* user, u32 len)
 }
 
 static str_c
-str__fmt__va(IAllocator allc, const char* format, va_list va)
+str__fmtva(IAllocator allc, const char* format, va_list va)
 {
     cexsp__context ctx = {
         .allc = allc,
@@ -1084,9 +1084,28 @@ str_fmt(IAllocator allc, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    str_c result = str__fmt__va(allc, format, va);
+    str_c result = str__fmtva(allc, format, va);
     va_end(va);
     return result;
+}
+static char*
+str_cfmt(IAllocator allc, const char* format, ...)
+{
+    va_list va;
+    va_start(va, format);
+    str_c result = str__fmtva(allc, format, va);
+    va_end(va);
+    return result.buf;
+}
+
+static char*
+str_tfmt(const char* format, ...)
+{
+    va_list va;
+    va_start(va, format);
+    str_c result = str__fmtva(tmem$, format, va);
+    va_end(va);
+    return result.buf;
 }
 
 const struct __module__str str = {
@@ -1125,5 +1144,7 @@ const struct __module__str str = {
     .to_u32 = str_to_u32,
     .to_u64 = str_to_u64,
     .fmt = str_fmt,
+    .cfmt = str_cfmt,
+    .tfmt = str_tfmt,
     // clang-format on
 };
