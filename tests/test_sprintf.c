@@ -6,8 +6,8 @@
 
 #if USE_STB
 #include <cex/_stb_sprintf.c>
-#define SPRINTF stbsp_sprintf
-#define SNPRINTF stbsp_snprintf
+#define SPRINTF cexsp__sprintf
+#define SNPRINTF cexsp__snprintf
 #else
 #include <locale.h>
 #define SPRINTF sprintf
@@ -246,7 +246,7 @@ test$case(stb_sprintf_orig)
     // CHECK3("2.42 Mi 2.4 M", "%$$.2d %$$$d", 2536000, 2536000);
 
     // different separators
-    stbsp_set_separators(' ', ',');
+    cexsp__set_separators(' ', ',');
     // CHECK2("12 345,678900", "%'f", 12345.6789);  // pedantic
 #endif
 

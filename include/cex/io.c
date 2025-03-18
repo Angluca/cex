@@ -390,7 +390,7 @@ io_fprintf(io_c* self, const char* format, ...)
 
     va_list va;
     va_start(va, format);
-    int result = STB_SPRINTF_DECORATE(vfprintf)(self->_fh, format, va);
+    int result = cexsp__vfprintf(self->_fh, format, va);
     va_end(va);
 
     if (result == -1) {
@@ -405,7 +405,7 @@ io_printf(const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    STB_SPRINTF_DECORATE(vfprintf)(stdout, format, va);
+    cexsp__vfprintf(stdout, format, va);
     va_end(va);
 }
 

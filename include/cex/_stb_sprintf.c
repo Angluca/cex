@@ -1,14 +1,15 @@
 #pragma once
 /*
-This code is based on refactored stb_sprintf.h 
+This code is based on refactored stb_sprintf.h
 
-Original code 
+Original code
 https://github.com/nothings/stb/tree/master
 ALTERNATIVE A - MIT License
+stb_sprintf - v1.10 - public domain snprintf() implementation
 Copyright (c) 2017 Sean Barrett
 */
-#include "all.h"
 #include "_stb_sprintf.h"
+#include "all.h"
 
 #ifndef STB_SPRINTF_MSVC_MODE // used for MSVC2013 and earlier (MSVC2015 matches GCC)
 #if defined(_MSC_VER) && (_MSC_VER < 1900)
@@ -50,7 +51,7 @@ static struct
                        "75767778798081828384858687888990919293949596979899" };
 
 CEXSP__PUBLICDEF void
-STB_SPRINTF_DECORATE(set_separators)(char pcomma, char pperiod)
+cexsp__set_separators(char pcomma, char pperiod)
 {
     cexsp__period = pperiod;
     cexsp__comma = pcomma;
@@ -131,13 +132,7 @@ cexsp__strlen_limited(char const* s, u32 limit)
 }
 
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(vsprintfcb)(
-    STBSP_SPRINTFCB* callback,
-    void* user,
-    char* buf,
-    char const* fmt,
-    va_list va
-)
+cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* fmt, va_list va)
 {
     static char hex[] = "0123456789abcdefxp";
     static char hexu[] = "0123456789ABCDEFXP";
@@ -217,8 +212,7 @@ STB_SPRINTF_DECORATE(vsprintfcb)(
                     bf[1] = f[1];
                     bf[2] = f[2];
                     bf[3] = f[3];
-                } else
-                {
+                } else {
                     *(u32*)bf = v;
                 }
                 bf += 4;
@@ -388,8 +382,7 @@ STB_SPRINTF_DECORATE(vsprintfcb)(
                 if ((void*)s <= (void*)(1024 * 1024)) {
                     if (s == 0) {
                         s = (char*)"(null)";
-                    }
-                    else {
+                    } else {
                         // NOTE: cex is str_c passed as %s, s will be length
                         // try to double check sensible value of pointer
                         s = (char*)"(str_c->%S)";
@@ -963,8 +956,7 @@ STB_SPRINTF_DECORATE(vsprintfcb)(
                     if ((fl & CEXSP__TRIPLET_COMMA) == 0) {
                         do {
                             s -= 2;
-                            *(u16*)
-                                s = *(u16*)&cexsp__digitpair.pair[(n % 100) * 2];
+                            *(u16*)s = *(u16*)&cexsp__digitpair.pair[(n % 100) * 2];
                             n /= 100;
                         } while (n);
                     }
@@ -1077,8 +1069,7 @@ STB_SPRINTF_DECORATE(vsprintfcb)(
                     // copy leading zeros
                     c = cs >> 24;
                     cs &= 0xffffff;
-                    cs = (fl & CEXSP__TRIPLET_COMMA) ? ((u32)(c - ((pr + cs) % (c + 1))))
-                                                     : 0;
+                    cs = (fl & CEXSP__TRIPLET_COMMA) ? ((u32)(c - ((pr + cs) % (c + 1)))) : 0;
                     while (pr > 0) {
                         cexsp__cb_buf_clamp(i, pr);
                         pr -= i;
@@ -1252,12 +1243,12 @@ done:
 //   wrapper functions
 
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(sprintf)(char* buf, char const* fmt, ...)
+cexsp__sprintf(char* buf, char const* fmt, ...)
 {
     int result;
     va_list va;
     va_start(va, fmt);
-    result = STB_SPRINTF_DECORATE(vsprintfcb)(0, 0, buf, fmt, va);
+    result = cexsp__vsprintfcb(0, 0, buf, fmt, va);
     va_end(va);
     return result;
 }
@@ -1305,7 +1296,7 @@ cexsp__clamp_callback(const char* buf, void* user, int len)
 
 
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(vsnprintf)(char* buf, int count, char const* fmt, va_list va)
+cexsp__vsnprintf(char* buf, int count, char const* fmt, va_list va)
 {
     cexsp__context c;
 
@@ -1318,8 +1309,7 @@ STB_SPRINTF_DECORATE(vsnprintf)(char* buf, int count, char const* fmt, va_list v
         c.capacity = count;
         c.length = 0;
 
-        STB_SPRINTF_DECORATE(vsprintfcb)
-        (cexsp__clamp_callback, &c, cexsp__clamp_callback(0, &c, 0), fmt, va);
+        cexsp__vsprintfcb(cexsp__clamp_callback, &c, cexsp__clamp_callback(0, &c, 0), fmt, va);
 
         // zero-terminate
         l = (int)(c.buf - buf);
@@ -1334,22 +1324,22 @@ STB_SPRINTF_DECORATE(vsnprintf)(char* buf, int count, char const* fmt, va_list v
 }
 
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(snprintf)(char* buf, int count, char const* fmt, ...)
+cexsp__snprintf(char* buf, int count, char const* fmt, ...)
 {
     int result;
     va_list va;
     va_start(va, fmt);
 
-    result = STB_SPRINTF_DECORATE(vsnprintf)(buf, count, fmt, va);
+    result = cexsp__vsnprintf(buf, count, fmt, va);
     va_end(va);
 
     return result;
 }
 
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(vsprintf)(char* buf, char const* fmt, va_list va)
+cexsp__vsprintf(char* buf, char const* fmt, va_list va)
 {
-    return STB_SPRINTF_DECORATE(vsprintfcb)(0, 0, buf, fmt, va);
+    return cexsp__vsprintfcb(0, 0, buf, fmt, va);
 }
 
 static char*
@@ -1358,7 +1348,7 @@ cexsp__fprintf_callback(const char* buf, void* user, int len)
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;
     if (len) {
-        if(fwrite(buf, sizeof(char), len, c->file) != (size_t)len){
+        if (fwrite(buf, sizeof(char), len, c->file) != (size_t)len) {
             c->has_error = 1;
         }
     }
@@ -1366,23 +1356,22 @@ cexsp__fprintf_callback(const char* buf, void* user, int len)
 }
 
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(vfprintf)(FILE* stream, const char* format, va_list va)
+cexsp__vfprintf(FILE* stream, const char* format, va_list va)
 {
-    cexsp__context c = {.file = stream, .length = 0};
+    cexsp__context c = { .file = stream, .length = 0 };
 
-    STB_SPRINTF_DECORATE(vsprintfcb)
-    (cexsp__fprintf_callback, &c, cexsp__fprintf_callback(0, &c, 0), format, va);
+    cexsp__vsprintfcb(cexsp__fprintf_callback, &c, cexsp__fprintf_callback(0, &c, 0), format, va);
 
     return c.has_error == 0 ? c.length : -1;
 }
 
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(fprintf)(FILE* stream, const char* format, ...)
+cexsp__fprintf(FILE* stream, const char* format, ...)
 {
     int result;
     va_list va;
     va_start(va, format);
-    result = STB_SPRINTF_DECORATE(vfprintf)(stream, format, va);
+    result = cexsp__vfprintf(stream, format, va);
     va_end(va);
     return result;
 }
@@ -1463,61 +1452,61 @@ static double const cexsp__negtoperr[13] = { 3.9565301985100693e-040,  -2.299904
 
 #if defined(_MSC_VER) && (_MSC_VER <= 1200)
 static u64 const cexsp__powten[20] = { 1,
-                                                 10,
-                                                 100,
-                                                 1000,
-                                                 10000,
-                                                 100000,
-                                                 1000000,
-                                                 10000000,
-                                                 100000000,
-                                                 1000000000,
-                                                 10000000000,
-                                                 100000000000,
-                                                 1000000000000,
-                                                 10000000000000,
-                                                 100000000000000,
-                                                 1000000000000000,
-                                                 10000000000000000,
-                                                 100000000000000000,
-                                                 1000000000000000000,
-                                                 10000000000000000000U };
+                                       10,
+                                       100,
+                                       1000,
+                                       10000,
+                                       100000,
+                                       1000000,
+                                       10000000,
+                                       100000000,
+                                       1000000000,
+                                       10000000000,
+                                       100000000000,
+                                       1000000000000,
+                                       10000000000000,
+                                       100000000000000,
+                                       1000000000000000,
+                                       10000000000000000,
+                                       100000000000000000,
+                                       1000000000000000000,
+                                       10000000000000000000U };
 #define cexsp__tento19th ((u64)1000000000000000000)
 #else
 static u64 const cexsp__powten[20] = { 1,
-                                                 10,
-                                                 100,
-                                                 1000,
-                                                 10000,
-                                                 100000,
-                                                 1000000,
-                                                 10000000,
-                                                 100000000,
-                                                 1000000000,
-                                                 10000000000ULL,
-                                                 100000000000ULL,
-                                                 1000000000000ULL,
-                                                 10000000000000ULL,
-                                                 100000000000000ULL,
-                                                 1000000000000000ULL,
-                                                 10000000000000000ULL,
-                                                 100000000000000000ULL,
-                                                 1000000000000000000ULL,
-                                                 10000000000000000000ULL };
+                                       10,
+                                       100,
+                                       1000,
+                                       10000,
+                                       100000,
+                                       1000000,
+                                       10000000,
+                                       100000000,
+                                       1000000000,
+                                       10000000000ULL,
+                                       100000000000ULL,
+                                       1000000000000ULL,
+                                       10000000000000ULL,
+                                       100000000000000ULL,
+                                       1000000000000000ULL,
+                                       10000000000000000ULL,
+                                       100000000000000000ULL,
+                                       1000000000000000000ULL,
+                                       10000000000000000000ULL };
 #define cexsp__tento19th (1000000000000000000ULL)
 #endif
 
 #define cexsp__ddmulthi(oh, ol, xh, yh)                                                            \
     {                                                                                              \
         double ahi = 0, alo, bhi = 0, blo;                                                         \
-        i64 bt;                                                                           \
+        i64 bt;                                                                                    \
         oh = xh * yh;                                                                              \
         CEXSP__COPYFP(bt, xh);                                                                     \
-        bt &= ((~(u64)0) << 27);                                                         \
+        bt &= ((~(u64)0) << 27);                                                                   \
         CEXSP__COPYFP(ahi, bt);                                                                    \
         alo = xh - ahi;                                                                            \
         CEXSP__COPYFP(bt, yh);                                                                     \
-        bt &= ((~(u64)0) << 27);                                                         \
+        bt &= ((~(u64)0) << 27);                                                                   \
         CEXSP__COPYFP(bhi, bt);                                                                    \
         blo = yh - bhi;                                                                            \
         ol = ((ahi * bhi - oh) + ahi * blo + alo * bhi) + alo * blo;                               \
@@ -1526,12 +1515,12 @@ static u64 const cexsp__powten[20] = { 1,
 #define cexsp__ddtoS64(ob, xh, xl)                                                                 \
     {                                                                                              \
         double ahi = 0, alo, vh, t;                                                                \
-        ob = (i64)xh;                                                                     \
+        ob = (i64)xh;                                                                              \
         vh = (double)ob;                                                                           \
         ahi = (xh - vh);                                                                           \
         t = (ahi - xh);                                                                            \
         alo = (xh - (ahi - t)) - (vh + t);                                                         \
-        ob += (i64)(ahi + alo + xl);                                                      \
+        ob += (i64)(ahi + alo + xl);                                                               \
     }
 
 #define cexsp__ddrenorm(oh, ol)                                                                    \
@@ -1548,7 +1537,7 @@ static u64 const cexsp__powten[20] = { 1,
 
 static void
 cexsp__raise_to_power10(double* ohi, double* olo, double d, i32 power) // power can be -323
-                                                                                // to +350
+                                                                       // to +350
 {
     double ph, pl;
     if ((power >= 0) && (power <= 22)) {
@@ -1793,4 +1782,3 @@ cexsp__real_to_str(
 
 // clean up
 #undef CEXSP__UNALIGNED
-

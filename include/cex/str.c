@@ -112,7 +112,7 @@ str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
 {
     str_c out = { .buf = NULL, .len = 0 };
 
-    int result = STB_SPRINTF_DECORATE(vsnprintf)(dest, dest_len, format, va);
+    int result = cexsp__vsnprintf(dest, dest_len, format, va);
 
     // NOTE: result equals dest_len if buffer overflow
     if (result > 0) {

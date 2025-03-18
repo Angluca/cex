@@ -394,8 +394,7 @@ sbuf_vsprintf(sbuf_c* self, const char* format, va_list va)
         .count = head->capacity,
     };
 
-    STB_SPRINTF_DECORATE(vsprintfcb)
-    (sbuf__sprintf_callback, &ctx, sbuf__sprintf_callback(NULL, &ctx, 0), format, va);
+    cexsp__vsprintfcb(sbuf__sprintf_callback, &ctx, sbuf__sprintf_callback(NULL, &ctx, 0), format, va);
 
     // re-fetch self in case of realloc in sbuf__sprintf_callback
     *self = ((char*)ctx.head + sizeof(sbuf_head_s));

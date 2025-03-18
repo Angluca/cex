@@ -190,25 +190,25 @@ typedef char* STBSP_SPRINTFCB(const char* buf, void* user, int len);
 #endif
 
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(vfprintf)(FILE* stream, const char* format, va_list va);
+cexsp__vfprintf(FILE* stream, const char* format, va_list va);
 CEXSP__PUBLICDEF int
-STB_SPRINTF_DECORATE(fprintf)(FILE* stream, const char* format, ...);
+cexsp__fprintf(FILE* stream, const char* format, ...);
 
-CEXSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsprintf)(char* buf, char const* fmt, va_list va);
+CEXSP__PUBLICDEC int cexsp__vsprintf(char* buf, char const* fmt, va_list va);
 CEXSP__PUBLICDEC int
-    STB_SPRINTF_DECORATE(vsnprintf)(char* buf, int count, char const* fmt, va_list va);
-CEXSP__PUBLICDEC int STB_SPRINTF_DECORATE(sprintf)(char* buf, char const* fmt, ...)
+    cexsp__vsnprintf(char* buf, int count, char const* fmt, va_list va);
+CEXSP__PUBLICDEC int cexsp__sprintf(char* buf, char const* fmt, ...)
     CEXSP__ATTRIBUTE_FORMAT(2, 3);
-CEXSP__PUBLICDEC int STB_SPRINTF_DECORATE(snprintf)(char* buf, int count, char const* fmt, ...)
+CEXSP__PUBLICDEC int cexsp__snprintf(char* buf, int count, char const* fmt, ...)
     CEXSP__ATTRIBUTE_FORMAT(3, 4);
 
-CEXSP__PUBLICDEC int STB_SPRINTF_DECORATE(vsprintfcb)(
+CEXSP__PUBLICDEC int cexsp__vsprintfcb(
     STBSP_SPRINTFCB* callback,
     void* user,
     char* buf,
     char const* fmt,
     va_list va
 );
-CEXSP__PUBLICDEC void STB_SPRINTF_DECORATE(set_separators)(char comma, char period);
+CEXSP__PUBLICDEC void cexsp__set_separators(char comma, char period);
 
 #endif // STB_SPRINTF_H_INCLUDE
