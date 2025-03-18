@@ -813,7 +813,7 @@ class CEXProcessor:
     RE_COMMENT_ML_START = re.compile(r"^\s*\/\*", re.MULTILINE)
     RE_COMMENT_ML_END = re.compile(r".*\*\/", re.MULTILINE)
     RE_CODE_START_LINE = re.compile(r"^[a-zA-Z_0-9\*]+\s+", re.MULTILINE)
-    RE_FUNC = re.compile(r"(.*)\s+(\w+)\({1}([\w,\[\]\(\)\s\*\.]*)\)", re.MULTILINE)
+    RE_FUNC = re.compile(r"(.*)\s+(\w+)\({1}([\w,\[\]\(\)\s\*\.\$]*)\)", re.MULTILINE)
     RE_STATIC = re.compile(r"(^static\s|\sstatic\s|\sstatic$)", re.MULTILINE)
     RE_INLINE = re.compile(r"(^inline\s|\sinline\s|\sinline$)", re.MULTILINE)
 
@@ -1100,9 +1100,10 @@ class CEXProcessor:
                 self.ifc_name = None
                 self.sub_module = None
 
-            assert (
-                "(" not in self.typedef and ")" not in self.typedef
-            ), f"function pointers?? {self}"
+            if "$" not in self.typedef:
+                assert (
+                    "(" not in self.typedef and ")" not in self.typedef
+                ), f"function pointers?? {self}"
 
         @property
         def is_public_cex(self) -> bool:
