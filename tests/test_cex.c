@@ -1,6 +1,4 @@
-#include <cex/cex.c>
-#include <cex/ds.c>
-#include <cex/test.h>
+#include <cex/all.c>
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
