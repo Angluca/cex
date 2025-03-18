@@ -1815,6 +1815,68 @@ test$case(test_tfmt)
 
     return EOK;
 }
+
+test$case(test_fmt_edge)
+{
+    mem$scope(tmem$, _){
+        // loading this test!
+        str_c fcontent;
+        e$ret(io.fload(__FILE__, &fcontent, tmem$));
+        tassert(fcontent.buf != NULL);
+        tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
+
+        // NOTE: even smalls strings were allocated on mem$
+        var s = str.fmt(mem$, "%s", "foo");
+        tassert(str.is_valid(s));
+        tassert_eqi(3, s.len);
+        tassert_eqs("foo", s.buf);
+        mem$free(mem$, s.buf);
+
+        var s2 = str.fmt(mem$, "%S", str.sub(fcontent, 0, CEX_SPRINTF_MIN-1));
+        tassert(str.is_valid(s2));
+        tassert_eqi(s2.len, CEX_SPRINTF_MIN-1);
+        for (u32 i = 0; i < s2.len; i++) {
+            tassertf(
+                s2.buf[i] == fcontent.buf[i],
+                "i=%d s2['%c'] != fcontent['%c']",
+                i,
+                s2.buf[i],
+                fcontent.buf[i]
+            );
+        }
+        mem$free(mem$, s2.buf);
+
+        s2 = str.fmt(mem$, "%S", str.sub(fcontent, 0, CEX_SPRINTF_MIN));
+        tassert(str.is_valid(s2));
+        tassert_eqi(s2.len, CEX_SPRINTF_MIN);
+        for (u32 i = 0; i < s2.len; i++) {
+            tassertf(
+                s2.buf[i] == fcontent.buf[i],
+                "i=%d s2['%c'] != fcontent['%c']",
+                i,
+                s2.buf[i],
+                fcontent.buf[i]
+            );
+        }
+        mem$free(mem$, s2.buf);
+
+        s2 = str.fmt(mem$, "%S", str.sub(fcontent, 0, CEX_SPRINTF_MIN+1));
+        tassert(str.is_valid(s2));
+        tassert_eqi(s2.len, CEX_SPRINTF_MIN+1);
+        for (u32 i = 0; i < s2.len; i++) {
+            tassertf(
+                s2.buf[i] == fcontent.buf[i],
+                "i=%d s2['%c'] != fcontent['%c']",
+                i,
+                s2.buf[i],
+                fcontent.buf[i]
+            );
+        }
+        mem$free(mem$, s2.buf);
+    }
+
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -1859,6 +1921,7 @@ main(int argc, char* argv[])
     test$run(test_sfmt);
     test$run(test_cfmt);
     test$run(test_tfmt);
+    test$run(test_fmt_edge);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

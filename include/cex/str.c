@@ -1068,7 +1068,7 @@ str__fmtva(IAllocator allc, const char* format, va_list va)
         ctx.buf[ctx.length] = '\0';
         ctx.buf[ctx.capacity - 1] = '\0';
     } else {
-        uassert(ctx.length < arr$len(ctx.tmp) - 1);
+        uassert(ctx.length <= arr$len(ctx.tmp) - 1);
         ctx.buf = mem$malloc(allc, ctx.length + 1);
         if (ctx.buf == NULL) {
             return (str_c){0};
