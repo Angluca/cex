@@ -29,10 +29,6 @@
 #ifndef STB_SPRINTF_H_INCLUDE
 #define STB_SPRINTF_H_INCLUDE
 
-// NOTE: CEX this file is slighly adjusted stb_sprintf.h,
-// with alignment fixed + support of str_c as a parameter
-#define STB_SPRINTF_NOUNALIGNED 1
-
 /*
 Single file sprintf replacement.
 
@@ -124,39 +120,12 @@ PERFORMANCE vs MSVC 2008 32-/64-bit (GCC is even slower than MSVC):
 "...512 char string..." ( 35.0x/32.5x faster!)
 */
 
-#if defined(__clang__)
-#if defined(__has_feature) && defined(__has_attribute)
-#if __has_feature(address_sanitizer)
-#if __has_attribute(__no_sanitize__)
-#define CEXSP__ASAN __attribute__((__no_sanitize__("address")))
-#elif __has_attribute(__no_sanitize_address__)
-#define CEXSP__ASAN __attribute__((__no_sanitize_address__))
-#elif __has_attribute(__no_address_safety_analysis__)
-#define CEXSP__ASAN __attribute__((__no_address_safety_analysis__))
-#endif
-#endif
-#endif
-#elif defined(__GNUC__) && (__GNUC__ >= 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
-#if defined(__SANITIZE_ADDRESS__) && __SANITIZE_ADDRESS__
-#define CEXSP__ASAN __attribute__((__no_sanitize_address__))
-#endif
-#endif
-
-#ifndef CEXSP__ASAN
-#define CEXSP__ASAN
-#endif
-
 #ifdef STB_SPRINTF_STATIC
 #define CEXSP__PUBLICDEC static
-#define CEXSP__PUBLICDEF static CEXSP__ASAN
-#else
-#ifdef __cplusplus
-#define CEXSP__PUBLICDEC extern "C"
-#define CEXSP__PUBLICDEF extern "C" CEXSP__ASAN
+#define CEXSP__PUBLICDEF static
 #else
 #define CEXSP__PUBLICDEC extern
-#define CEXSP__PUBLICDEF CEXSP__ASAN
-#endif
+#define CEXSP__PUBLICDEF 
 #endif
 
 #if defined(__has_attribute)

@@ -17,13 +17,6 @@ Copyright (c) 2017 Sean Barrett
 #endif
 #endif
 
-#ifdef STB_SPRINTF_NOUNALIGNED // define this before inclusion to force stbsp_sprintf to always use
-                               // aligned accesses
-#define CEXSP__UNALIGNED(code)
-#else
-#define CEXSP__UNALIGNED(code) code
-#endif
-
 #ifndef STB_SPRINTF_NOFLOAT
 // internal float utility functions
 static i32 cexsp__real_to_str(
@@ -87,41 +80,10 @@ cexsp__lead_sign(u32 fl, char* sign)
     }
 }
 
-static CEXSP__ASAN u32
+static u32
 cexsp__strlen_limited(char const* s, u32 limit)
 {
     char const* sn = s;
-
-    // get up to 4-byte alignment
-    for (;;) {
-        if (((usize)sn & 3) == 0) {
-            break;
-        }
-
-        if (!limit || *sn == 0) {
-            return (u32)(sn - s);
-        }
-
-        ++sn;
-        --limit;
-    }
-
-    // scan over 4 bytes at a time to find terminating 0
-    // this will intentionally scan up to 3 bytes past the end of buffers,
-    // but becase it works 4B aligned, it will never cross page boundaries
-    // (hence the CEXSP__ASAN markup; the over-read here is intentional
-    // and harmless)
-    while (limit >= 4) {
-        u32 v = *(u32*)sn;
-        // bit hack to find if there's a 0 byte in there
-        if ((v - 0x01010101) & (~v) & 0x80808080UL) {
-            break;
-        }
-
-        sn += 4;
-        limit -= 4;
-    }
-
     // handle the last few characters to find actual size
     while (limit && *sn) {
         ++sn;
@@ -176,48 +138,15 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
 
         // fast copy everything up to the next % (or end of string)
         for (;;) {
-            while (((usize)f) & 3) {
-            schk1:
-                if (f[0] == '%') {
-                    goto scandd;
-                }
-            schk2:
-                if (f[0] == 0) {
-                    goto endfmt;
-                }
-                cexsp__chk_cb_buf(1);
-                *bf++ = f[0];
-                ++f;
+            if (f[0] == '%') {
+                goto scandd;
             }
-            for (;;) {
-                // Check if the next 4 bytes contain %(0x25) or end of string.
-                // Using the 'hasless' trick:
-                // https://graphics.stanford.edu/~seander/bithacks.html#HasLessInWord
-                u32 v, c;
-                v = *(u32*)f;
-                c = (~v) & 0x80808080;
-                if (((v ^ 0x25252525) - 0x01010101) & c) {
-                    goto schk1;
-                }
-                if ((v - 0x01010101) & c) {
-                    goto schk2;
-                }
-                if (callback) {
-                    if ((STB_SPRINTF_MIN - (int)(bf - buf)) < 4) {
-                        goto schk1;
-                    }
-                }
-                if (((usize)bf) & 3) {
-                    bf[0] = f[0];
-                    bf[1] = f[1];
-                    bf[2] = f[2];
-                    bf[3] = f[3];
-                } else {
-                    *(u32*)bf = v;
-                }
-                bf += 4;
-                f += 4;
+            if (f[0] == 0) {
+                goto endfmt;
             }
+            cexsp__chk_cb_buf(1);
+            *bf++ = f[0];
+            ++f;
         }
     scandd:
 
@@ -1119,12 +1048,13 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
                     i32 i;
                     cexsp__cb_buf_clamp(i, n);
                     n -= i;
-                    CEXSP__UNALIGNED(while (i >= 4) {
-                        *(u32 volatile*)bf = *(u32 volatile*)s;
-                        bf += 4;
-                        s += 4;
-                        i -= 4;
-                    })
+                    // disabled CEXSP__UNALIGNED
+                    // CEXSP__UNALIGNED(while (i >= 4) {
+                    //     *(u32 volatile*)bf = *(u32 volatile*)s;
+                    //     bf += 4;
+                    //     s += 4;
+                    //     i -= 4;
+                    // })
                     while (i) {
                         *bf++ = *s++;
                         --i;
