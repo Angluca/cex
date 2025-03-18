@@ -1,7 +1,6 @@
 #pragma once
 #include "io.h"
-#include "_stb_sprintf.c"
-#include "_stb_sprintf.h"
+#include "_sprintf.h"
 #include "cex.h"
 #include <errno.h>
 #include <unistd.h>

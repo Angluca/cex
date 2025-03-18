@@ -1,7 +1,6 @@
 #pragma once
 #include "str.h"
-#include "_stb_sprintf.c"
-#include "_stb_sprintf.h"
+#include "_sprintf.h"
 #include <ctype.h>
 #include <float.h>
 #include <math.h>

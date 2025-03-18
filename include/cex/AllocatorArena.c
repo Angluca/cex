@@ -266,6 +266,7 @@ _cex_allocator_arena__free(IAllocator allc, void* ptr)
     }
 
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
+    (void)self;
     uassert(
         _cex_allocator_arena__check_pointer_valid(self, ptr) && "pointer doesn't belong to arena"
     );

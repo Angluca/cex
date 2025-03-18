@@ -7,5 +7,6 @@
 #include "str.c"
 #include "io.c"
 #include "ds.c"
+#include "_sprintf.c"
 
 
