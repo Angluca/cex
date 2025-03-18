@@ -10,13 +10,7 @@ Copyright (c) 2017 Sean Barrett
 #include "all.h"
 #include "_sprintf.h"
 
-#ifndef STB_SPRINTF_MSVC_MODE // used for MSVC2013 and earlier (MSVC2015 matches GCC)
-#if defined(_MSC_VER) && (_MSC_VER < 1900)
-#define STB_SPRINTF_MSVC_MODE
-#endif
-#endif
-
-#ifndef STB_SPRINTF_NOFLOAT
+#ifndef CEX_SPRINTF_NOFLOAT
 // internal float utility functions
 static i32 cexsp__real_to_str(
     char const** start,
@@ -93,7 +87,7 @@ cexsp__strlen_limited(char const* s, u32 limit)
 }
 
 CEXSP__PUBLICDEF int
-cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* fmt, va_list va)
+cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const* fmt, va_list va)
 {
     static char hex[] = "0123456789abcdefxp";
     static char hexu[] = "0123456789ABCDEFXP";
@@ -111,7 +105,7 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
 #define cexsp__chk_cb_bufL(bytes)                                                                  \
     {                                                                                              \
         int len = (int)(bf - buf);                                                                 \
-        if ((len + (bytes)) >= STB_SPRINTF_MIN) {                                                  \
+        if ((len + (bytes)) >= CEX_SPRINTF_MIN) {                                                  \
             tlen += len;                                                                           \
             if (0 == (bf = buf = callback(buf, user, len)))                                        \
                 goto done;                                                                         \
@@ -125,12 +119,12 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
     }
 #define cexsp__flush_cb()                                                                          \
     {                                                                                              \
-        cexsp__chk_cb_bufL(STB_SPRINTF_MIN - 1);                                                   \
+        cexsp__chk_cb_bufL(CEX_SPRINTF_MIN - 1);                                                   \
     } // flush if there is even one byte in the buffer
 #define cexsp__cb_buf_clamp(cl, v)                                                                 \
     cl = v;                                                                                        \
     if (callback) {                                                                                \
-        int lg = STB_SPRINTF_MIN - (int)(bf - buf);                                                \
+        int lg = CEX_SPRINTF_MIN - (int)(bf - buf);                                                \
         if (cl > lg)                                                                               \
             cl = lg;                                                                               \
     }
@@ -298,7 +292,7 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
             char const* h;
             u32 l, n, cs;
             u64 n64;
-#ifndef STB_SPRINTF_NOFLOAT
+#ifndef CEX_SPRINTF_NOFLOAT
             double fv;
 #endif
             i32 dp;
@@ -362,7 +356,7 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
                 *d = tlen + (int)(bf - buf);
             } break;
 
-#ifdef STB_SPRINTF_NOFLOAT
+#ifdef CEX_SPRINTF_NOFLOAT
             case 'A':               // float
             case 'a':               // hex float
             case 'G':               // float
@@ -407,14 +401,9 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
                 }
                 // add leading chars
 
-#ifdef STB_SPRINTF_MSVC_MODE
-                *s++ = '0';
-                *s++ = 'x';
-#else
                 lead[1 + lead[0]] = '0';
                 lead[2 + lead[0]] = 'x';
                 lead[0] += 2;
-#endif
                 *s++ = h[(n64 >> 60) & 15];
                 n64 <<= 4;
                 if (pr) {
@@ -549,11 +538,7 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
                 } else {
                     tail[2] = '+';
                 }
-#ifdef STB_SPRINTF_MSVC_MODE
-                n = 5;
-#else
                 n = (dp >= 100) ? 5 : 4;
-#endif
                 tail[0] = (char)n;
                 for (;;) {
                     tail[n] = '0' + dp % 10;
@@ -854,7 +839,7 @@ cexsp__vsprintfcb(STBSP_SPRINTFCB* callback, void* user, char* buf, char const* 
                     }
                 }
 
-#ifndef STB_SPRINTF_NOFLOAT
+#ifndef CEX_SPRINTF_NOFLOAT
                 if (fl & CEXSP__METRIC_SUFFIX) {
                     if (n64 < 1024) {
                         pr = 0;
@@ -1182,15 +1167,6 @@ cexsp__sprintf(char* buf, char const* fmt, ...)
     return result;
 }
 
-typedef struct cexsp__context
-{
-    char* buf;
-    FILE* file;
-    int capacity;
-    int length;
-    int has_error;
-    char tmp[STB_SPRINTF_MIN];
-} cexsp__context;
 
 static char*
 cexsp__clamp_callback(const char* buf, void* user, int len)
@@ -1220,7 +1196,7 @@ cexsp__clamp_callback(const char* buf, void* user, int len)
     if (c->capacity <= 0) {
         return c->tmp;
     }
-    return (c->capacity >= STB_SPRINTF_MIN) ? c->buf : c->tmp; // go direct into buffer if you can
+    return (c->capacity >= CEX_SPRINTF_MIN) ? c->buf : c->tmp; // go direct into buffer if you can
 }
 
 
@@ -1308,7 +1284,7 @@ cexsp__fprintf(FILE* stream, const char* format, ...)
 // =======================================================================
 //   low level float utility functions
 
-#ifndef STB_SPRINTF_NOFLOAT
+#ifndef CEX_SPRINTF_NOFLOAT
 
 // copies d to bits w/ strict aliasing (this compiles to nothing on /Ox)
 #define CEXSP__COPYFP(dest, src)                                                                   \
@@ -1707,7 +1683,5 @@ cexsp__real_to_str(
 #undef CEXSP__SPECIAL
 #undef CEXSP__COPYFP
 
-#endif // STB_SPRINTF_NOFLOAT
+#endif // CEX_SPRINTF_NOFLOAT
 
-// clean up
-#undef CEXSP__UNALIGNED

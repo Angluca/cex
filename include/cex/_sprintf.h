@@ -119,7 +119,8 @@ PERFORMANCE vs MSVC 2008 32-/64-bit (GCC is even slower than MSVC):
 "...512 char string..." ( 35.0x/32.5x faster!)
 */
 
-#ifdef STB_SPRINTF_STATIC
+#define CEXSP_STATIC
+#ifdef CEXSP_STATIC
 #define CEXSP__PUBLICDEC static
 #define CEXSP__PUBLICDEF static
 #else
@@ -143,19 +144,22 @@ PERFORMANCE vs MSVC 2008 32-/64-bit (GCC is even slower than MSVC):
 #define CEXSP__NOTUSED(v) (void)sizeof(v)
 #endif
 
-#include "all.h"    // NOTE: CEX
-#include <stdarg.h> // for va_arg(), va_list()
-#include <stddef.h> // size_t, ptrdiff_t
+#include "all.h"
 
-#ifndef STB_SPRINTF_MIN
-#define STB_SPRINTF_MIN 512 // how many characters per callback
+#ifndef CEX_SPRINTF_MIN
+#define CEX_SPRINTF_MIN 512 // how many characters per callback
 #endif
-typedef char* STBSP_SPRINTFCB(const char* buf, void* user, int len);
+typedef char* cexsp_callback_f(const char* buf, void* user, int len);
 
-#ifndef STB_SPRINTF_DECORATE
-#define STB_SPRINTF_DECORATE(name)                                                                 \
-    stbsp_##name // define this before including if you want to change the names
-#endif
+typedef struct cexsp__context
+{
+    char* buf;
+    FILE* file;
+    int capacity;
+    int length;
+    int has_error;
+    char tmp[CEX_SPRINTF_MIN];
+} cexsp__context;
 
 CEXSP__PUBLICDEF int
 cexsp__vfprintf(FILE* stream, const char* format, va_list va);
@@ -171,7 +175,7 @@ CEXSP__PUBLICDEC int cexsp__snprintf(char* buf, int count, char const* fmt, ...)
     CEXSP__ATTRIBUTE_FORMAT(3, 4);
 
 CEXSP__PUBLICDEC int cexsp__vsprintfcb(
-    STBSP_SPRINTFCB* callback,
+    cexsp_callback_f* callback,
     void* user,
     char* buf,
     char const* fmt,

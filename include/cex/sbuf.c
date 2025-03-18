@@ -12,7 +12,7 @@ struct _sbuf__sprintf_ctx
     Exc err;
     int count;
     int length;
-    char tmp[STB_SPRINTF_MIN];
+    char tmp[CEX_SPRINTF_MIN];
 };
 
 static inline sbuf_head_s*
@@ -376,7 +376,7 @@ sbuf__sprintf_callback(const char* buf, void* user, int len)
     // NOTE: if string buffer is small, uses stack-based tmp buffer (about 512bytes)
     // // and then copy into sbuf_s buffer when ready. When string grows, uses heap allocated
     // // sbuf_c directly without copy
-    return ((ctx->count - ctx->length) >= STB_SPRINTF_MIN) ? ctx->buf : ctx->tmp;
+    return ((ctx->count - ctx->length) >= CEX_SPRINTF_MIN) ? ctx->buf : ctx->tmp;
 }
 
 Exception
