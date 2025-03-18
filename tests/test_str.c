@@ -1844,6 +1844,7 @@ test$case(test_fmt_edge)
                 fcontent.buf[i]
             );
         }
+        tassert_eqi(s2.buf[s2.len], '\0');
         mem$free(mem$, s2.buf);
 
         s2 = str.fmt(mem$, "%S", str.sub(fcontent, 0, CEX_SPRINTF_MIN));
@@ -1858,6 +1859,7 @@ test$case(test_fmt_edge)
                 fcontent.buf[i]
             );
         }
+        tassert_eqi(s2.buf[s2.len], '\0');
         mem$free(mem$, s2.buf);
 
         s2 = str.fmt(mem$, "%S", str.sub(fcontent, 0, CEX_SPRINTF_MIN+1));
@@ -1872,6 +1874,7 @@ test$case(test_fmt_edge)
                 fcontent.buf[i]
             );
         }
+        tassert_eqi(s2.buf[s2.len], '\0');
         mem$free(mem$, s2.buf);
     }
 
