@@ -532,6 +532,36 @@ test$case(test_allocator_arena_pointer_lifetime)
     return EOK;
 }
 
+test$case(test_allocator_arena_realloc_last_pointer)
+{
+
+    IAllocator arena = AllocatorArena_create(1024);
+    tassert(arena != NULL);
+
+    mem$scope(arena, _)
+    {
+        for (u32 z = 0; z < 1000; z++) {
+            char* p = mem$malloc(arena, 1);
+            tassert(p != NULL);
+            *p = 0;
+            for (u32 i = 1; i < 200; i++) {
+                char* new_p = mem$realloc(arena, p, i+1);
+                tassert(new_p != NULL);
+                tassert(new_p == p);
+                tassert_eqi(p[i-1], i-1);
+                p[i] = i;
+            }
+            for (u32 i = 0; i < 200; i++) {
+                tassert_eqi(p[i], i);
+            }
+        }
+        AllocatorArena_sanitize(arena);
+    }
+
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -549,6 +579,7 @@ main(int argc, char* argv[])
     test$run(test_allocator_arena_realloc_shrink);
     test$run(test_allocator_arena_malloc_mem_pattern);
     test$run(test_allocator_arena_pointer_lifetime);
+    test$run(test_allocator_arena_realloc_last_pointer);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

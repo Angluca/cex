@@ -140,7 +140,9 @@ _cex_allocator_arena__request_page_size(
         *out_is_allocated = false;
     }
 
-    if (self->last_page == NULL || self->last_page->capacity - self->last_page->cursor < req_size) {
+    if (self->last_page == NULL ||
+        // self->last_page->capacity < req_size + mem$aligned_round(self->last_page->cursor, 8)) {
+        self->last_page->capacity < req_size + self->last_page->cursor) {
         usize page_size = _cex_alloc_estimate_page_size(self->page_size, req_size);
 
         if (page_size == 0 || page_size > CEX_ARENA_MAX_ALLOC) {
@@ -189,8 +191,12 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     if (page == NULL) {
         return NULL;
     }
+    // u8 extra_padding = mem$aligned_round(page->cursor, 8) - page->cursor;
+    // page->cursor += extra_padding;
+    // rec.ptr_padding += extra_padding;
     uassert(page->capacity - page->cursor >= rec.size + rec.ptr_padding + rec.ptr_alignment);
     uassert(page->cursor % 8 == 0);
+    uassert(rec.ptr_padding <= 8);
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
     uassert((((usize)(page_rec) & ((8) - 1)) == 0) && "unaligned pointer");
@@ -211,7 +217,6 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
 
     page_rec->ptr_offset = rec.ptr_offset;
     uassert(rec.ptr_alignment <= CEX_ARENA_MAX_ALIGN);
-    uassert(rec.ptr_padding <= 8);
 
     mem$asan_unpoison(((char*)result) - 1, rec.size + 1);
     *(((char*)result) - 1) = rec.ptr_offset;
@@ -332,11 +337,31 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
             //   but currently we have spare capacity for growth
             u32 extra_bytes = size - rec->size;
             mem$asan_unpoison((char*)old_ptr + rec->size, extra_bytes);
-            memset((char*)old_ptr + rec->size, 0, extra_bytes);
+#ifdef CEXTEST
+            memset((char*)old_ptr + rec->size, 0xf7, extra_bytes);
+#endif
+            fprintf(
+                stderr,
+                "realloc_last: cursor: %d, extra_bytes: %d size: %ld nrec.padding: %d curr.padding: %d\n",
+                page->cursor,
+                extra_bytes,
+                size, 
+                nrec.ptr_padding, 
+                rec->ptr_padding
+            );
+            if (nrec.ptr_padding < rec->ptr_padding) {
+                extra_bytes -= nrec.ptr_padding; 
+            }
             page->cursor += extra_bytes;
             self->used += extra_bytes;
             self->stats.bytes_alloc += extra_bytes;
             rec->size = size;
+            rec->ptr_padding = nrec.ptr_padding;
+            isize cur_diff = (char*)rec + rec->size + rec->ptr_padding + rec->ptr_offset - (char*)&page->data[page->cursor];
+            fprintf(stderr, "cur_diff: %ld\n", cur_diff);
+            uassert((char*)rec + rec->size + rec->ptr_padding + rec->ptr_offset == &page->data[page->cursor]);
+            uassert(page->cursor % 8 == 0);
+            // uassert(page->used % 8 == 0);
             mem$asan_poison((char*)old_ptr + size, rec->ptr_padding);
             return old_ptr;
         }
@@ -476,7 +501,7 @@ AllocatorArena_sanitize(IAllocator allc)
             uassert(rec->size <= page->capacity);
             uassert(rec->size <= page->cursor);
             uassert(rec->ptr_offset <= CEX_ARENA_MAX_ALIGN);
-            uassert(rec->ptr_padding <= 8);
+            uassert(rec->ptr_padding <= 16);
             uassert(rec->ptr_alignment <= CEX_ARENA_MAX_ALIGN);
             uassert(rec->is_free <= 1);
             uassert(mem$is_power_of2(rec->ptr_alignment));
