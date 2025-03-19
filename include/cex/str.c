@@ -1044,9 +1044,12 @@ str__fmt_callback(const char* buf, void* user, u32 len)
     return (ctx->buf != NULL) ? &ctx->buf[ctx->length] : ctx->tmp;
 }
 
-static str_s
-str__fmtva(IAllocator allc, const char* format, va_list va)
+static char*
+str_fmt(IAllocator allc, const char* format, ...)
 {
+    va_list va;
+    va_start(va, format);
+
     cexsp__context ctx = {
         .allc = allc,
     };
@@ -1055,7 +1058,7 @@ str__fmtva(IAllocator allc, const char* format, va_list va)
 
     if (unlikely(ctx.has_error)) {
         mem$free(allc, ctx.buf);
-        return (str_s){ 0 };
+        return NULL;
     }
 
     if (ctx.buf) {
@@ -1066,41 +1069,22 @@ str__fmtva(IAllocator allc, const char* format, va_list va)
         uassert(ctx.length <= arr$len(ctx.tmp) - 1);
         ctx.buf = mem$malloc(allc, ctx.length + 1);
         if (ctx.buf == NULL) {
-            return (str_s){ 0 };
+            return NULL;
         }
         memcpy(ctx.buf, ctx.tmp, ctx.length);
         ctx.buf[ctx.length] = '\0';
     }
-    return (str_s){ .buf = ctx.buf, .len = ctx.length };
-}
-
-static char*
-str_fmt(IAllocator allc, const char* format, ...)
-{
-    va_list va;
-    va_start(va, format);
-    str_s result = str__fmtva(allc, format, va);
     va_end(va);
-    return result.buf;
+    return ctx.buf;
 }
 
 static char*
-str_tfmt(const char* format, ...)
-{
-    va_list va;
-    va_start(va, format);
-    str_s result = str__fmtva(tmem$, format, va);
-    va_end(va);
-    return result.buf;
-}
-
-static char*
-str__slice__tcopy(str_s s)
+str__slice__clone(str_s s, IAllocator allc)
 {
     if (s.buf == NULL) {
         return NULL;
     }
-    char* result = mem$malloc(tmem$, s.len + 1);
+    char* result = mem$malloc(allc, s.len + 1);
     if (result) {
         memcpy(result, s.buf, s.len);
         result[s.len] = '\0';
@@ -1109,7 +1093,7 @@ str__slice__tcopy(str_s s)
 }
 
 static char*
-str_tcopy(char* s)
+str_clone(char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1117,7 +1101,7 @@ str_tcopy(char* s)
     usize slen = strlen(s);
     uassert(slen < PTRDIFF_MAX);
 
-    char* result = mem$malloc(tmem$, slen + 1);
+    char* result = mem$malloc(allc, slen + 1);
     if (result) {
         memcpy(result, s, slen);
         result[slen] = '\0';
@@ -1125,20 +1109,20 @@ str_tcopy(char* s)
     return result;
 }
 
-static arr$(char*) str_tsplit(char* s, const char* split_by)
+static arr$(char*) str_split(char* s, const char* split_by, IAllocator allc)
 {
     str_s src = str_sstr(s);
     if (src.buf == NULL || split_by == NULL) {
         return NULL;
     }
-    arr$(char*) result = arr$new(result, tmem$);
+    arr$(char*) result = arr$new(result, allc);
     if (result == NULL) {
         return NULL;
     }
 
     for$iter(str_s, it, str__slice__iter_split(src, split_by, &it.iterator))
     {
-        char* tok = str__slice__tcopy(*it.val);
+        char* tok = str__slice__clone(*it.val, allc);
         arr$push(result, tok);
     }
 
@@ -1146,7 +1130,7 @@ static arr$(char*) str_tsplit(char* s, const char* split_by)
 }
 
 static char*
-str_tjoin(arr$(char*) str_arr, const char* join_by)
+str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
 {
     if (str_arr == NULL || join_by == NULL) {
         return NULL;
@@ -1166,9 +1150,9 @@ str_tjoin(arr$(char*) str_arr, const char* join_by)
         }
         usize slen = strlen(s);
         if (result == NULL) {
-            result = mem$malloc(tmem$, slen + jlen + 1);
+            result = mem$malloc(allc, slen + jlen + 1);
         } else {
-            result = mem$realloc(tmem$, result, cursor + slen + jlen + 1);
+            result = mem$realloc(allc, result, cursor + slen + jlen + 1);
         }
         if (result == NULL) {
             return NULL; // memory error
@@ -1205,10 +1189,9 @@ const struct __module__str str = {
     .starts_with = str_starts_with,
     .ends_with = str_ends_with,
     .fmt = str_fmt,
-    .tfmt = str_tfmt,
-    .tcopy = str_tcopy,
-    .tsplit = str_tsplit,
-    .tjoin = str_tjoin,
+    .clone = str_clone,
+    .split = str_split,
+    .join = str_join,
 
     .slice = {  // sub-module .slice >>>
         .eq = str__slice__eq,
@@ -1224,7 +1207,7 @@ const struct __module__str str = {
         .cmp = str__slice__cmp,
         .cmpi = str__slice__cmpi,
         .iter_split = str__slice__iter_split,
-        .tcopy = str__slice__tcopy,
+        .clone = str__slice__clone,
     },  // sub-module .slice <<<
 
     .convert = {  // sub-module .convert >>>

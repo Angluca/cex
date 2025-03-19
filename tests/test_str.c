@@ -1731,38 +1731,6 @@ test$case(test_fmt)
     return EOK;
 }
 
-test$case(test_tfmt)
-{
-    mem$scope(tmem$, _)
-    {
-        // loading this test!
-        str_s fcontent;
-        e$ret(io.fload(__FILE__, &fcontent, tmem$));
-        tassert(fcontent.buf != NULL);
-        tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
-
-        // NOTE: even smalls strings were allocated on mem$
-        char* s = str.tfmt("%s", "foo");
-        tassert(s != NULL);
-        tassert_eqi(3, strlen(s));
-        tassert_eqs("foo", s);
-
-        char* s2 = str.tfmt("%S", fcontent);
-        tassert(s2 != NULL);
-        tassert_eqi(strlen(s2), fcontent.len);
-        for (u32 i = 0; i < fcontent.len; i++) {
-            tassertf(
-                s2[i] == fcontent.buf[i],
-                "i=%d s2['%c'] != fcontent['%c']",
-                i,
-                s2[i],
-                fcontent.buf[i]
-            );
-        }
-    }
-
-    return EOK;
-}
 
 test$case(test_fmt_edge)
 {
@@ -1827,15 +1795,15 @@ test$case(test_fmt_edge)
     return EOK;
 }
 
-test$case(test_tnew)
+test$case(test_slice_clone)
 {
     mem$scope(tmem$, _)
     {
         str_s fcontent;
-        e$ret(io.fload(__FILE__, &fcontent, tmem$));
+        e$ret(io.fload(__FILE__, &fcontent, _));
         tassert(fcontent.buf != NULL);
 
-        var snew = str.slice.tcopy(fcontent);
+        var snew = str.slice.clone(fcontent, _);
         tassert(snew != NULL);
         tassert(snew != fcontent.buf);
         tassert_eqi(strlen(snew), fcontent.len);
@@ -1843,20 +1811,20 @@ test$case(test_tnew)
         tassert_eqi(snew[fcontent.len], 0);
         mem$free(tmem$, snew); // assert if snew doesn't belong to tmem$
 
-        snew = str.slice.tcopy((str_s){ 0 });
+        snew = str.slice.clone((str_s){ 0 }, _);
         tassert(snew == NULL);
     }
 
     return EOK;
 }
 
-test$case(test_tcopy)
+test$case(test_clone)
 {
     mem$scope(tmem$, _)
     {
 
         char* foo = "foo";
-        var snew = str.tcopy(foo);
+        var snew = str.clone(foo, _);
         tassert(snew != NULL);
         tassert(snew != foo);
         tassert_eqi(strlen(snew), strlen(foo));
@@ -1864,7 +1832,7 @@ test$case(test_tcopy)
         tassert_eqi(snew[strlen(snew)], 0);
         mem$free(tmem$, snew); // assert if snew doesn't belong to tmem$
 
-        snew = str.tcopy(NULL);
+        snew = str.clone(NULL, _);
         tassert(snew == NULL);
     }
 
@@ -1877,9 +1845,9 @@ test$case(test_tsplit)
     mem$scope(tmem$, _)
     {
 
-        arr$(char*) res = str.tsplit(NULL, ",");
+        arr$(char*) res = str.split(NULL, ",", _);
         tassert(res == NULL);
-        res = str.tsplit("foo", NULL);
+        res = str.split("foo", NULL, _);
         tassert(res == NULL);
 
         str_s s = str.sstr("123456");
@@ -1887,7 +1855,7 @@ test$case(test_tsplit)
         const char* expected1[] = {
             "123456",
         };
-        res = str.tsplit(s.buf, ",");
+        res = str.split(s.buf, ",", _);
         tassert_eqi(arr$len(res), 1);
 
         for$arr(v, res)
@@ -1905,7 +1873,7 @@ test$case(test_tsplit)
             "123",
             "456",
         };
-        arr$(char*) res = str.tsplit(s.buf, ",");
+        arr$(char*) res = str.split(s.buf, ",", _);
         tassert(res != NULL);
         tassert_eqi(arr$len(res), 2);
 
@@ -1925,7 +1893,7 @@ test$case(test_tsplit)
             "456",
             " 789",
         };
-        arr$(char*) res = str.tsplit(s.buf, ",");
+        arr$(char*) res = str.split(s.buf, ",", _);
         tassert(res != NULL);
         tassert_eqi(arr$len(res), 3);
 
@@ -1946,7 +1914,7 @@ test$case(test_tsplit)
             " 789",
             "",
         };
-        arr$(char*) res = str.tsplit(s.buf, ",");
+        arr$(char*) res = str.split(s.buf, ",", _);
         tassert(res != NULL);
         tassert_eqi(arr$len(res), 4);
 
@@ -1965,23 +1933,23 @@ test$case(test_tjoin)
     mem$scope(tmem$, _)
     {
 
-        arr$(char*) res = arr$new(res, tmem$);
+        arr$(char*) res = arr$new(res, _);
         tassert(res != NULL);
         arr$pushm(res, "foo");
 
-        char* joined = str.tjoin(res, ",");
+        char* joined = str.join(res, ",", _);
         tassert(joined != NULL);
         tassert(joined != res[0]); // new memory allocated
         tassert_eqs(joined, "foo");
 
         arr$pushm(res, "bar");
-        joined = str.tjoin(res, ", ");
+        joined = str.join(res, ", ", _);
         tassert(joined != NULL);
         tassert(joined != res[0]); // new memory allocated
         tassert_eqs(joined, "foo, bar");
 
         arr$pushm(res, "baz");
-        joined = str.tjoin(res, ", ");
+        joined = str.join(res, ", ", _);
         tassert(joined != NULL);
         tassert(joined != res[0]); // new memory allocated
         tassert_eqs(joined, "foo, bar, baz");
@@ -2036,10 +2004,9 @@ main(int argc, char* argv[])
     test$run(test_str_sprintf);
     test$run(test_s_macros);
     test$run(test_fmt);
-    test$run(test_tfmt);
     test$run(test_fmt_edge);
-    test$run(test_tnew);
-    test$run(test_tcopy);
+    test$run(test_slice_clone);
+    test$run(test_clone);
     test$run(test_tsplit);
     test$run(test_tjoin);
     

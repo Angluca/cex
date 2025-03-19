@@ -28,8 +28,8 @@ struct {  // sub-module .path >>>
     Exception
     (*exists)(const char* path);
 
-    Exception
-    (*join)(sbuf_c* out, const char* format, ...);
+    char*
+    (*join)(arr$(char*) parts, IAllocator allc);
 
     str_s
     (*splitext)(const char* path, bool return_ext);

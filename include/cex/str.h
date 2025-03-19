@@ -55,16 +55,13 @@ char*
 (*fmt)(IAllocator allc, const char* format, ...);
 
 char*
-(*tfmt)(const char* format, ...);
-
-char*
-(*tcopy)(char* s);
+(*clone)(char* s, IAllocator allc);
 
 arr$(char*)
-(*tsplit)(char* s, const char* split_by);
+(*split)(char* s, const char* split_by, IAllocator allc);
 
 char*
-(*tjoin)(arr$(char*) str_arr, const char* join_by);
+(*join)(arr$(char*) str_arr, const char* join_by, IAllocator allc);
 
 
 struct {  // sub-module .slice >>>
@@ -108,7 +105,7 @@ struct {  // sub-module .slice >>>
     (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
 
     char*
-    (*tcopy)(str_s s);
+    (*clone)(str_s s, IAllocator allc);
 
 } slice;  // sub-module .slice <<<
 

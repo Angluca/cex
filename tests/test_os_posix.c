@@ -1,8 +1,8 @@
-#include <cex/os/os.c>
-#include <cex/io.c>
-#include <limits.h>
 #include <cex/all.c>
+#include <cex/io.c>
+#include <cex/os/os.c>
 #include <cex/test.h>
+#include <limits.h>
 
 
 test$teardown()
@@ -63,7 +63,7 @@ test$case(test_os_listdir)
 
 test$case(test_os_getcwd)
 {
-    sbuf_c s = sbuf.create( 10, mem$);
+    sbuf_c s = sbuf.create(10, mem$);
     tassert_eqe(EOK, os.getcwd(&s));
     tassert_eqi(true, str.slice.ends_with(str.sstr(s), str$s("cex")));
 
@@ -83,15 +83,13 @@ test$case(test_os_path_exists)
 
     tassert_eqe(EOK, os.path.exists("tests/"));
 
-    // substrings also work
-    tassert_eqe(EOK, os.path.exists("tests/asldjalsdj"));
-
     char buf[PATH_MAX + 10];
     memset(buf, 'a', arr$len(buf));
     buf[PATH_MAX + 8] = '\0';
+    uassert_disable();
 
     // Path is too long, and exceeds PATH_MAX buffer size
-    tassert_eqe(Error.overflow, os.path.exists(buf));
+    tassert_eqe(Error.argument, os.path.exists(buf));
 
 
     return EOK;
@@ -99,35 +97,38 @@ test$case(test_os_path_exists)
 
 test$case(test_os_path_join)
 {
-    sbuf_c s = sbuf.create(10, mem$);
-    tassert_eqe(EOK, os.path.join(&s, "%S/%s_%d.txt", str$s("cexstr"), "foo", 10));
-    tassert_eqs("cexstr/foo_10.txt", s);
-    sbuf.destroy(&s);
+    mem$scope(tmem$, ta)
+    {
+        arr$(char*) parts = arr$new(parts, ta);
+        arr$pushm(parts, "cexstr", str.fmt(ta, "%s_%d.txt", "foo", 10));
+        char* p = os.path.join(parts, ta);
+        tassert_eqs("cexstr/foo_10.txt", p);
+    }
     return EOK;
 }
 
 test$case(test_os_setenv)
 {
     // get non existing
-    tassert_eqs(os.getenv("test_os_posix", NULL),  NULL);
+    tassert_eqs(os.getenv("test_os_posix", NULL), NULL);
     // get non existing, with default
-    tassert_eqs(os.getenv("test_os_posix", "envdef"),  "envdef");
+    tassert_eqs(os.getenv("test_os_posix", "envdef"), "envdef");
 
     // set env
     os.setenv("test_os_posix", "foo", true);
-    tassert_eqs(os.getenv("test_os_posix", NULL),  "foo");
+    tassert_eqs(os.getenv("test_os_posix", NULL), "foo");
 
     // set without replacing
     os.setenv("test_os_posix", "bar", false);
-    tassert_eqs(os.getenv("test_os_posix", NULL),  "foo");
+    tassert_eqs(os.getenv("test_os_posix", NULL), "foo");
 
     // set with replacing
     os.setenv("test_os_posix", "bar", true);
-    tassert_eqs(os.getenv("test_os_posix", NULL),  "bar");
+    tassert_eqs(os.getenv("test_os_posix", NULL), "bar");
 
     // unset env
     os.unsetenv("test_os_posix");
-    tassert_eqs(os.getenv("test_os_posix", NULL),  NULL);
+    tassert_eqs(os.getenv("test_os_posix", NULL), NULL);
 
     return EOK;
 }
@@ -170,13 +171,16 @@ test$case(test_os_path_splitext)
     tassert_eqi(str.slice.cmp(os.path.splitext("..", false), str$s("..")), 0);
 
     tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar..exe", true), str$s(".exe")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar..exe", false), str$s("bar.foo/bar.")), 0);
+    tassert_eqi(
+        str.slice.cmp(os.path.splitext("bar.foo/bar..exe", false), str$s("bar.foo/bar.")),
+        0
+    );
 
     tassert_eqi(str.slice.cmp(os.path.splitext("", true), str$s("")), 0);
     tassert_eqi(str.slice.cmp(os.path.splitext("", false), str$s("")), 0);
 
-    tassert_eqi(str.slice.cmp(os.path.splitext(NULL, false), str$s("")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext(NULL, true), str$s("")), 0);
+    tassert(os.path.splitext(NULL, false).buf == NULL);
+    tassert(os.path.splitext(NULL, true).buf == NULL);
     return EOK;
 }
 

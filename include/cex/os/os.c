@@ -51,16 +51,11 @@ os__path__exists(const char* path)
     return os__path__exists_(path);
 }
 
-Exception
-os__path__join(sbuf_c* out, const char* format, ...)
+char*
+os__path__join(arr$(char*) parts, IAllocator allc)
 {
-
-    va_list va;
-    va_start(va, format);
-    sbuf.clear(out);
-    Exc result = sbuf.appendf(out, format, va);
-    va_end(va);
-    return result;
+    char sep[2] = {ostr$sPATH_SEP, '\0'};
+    return str.join(parts, sep, allc);
 }
 
 str_s
