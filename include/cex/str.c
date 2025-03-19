@@ -128,6 +128,43 @@ str_copy(char* dest, const char* src, usize destlen)
     return Error.ok;
 }
 
+char* str_replace(const char* str, const char* old_sub, const char* new_sub, IAllocator allc) {
+    if (str == NULL || old_sub == NULL || new_sub == NULL || old_sub[0] == '\0') {
+        return NULL;
+    }
+    size_t str_len = strlen(str);
+    size_t old_sub_len = strlen(old_sub);
+    size_t new_sub_len = strlen(new_sub);
+
+    size_t count = 0;
+    const char* pos = str;
+    while ((pos = strstr(pos, old_sub)) != NULL) {
+        count++;
+        pos += old_sub_len;
+    }
+    size_t new_str_len = str_len + count * (new_sub_len - old_sub_len);
+    char* new_str = (char*)mem$malloc(allc, new_str_len + 1); // +1 for the null terminator
+    if (new_str == NULL) {
+        return NULL; // Memory allocation failed
+    }
+    new_str[0] = '\0';
+
+    char* current_pos = new_str;
+    const char* start = str;
+    while (count--) {
+        const char* found = strstr(start, old_sub);
+        size_t segment_len = found - start;
+        memcpy(current_pos, start, segment_len);
+        current_pos += segment_len;
+        memcpy(current_pos, new_sub, new_sub_len);
+        current_pos += new_sub_len;
+        start = found + old_sub_len;
+    }
+    strcpy(current_pos, start);
+    new_str[new_str_len] = '\0';
+    return new_str;
+}
+
 static Exception
 str__slice__copy(char* dest, str_s src, usize destlen)
 {
@@ -1181,6 +1218,7 @@ const struct __module__str str = {
     .eq = str_eq,
     .sub = str_sub,
     .copy = str_copy,
+    .replace = str_replace,
     .vsprintf = str_vsprintf,
     .sprintf = str_sprintf,
     .len = str_len,

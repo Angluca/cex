@@ -231,98 +231,6 @@ test$case(test_sbuf_destroy)
     return EOK;
 }
 
-test$case(test_sbuf_replace)
-{
-    char buf[128];
-
-    sbuf_c s = sbuf.create_static(buf, arr$len(buf));
-    tassert_eqs(EOK, sbuf.append(&s, "123123123"));
-    u32 cap = sbuf.capacity(&s);
-
-    tassert_eqs(EOK, sbuf.replace(&s, "123", "456"));
-    tassert_eqs(s, "456456456");
-    tassert_eqi(sbuf.len(&s), 9);
-    tassert_eqi(sbuf.capacity(&s), cap);
-
-    tassert_eqs(EOK, sbuf.replace(&s, "456", "78"));
-    tassert_eqs(s, "787878");
-    tassert_eqi(sbuf.len(&s), 6);
-    tassert_eqi(sbuf.capacity(&s), cap);
-    tassert_eqi(s[sbuf.len(&s)], 0);
-
-    tassert_eqs(EOK, sbuf.replace(&s, "78", "321"));
-    tassert_eqs(s, "321321321");
-    tassert_eqi(sbuf.len(&s), 9);
-    tassert_eqi(sbuf.capacity(&s), cap);
-    tassert_eqi(s[sbuf.len(&s)], 0);
-
-    tassert_eqs(EOK, sbuf.replace(&s, "32", ""));
-    tassert_eqs(s, "111");
-    tassert_eqi(sbuf.len(&s), 3);
-    tassert_eqi(sbuf.capacity(&s), cap);
-    tassert_eqi(s[sbuf.len(&s)], 0);
-
-    tassert_eqs(EOK, sbuf.replace(&s, "1", "2"));
-    tassert_eqs(s, "222");
-    tassert_eqi(sbuf.len(&s), 3);
-    tassert_eqi(sbuf.capacity(&s), cap);
-
-    tassert_eqs(EOK, sbuf.replace(&s, "2", ""));
-    tassert_eqs(s, "");
-    tassert_eqi(sbuf.len(&s), 0);
-    tassert_eqi(sbuf.capacity(&s), cap);
-
-    sbuf.destroy(&s);
-    return EOK;
-}
-
-test$case(test_sbuf_replace_resize)
-{
-    sbuf_c s = sbuf.create(0, mem$);
-    tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
-
-    // wipe all nullterm
-    memset(s, 0xff, sbuf.capacity(&s));
-
-    tassert_eqe(append_to_cap(&s), EOK);
-    tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
-    tassert_eqi(sbuf.len(&s), sbuf.capacity(&s));
-
-    usize prev_len = sbuf.len(&s);
-    tassert_eqs(EOK, sbuf.replace(&s, "A", "AB"));
-    tassert_eqi(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
-    tassert_eqi(sbuf.len(&s), prev_len + 1);
-
-
-    sbuf.destroy(&s);
-    return EOK;
-}
-
-test$case(test_sbuf_replace_error_checks)
-{
-    sbuf_c s = sbuf.create(5, mem$);
-
-    tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
-
-    // wipe all nullterm
-    memset(s, 0xff, sbuf.capacity(&s));
-
-    tassert_eqs(EOK, sbuf.append(&s, "1234567890A"));
-    tassert_eqs(Error.argument, sbuf.replace(&s, NULL, "AB"));
-    tassert_eqs(Error.argument, sbuf.replace(&s, "9", NULL));
-    tassert_eqs(Error.argument, sbuf.replace(&s, "", "asda"));
-
-    tassert_eqs("1234567890A", s);
-    tassert_eqi(sbuf.len(&s), 11);
-    sbuf.clear(&s);
-    tassert_eqi(sbuf.len(&s), 0);
-    tassert_eqs(Error.ok, sbuf.replace(&s, "123", "asda"));
-
-
-    sbuf.destroy(&s);
-    return EOK;
-}
-
 test$case(test_sbuf_sprintf)
 {
     sbuf_c s = sbuf.create(5, mem$);
@@ -578,9 +486,6 @@ main(int argc, char* argv[])
     test$run(test_sbuf_append_str_grow);
     test$run(test_sbuf_clear);
     test$run(test_sbuf_destroy);
-    test$run(test_sbuf_replace);
-    test$run(test_sbuf_replace_resize);
-    test$run(test_sbuf_replace_error_checks);
     test$run(test_sbuf_sprintf);
     test$run(test_sbuf_appendf_long_growth);
     test$run(test_sbuf_appendf_long_growth_prebuild_buffer);

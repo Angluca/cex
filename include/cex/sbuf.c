@@ -166,80 +166,6 @@ sbuf_update_len(sbuf_c* self)
     (*self)[head->length] = '\0';
 }
 
-static Exception
-sbuf_replace(sbuf_c* self, const char* oldstr, const char* newstr)
-{
-    (void)self;
-    (void)oldstr;
-    (void)newstr;
-    return "TODO: str_s api needed";
-    /*
-    uassert(self != NULL);
-
-    sbuf_head_s* head = sbuf__head(*self);
-    uassert(oldstr != newstr && "old and new overlap");
-    uassert(*self != newstr && "self and new overlap");
-    uassert(*self != oldstr && "self and old overlap");
-
-    if (unlikely(oldstr == NULL || newstr == NULL)) {
-        return Error.argument;
-    }
-
-    u32 old_len = strlen(oldstr);
-
-    str_s s = str.sbuf(*self, head->length);
-
-    if (unlikely(s.len == 0)) {
-        return Error.ok;
-    }
-        u32 capacity = head->capacity;
-
-        isize idx = -1;
-        while ((idx = str.find(s, oldstr, idx + 1, 0)) != -1) {
-            // pointer to start of the found `old`
-
-            char* f = &((*self)[idx]);
-
-            if (oldstr.len == newstr.len) {
-                // Tokens exact match just replace
-                memcpy(f, newstr.buf, newstr.len);
-            } else if (newstr.len < oldstr.len) {
-                // Move remainder of a string to fill the gap
-                memcpy(f, newstr.buf, newstr.len);
-                memmove(f + newstr.len, f + oldstr.len, s.len - idx - oldstr.len);
-                s.len -= (oldstr.len - newstr.len);
-                if (newstr.len == 0) {
-                    // NOTE: Edge case: replacing all by empty string, reset index again
-                    idx--;
-                }
-            } else {
-                // Try resize
-                if (unlikely(s.len + (newstr.len - oldstr.len) > capacity - 1)) {
-                    e$except_silent(err, sbuf__grow_buffer(self, s.len + (newstr.len - oldstr.len)))
-                    {
-                        return err;
-                    }
-                    // re-fetch head in case of realloc
-                    head = (sbuf_head_s*)(*self - sizeof(sbuf_head_s));
-                    s.buf = *self;
-                    f = &((*self)[idx]);
-                }
-                // Move exceeding string to avoid overwriting
-                memmove(f + newstr.len, f + oldstr.len, s.len - idx - oldstr.len + 1);
-                memcpy(f, newstr.buf, newstr.len);
-                s.len += (newstr.len - oldstr.len);
-            }
-        }
-
-        head->length = s.len;
-        // always null terminate
-        (*self)[s.len] = '\0';
-
-        return Error.ok;
-        */
-}
-
-
 static void
 sbuf_clear(sbuf_c* self)
 {
@@ -472,7 +398,6 @@ const struct __module__sbuf sbuf = {
     .create_static = sbuf_create_static,
     .grow = sbuf_grow,
     .update_len = sbuf_update_len,
-    .replace = sbuf_replace,
     .clear = sbuf_clear,
     .len = sbuf_len,
     .capacity = sbuf_capacity,

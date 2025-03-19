@@ -158,7 +158,7 @@ test$case(test_slice_copy)
     tassert_eqs("", buf);
 
     memset(buf, 'a', arr$len(buf));
-    tassert_eqs(Error.argument, str.slice.copy(buf, (str_s){0}, arr$len(buf)));
+    tassert_eqs(Error.argument, str.slice.copy(buf, (str_s){ 0 }, arr$len(buf)));
     // buffer reset to "" string
     tassert_eqs("", buf);
 
@@ -1634,28 +1634,31 @@ test$case(test_str_sprintf)
     memset(buffer, 'z', sizeof(buffer));
     tassert_eqe(EOK, str.sprintf(buffer, sizeof(buffer), "%s", "1234"));
     tassert_eqs("1234", buffer);
-    tassert_eqi('\0', buffer[arr$len(buffer)-1]);
+    tassert_eqi('\0', buffer[arr$len(buffer) - 1]);
 
 
     memset(buffer, 'z', sizeof(buffer));
     tassert_eqe(EOK, str.sprintf(buffer, sizeof(buffer), "%s", "123456789"));
     tassert_eqs("123456789", buffer);
-    tassert_eqi('\0', buffer[arr$len(buffer)-1]);
+    tassert_eqi('\0', buffer[arr$len(buffer) - 1]);
 
     memset(buffer, 'z', sizeof(buffer));
     tassert_eqe(Error.overflow, str.sprintf(buffer, sizeof(buffer), "%s", "1234567890"));
     tassert_eqs("", buffer);
-    tassert_eqi('\0', buffer[arr$len(buffer)-1]);
+    tassert_eqi('\0', buffer[arr$len(buffer) - 1]);
 
     memset(buffer, 'z', sizeof(buffer));
-    tassert_eqe(Error.overflow, str.sprintf(buffer, sizeof(buffer), "%s", "12345678900129830128308"));
+    tassert_eqe(
+        Error.overflow,
+        str.sprintf(buffer, sizeof(buffer), "%s", "12345678900129830128308")
+    );
     tassert_eqs("", buffer);
-    tassert_eqi('\0', buffer[arr$len(buffer)-1]);
+    tassert_eqi('\0', buffer[arr$len(buffer) - 1]);
 
     memset(buffer, 'z', sizeof(buffer));
     tassert_eqe(EOK, str.sprintf(buffer, sizeof(buffer), "%s", ""));
     tassert_eqs("", buffer);
-    tassert_eqi('\0', buffer[arr$len(buffer)-1]);
+    tassert_eqi('\0', buffer[arr$len(buffer) - 1]);
 
 
     memset(buffer, 'z', sizeof(buffer));
@@ -1928,6 +1931,28 @@ test$case(test_tsplit)
     return EOK;
 }
 
+test$case(test_str_replace)
+{
+    char* s = "123123123";
+    mem$scope(tmem$, _)
+    {
+        tassert_eqs("456456456", str.replace(s, "123", "456", _));
+        tassert_eqs("787878", str.replace("456456456", "456", "78", _));
+        tassert_eqs("321321321", str.replace("787878", "78", "321", _));
+        tassert_eqs("111", str.replace("321321321", "32", "", _));
+        tassert_eqs("223223223", str.replace(s, "1", "2", _));
+        tassert_eqs("", str.replace("2222", "2", "", _));
+        tassert_eqs("1111", str.replace("1111", "2", "", _));
+        tassert_eqs("", str.replace("", "2", "", _));
+        tassert_eqs(NULL, str.replace("11111", "", "", _));
+        tassert_eqs(NULL, str.replace(NULL, "foo", "bar", _));
+        tassert_eqs(NULL, str.replace("baz", NULL, "bar", _));
+        tassert_eqs(NULL, str.replace("baz", "foo", NULL, _));
+    }
+
+    return EOK;
+}
+
 test$case(test_tjoin)
 {
     mem$scope(tmem$, _)
@@ -1953,8 +1978,6 @@ test$case(test_tjoin)
         tassert(joined != NULL);
         tassert(joined != res[0]); // new memory allocated
         tassert_eqs(joined, "foo, bar, baz");
-
-
     }
 
     return EOK;
@@ -2008,6 +2031,7 @@ main(int argc, char* argv[])
     test$run(test_slice_clone);
     test$run(test_clone);
     test$run(test_tsplit);
+    test$run(test_str_replace);
     test$run(test_tjoin);
     
     test$print_footer();  // ^^^^^ all tests runs are above

@@ -30,6 +30,9 @@ str_s
 Exception
 (*copy)(char* dest, const char* src, usize destlen);
 
+char*
+(*replace)(const char* str, const char* old_sub, const char* new_sub, IAllocator allc);
+
 Exception
 (*vsprintf)(char* dest, usize dest_len, const char* format, va_list va);
 

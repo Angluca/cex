@@ -40,9 +40,6 @@ Exception
 void
 (*update_len)(sbuf_c* self);
 
-Exception
-(*replace)(sbuf_c* self, const char* oldstr, const char* newstr);
-
 void
 (*clear)(sbuf_c* self);
 
