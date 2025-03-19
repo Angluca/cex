@@ -379,7 +379,7 @@ sbuf_appendf(sbuf_c* self, const char* format, ...)
 }
 
 static Exception
-sbuf_append(sbuf_c* self, char* s)
+sbuf_append(sbuf_c* self, const char* s)
 {
     uassert(self != NULL);
     sbuf_head_s* head = sbuf__head(*self);

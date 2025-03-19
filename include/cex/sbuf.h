@@ -59,7 +59,7 @@ Exception
 (*appendf)(sbuf_c* self, const char* format, ...);
 
 Exception
-(*append)(sbuf_c* self, char* s);
+(*append)(sbuf_c* self, const char* s);
 
 bool
 (*isvalid)(sbuf_c* self);
