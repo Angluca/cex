@@ -35,16 +35,13 @@ sbuf_c
 (*create_static)(char* buf, usize buf_size);
 
 Exception
-(*grow)(sbuf_c* self, u32 capacity);
+(*grow)(sbuf_c* self, u32 new_capacity);
 
 void
 (*update_len)(sbuf_c* self);
 
 Exception
-(*replace)(sbuf_c* self, const str_c oldstr, const str_c newstr);
-
-Exception
-(*append)(sbuf_c* self, str_c s);
+(*replace)(sbuf_c* self, const char* oldstr, const char* newstr);
 
 void
 (*clear)(sbuf_c* self);
@@ -59,19 +56,13 @@ sbuf_c
 (*destroy)(sbuf_c* self);
 
 Exception
-(*vsprintf)(sbuf_c* self, const char* format, va_list va);
+(*appendf)(sbuf_c* self, const char* format, ...);
 
 Exception
-(*sprintf)(sbuf_c* self, const char* format, ...);
-
-str_c
-(*to_str)(sbuf_c* self);
+(*append)(sbuf_c* self, char* s);
 
 bool
 (*isvalid)(sbuf_c* self);
-
-str_c*
-(*iter_split)(sbuf_c* self, const char* split_by, cex_iterator_s* iterator);
 
     // clang-format on
 };

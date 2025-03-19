@@ -69,7 +69,7 @@ sbuf__grow_buffer(sbuf_c* self, u32 length)
     return Error.ok;
 }
 
-sbuf_c
+static sbuf_c
 sbuf_create(u32 capacity, IAllocator allocator)
 {
     if (unlikely(allocator == NULL)) {
@@ -103,7 +103,7 @@ sbuf_create(u32 capacity, IAllocator allocator)
     return self;
 }
 
-sbuf_c
+static sbuf_c
 sbuf_create_temp(void)
 {
     uassert(
@@ -112,7 +112,7 @@ sbuf_create_temp(void)
     return sbuf_create(100, tmem$);
 }
 
-sbuf_c
+static sbuf_c
 sbuf_create_static(char* buf, usize buf_size)
 {
     if (unlikely(buf == NULL)) {
@@ -144,43 +144,43 @@ sbuf_create_static(char* buf, usize buf_size)
     return self;
 }
 
-Exception
-sbuf_grow(sbuf_c* self, u32 capacity)
+static Exception
+sbuf_grow(sbuf_c* self, u32 new_capacity)
 {
     sbuf_head_s* head = sbuf__head(*self);
-    if (capacity <= head->capacity) {
+    if (new_capacity <= head->capacity) {
         // capacity is enough, no need to grow
         return Error.ok;
     }
-    return sbuf__grow_buffer(self, capacity);
+    return sbuf__grow_buffer(self, new_capacity);
 }
 
-void
+static void
 sbuf_update_len(sbuf_c* self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = sbuf__head(*self);
 
-    uassert((*self)[head->capacity] == '\0');
+    uassert((*self)[head->capacity] == '\0' && "capacity null term smashed!");
 
     head->length = strlen(*self);
-    (*self)[head->capacity] = '\0';
     (*self)[head->length] = '\0';
 }
 
-Exception
-sbuf_replace(sbuf_c* self, const str_c oldstr, const str_c newstr)
+static Exception
+sbuf_replace(sbuf_c* self, const char* oldstr, const char* newstr)
 {
     uassert(self != NULL);
-    uassert(oldstr.buf != newstr.buf && "old and new overlap");
-    uassert(*self != newstr.buf && "self and new overlap");
-    uassert(*self != oldstr.buf && "self and old overlap");
 
     sbuf_head_s* head = sbuf__head(*self);
+    uassert(oldstr != newstr && "old and new overlap");
+    uassert(*self != newstr && "self and new overlap");
+    uassert(*self != oldstr && "self and old overlap");
 
-    if (unlikely(!str.is_valid(oldstr) || !str.is_valid(newstr) || oldstr.len == 0)) {
+    if (unlikely(oldstr == NULL || newstr == NULL)) {
         return Error.argument;
     }
+    u32 old_len = strlen(oldstr);
 
     str_c s = str.cbuf(*self, head->length);
 
@@ -188,92 +188,57 @@ sbuf_replace(sbuf_c* self, const str_c oldstr, const str_c newstr)
         return Error.ok;
     }
 
-    u32 capacity = head->capacity;
+    return "TODO: str_c api needed";
+    /*
+        u32 capacity = head->capacity;
 
-    isize idx = -1;
-    while ((idx = str.find(s, oldstr, idx + 1, 0)) != -1) {
-        // pointer to start of the found `old`
+        isize idx = -1;
+        while ((idx = str.find(s, oldstr, idx + 1, 0)) != -1) {
+            // pointer to start of the found `old`
 
-        char* f = &((*self)[idx]);
+            char* f = &((*self)[idx]);
 
-        if (oldstr.len == newstr.len) {
-            // Tokens exact match just replace
-            memcpy(f, newstr.buf, newstr.len);
-        } else if (newstr.len < oldstr.len) {
-            // Move remainder of a string to fill the gap
-            memcpy(f, newstr.buf, newstr.len);
-            memmove(f + newstr.len, f + oldstr.len, s.len - idx - oldstr.len);
-            s.len -= (oldstr.len - newstr.len);
-            if (newstr.len == 0) {
-                // NOTE: Edge case: replacing all by empty string, reset index again
-                idx--;
-            }
-        } else {
-            // Try resize
-            if (unlikely(s.len + (newstr.len - oldstr.len) > capacity - 1)) {
-                e$except_silent(err, sbuf__grow_buffer(self, s.len + (newstr.len - oldstr.len)))
-                {
-                    return err;
+            if (oldstr.len == newstr.len) {
+                // Tokens exact match just replace
+                memcpy(f, newstr.buf, newstr.len);
+            } else if (newstr.len < oldstr.len) {
+                // Move remainder of a string to fill the gap
+                memcpy(f, newstr.buf, newstr.len);
+                memmove(f + newstr.len, f + oldstr.len, s.len - idx - oldstr.len);
+                s.len -= (oldstr.len - newstr.len);
+                if (newstr.len == 0) {
+                    // NOTE: Edge case: replacing all by empty string, reset index again
+                    idx--;
                 }
-                // re-fetch head in case of realloc
-                head = (sbuf_head_s*)(*self - sizeof(sbuf_head_s));
-                s.buf = *self;
-                f = &((*self)[idx]);
+            } else {
+                // Try resize
+                if (unlikely(s.len + (newstr.len - oldstr.len) > capacity - 1)) {
+                    e$except_silent(err, sbuf__grow_buffer(self, s.len + (newstr.len - oldstr.len)))
+                    {
+                        return err;
+                    }
+                    // re-fetch head in case of realloc
+                    head = (sbuf_head_s*)(*self - sizeof(sbuf_head_s));
+                    s.buf = *self;
+                    f = &((*self)[idx]);
+                }
+                // Move exceeding string to avoid overwriting
+                memmove(f + newstr.len, f + oldstr.len, s.len - idx - oldstr.len + 1);
+                memcpy(f, newstr.buf, newstr.len);
+                s.len += (newstr.len - oldstr.len);
             }
-            // Move exceeding string to avoid overwriting
-            memmove(f + newstr.len, f + oldstr.len, s.len - idx - oldstr.len + 1);
-            memcpy(f, newstr.buf, newstr.len);
-            s.len += (newstr.len - oldstr.len);
         }
-    }
 
-    head->length = s.len;
-    // always null terminate
-    (*self)[s.len] = '\0';
+        head->length = s.len;
+        // always null terminate
+        (*self)[s.len] = '\0';
 
-    return Error.ok;
-}
-
-Exception
-sbuf_append(sbuf_c* self, str_c s)
-{
-    uassert(self != NULL);
-    sbuf_head_s* head = sbuf__head(*self);
-
-    if (s.buf == NULL) {
-        return Error.argument;
-    }
-
-    if (s.len == 0) {
         return Error.ok;
-    }
-
-    uassert(*self != s.buf && "buffer overlap");
-
-    u64 length = head->length;
-    u64 capacity = head->capacity;
-
-    // Try resize
-    if (length + s.len > capacity - 1) {
-        e$except_silent(err, sbuf__grow_buffer(self, length + s.len))
-        {
-            return err;
-        }
-    }
-    memcpy((*self + length), s.buf, s.len);
-    length += s.len;
-
-    // always null terminate
-    (*self)[length] = '\0';
-
-    // re-fetch head in case of realloc
-    head = (sbuf_head_s*)(*self - sizeof(sbuf_head_s));
-    head->length = length;
-
-    return Error.ok;
+        */
 }
 
-void
+
+static void
 sbuf_clear(sbuf_c* self)
 {
     uassert(self != NULL);
@@ -282,7 +247,7 @@ sbuf_clear(sbuf_c* self)
     (*self)[head->length] = '\0';
 }
 
-u32
+static u32
 sbuf_len(const sbuf_c* self)
 {
     uassert(self != NULL);
@@ -290,7 +255,7 @@ sbuf_len(const sbuf_c* self)
     return head->length;
 }
 
-u32
+static u32
 sbuf_capacity(const sbuf_c* self)
 {
     uassert(self != NULL);
@@ -298,7 +263,7 @@ sbuf_capacity(const sbuf_c* self)
     return head->capacity;
 }
 
-sbuf_c
+static sbuf_c
 sbuf_destroy(sbuf_c* self)
 {
     uassert(self != NULL);
@@ -326,12 +291,11 @@ sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 {
     struct _sbuf__sprintf_ctx* ctx = (struct _sbuf__sprintf_ctx*)user;
     sbuf_c sbuf = ((char*)ctx->head + sizeof(sbuf_head_s));
+
     uassert(ctx->head->header.magic == 0xf00e && "not a sbuf_head_s / bad pointer");
-
     if (unlikely(ctx->err != EOK)) {
-        return ctx->tmp;
+        return NULL;
     }
-
     uassert((buf != ctx->buf) || (sbuf + ctx->length + len <= sbuf + ctx->count && "out of bounds"));
 
     if (unlikely(ctx->length + len > ctx->count)) {
@@ -339,14 +303,14 @@ sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 
         if (len > INT32_MAX || ctx->length + len > (u32)INT32_MAX) {
             ctx->err = Error.integrity;
-            return ctx->tmp;
+            return NULL;
         }
 
-        // NOTE: sbuf likely changed after realloc
+        // sbuf likely changed after realloc
         e$except_silent(err, sbuf__grow_buffer(&sbuf, ctx->length + len + 1))
         {
             ctx->err = err;
-            return ctx->tmp;
+            return NULL;
         }
         // re-fetch head in case of realloc
         ctx->head = (sbuf_head_s*)(sbuf - sizeof(sbuf_head_s));
@@ -354,35 +318,25 @@ sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 
         ctx->buf = sbuf + ctx->head->length;
         ctx->count = ctx->head->capacity;
-
         uassert(ctx->count >= ctx->length);
-
         if (!buf_is_tmp) {
-            // If we use the same buffer for sprintf() prevent use-after-free issue
-            // if ctx->buf was reallocated to  another pointer
             buf = ctx->buf;
         }
     }
 
     ctx->length += len;
     ctx->head->length += len;
-
     if (len > 0) {
         if (buf != ctx->buf) {
-            // NOTE: copy data only if previously tmp buffer used
-            memcpy(ctx->buf, buf, len);
+            memcpy(ctx->buf, buf, len); // copy data only if previously tmp buffer used
         }
         ctx->buf += len;
     }
-
-    // NOTE: if string buffer is small, uses stack-based tmp buffer (about 512bytes)
-    // // and then copy into sbuf_s buffer when ready. When string grows, uses heap allocated
-    // // sbuf_c directly without copy
     return ((ctx->count - ctx->length) >= CEX_SPRINTF_MIN) ? ctx->buf : ctx->tmp;
 }
 
-Exception
-sbuf_vsprintf(sbuf_c* self, const char* format, va_list va)
+static Exception
+sbuf__appendfva(sbuf_c* self, const char* format, va_list va)
 {
     uassert(self != NULL);
     sbuf_head_s* head = sbuf__head(*self);
@@ -413,30 +367,54 @@ sbuf_vsprintf(sbuf_c* self, const char* format, va_list va)
     return ctx.err;
 }
 
-Exception
-sbuf_sprintf(sbuf_c* self, const char* format, ...)
+static Exception
+sbuf_appendf(sbuf_c* self, const char* format, ...)
 {
 
     va_list va;
     va_start(va, format);
-    Exc result = sbuf_vsprintf(self, format, va);
+    Exc result = sbuf__appendfva(self, format, va);
     va_end(va);
     return result;
 }
 
-str_c
-sbuf_to_str(sbuf_c* self)
+static Exception
+sbuf_append(sbuf_c* self, char* s)
 {
     uassert(self != NULL);
     sbuf_head_s* head = sbuf__head(*self);
 
-    return (str_c){
-        .buf = *self,
-        .len = head->length,
-    };
+    if (s == NULL) {
+        return Error.argument;
+    }
+
+    u32 length = head->length;
+    u32 capacity = head->capacity;
+    u32 slen = strlen(s);
+
+    uassert(*self != s && "buffer overlap");
+
+    // Try resize
+    if (length + slen > capacity - 1) {
+        e$except_silent(err, sbuf__grow_buffer(self, length + slen))
+        {
+            return err;
+        }
+    }
+    memcpy((*self + length), s, slen);
+    length += slen;
+
+    // always null terminate
+    (*self)[length] = '\0';
+
+    // re-fetch head in case of realloc
+    head = (sbuf_head_s*)(*self - sizeof(sbuf_head_s));
+    head->length = length;
+
+    return Error.ok;
 }
 
-bool
+static bool
 sbuf_isvalid(sbuf_c* self)
 {
     if (self == NULL) {
@@ -464,99 +442,25 @@ sbuf_isvalid(sbuf_c* self)
     return true;
 }
 
-
-static inline isize
-sbuf__index(const char* self, usize self_len, const char* c, u8 clen)
-{
-    isize result = -1;
-
-    u8 split_by_idx[UINT8_MAX] = { 0 };
-    for (u8 i = 0; i < clen; i++) {
-        split_by_idx[(u8)c[i]] = 1;
-    }
-
-    for (usize i = 0; i < self_len; i++) {
-        if (split_by_idx[(u8)self[i]]) {
-            result = i;
-            break;
-        }
-    }
-
-    return result;
-}
-
-str_c*
-sbuf_iter_split(sbuf_c* self, const char* split_by, cex_iterator_s* iterator)
-{
-    uassert(iterator != NULL && "null iterator");
-    uassert(split_by != NULL && "null split_by");
-    uassert(self != NULL);
-
-    // temporary struct based on _ctxbuffer
-    struct
-    {
-        str_c base_str;
-        str_c str;
-        usize split_by_len;
-        usize cursor;
-    }* ctx = (void*)iterator->_ctx;
-    _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-
-    if (unlikely(iterator->val == NULL)) {
-        ctx->split_by_len = strlen(split_by);
-        uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
-
-        if (unlikely(ctx->split_by_len == 0)) {
-            return NULL;
-        }
-
-        ctx->base_str = sbuf_to_str(self);
-
-        isize idx = sbuf__index(ctx->base_str.buf, ctx->base_str.len, split_by, ctx->split_by_len);
-        if (idx < 0) {
-            idx = ctx->base_str.len;
-        }
-        ctx->cursor = idx;
-
-        ctx->str = str.sub(ctx->base_str, 0, idx);
-
-        iterator->val = &ctx->str;
-        iterator->idx.i = 0;
-        return iterator->val;
-    } else {
-        uassert(iterator->val == &ctx->str);
-
-        if (unlikely(ctx->cursor >= ctx->base_str.len)) {
-            return NULL; // reached the end stops
-        }
-        ctx->cursor++;
-        if (unlikely(ctx->cursor == ctx->base_str.len)) {
-            // edge case, we have separator at last col
-            // it's not an error, return empty split token
-            ctx->str = (str_c){ .buf = "", .len = 0 };
-            iterator->idx.i++;
-            return iterator->val;
-        }
-
-        // Get remaining string after prev split_by char
-        str_c tok = str.sub(ctx->base_str, ctx->cursor, 0);
-        isize idx = sbuf__index(tok.buf, tok.len, split_by, ctx->split_by_len);
-
-        iterator->idx.i++;
-
-        if (idx < 0) {
-            // No more splits, return remaining part
-            ctx->str = tok;
-            ctx->cursor = ctx->base_str.len;
-        } else {
-            // Sub from prev cursor to idx (excluding split char)
-            ctx->str = str.sub(tok, 0, idx);
-            ctx->cursor += idx;
-        }
-
-        return iterator->val;
-    }
-}
+// static inline isize
+// sbuf__index(const char* self, usize self_len, const char* c, u8 clen)
+// {
+//     isize result = -1;
+//
+//     u8 split_by_idx[UINT8_MAX] = { 0 };
+//     for (u8 i = 0; i < clen; i++) {
+//         split_by_idx[(u8)c[i]] = 1;
+//     }
+//
+//     for (usize i = 0; i < self_len; i++) {
+//         if (split_by_idx[(u8)self[i]]) {
+//             result = i;
+//             break;
+//         }
+//     }
+//
+//     return result;
+// }
 
 const struct __module__sbuf sbuf = {
     // Autogenerated by CEX
@@ -567,15 +471,12 @@ const struct __module__sbuf sbuf = {
     .grow = sbuf_grow,
     .update_len = sbuf_update_len,
     .replace = sbuf_replace,
-    .append = sbuf_append,
     .clear = sbuf_clear,
     .len = sbuf_len,
     .capacity = sbuf_capacity,
     .destroy = sbuf_destroy,
-    .vsprintf = sbuf_vsprintf,
-    .sprintf = sbuf_sprintf,
-    .to_str = sbuf_to_str,
+    .appendf = sbuf_appendf,
+    .append = sbuf_append,
     .isvalid = sbuf_isvalid,
-    .iter_split = sbuf_iter_split,
     // clang-format on
 };
