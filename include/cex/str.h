@@ -30,10 +30,10 @@ str_s
 Exception
 (*copy)(char* dest, const char* src, usize destlen);
 
-str_s
+Exception
 (*vsprintf)(char* dest, usize dest_len, const char* format, va_list va);
 
-str_s
+Exception
 (*sprintf)(char* dest, usize dest_len, const char* format, ...);
 
 usize

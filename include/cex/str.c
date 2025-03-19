@@ -128,28 +128,35 @@ str_copy(char* dest, const char* src, usize destlen)
     return Error.ok;
 }
 
-static str_s
+static Exception
 str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
 {
-    str_s out = { .buf = NULL, .len = 0 };
+    if (unlikely(dest == NULL)){
+        return Error.argument;
+    }
+    if (unlikely(dest_len == 0)){
+        return Error.argument;
+    }
+    uassert(format != NULL);
+
+    dest[dest_len-1] = '\0'; // always null term at capacity
 
     int result = cexsp__vsnprintf(dest, dest_len, format, va);
 
-    // NOTE: result equals dest_len if buffer overflow
-    if (result > 0) {
-        out.buf = dest;
-        out.len = result;
+    if (result < 0 || (usize)result >= dest_len) {
+        dest[0] = '\0';
+        return Error.overflow;
     }
 
-    return out;
+    return EOK;
 }
 
-static str_s
+static Exception
 str_sprintf(char* dest, usize dest_len, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    str_s result = str_vsprintf(dest, dest_len, format, va);
+    Exc result = str_vsprintf(dest, dest_len, format, va);
     va_end(va);
     return result;
 }
