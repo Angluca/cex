@@ -36,7 +36,7 @@ str__index(str_s* s, const char* c, u8 clen)
 }
 
 static str_s
-str_cstr(const char* ccharptr)
+str_sstr(const char* ccharptr)
 {
     if (unlikely(ccharptr == NULL)) {
         return (str_s){ 0 };
@@ -50,7 +50,7 @@ str_cstr(const char* ccharptr)
 
 
 static str_s
-str_cbuf(char* s, usize length)
+str_sbuf(char* s, usize length)
 {
     if (unlikely(s == NULL)) {
         return (str_s){ 0 };
@@ -72,8 +72,21 @@ str_eq(const char* a, const char* b)
     return strcmp(a, b) == 0;
 }
 
+static bool
+str__slice__eq(str_s a, str_s b)
+{
+    if (unlikely(a.buf == NULL || b.buf == NULL)) {
+        // NOTE: if both are NULL - this function intentionally return false
+        return false;
+    }
+    if (a.len != b.len) {
+        return false;
+    }
+    return memcmp(a.buf, b.buf, a.len) == 0;
+}
+
 static str_s
-str_sub(str_s s, isize start, isize end)
+str__slice__sub(str_s s, isize start, isize end)
 {
     slice$define(*s.buf) slice = { 0 };
     if (s.buf != NULL) {
@@ -86,30 +99,29 @@ str_sub(str_s s, isize start, isize end)
     };
 }
 
-static Exception
-str_copy(str_s s, char* dest, usize destlen)
+static str_s
+str_sub(const char* s, isize start, isize end)
 {
-    uassert(dest != s.buf && "self copy is not allowed");
+    str_s slice = str_sstr(s);
+    return str__slice__sub(slice, start, end);
+}
 
+static Exception
+str_copy(char* dest, const char* src, usize destlen)
+{
+    uassert(dest != src && "buffers overlap");
     if (unlikely(dest == NULL || destlen == 0)) {
         return Error.argument;
     }
-
-    // If we fail next, it still writes empty string
-    dest[0] = '\0';
-
-    if (unlikely(!str__isvalid(&s))) {
+    dest[0] = '\0'; // If we fail next, it still writes empty string
+    if (unlikely(src == NULL)) {
         return Error.argument;
     }
 
-    usize slen = s.len;
-    usize len_to_copy = (destlen - 1 < slen) ? destlen - 1 : slen;
-    memcpy(dest, s.buf, len_to_copy);
+    char* pend = stpncpy(dest, src, destlen);
+    dest[destlen-1] = '\0'; // always secure last byte of destlen
 
-    // Null terminate end of buffer
-    dest[len_to_copy] = '\0';
-
-    if (unlikely(slen >= destlen)) {
+    if (unlikely((pend - dest) >= (isize)destlen)) {
         return Error.overflow;
     }
 
@@ -144,139 +156,85 @@ str_sprintf(char* dest, usize dest_len, const char* format, ...)
 
 
 static usize
-str_len(str_s s)
+str_len(char* s)
 {
-    return s.len;
-}
-
-static bool
-str_is_valid(str_s s)
-{
-    return str__isvalid(&s);
+    if (s == NULL) {
+        return 0;
+    }
+    return strlen(s);
 }
 
 static char*
-str_iter(str_s s, cex_iterator_s* iterator)
+str_find(const char* haystack, const char* needle)
 {
-    uassert(iterator != NULL && "null iterator");
-
-    // temporary struct based on _ctxbuffer
-    struct iter_ctx
-    {
-        usize cursor;
-    }* ctx = (struct iter_ctx*)iterator->_ctx;
-    _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
-
-    if (unlikely(iterator->val == NULL)) {
-        // Iterator is not initialized set to 1st item
-        if (unlikely(!str__isvalid(&s) || s.len == 0)) {
-            return NULL;
-        }
-        iterator->val = s.buf;
-        iterator->idx.i = 0;
-        return &s.buf[0];
-    }
-
-    if (ctx->cursor >= s.len - 1) {
+    if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) {
         return NULL;
     }
-
-    ctx->cursor++;
-    iterator->idx.i++;
-    iterator->val = &s.buf[iterator->idx.i];
-    return iterator->val;
+    return strstr(haystack, needle);
 }
 
-static isize
-str_find(str_s s, str_s needle, usize start, usize end)
+char*
+str_findr(const char* haystack, const char* needle)
 {
-    if (needle.len == 0 || needle.len > s.len) {
-        return -1;
+    if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) {
+        return NULL;
     }
-    if (start >= s.len) {
-        return -1;
+    usize haystack_len = strlen(haystack);
+    usize needle_len = strlen(needle);
+    if (unlikely(needle_len > haystack_len)) {
+        return NULL;
     }
-
-    if (end == 0 || end > s.len) {
-        end = s.len;
-    }
-
-    for (usize i = start; i < end - needle.len + 1; i++) {
-        // check the 1st letter
-        if (s.buf[i] == needle.buf[0]) {
-            // 1 char
-            if (needle.len == 1) {
-                return i;
-            }
-            // check whole word
-            if (memcmp(&s.buf[i], needle.buf, needle.len) == 0) {
-                return i;
-            }
+    for (const char* ptr = haystack + haystack_len - needle_len; ptr >= haystack; ptr--) {
+        if (unlikely(strncmp(ptr, needle, needle_len) == 0)) {
+            uassert(ptr >= haystack);
+            uassert(ptr <= haystack + haystack_len);
+            return (char*)ptr;
         }
     }
-
-    return -1;
+    return NULL;
 }
 
-static isize
-str_rfind(str_s s, str_s needle, usize start, usize end)
+
+static bool str__slice__starts_with(str_s str, str_s prefix)
 {
-    if (needle.len == 0 || needle.len > s.len) {
-        return -1;
+    if (unlikely(!str.buf || !prefix.buf || prefix.len == 0 || prefix.len > str.len)) {
+        return false;
     }
-    if (start >= s.len) {
-        return -1;
+    return memcmp(str.buf, prefix.buf, prefix.len) == 0;
+}
+static bool str__slice__ends_with(str_s s, str_s suffix)
+{
+    if (unlikely(!s.buf || !suffix.buf || suffix.len == 0 || suffix.len > s.len)) {
+        return false;
     }
-
-    if (end == 0 || end > s.len) {
-        end = s.len;
-    }
-
-    for (usize i = end - needle.len + 1; i-- > start;) {
-        // check the 1st letter
-        if (s.buf[i] == needle.buf[0]) {
-            // 1 char
-            if (needle.len == 1) {
-                return i;
-            }
-            // check whole word
-            if (memcmp(&s.buf[i], needle.buf, needle.len) == 0) {
-                return i;
-            }
-        }
-    }
-
-    return -1;
+    return s.len >= suffix.len && !memcmp(s.buf + s.len - suffix.len, suffix.buf, suffix.len);
 }
 
-static bool
-str_contains(str_s s, str_s needle)
-{
-    return str_find(s, needle, 0, 0) != -1;
-}
-
-static bool
-str_starts_with(str_s s, str_s needle)
-{
-    return str_find(s, needle, 0, needle.len) != -1;
-}
-
-static bool
-str_ends_with(str_s s, str_s needle)
-{
-    if (needle.len > s.len) {
+static bool str_starts_with(const char* str, const char* prefix) {
+    if (str == NULL || prefix == NULL || prefix[0] == '\0') {
         return false;
     }
 
-    return str_find(s, needle, s.len - needle.len, 0) != -1;
+    while (*prefix && *str == *prefix) {
+        ++str, ++prefix; 
+    }
+    return *prefix == 0;
+}
+
+static bool str_ends_with(const char* str, const char* suffix) {
+    if (str == NULL || suffix == NULL || suffix[0] == '\0') {
+        return false;
+    }
+    size_t slen = strlen(str);
+    size_t sufflen = strlen(suffix);
+
+    return slen >= sufflen && !memcmp(str + slen - sufflen, suffix, sufflen);
 }
 
 static str_s
-str_remove_prefix(str_s s, str_s prefix)
+str__slice__remove_prefix(str_s s, str_s prefix)
 {
-    isize idx = str_find(s, prefix, 0, prefix.len);
-    if (idx == -1) {
+    if (!str__slice__starts_with(s, prefix)) {
         return s;
     }
 
@@ -287,24 +245,16 @@ str_remove_prefix(str_s s, str_s prefix)
 }
 
 static str_s
-str_remove_suffix(str_s s, str_s suffix)
+str__slice__remove_suffix(str_s s, str_s suffix)
 {
-    if (suffix.len > s.len) {
+    if (!str__slice__ends_with(s, suffix)) {
         return s;
     }
-
-    isize idx = str_find(s, suffix, s.len - suffix.len, 0);
-
-    if (idx == -1) {
-        return s;
-    }
-
     return (str_s){
         .buf = s.buf,
         .len = s.len - suffix.len,
     };
 }
-
 
 static inline void
 str__strip_left(str_s* s)
@@ -345,7 +295,7 @@ str__strip_right(str_s* s)
 
 
 static str_s
-str_lstrip(str_s s)
+str__slice__lstrip(str_s s)
 {
     if (s.buf == NULL) {
         return (str_s){
@@ -370,7 +320,7 @@ str_lstrip(str_s s)
 }
 
 static str_s
-str_rstrip(str_s s)
+str__slice__rstrip(str_s s)
 {
     if (s.buf == NULL) {
         return (str_s){
@@ -395,7 +345,7 @@ str_rstrip(str_s s)
 }
 
 static str_s
-str_strip(str_s s)
+str__slice__strip(str_s s)
 {
     if (s.buf == NULL) {
         return (str_s){
@@ -421,7 +371,7 @@ str_strip(str_s s)
 }
 
 static int
-str_cmp(str_s self, str_s other)
+str__slice__cmp(str_s self, str_s other)
 {
     if (unlikely(self.buf == NULL)) {
         if (other.buf == NULL) {
@@ -455,7 +405,7 @@ str_cmp(str_s self, str_s other)
 }
 
 static int
-str_cmpi(str_s self, str_s other)
+str__slice__cmpi(str_s self, str_s other)
 {
     if (unlikely(self.buf == NULL)) {
         if (other.buf == NULL) {
@@ -500,7 +450,7 @@ str_cmpi(str_s self, str_s other)
 }
 
 static str_s*
-str_iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
+str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
     uassert(split_by != NULL && "null split_by");
@@ -511,6 +461,7 @@ str_iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
         usize cursor;
         usize split_by_len;
         str_s str;
+        usize str_len;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
     _Static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
@@ -532,7 +483,7 @@ str_iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
             idx = s.len;
         }
         ctx->cursor = idx;
-        ctx->str = str.sub(s, 0, idx);
+        ctx->str = str.slice.sub(s, 0, idx);
 
         iterator->val = &ctx->str;
         iterator->idx.i = 0;
@@ -553,7 +504,7 @@ str_iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
         }
 
         // Get remaining string after prev split_by char
-        str_s tok = str.sub(s, ctx->cursor, 0);
+        str_s tok = str.slice.sub(s, ctx->cursor, 0);
         isize idx = str__index(&tok, split_by, ctx->split_by_len);
 
         iterator->idx.i++;
@@ -564,7 +515,7 @@ str_iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
             ctx->cursor = s.len;
         } else {
             // Sub from prev cursor to idx (excluding split char)
-            ctx->str = str.sub(tok, 0, idx);
+            ctx->str = str.slice.sub(tok, 0, idx);
             ctx->cursor += idx;
         }
 
@@ -743,19 +694,19 @@ str__to_unsigned_num(str_s self, u64* num, u64 num_max)
 }
 
 static Exception
-str__to_double(str_s self, double* num, i32 exp_min, i32 exp_max)
+str__to_double(const char* self, double* num, i32 exp_min, i32 exp_max)
 {
     _Static_assert(sizeof(double) == 8, "unexpected double precision");
-    if (unlikely(self.len == 0)) {
+    if (unlikely(self == NULL)) {
         return Error.argument;
     }
 
-    char* s = self.buf;
-    usize len = self.len;
+    const char* s = self;
+    usize len = strlen(s);
     usize i = 0;
     double number = 0.0;
 
-    for (; s[i] == ' ' && i < self.len; i++) {
+    for (; s[i] == ' ' && i < len; i++) {
     }
 
     double sign = 1;
@@ -919,22 +870,22 @@ str__to_double(str_s self, double* num, i32 exp_min, i32 exp_max)
 }
 
 static Exception
-str_to_f32(str_s self, f32* num)
+str__convert__to_f32(const char* s, f32* num)
 {
     f64 res = 0;
-    Exc r = str__to_double(self, &res, -37, 38);
+    Exc r = str__to_double(s, &res, -37, 38);
     *num = (f32)res;
     return r;
 }
 
 static Exception
-str_to_f64(str_s self, f64* num)
+str__convert__to_f64(const char* s, f64* num)
 {
-    return str__to_double(self, num, -307, 308);
+    return str__to_double(s, num, -307, 308);
 }
 
 static Exception
-str_to_i8(str_s self, i8* num)
+str__convert__to_i8(str_s self, i8* num)
 {
     i64 res = 0;
     Exc r = str__to_signed_num(self, &res, INT8_MIN, INT8_MAX);
@@ -943,7 +894,7 @@ str_to_i8(str_s self, i8* num)
 }
 
 static Exception
-str_to_i16(str_s self, i16* num)
+str__convert__to_i16(str_s self, i16* num)
 {
     i64 res = 0;
     var r = str__to_signed_num(self, &res, INT16_MIN, INT16_MAX);
@@ -952,7 +903,7 @@ str_to_i16(str_s self, i16* num)
 }
 
 static Exception
-str_to_i32(str_s self, i32* num)
+str__convert__to_i32(str_s self, i32* num)
 {
     i64 res = 0;
     var r = str__to_signed_num(self, &res, INT32_MIN, INT32_MAX);
@@ -962,7 +913,7 @@ str_to_i32(str_s self, i32* num)
 
 
 static Exception
-str_to_i64(str_s self, i64* num)
+str__convert__to_i64(str_s self, i64* num)
 {
     i64 res = 0;
     // NOTE:INT64_MIN+1 because negating of INT64_MIN leads to UB!
@@ -972,7 +923,7 @@ str_to_i64(str_s self, i64* num)
 }
 
 static Exception
-str_to_u8(str_s self, u8* num)
+str__convert__to_u8(str_s self, u8* num)
 {
     u64 res = 0;
     Exc r = str__to_unsigned_num(self, &res, UINT8_MAX);
@@ -981,7 +932,7 @@ str_to_u8(str_s self, u8* num)
 }
 
 static Exception
-str_to_u16(str_s self, u16* num)
+str__convert__to_u16(str_s self, u16* num)
 {
     u64 res = 0;
     Exc r = str__to_unsigned_num(self, &res, UINT16_MAX);
@@ -990,7 +941,7 @@ str_to_u16(str_s self, u16* num)
 }
 
 static Exception
-str_to_u32(str_s self, u32* num)
+str__convert__to_u32(str_s self, u32* num)
 {
     u64 res = 0;
     Exc r = str__to_unsigned_num(self, &res, UINT32_MAX);
@@ -999,7 +950,7 @@ str_to_u32(str_s self, u32* num)
 }
 
 static Exception
-str_to_u64(str_s self, u64* num)
+str__convert__to_u64(str_s self, u64* num)
 {
     u64 res = 0;
     Exc r = str__to_unsigned_num(self, &res, UINT64_MAX);
@@ -1090,17 +1041,8 @@ str__fmtva(IAllocator allc, const char* format, va_list va)
     return (str_s){ .buf = ctx.buf, .len = ctx.length };
 }
 
-static str_s
-str_fmt(IAllocator allc, const char* format, ...)
-{
-    va_list va;
-    va_start(va, format);
-    str_s result = str__fmtva(allc, format, va);
-    va_end(va);
-    return result;
-}
 static char*
-str_cfmt(IAllocator allc, const char* format, ...)
+str_fmt(IAllocator allc, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -1152,7 +1094,7 @@ str_tcopy(char* s)
 
 static arr$(char*) str_tsplit(char* s, const char* split_by)
 {
-    str_s src = str_cstr(s);
+    str_s src = str_sstr(s);
     if (src.buf == NULL || split_by == NULL) {
         return NULL;
     }
@@ -1161,7 +1103,7 @@ static arr$(char*) str_tsplit(char* s, const char* split_by)
         return NULL;
     }
 
-    for$iter(str_s, it, str_iter_split(src, split_by, &it.iterator))
+    for$iter(str_s, it, str__slice__iter_split(src, split_by, &it.iterator))
     {
         char* tok = str_tnew(*it.val);
         arr$push(result, tok);
@@ -1217,45 +1159,51 @@ str_tjoin(arr$(char*) str_arr, const char* join_by)
 const struct __module__str str = {
     // Autogenerated by CEX
     // clang-format off
-    .cstr = str_cstr,
-    .cbuf = str_cbuf,
+    .sstr = str_sstr,
+    .sbuf = str_sbuf,
     .eq = str_eq,
     .sub = str_sub,
     .copy = str_copy,
     .vsprintf = str_vsprintf,
     .sprintf = str_sprintf,
     .len = str_len,
-    .is_valid = str_is_valid,
-    .iter = str_iter,
     .find = str_find,
-    .rfind = str_rfind,
-    .contains = str_contains,
+    .findr = str_findr,
     .starts_with = str_starts_with,
     .ends_with = str_ends_with,
-    .remove_prefix = str_remove_prefix,
-    .remove_suffix = str_remove_suffix,
-    .lstrip = str_lstrip,
-    .rstrip = str_rstrip,
-    .strip = str_strip,
-    .cmp = str_cmp,
-    .cmpi = str_cmpi,
-    .iter_split = str_iter_split,
-    .to_f32 = str_to_f32,
-    .to_f64 = str_to_f64,
-    .to_i8 = str_to_i8,
-    .to_i16 = str_to_i16,
-    .to_i32 = str_to_i32,
-    .to_i64 = str_to_i64,
-    .to_u8 = str_to_u8,
-    .to_u16 = str_to_u16,
-    .to_u32 = str_to_u32,
-    .to_u64 = str_to_u64,
     .fmt = str_fmt,
-    .cfmt = str_cfmt,
     .tfmt = str_tfmt,
     .tnew = str_tnew,
     .tcopy = str_tcopy,
     .tsplit = str_tsplit,
     .tjoin = str_tjoin,
+
+    .slice = {  // sub-module .slice >>>
+        .eq = str__slice__eq,
+        .sub = str__slice__sub,
+        .starts_with = str__slice__starts_with,
+        .ends_with = str__slice__ends_with,
+        .remove_prefix = str__slice__remove_prefix,
+        .remove_suffix = str__slice__remove_suffix,
+        .lstrip = str__slice__lstrip,
+        .rstrip = str__slice__rstrip,
+        .strip = str__slice__strip,
+        .cmp = str__slice__cmp,
+        .cmpi = str__slice__cmpi,
+        .iter_split = str__slice__iter_split,
+    },  // sub-module .slice <<<
+
+    .convert = {  // sub-module .convert >>>
+        .to_f32 = str__convert__to_f32,
+        .to_f64 = str__convert__to_f64,
+        .to_i8 = str__convert__to_i8,
+        .to_i16 = str__convert__to_i16,
+        .to_i32 = str__convert__to_i32,
+        .to_i64 = str__convert__to_i64,
+        .to_u8 = str__convert__to_u8,
+        .to_u16 = str__convert__to_u16,
+        .to_u32 = str__convert__to_u32,
+        .to_u64 = str__convert__to_u64,
+    },  // sub-module .convert <<<
     // clang-format on
 };

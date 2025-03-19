@@ -32,7 +32,7 @@ test$case(test_os_listdir)
         "text_file_zero_byte.txt",   "",
     };
     (void)expected;
-    for$iter(str_s, it, str.iter_split(str.cstr(listdir), "\n", &it.iterator))
+    for$iter(str_s, it, str.iter_split(str.sstr(listdir), "\n", &it.iterator))
     {
         // io.printf("%d: %S\n", it.idx.i, *it.val);
         tassert_eqi(it.idx.i, nit);
@@ -40,7 +40,7 @@ test$case(test_os_listdir)
         bool is_found = false;
         for$array(itf, expected, arr$len(expected))
         {
-            if (str.cmp(*it.val, str.cstr(*itf.val)) == 0) {
+            if (str.cmp(*it.val, str.sstr(*itf.val)) == 0) {
                 is_found = true;
                 break;
             }
@@ -65,7 +65,7 @@ test$case(test_os_getcwd)
 {
     sbuf_c s = sbuf.create( 10, mem$);
     tassert_eqe(EOK, os.getcwd(&s));
-    tassert_eqi(true, str.ends_with(str.cstr(s), str$("cex")));
+    tassert_eqi(true, str.ends_with(str.sstr(s), str$s("cex")));
 
     sbuf.destroy(&s);
     return EOK;
@@ -73,23 +73,23 @@ test$case(test_os_getcwd)
 
 test$case(test_os_path_exists)
 {
-    tassert_eqe(Error.argument, os.path.exists(str.cstr(NULL)));
-    tassert_eqe(Error.argument, os.path.exists(str.cstr("")));
-    tassert_eqe(EOK, os.path.exists(str$(".")));
-    tassert_eqe(EOK, os.path.exists(str$("..")));
-    tassert_eqe(EOK, os.path.exists(str$("./tests")));
-    tassert_eqe(EOK, os.path.exists(str$("./tests/test_os_posix.c")));
-    tassert_eqe(Error.not_found, os.path.exists(str$("./tests/test_os_posix.cpp")));
+    tassert_eqe(Error.argument, os.path.exists(str.sstr(NULL)));
+    tassert_eqe(Error.argument, os.path.exists(str.sstr("")));
+    tassert_eqe(EOK, os.path.exists(str$s(".")));
+    tassert_eqe(EOK, os.path.exists(str$s("..")));
+    tassert_eqe(EOK, os.path.exists(str$s("./tests")));
+    tassert_eqe(EOK, os.path.exists(str$s("./tests/test_os_posix.c")));
+    tassert_eqe(Error.not_found, os.path.exists(str$s("./tests/test_os_posix.cpp")));
 
-    tassert_eqe(EOK, os.path.exists(str$("tests/")));
+    tassert_eqe(EOK, os.path.exists(str$s("tests/")));
 
     // substrings also work
-    tassert_eqe(EOK, os.path.exists(str.sub(str$("tests/asldjalsdj"), 0, 6)));
+    tassert_eqe(EOK, os.path.exists(str.sub(str$s("tests/asldjalsdj"), 0, 6)));
 
     char buf[PATH_MAX + 10];
     memset(buf, 'a', arr$len(buf));
     buf[PATH_MAX + 8] = '\0';
-    str_s s = str.cbuf(buf, arr$len(buf));
+    str_s s = str.sbuf(buf, arr$len(buf));
     s.len++;
 
     // Path is too long, and exceeds PATH_MAX buffer size
@@ -104,7 +104,7 @@ test$case(test_os_path_exists)
 test$case(test_os_path_join)
 {
     sbuf_c s = sbuf.create(10, mem$);
-    tassert_eqe(EOK, os.path.join(&s, "%S/%s_%d.txt", str$("cexstr"), "foo", 10));
+    tassert_eqe(EOK, os.path.join(&s, "%S/%s_%d.txt", str$s("cexstr"), "foo", 10));
     tassert_eqs("cexstr/foo_10.txt", s);
     sbuf.destroy(&s);
     return EOK;
@@ -137,50 +137,50 @@ test$case(test_os_setenv)
 }
 test$case(test_os_path_splitext)
 {
-    tassert_eqi(str.cmp(os.path.splitext(str$("foo.bar"), true), str$(".bar")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("foo.bar"), false), str$("foo")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("foo.bar"), true), str$s(".bar")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("foo.bar"), false), str$s("foo")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("foo"), true), str$("")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("foo"), false), str$("foo")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("foo"), true), str$s("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("foo"), false), str$s("foo")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("foo.bar.exe"), true), str$(".exe")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("foo.bar.exe"), false), str$("foo.bar")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("foo.bar.exe"), true), str$s(".exe")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("foo.bar.exe"), false), str$s("foo.bar")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("foo/bar.exe"), true), str$(".exe")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("foo/bar.exe"), false), str$("foo/bar")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("foo/bar.exe"), true), str$s(".exe")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("foo/bar.exe"), false), str$s("foo/bar")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar.exe"), true), str$(".exe")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar.exe"), false), str$("bar.foo/bar")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar.exe"), true), str$s(".exe")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar.exe"), false), str$s("bar.foo/bar")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar"), true), str$("")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar"), false), str$("bar.foo/bar")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar"), true), str$s("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar"), false), str$s("bar.foo/bar")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$(".gitingnore"), true), str$("")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$(".gitingnore"), false), str$(".gitingnore")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s(".gitingnore"), true), str$s("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s(".gitingnore"), false), str$s(".gitingnore")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("...gitingnore"), true), str$("")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("...gitingnore"), false), str$("...gitingnore")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("...gitingnore"), true), str$s("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("...gitingnore"), false), str$s("...gitingnore")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar..."), true), str$(".")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar..."), false), str$("bar.foo/bar..")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar..."), true), str$s(".")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar..."), false), str$s("bar.foo/bar..")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar."), true), str$(".")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar."), false), str$("bar.foo/bar")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar."), true), str$s(".")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar."), false), str$s("bar.foo/bar")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("."), true), str$("")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("."), false), str$(".")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("."), true), str$s("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("."), false), str$s(".")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$(".."), true), str$("")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$(".."), false), str$("..")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s(".."), true), str$s("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s(".."), false), str$s("..")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar..exe"), true), str$(".exe")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$("bar.foo/bar..exe"), false), str$("bar.foo/bar.")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar..exe"), true), str$s(".exe")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s("bar.foo/bar..exe"), false), str$s("bar.foo/bar.")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str$(""), true), str$("")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str$(""), false), str$("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s(""), true), str$s("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str$s(""), false), str$s("")), 0);
 
-    tassert_eqi(str.cmp(os.path.splitext(str.cstr(NULL), false), str$("")), 0);
-    tassert_eqi(str.cmp(os.path.splitext(str.cstr(NULL), true), str$("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str.sstr(NULL), false), str$s("")), 0);
+    tassert_eqi(str.cmp(os.path.splitext(str.sstr(NULL), true), str$s("")), 0);
     return EOK;
 }
 

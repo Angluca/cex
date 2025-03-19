@@ -188,7 +188,7 @@ sbuf_replace(sbuf_c* self, const char* oldstr, const char* newstr)
 
     u32 old_len = strlen(oldstr);
 
-    str_s s = str.cbuf(*self, head->length);
+    str_s s = str.sbuf(*self, head->length);
 
     if (unlikely(s.len == 0)) {
         return Error.ok;

@@ -562,10 +562,7 @@ _Static_assert(alignof(Allocator_i) == alignof(usize), "size");
 _Static_assert(sizeof(Allocator_i) == sizeof(usize) * 10, "size");
 
 
-/*
- *                  CEX STRING DATATYPE
- *  methods implementation in cex/str.c
- */
+/// Represents char* slice (string view) + may not be null-term at len!
 typedef struct
 {
     usize len;
@@ -577,19 +574,19 @@ _Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
 
 
 /**
- * @brief creates str_s, instance from string literals/constants: str$("my string")
+ * @brief creates str_s, instance from string literals/constants: str$s("my string")
  *
  * Uses compile time string length calculation, only literals
  *
  */
-#define str$(string)                                                                               \
+#define str$s(string)                                                                               \
     (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
 
 /**
  * @brief creates slice of str_s instance
  */
-#define str$slice(str_self, ...)                                                                   \
+#define str$sslice(str_self, ...)                                                                   \
     ({                                                                                             \
         slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
         _arr$slice_get(__slice, str_self.buf, str_self.len, __VA_ARGS__);                          \

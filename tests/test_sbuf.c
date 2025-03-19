@@ -383,21 +383,21 @@ test$case(test_sbuf_appendf_long_growth)
         snprintf(buf, arr$len(buf), "%04d", i);
         tassert_eqs(EOK, sbuf.appendf(&s, "%04d", i));
 
-        str_s v = str.cstr(s);
-        tassertf(str.ends_with(v, str.cstr(buf)), "i=%d, s=%s", i, v.buf);
+        str_s v = str.sstr(s);
+        tassertf(str.ends_with(v, str.sstr(buf)), "i=%d, s=%s", i, v.buf);
         tassert_eqi(s[sbuf.len(&s)], '\0');
         tassert_eqi(s[sbuf.capacity(&s)], '\0');
     }
     tassert_eqi(n_max * 4, sbuf.len(&s));
 
-    str_s sv = str.cstr(s);
+    str_s sv = str.sstr(s);
 
     for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
         str_s sub1 = str.sub(sv, i * 4, i * 4 + 4);
 
         tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
-        tassertf(str.cmp(sub1, str.cstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
+        tassertf(str.cmp(sub1, str.sstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }
 
     sbuf.destroy(&s);
@@ -417,15 +417,15 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
         snprintf(buf, arr$len(buf), "%04d", i);
         tassert_eqs(EOK, sbuf.appendf(&s, "%04d", i));
 
-        str_s v = str.cstr(s);
-        tassertf(str.ends_with(v, str.cstr(buf)), "i=%d, s=%s", i, v.buf);
+        str_s v = str.sstr(s);
+        tassertf(str.ends_with(v, str.sstr(buf)), "i=%d, s=%s", i, v.buf);
         tassert_eqi(s[sbuf.len(&s)], '\0');
         tassert_eqi(s[sbuf.capacity(&s)], '\0');
     }
     tassert_eqi(n_max * 4, sbuf.len(&s));
 
-    var sv2 = str.cstr(s);
-    str_s sv = str.cstr(s);
+    var sv2 = str.sstr(s);
+    str_s sv = str.sstr(s);
     tassert_eqi(str.cmp(sv2, sv), 0);
     tassert_eqi(sv2.len, sv.len);
     tassert(sv2.buf == sv.buf);
@@ -435,7 +435,7 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
         snprintf(buf, arr$len(buf), "%04d", i);
         str_s sub1 = str.sub(sv, i * 4, i * 4 + 4);
         tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
-        tassertf(str.cmp(sub1, str.cstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
+        tassertf(str.cmp(sub1, str.sstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }
 
     sbuf.destroy(&s);

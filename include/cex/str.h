@@ -16,19 +16,19 @@ struct __module__str
     // clang-format off
 
 str_s
-(*cstr)(const char* ccharptr);
+(*sstr)(const char* ccharptr);
 
 str_s
-(*cbuf)(char* s, usize length);
+(*sbuf)(char* s, usize length);
 
 bool
 (*eq)(const char* a, const char* b);
 
 str_s
-(*sub)(str_s s, isize start, isize end);
+(*sub)(const char* s, isize start, isize end);
 
 Exception
-(*copy)(str_s s, char* dest, usize destlen);
+(*copy)(char* dest, const char* src, usize destlen);
 
 str_s
 (*vsprintf)(char* dest, usize dest_len, const char* format, va_list va);
@@ -37,88 +37,22 @@ str_s
 (*sprintf)(char* dest, usize dest_len, const char* format, ...);
 
 usize
-(*len)(str_s s);
-
-bool
-(*is_valid)(str_s s);
+(*len)(char* s);
 
 char*
-(*iter)(str_s s, cex_iterator_s* iterator);
+(*find)(const char* haystack, const char* needle);
 
-isize
-(*find)(str_s s, str_s needle, usize start, usize end);
-
-isize
-(*rfind)(str_s s, str_s needle, usize start, usize end);
+char*
+(*findr)(const char* haystack, const char* needle);
 
 bool
-(*contains)(str_s s, str_s needle);
+(*starts_with)(const char* str, const char* prefix);
 
 bool
-(*starts_with)(str_s s, str_s needle);
+(*ends_with)(const char* str, const char* suffix);
 
-bool
-(*ends_with)(str_s s, str_s needle);
-
-str_s
-(*remove_prefix)(str_s s, str_s prefix);
-
-str_s
-(*remove_suffix)(str_s s, str_s suffix);
-
-str_s
-(*lstrip)(str_s s);
-
-str_s
-(*rstrip)(str_s s);
-
-str_s
-(*strip)(str_s s);
-
-int
-(*cmp)(str_s self, str_s other);
-
-int
-(*cmpi)(str_s self, str_s other);
-
-str_s*
-(*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
-
-Exception
-(*to_f32)(str_s self, f32* num);
-
-Exception
-(*to_f64)(str_s self, f64* num);
-
-Exception
-(*to_i8)(str_s self, i8* num);
-
-Exception
-(*to_i16)(str_s self, i16* num);
-
-Exception
-(*to_i32)(str_s self, i32* num);
-
-Exception
-(*to_i64)(str_s self, i64* num);
-
-Exception
-(*to_u8)(str_s self, u8* num);
-
-Exception
-(*to_u16)(str_s self, u16* num);
-
-Exception
-(*to_u32)(str_s self, u32* num);
-
-Exception
-(*to_u64)(str_s self, u64* num);
-
-str_s
+char*
 (*fmt)(IAllocator allc, const char* format, ...);
-
-char*
-(*cfmt)(IAllocator allc, const char* format, ...);
 
 char*
 (*tfmt)(const char* format, ...);
@@ -135,6 +69,78 @@ arr$(char*)
 char*
 (*tjoin)(arr$(char*) str_arr, const char* join_by);
 
+
+struct {  // sub-module .slice >>>
+    bool
+    (*eq)(str_s a, str_s b);
+
+    str_s
+    (*sub)(str_s s, isize start, isize end);
+
+    bool
+    (*starts_with)(str_s str, str_s prefix);
+
+    bool
+    (*ends_with)(str_s s, str_s suffix);
+
+    str_s
+    (*remove_prefix)(str_s s, str_s prefix);
+
+    str_s
+    (*remove_suffix)(str_s s, str_s suffix);
+
+    str_s
+    (*lstrip)(str_s s);
+
+    str_s
+    (*rstrip)(str_s s);
+
+    str_s
+    (*strip)(str_s s);
+
+    int
+    (*cmp)(str_s self, str_s other);
+
+    int
+    (*cmpi)(str_s self, str_s other);
+
+    str_s*
+    (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
+
+} slice;  // sub-module .slice <<<
+
+struct {  // sub-module .convert >>>
+    Exception
+    (*to_f32)(const char* s, f32* num);
+
+    Exception
+    (*to_f64)(const char* s, f64* num);
+
+    Exception
+    (*to_i8)(str_s self, i8* num);
+
+    Exception
+    (*to_i16)(str_s self, i16* num);
+
+    Exception
+    (*to_i32)(str_s self, i32* num);
+
+    Exception
+    (*to_i64)(str_s self, i64* num);
+
+    Exception
+    (*to_u8)(str_s self, u8* num);
+
+    Exception
+    (*to_u16)(str_s self, u16* num);
+
+    Exception
+    (*to_u32)(str_s self, u32* num);
+
+    Exception
+    (*to_u64)(str_s self, u64* num);
+
+} convert;  // sub-module .convert <<<
     // clang-format on
 };
 extern const struct __module__str str; // CEX Autogen

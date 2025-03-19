@@ -3,10 +3,10 @@
 
 #ifdef _WIN32
 #include "_os_win.c"
-#define ostr$PATH_SEP '\\'
+#define ostr$sPATH_SEP '\\'
 #else
 #include "_os_posix.c"
-#define ostr$PATH_SEP '/'
+#define ostr$sPATH_SEP '/'
 #endif
 
 Exception
@@ -67,7 +67,7 @@ str_s
 os__path__splitext(str_s path, bool return_ext)
 {
     if (path.len == 0) {
-        return str$("");
+        return str$s("");
     }
 
     usize last_char_idx = path.len;
@@ -94,7 +94,7 @@ os__path__splitext(str_s path, bool return_ext)
 
     } else {
         if (return_ext) {
-            return str$("");
+            return str$s("");
         } else {
             return path;
         }

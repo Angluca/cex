@@ -829,10 +829,10 @@ test$case(test_hashmap_hash)
     const char* key = "foobar";
     char key_buf[10] = "foobar";
     char key_buf2[6] = "foobar";
-    str_s key_str = str.cbuf(key_buf2, sizeof(key_buf2));
+    str_s key_str = str.sbuf(key_buf2, sizeof(key_buf2));
 
     // Make sure pointers are different
-    tassert(str.cmp(key_str, str$("foobar")) == 0);
+    tassert(str.cmp(key_str, str$s("foobar")) == 0);
     tassert_eqi(sizeof(key_buf2), 6);
     tassert(key_str.buf != key);
     tassert(key_buf != key);
@@ -953,18 +953,18 @@ test$case(test_hashmap_cex_string)
     char key_buf[10] = "bar";
     char key_buf2[10] = "baz";
 
-    hm$set(smap, str$("foo"), 1);
-    hm$set(smap, str.cstr(key_buf), 2);
-    hm$set(smap, str.cstr(key_buf2), 3);
+    hm$set(smap, str$s("foo"), 1);
+    hm$set(smap, str.sstr(key_buf), 2);
+    hm$set(smap, str.sstr(key_buf2), 3);
 
     tassert_eqi(hm$len(smap), 3);
-    tassert_eqi(hm$get(smap, str$("foo")), 1);
-    tassert_eqi(hm$get(smap, str.cstr("bar")), 2);
-    tassert_eqi(hm$get(smap, str$("baz")), 3);
+    tassert_eqi(hm$get(smap, str$s("foo")), 1);
+    tassert_eqi(hm$get(smap, str.sstr("bar")), 2);
+    tassert_eqi(hm$get(smap, str$s("baz")), 3);
 
-    tassert_eqi(hm$del(smap, str.cstr("foo")), 1);
-    tassert_eqi(hm$del(smap, str$("bar")), 1);
-    tassert_eqi(hm$del(smap, str$("baz")), 1);
+    tassert_eqi(hm$del(smap, str.sstr("foo")), 1);
+    tassert_eqi(hm$del(smap, str$s("bar")), 1);
+    tassert_eqi(hm$del(smap, str$s("baz")), 1);
     tassert_eqi(hm$len(smap), 0);
 
     hm$(int, int) imap;
@@ -977,15 +977,15 @@ test$case(test_hashmap_cex_string)
 
     _hm$test(imap, 2);
 
-    _hm$test(smap, str.cstr("bar"));
-    _hm$test(smap, str$("bar"));
+    _hm$test(smap, str.sstr("bar"));
+    _hm$test(smap, str$s("bar"));
     _hm$test(smap, s);
     // _hm$test(smap, "foo");
 
     _hm$test(cmap, "foobar");
     _hm$test(cmap, c);
     // _hm$test(cmap, s);
-    // _hm$test(cmap, str$("xxxyyyzzz").buf);
+    // _hm$test(cmap, str$s("xxxyyyzzz").buf);
 
 
     hm$free(smap);
