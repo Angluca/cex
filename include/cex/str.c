@@ -139,10 +139,11 @@ str__slice__copy(char* dest, str_s src, usize destlen)
     if (unlikely(src.buf == NULL)) {
         return Error.argument;
     }
-    if (src.len > destlen) {
+    if (src.len >= destlen) {
         return Error.overflow;
     }
     memcpy(dest, src.buf, src.len);
+    dest[src.len] = '\0';
     dest[destlen - 1] = '\0';
     return Error.ok;
 }

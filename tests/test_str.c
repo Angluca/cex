@@ -164,8 +164,7 @@ test$case(test_slice_copy)
 
     memset(buf, 'a', arr$len(buf));
     tassert_eqs(Error.overflow, str.slice.copy(buf, str$s("12345678"), arr$len(buf)));
-    // string is truncated
-    tassert_eqs("1234567", buf);
+    tassert_eqs("", buf);
 
     memset(buf, 'a', arr$len(buf));
     tassert_eqs(Error.ok, str.slice.copy(buf, str$s("1234"), arr$len(buf)));
