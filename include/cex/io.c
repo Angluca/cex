@@ -448,17 +448,12 @@ io_close(io_c* self)
 Exception
 io_fload(const char* path, str_s* out_content, IAllocator allc)
 {
-    // invalidate result if early exit
-    *out_content = (str_s){
-        .buf = NULL,
-        .len = 0,
-    };
+    *out_content = (str_s){0};
     io_c self = { 0 };
     e$except_silent(err, io_open(&self, path, "r", allc))
     {
         return err;
     }
-
     e$except_silent(err, io_readall(&self, out_content))
     {
         if (err == Error.eof && out_content->buf != NULL) {
@@ -466,7 +461,6 @@ io_fload(const char* path, str_s* out_content, IAllocator allc)
         }
         return err;
     }
-
     return EOK;
 }
 
