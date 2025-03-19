@@ -82,11 +82,11 @@ test$case(test_readall_empty)
     str_s content;
     tassert_eqs(Error.eof, io.readall(&file, &content));
     tassert_eqi(0, io.size(&file));
-    tassert(file._fbuf == NULL);
+    tassert(file._fbuf != NULL);
     tassert_eqi(file._fbuf_size, 0);
+    tassert_eqs(file._fbuf, "");
     tassert_eqs(content.buf, "");
     tassert_eqi(content.len, 0);
-
 
     io.close(&file);
     return EOK;
@@ -465,6 +465,43 @@ test$case(test_write)
     io.close(&file);
     return EOK;
 }
+
+test$case(test_fload)
+{
+    char* content =  io.fload("tests/data/text_file_line_4095.txt", mem$);
+    tassert(str.starts_with(content, "409500000000"));
+    mem$free(mem$, content);
+
+    content =  io.fload("tests/data/text_file_empty.txt", mem$);
+    tassert_eqs("", content);
+    mem$free(mem$, content);
+
+    content =  io.fload("tests/data/asdjaldhashdajlkhuci.txt", mem$);
+    tassert_eqs(NULL, content);
+    tassert_eqi(ENOENT, errno);
+    tassert_eqs("No such file or directory", strerror(errno));
+
+    content =  io.fload(NULL, mem$);
+    tassert_eqs(NULL, content);
+    tassert_eqi(EINVAL, errno);
+
+    content =  io.fload("tests/data/text_file_empty.txt", mem$);
+    tassert_eqs("", content);
+    mem$free(mem$, content);
+
+    content = io.fload("tests/data/text_file_zero_byte.txt", mem$);
+    tassert_eqs("000000001\n0", content);
+    mem$free(mem$, content);
+
+    // TODO: this may fail on windows 
+    content = io.fload("/dev/console", mem$);
+    tassert_eqs("Permission denied", strerror(errno));
+    tassert_eqi(EACCES, errno);
+    tassert_eqs(NULL, content);
+    mem$free(mem$, content);
+
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -494,6 +531,7 @@ main(int argc, char* argv[])
     test$run(test_fprintf);
     test$run(test_fprintf_to_file);
     test$run(test_write);
+    test$run(test_fload);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

@@ -220,19 +220,10 @@ io_readall(io_c* self, str_s* s)
     }
 
     self->_fsize = io_size(self);
-
-    if (unlikely(self->_fsize == 0)) {
-
-        *s = (str_s){
-            .buf = "",
-            .len = 0,
-        };
-        e$except(err, io_seek(self, 0, SEEK_END))
-        {
-            ;
-        }
-        return Error.eof;
+    if (self->_fsize > INT32_MAX) {
+        return "io.readall() file is too big.";
     }
+
     // allocate extra 16 bytes, to catch condition when file size grows
     // this may be indication we are trying to read stream
     usize exp_size = self->_fsize + 1 + 15;
@@ -249,6 +240,21 @@ io_readall(io_c* self, str_s* s)
     if (unlikely(self->_fbuf == NULL)) {
         self->_fbuf_size = 0;
         return Error.memory;
+    }
+
+    if (unlikely(self->_fsize == 0)) {
+
+        *s = (str_s){
+            .buf = self->_fbuf,
+            .len = 0,
+        };
+        self->_fbuf[0] = '\0';
+        self->_fbuf_size = 0;
+        e$except(err, io_seek(self, 0, SEEK_END))
+        {
+            ;
+        }
+        return Error.eof;
     }
 
     usize read_size = self->_fbuf_size;
@@ -445,23 +451,33 @@ io_close(io_c* self)
 }
 
 
-Exception
-io_fload(const char* path, str_s* out_content, IAllocator allc)
+char*
+io_fload(const char* path, IAllocator allc)
 {
-    *out_content = (str_s){0};
+    errno = 0;
+    uassert(allc != NULL);
+    if (path == NULL) {
+        errno = EINVAL;
+        return NULL;
+    }
     io_c self = { 0 };
     e$except_silent(err, io_open(&self, path, "r", allc))
     {
-        return err;
+        return NULL;
     }
-    e$except_silent(err, io_readall(&self, out_content))
+
+    str_s out_content = (str_s){ 0 };
+    e$except_silent(err, io_readall(&self, &out_content))
     {
-        if (err == Error.eof && out_content->buf != NULL) {
-            return EOK;
+        if (err == Error.eof && out_content.buf != NULL) {
+            return out_content.buf;
         }
-        return err;
+        if (out_content.buf) {
+            mem$free(allc, out_content.buf);
+        }
+        return NULL;
     }
-    return EOK;
+    return out_content.buf;
 }
 
 

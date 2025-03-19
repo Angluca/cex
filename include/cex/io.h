@@ -26,7 +26,7 @@ struct __module__io
 void            (*close)(io_c* self);
 io_c            (*fattach)(FILE* fh, IAllocator allocator);
 int             (*fileno)(io_c* self);
-Exception       (*fload)(const char* path, str_s* out_content, IAllocator allc);
+char*           (*fload)(const char* path, IAllocator allc);
 Exception       (*flush)(io_c* self);
 Exception       (*fprintf)(FILE* stream, const char* format, ...);
 bool            (*isatty)(io_c* self);

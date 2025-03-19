@@ -1704,10 +1704,9 @@ test$case(test_fmt)
     mem$scope(tmem$, _)
     {
         // loading this test!
-        str_s fcontent;
-        e$ret(io.fload(__FILE__, &fcontent, tmem$));
-        tassert(fcontent.buf != NULL);
-        tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
+        char* fcont = io.fload(__FILE__, _);
+        str_s fcontent = str.sstr(fcont);
+        tassert(str.len(fcont) > CEX_SPRINTF_MIN * 2);
 
         // NOTE: even smalls strings were allocated on mem$
         char* s = str.fmt(mem$, "%s", "foo");
@@ -1740,10 +1739,9 @@ test$case(test_fmt_edge)
     mem$scope(tmem$, _)
     {
         // loading this test!
-        str_s fcontent;
-        e$ret(io.fload(__FILE__, &fcontent, tmem$));
-        tassert(fcontent.buf != NULL);
-        tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
+        char* fcont = io.fload(__FILE__, _);
+        str_s fcontent = str.sstr(fcont);
+        tassert(str.len(fcont) > CEX_SPRINTF_MIN * 2);
 
         char* s = str.fmt(mem$, "%s", "foo");
         tassert_eqs("foo", s);
@@ -1802,9 +1800,9 @@ test$case(test_slice_clone)
 {
     mem$scope(tmem$, _)
     {
-        str_s fcontent;
-        e$ret(io.fload(__FILE__, &fcontent, _));
-        tassert(fcontent.buf != NULL);
+        char* fcont = io.fload(__FILE__, _);
+        str_s fcontent = str.sstr(fcont);
+        tassert(str.len(fcont) > CEX_SPRINTF_MIN * 2);
 
         var snew = str.slice.clone(fcontent, _);
         tassert(snew != NULL);
@@ -1982,6 +1980,19 @@ test$case(test_tjoin)
 
     return EOK;
 }
+
+test$case(test_str_chaining)
+{
+    mem$scope(tmem$, _)
+    {
+        char* s = str.fmt(_, "hi there");
+        s = str.replace(s, "hi", "hello", _);
+        s = str.fmt(_, "result is: %s", s);
+        tassert_eqs(s, "result is: hello there");
+    }
+
+    return EOK;
+}
 /*
  *
 
@@ -2033,6 +2044,7 @@ main(int argc, char* argv[])
     test$run(test_tsplit);
     test$run(test_str_replace);
     test$run(test_tjoin);
+    test$run(test_str_chaining);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

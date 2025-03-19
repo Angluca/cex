@@ -1090,6 +1090,7 @@ str_fmt(IAllocator allc, const char* format, ...)
     cexsp__context ctx = {
         .allc = allc,
     };
+    // TODO: add optional flag, to check if any va is null?
     cexsp__vsprintfcb(str__fmt_callback, &ctx, ctx.tmp, format, va);
     va_end(va);
 
@@ -1183,6 +1184,9 @@ str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
     for$arr(s, str_arr)
     {
         if (s == NULL) {
+            if (result != NULL) {
+                mem$free(allc, result);
+            }
             return NULL;
         }
         usize slen = strlen(s);
