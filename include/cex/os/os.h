@@ -26,13 +26,13 @@ void
 
 struct {  // sub-module .path >>>
     Exception
-    (*exists)(str_s path);
+    (*exists)(const char* path);
 
     Exception
     (*join)(sbuf_c* out, const char* format, ...);
 
     str_s
-    (*splitext)(str_s path, bool return_ext);
+    (*splitext)(const char* path, bool return_ext);
 
 } path;  // sub-module .path <<<
     // clang-format on

@@ -26,7 +26,7 @@ Exception
 append_to_cap(sbuf_c* s)
 {
     tassert(s != NULL);
-    char c[2] = {'A', '\0'};
+    char c[2] = { 'A', '\0' };
 
     for (usize i = sbuf.len(s); i < sbuf.capacity(s); i++) {
         c[0] = 'A' + i;
@@ -383,21 +383,18 @@ test$case(test_sbuf_appendf_long_growth)
         snprintf(buf, arr$len(buf), "%04d", i);
         tassert_eqs(EOK, sbuf.appendf(&s, "%04d", i));
 
-        str_s v = str.sstr(s);
-        tassertf(str.ends_with(v, str.sstr(buf)), "i=%d, s=%s", i, v.buf);
+        tassertf(str.ends_with(s, buf), "i=%d, s=%s", i, s);
         tassert_eqi(s[sbuf.len(&s)], '\0');
         tassert_eqi(s[sbuf.capacity(&s)], '\0');
     }
     tassert_eqi(n_max * 4, sbuf.len(&s));
 
-    str_s sv = str.sstr(s);
-
     for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
-        str_s sub1 = str.sub(sv, i * 4, i * 4 + 4);
+        str_s sub1 = str.sub(s, i * 4, i * 4 + 4);
 
-        tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
-        tassertf(str.cmp(sub1, str.sstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
+        tassert_eqs(EOK, str.slice.copy(svbuf, sub1, 16));
+        tassertf(str.slice.cmp(sub1, str.sstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }
 
     sbuf.destroy(&s);
@@ -418,7 +415,7 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
         tassert_eqs(EOK, sbuf.appendf(&s, "%04d", i));
 
         str_s v = str.sstr(s);
-        tassertf(str.ends_with(v, str.sstr(buf)), "i=%d, s=%s", i, v.buf);
+        tassertf(str.slice.ends_with(v, str.sstr(buf)), "i=%d, s=%s", i, v.buf);
         tassert_eqi(s[sbuf.len(&s)], '\0');
         tassert_eqi(s[sbuf.capacity(&s)], '\0');
     }
@@ -426,16 +423,16 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
 
     var sv2 = str.sstr(s);
     str_s sv = str.sstr(s);
-    tassert_eqi(str.cmp(sv2, sv), 0);
+    tassert_eqi(str.slice.cmp(sv2, sv), 0);
     tassert_eqi(sv2.len, sv.len);
     tassert(sv2.buf == sv.buf);
 
 
     for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
-        str_s sub1 = str.sub(sv, i * 4, i * 4 + 4);
-        tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
-        tassertf(str.cmp(sub1, str.sstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
+        str_s sub1 = str.slice.sub(sv, i * 4, i * 4 + 4);
+        tassert_eqs(EOK, str.slice.copy(svbuf, sub1, 16));
+        tassertf(str.slice.eq(sub1, str.sstr(buf)), "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }
 
     sbuf.destroy(&s);

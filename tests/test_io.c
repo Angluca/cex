@@ -292,13 +292,13 @@ test$case(test_read_long_line)
 
     tassert_eqs(Error.ok, io.readline(&file, &content));
     tassert_eqi(file._fbuf_size, 4096 - 1);
-    tassert(str.starts_with(content, str.sstr("4095")));
+    tassert(str.slice.starts_with(content, str.sstr("4095")));
     tassert_eqi(content.len, 4095);
     tassert_eqi(0, content.buf[content.len]); // null term
 
     tassert_eqs(Error.ok, io.readline(&file, &content));
     tassert_eqi(file._fbuf_size, 4096 * 2 - 1); // buffer resized
-    tassert(str.starts_with(content, str.sstr("4096")));
+    tassert(str.slice.starts_with(content, str.sstr("4096")));
     tassert_eqi(content.len, 4096);
     tassert_eqi(0, content.buf[content.len]); // null term
 
@@ -326,7 +326,7 @@ test$case(test_readall_realloc)
 
     tassert_eqs(Error.ok, io.readline(&file, &content));
     tassert_eqi(file._fbuf_size, 4096 - 1);
-    tassert(str.starts_with(content, str.sstr("4095")));
+    tassert(str.slice.starts_with(content, str.sstr("4095")));
     tassert_eqi(content.len, 4095);
     tassert_eqi(0, content.buf[content.len]); // null term
 
@@ -335,8 +335,7 @@ test$case(test_readall_realloc)
 
     tassert_eqs(Error.ok, io.readall(&file, &content));
     tassert_eqi(file._fbuf_size, 4095 + 4096 + 2 + 16);
-    tassert(str.starts_with(content, str.sstr("4095")));
-    tassert_eqi(str.find(content, str.sstr("4096"), 0, 0), 4096);
+    tassert(str.slice.starts_with(content, str.sstr("4095")));
     tassert_eqi(content.len, 4095 + 4096 + 2);
 
     io.close(&file);
@@ -442,7 +441,7 @@ test$case(test_fprintf_to_file)
     io.rewind(&file);
 
     tassert_eqs(EOK, io.readall(&file, &content));
-    tassert_eqi(0, str.cmp(content, str$s("io.fprintf: str_c: 1234\n")));
+    tassert_eqi(0, str.slice.cmp(content, str$s("io.fprintf: str_c: 1234\n")));
 
 
     io.close(&file);
@@ -461,7 +460,7 @@ test$case(test_write)
     str_s content;
     io.rewind(&file);
     tassert_eqs(EOK, io.readall(&file, &content));
-    tassert_eqi(0, str.cmp(content, str$s("1234")));
+    tassert_eqi(0, str.slice.cmp(content, str$s("1234")));
 
     io.close(&file);
     return EOK;

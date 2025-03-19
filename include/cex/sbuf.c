@@ -2,7 +2,6 @@
 #include "sbuf.h"
 #include "_sprintf.h"
 #include "cex.h"
-#include "str.h"
 #include <stdarg.h>
 
 struct _sbuf__sprintf_ctx

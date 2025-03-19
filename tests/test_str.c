@@ -133,6 +133,46 @@ test$case(test_copy)
     return EOK;
 }
 
+test$case(test_slice_copy)
+{
+    char buf[8];
+    memset(buf, 'a', arr$len(buf));
+
+
+    memset(buf, 'a', arr$len(buf));
+    tassert_eqs(EOK, str.slice.copy(buf, str$s("1234567"), arr$len(buf)));
+    tassert_eqs("1234567", buf);
+    tassert_eqi(strlen(buf), 7);
+    tassert_eqi(buf[7], '\0');
+
+    memset(buf, 'a', arr$len(buf));
+    tassert_eqs(Error.argument, str.slice.copy(NULL, str$s("1234567"), arr$len(buf)));
+    tassert(memcmp(buf, "aaaaaaaa", arr$len(buf)) == 0); // untouched
+
+    memset(buf, 'a', arr$len(buf));
+    tassert(memcmp(buf, "aaaaaaaa", arr$len(buf)) == 0);
+    tassert_eqs(Error.argument, str.slice.copy(buf, str$s("1234567"), 0)); // untouched
+
+    memset(buf, 'a', arr$len(buf));
+    tassert_eqs(Error.ok, str.slice.copy(buf, str$s(""), arr$len(buf)));
+    tassert_eqs("", buf);
+
+    memset(buf, 'a', arr$len(buf));
+    tassert_eqs(Error.argument, str.slice.copy(buf, (str_s){0}, arr$len(buf)));
+    // buffer reset to "" string
+    tassert_eqs("", buf);
+
+    memset(buf, 'a', arr$len(buf));
+    tassert_eqs(Error.overflow, str.slice.copy(buf, str$s("12345678"), arr$len(buf)));
+    // string is truncated
+    tassert_eqs("1234567", buf);
+
+    memset(buf, 'a', arr$len(buf));
+    tassert_eqs(Error.ok, str.slice.copy(buf, str$s("1234"), arr$len(buf)));
+    tassert_eqs("1234", buf);
+    return EOK;
+}
+
 test$case(test_sub_positive_start)
 {
 
@@ -1796,7 +1836,7 @@ test$case(test_tnew)
         e$ret(io.fload(__FILE__, &fcontent, tmem$));
         tassert(fcontent.buf != NULL);
 
-        var snew = str.tnew(fcontent);
+        var snew = str.slice.tcopy(fcontent);
         tassert(snew != NULL);
         tassert(snew != fcontent.buf);
         tassert_eqi(strlen(snew), fcontent.len);
@@ -1804,7 +1844,7 @@ test$case(test_tnew)
         tassert_eqi(snew[fcontent.len], 0);
         mem$free(tmem$, snew); // assert if snew doesn't belong to tmem$
 
-        snew = str.tnew((str_s){ 0 });
+        snew = str.slice.tcopy((str_s){ 0 });
         tassert(snew == NULL);
     }
 
@@ -1967,6 +2007,7 @@ main(int argc, char* argv[])
     test$run(test_cstr);
     test$run(test_cstr_sdollar);
     test$run(test_copy);
+    test$run(test_slice_copy);
     test$run(test_sub_positive_start);
     test$run(test_sub_negative_start);
     test$run(test_eq);

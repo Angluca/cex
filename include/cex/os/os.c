@@ -46,7 +46,7 @@ os_unsetenv(const char* name)
 }
 
 Exception
-os__path__exists(str_s path)
+os__path__exists(const char* path)
 {
     return os__path__exists_(path);
 }
@@ -64,23 +64,27 @@ os__path__join(sbuf_c* out, const char* format, ...)
 }
 
 str_s
-os__path__splitext(str_s path, bool return_ext)
+os__path__splitext(const char* path, bool return_ext)
 {
-    if (path.len == 0) {
+    if(path == NULL) {
+        return (str_s){0};
+    }
+    usize pathlen = strlen(path);
+    if (pathlen == 0) {
         return str$s("");
     }
 
-    usize last_char_idx = path.len;
-    usize last_dot_idx = path.len;
+    usize last_char_idx = pathlen;
+    usize last_dot_idx = pathlen;
 
-    for (usize i = path.len; i-- > 0;) {
-        if (path.buf[i] == '.') {
-            if (last_dot_idx == path.len) {
+    for (usize i = pathlen; i-- > 0;) {
+        if (path[i] == '.') {
+            if (last_dot_idx == pathlen) {
                 last_dot_idx = i;
             }
-        } else if (path.buf[i] == '/' || path.buf[i] == '\\') {
+        } else if (path[i] == '/' || path[i] == '\\') {
             break;
-        } else if (last_dot_idx != path.len) {
+        } else if (last_dot_idx != pathlen) {
             last_char_idx = i;
             break;
         }
@@ -96,7 +100,7 @@ os__path__splitext(str_s path, bool return_ext)
         if (return_ext) {
             return str$s("");
         } else {
-            return path;
+            return str.sstr(path);
         }
     }
 }

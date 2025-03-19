@@ -78,25 +78,20 @@ os__getcwd_(sbuf_c* out)
 }
 
 static Exception
-os__path__exists_(str_s path)
+os__path__exists_(const char* path)
 {
-    if (!str.is_valid(path) || path.len == 0) {
+    if (path == NULL) {
+        return Error.argument;
+    }
+    usize path_len = strlen(path);
+    if (path_len == 0) return Error.argument;
+
+    if(path_len >= PATH_MAX) {
+        uassert(path_len < PATH_MAX && "Path is too long");
         return Error.argument;
     }
 
-    int ret_code = 0;
-    if (path.buf[path.len] != '\0') {
-        // it's non null term path!
-        char path_buf[PATH_MAX + 1];
-        e$except_silent(err, str.copy(path, path_buf, arr$len(path_buf)))
-        {
-            return err;
-        }
-        ret_code = access(path_buf, F_OK);
-    } else {
-        ret_code = access(path.buf, F_OK);
-    }
-
+    int ret_code = access(path, F_OK);
     if (ret_code < 0){
         if(errno == ENOENT){
             return Error.not_found;

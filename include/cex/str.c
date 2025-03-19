@@ -119,7 +119,7 @@ str_copy(char* dest, const char* src, usize destlen)
     }
 
     char* pend = stpncpy(dest, src, destlen);
-    dest[destlen-1] = '\0'; // always secure last byte of destlen
+    dest[destlen - 1] = '\0'; // always secure last byte of destlen
 
     if (unlikely((pend - dest) >= (isize)destlen)) {
         return Error.overflow;
@@ -129,17 +129,36 @@ str_copy(char* dest, const char* src, usize destlen)
 }
 
 static Exception
-str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
+str__slice__copy(char* dest, str_s src, usize destlen)
 {
-    if (unlikely(dest == NULL)){
+    uassert(dest != src.buf && "buffers overlap");
+    if (unlikely(dest == NULL || destlen == 0)) {
         return Error.argument;
     }
-    if (unlikely(dest_len == 0)){
+    dest[0] = '\0';
+    if (unlikely(src.buf == NULL)) {
+        return Error.argument;
+    }
+    if (src.len > destlen) {
+        return Error.overflow;
+    }
+    memcpy(dest, src.buf, src.len);
+    dest[destlen - 1] = '\0';
+    return Error.ok;
+}
+
+static Exception
+str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
+{
+    if (unlikely(dest == NULL)) {
+        return Error.argument;
+    }
+    if (unlikely(dest_len == 0)) {
         return Error.argument;
     }
     uassert(format != NULL);
 
-    dest[dest_len-1] = '\0'; // always null term at capacity
+    dest[dest_len - 1] = '\0'; // always null term at capacity
 
     int result = cexsp__vsnprintf(dest, dest_len, format, va);
 
@@ -202,14 +221,16 @@ str_findr(const char* haystack, const char* needle)
 }
 
 
-static bool str__slice__starts_with(str_s str, str_s prefix)
+static bool
+str__slice__starts_with(str_s str, str_s prefix)
 {
     if (unlikely(!str.buf || !prefix.buf || prefix.len == 0 || prefix.len > str.len)) {
         return false;
     }
     return memcmp(str.buf, prefix.buf, prefix.len) == 0;
 }
-static bool str__slice__ends_with(str_s s, str_s suffix)
+static bool
+str__slice__ends_with(str_s s, str_s suffix)
 {
     if (unlikely(!s.buf || !suffix.buf || suffix.len == 0 || suffix.len > s.len)) {
         return false;
@@ -217,18 +238,22 @@ static bool str__slice__ends_with(str_s s, str_s suffix)
     return s.len >= suffix.len && !memcmp(s.buf + s.len - suffix.len, suffix.buf, suffix.len);
 }
 
-static bool str_starts_with(const char* str, const char* prefix) {
+static bool
+str_starts_with(const char* str, const char* prefix)
+{
     if (str == NULL || prefix == NULL || prefix[0] == '\0') {
         return false;
     }
 
     while (*prefix && *str == *prefix) {
-        ++str, ++prefix; 
+        ++str, ++prefix;
     }
     return *prefix == 0;
 }
 
-static bool str_ends_with(const char* str, const char* suffix) {
+static bool
+str_ends_with(const char* str, const char* suffix)
+{
     if (str == NULL || suffix == NULL || suffix[0] == '\0') {
         return false;
     }
@@ -1069,7 +1094,7 @@ str_tfmt(const char* format, ...)
 }
 
 static char*
-str_tnew(str_s s)
+str__slice__tcopy(str_s s)
 {
     if (s.buf == NULL) {
         return NULL;
@@ -1112,7 +1137,7 @@ static arr$(char*) str_tsplit(char* s, const char* split_by)
 
     for$iter(str_s, it, str__slice__iter_split(src, split_by, &it.iterator))
     {
-        char* tok = str_tnew(*it.val);
+        char* tok = str__slice__tcopy(*it.val);
         arr$push(result, tok);
     }
 
@@ -1180,7 +1205,6 @@ const struct __module__str str = {
     .ends_with = str_ends_with,
     .fmt = str_fmt,
     .tfmt = str_tfmt,
-    .tnew = str_tnew,
     .tcopy = str_tcopy,
     .tsplit = str_tsplit,
     .tjoin = str_tjoin,
@@ -1188,6 +1212,7 @@ const struct __module__str str = {
     .slice = {  // sub-module .slice >>>
         .eq = str__slice__eq,
         .sub = str__slice__sub,
+        .copy = str__slice__copy,
         .starts_with = str__slice__starts_with,
         .ends_with = str__slice__ends_with,
         .remove_prefix = str__slice__remove_prefix,
@@ -1198,6 +1223,7 @@ const struct __module__str str = {
         .cmp = str__slice__cmp,
         .cmpi = str__slice__cmpi,
         .iter_split = str__slice__iter_split,
+        .tcopy = str__slice__tcopy,
     },  // sub-module .slice <<<
 
     .convert = {  // sub-module .convert >>>

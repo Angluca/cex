@@ -58,9 +58,6 @@ char*
 (*tfmt)(const char* format, ...);
 
 char*
-(*tnew)(str_s s);
-
-char*
 (*tcopy)(char* s);
 
 arr$(char*)
@@ -76,6 +73,9 @@ struct {  // sub-module .slice >>>
 
     str_s
     (*sub)(str_s s, isize start, isize end);
+
+    Exception
+    (*copy)(char* dest, str_s src, usize destlen);
 
     bool
     (*starts_with)(str_s str, str_s prefix);
@@ -106,6 +106,9 @@ struct {  // sub-module .slice >>>
 
     str_s*
     (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
+
+    char*
+    (*tcopy)(str_s s);
 
 } slice;  // sub-module .slice <<<
 
