@@ -1135,7 +1135,7 @@ class CEXProcessor:
             if indent:
                 return f"{self.typedef}\n(*{self.ifc_name})({self.args});\n"
             else:
-                return f"{self.typedef} (*{self.ifc_name})({self.args});\n"
+                return f"{self.typedef:<15} (*{self.ifc_name})({self.args});"
 
         def to_pointer_def(self) -> str:
             """Function .c struct field definition"""
@@ -1286,10 +1286,10 @@ class CEXProcessor:
             def dd(txt):
                 return indent(txt, "    ") if sub_module else txt
 
-            for func in flist:
+            for func in sorted(flist, key=lambda x: x.name):
                 if func.docstr:
                     ifc_contents.append(dd(func.docstr))
-                ifc_contents.append(dd(func.to_pointer_decl(indent=True)))
+                ifc_contents.append(dd(func.to_pointer_decl(indent=False)))
 
             if sub_module:
                 ifc_contents.append(
