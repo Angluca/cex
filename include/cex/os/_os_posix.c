@@ -7,9 +7,9 @@
 #include <unistd.h>
 
 static Exception
-os__listdir_(str_c path, sbuf_c* buf)
+os__listdir_(const char* path, sbuf_c* buf)
 {
-    if (unlikely(path.len == 0)) {
+    if (unlikely(path == NULL)){
         return Error.argument;
     }
     if (buf == NULL) {
@@ -36,24 +36,13 @@ os__listdir_(str_c path, sbuf_c* buf)
 
     struct dirent* ep;
     while ((ep = readdir(dp)) != NULL) {
-        var dir_name = str.cstr(ep->d_name);
-
-        if (str.cmp(dir_name, str$(".")) == 0) {
+        if (str.eq(ep->d_name, ".")) {
             continue;
         }
-        if (str.cmp(dir_name, str$("..")) == 0) {
+        if (str.eq(ep->d_name, "..")) {
             continue;
         }
-
-        uassert(dir_name.buf[dir_name.len] == '\0' && "not null term");
-
-        // we store list of files as '\n' separated records
-        // we just expand +1 char, so therefore we need extra
-        // sbuf.append() call for '\n' because d is already null
-        // terminated string
-        dir_name.buf[dir_name.len] = '\n';
-        dir_name.len++;
-        e$goto(result = sbuf.append(buf, dir_name), fail);
+        e$goto(result = sbuf.appendf(buf, "%s\n", ep->d_name), fail);
     }
 
 end:
@@ -89,7 +78,7 @@ os__getcwd_(sbuf_c* out)
 }
 
 static Exception
-os__path__exists_(str_c path)
+os__path__exists_(str_s path)
 {
     if (!str.is_valid(path) || path.len == 0) {
         return Error.argument;

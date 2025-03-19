@@ -9,7 +9,7 @@ struct __module__os
     // clang-format off
 
 Exception
-(*listdir)(str_c path, sbuf_c* out);
+(*listdir)(const char* path, sbuf_c* out);
 
 Exception
 (*getcwd)(sbuf_c* out);
@@ -26,13 +26,13 @@ void
 
 struct {  // sub-module .path >>>
     Exception
-    (*exists)(str_c path);
+    (*exists)(str_s path);
 
     Exception
     (*join)(sbuf_c* out, const char* format, ...);
 
-    str_c
-    (*splitext)(str_c path, bool return_ext);
+    str_s
+    (*splitext)(str_s path, bool return_ext);
 
 } path;  // sub-module .path <<<
     // clang-format on

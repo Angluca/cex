@@ -241,7 +241,7 @@ struct cexds_hm_new_kwargs_s
         uassert(allocator != NULL);                                                                \
         enum _CexDsKeyType_e _key_type = _Generic(                                                 \
             &((t)->key),                                                                           \
-            str_c *: _CexDsKeyType__cexstr,                                                        \
+            str_s *: _CexDsKeyType__cexstr,                                                        \
             char(**): _CexDsKeyType__charptr,                                                      \
             const char(**): _CexDsKeyType__charptr,                                                \
             char(*)[]: _CexDsKeyType__charbuf,                                                     \

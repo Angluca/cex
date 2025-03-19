@@ -6,13 +6,13 @@
 #include <math.h>
 
 static inline bool
-str__isvalid(const str_c* s)
+str__isvalid(const str_s* s)
 {
     return s->buf != NULL;
 }
 
 static inline isize
-str__index(str_c* s, const char* c, u8 clen)
+str__index(str_s* s, const char* c, u8 clen)
 {
     isize result = -1;
 
@@ -35,48 +35,59 @@ str__index(str_c* s, const char* c, u8 clen)
     return result;
 }
 
-static str_c
+static str_s
 str_cstr(const char* ccharptr)
 {
     if (unlikely(ccharptr == NULL)) {
-        return (str_c){ 0 };
+        return (str_s){ 0 };
     }
 
-    return (str_c){
+    return (str_s){
         .buf = (char*)ccharptr,
         .len = strlen(ccharptr),
     };
 }
 
-static str_c
+
+static str_s
 str_cbuf(char* s, usize length)
 {
     if (unlikely(s == NULL)) {
-        return (str_c){ 0 };
+        return (str_s){ 0 };
     }
 
-    return (str_c){
+    return (str_s){
         .buf = s,
         .len = strnlen(s, length),
     };
 }
 
-static str_c
-str_sub(str_c s, isize start, isize end)
+static bool
+str_eq(const char* a, const char* b)
+{
+    if (unlikely(a == NULL || b == NULL)) {
+        // NOTE: if both are NULL - this function intentionally return false
+        return false;
+    }
+    return strcmp(a, b) == 0;
+}
+
+static str_s
+str_sub(str_s s, isize start, isize end)
 {
     slice$define(*s.buf) slice = { 0 };
     if (s.buf != NULL) {
         _arr$slice_get(slice, s.buf, s.len, start, end);
     }
 
-    return (str_c){
+    return (str_s){
         .buf = slice.arr,
         .len = slice.len,
     };
 }
 
 static Exception
-str_copy(str_c s, char* dest, usize destlen)
+str_copy(str_s s, char* dest, usize destlen)
 {
     uassert(dest != s.buf && "self copy is not allowed");
 
@@ -105,10 +116,10 @@ str_copy(str_c s, char* dest, usize destlen)
     return Error.ok;
 }
 
-static str_c
+static str_s
 str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
 {
-    str_c out = { .buf = NULL, .len = 0 };
+    str_s out = { .buf = NULL, .len = 0 };
 
     int result = cexsp__vsnprintf(dest, dest_len, format, va);
 
@@ -121,31 +132,31 @@ str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
     return out;
 }
 
-static str_c
+static str_s
 str_sprintf(char* dest, usize dest_len, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    str_c result = str_vsprintf(dest, dest_len, format, va);
+    str_s result = str_vsprintf(dest, dest_len, format, va);
     va_end(va);
     return result;
 }
 
 
 static usize
-str_len(str_c s)
+str_len(str_s s)
 {
     return s.len;
 }
 
 static bool
-str_is_valid(str_c s)
+str_is_valid(str_s s)
 {
     return str__isvalid(&s);
 }
 
 static char*
-str_iter(str_c s, cex_iterator_s* iterator)
+str_iter(str_s s, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
 
@@ -178,7 +189,7 @@ str_iter(str_c s, cex_iterator_s* iterator)
 }
 
 static isize
-str_find(str_c s, str_c needle, usize start, usize end)
+str_find(str_s s, str_s needle, usize start, usize end)
 {
     if (needle.len == 0 || needle.len > s.len) {
         return -1;
@@ -209,7 +220,7 @@ str_find(str_c s, str_c needle, usize start, usize end)
 }
 
 static isize
-str_rfind(str_c s, str_c needle, usize start, usize end)
+str_rfind(str_s s, str_s needle, usize start, usize end)
 {
     if (needle.len == 0 || needle.len > s.len) {
         return -1;
@@ -240,19 +251,19 @@ str_rfind(str_c s, str_c needle, usize start, usize end)
 }
 
 static bool
-str_contains(str_c s, str_c needle)
+str_contains(str_s s, str_s needle)
 {
     return str_find(s, needle, 0, 0) != -1;
 }
 
 static bool
-str_starts_with(str_c s, str_c needle)
+str_starts_with(str_s s, str_s needle)
 {
     return str_find(s, needle, 0, needle.len) != -1;
 }
 
 static bool
-str_ends_with(str_c s, str_c needle)
+str_ends_with(str_s s, str_s needle)
 {
     if (needle.len > s.len) {
         return false;
@@ -261,22 +272,22 @@ str_ends_with(str_c s, str_c needle)
     return str_find(s, needle, s.len - needle.len, 0) != -1;
 }
 
-static str_c
-str_remove_prefix(str_c s, str_c prefix)
+static str_s
+str_remove_prefix(str_s s, str_s prefix)
 {
     isize idx = str_find(s, prefix, 0, prefix.len);
     if (idx == -1) {
         return s;
     }
 
-    return (str_c){
+    return (str_s){
         .buf = s.buf + prefix.len,
         .len = s.len - prefix.len,
     };
 }
 
-static str_c
-str_remove_suffix(str_c s, str_c suffix)
+static str_s
+str_remove_suffix(str_s s, str_s suffix)
 {
     if (suffix.len > s.len) {
         return s;
@@ -288,7 +299,7 @@ str_remove_suffix(str_c s, str_c suffix)
         return s;
     }
 
-    return (str_c){
+    return (str_s){
         .buf = s.buf,
         .len = s.len - suffix.len,
     };
@@ -296,7 +307,7 @@ str_remove_suffix(str_c s, str_c suffix)
 
 
 static inline void
-str__strip_left(str_c* s)
+str__strip_left(str_s* s)
 {
     char* cend = s->buf + s->len;
 
@@ -316,7 +327,7 @@ str__strip_left(str_c* s)
 }
 
 static inline void
-str__strip_right(str_c* s)
+str__strip_right(str_s* s)
 {
     while (s->len > 0) {
         switch (s->buf[s->len - 1]) {
@@ -333,23 +344,23 @@ str__strip_right(str_c* s)
 }
 
 
-static str_c
-str_lstrip(str_c s)
+static str_s
+str_lstrip(str_s s)
 {
     if (s.buf == NULL) {
-        return (str_c){
+        return (str_s){
             .buf = NULL,
             .len = 0,
         };
     }
     if (unlikely(s.len == 0)) {
-        return (str_c){
+        return (str_s){
             .buf = "",
             .len = 0,
         };
     }
 
-    str_c result = (str_c){
+    str_s result = (str_s){
         .buf = s.buf,
         .len = s.len,
     };
@@ -358,23 +369,23 @@ str_lstrip(str_c s)
     return result;
 }
 
-static str_c
-str_rstrip(str_c s)
+static str_s
+str_rstrip(str_s s)
 {
     if (s.buf == NULL) {
-        return (str_c){
+        return (str_s){
             .buf = NULL,
             .len = 0,
         };
     }
     if (unlikely(s.len == 0)) {
-        return (str_c){
+        return (str_s){
             .buf = "",
             .len = 0,
         };
     }
 
-    str_c result = (str_c){
+    str_s result = (str_s){
         .buf = s.buf,
         .len = s.len,
     };
@@ -383,23 +394,23 @@ str_rstrip(str_c s)
     return result;
 }
 
-static str_c
-str_strip(str_c s)
+static str_s
+str_strip(str_s s)
 {
     if (s.buf == NULL) {
-        return (str_c){
+        return (str_s){
             .buf = NULL,
             .len = 0,
         };
     }
     if (unlikely(s.len == 0)) {
-        return (str_c){
+        return (str_s){
             .buf = "",
             .len = 0,
         };
     }
 
-    str_c result = (str_c){
+    str_s result = (str_s){
         .buf = s.buf,
         .len = s.len,
     };
@@ -410,7 +421,7 @@ str_strip(str_c s)
 }
 
 static int
-str_cmp(str_c self, str_c other)
+str_cmp(str_s self, str_s other)
 {
     if (unlikely(self.buf == NULL)) {
         if (other.buf == NULL) {
@@ -444,7 +455,7 @@ str_cmp(str_c self, str_c other)
 }
 
 static int
-str_cmpi(str_c self, str_c other)
+str_cmpi(str_s self, str_s other)
 {
     if (unlikely(self.buf == NULL)) {
         if (other.buf == NULL) {
@@ -488,8 +499,8 @@ str_cmpi(str_c self, str_c other)
     return cmp;
 }
 
-static str_c*
-str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
+static str_s*
+str_iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
     uassert(split_by != NULL && "null split_by");
@@ -499,7 +510,7 @@ str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
     {
         usize cursor;
         usize split_by_len;
-        str_c str;
+        str_s str;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
     _Static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
@@ -537,12 +548,12 @@ str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
             // edge case, we have separator at last col
             // it's not an error, return empty split token
             iterator->idx.i++;
-            ctx->str = (str_c){ .buf = "", .len = 0 };
+            ctx->str = (str_s){ .buf = "", .len = 0 };
             return iterator->val;
         }
 
         // Get remaining string after prev split_by char
-        str_c tok = str.sub(s, ctx->cursor, 0);
+        str_s tok = str.sub(s, ctx->cursor, 0);
         isize idx = str__index(&tok, split_by, ctx->split_by_len);
 
         iterator->idx.i++;
@@ -563,7 +574,7 @@ str_iter_split(str_c s, const char* split_by, cex_iterator_s* iterator)
 
 
 static Exception
-str__to_signed_num(str_c self, i64* num, i64 num_min, i64 num_max)
+str__to_signed_num(str_s self, i64* num, i64 num_min, i64 num_max)
 {
     _Static_assert(sizeof(i64) == 8, "unexpected u64 size");
     uassert(num_min < num_max);
@@ -650,7 +661,7 @@ str__to_signed_num(str_c self, i64* num, i64 num_min, i64 num_max)
 }
 
 static Exception
-str__to_unsigned_num(str_c self, u64* num, u64 num_max)
+str__to_unsigned_num(str_s self, u64* num, u64 num_max)
 {
     _Static_assert(sizeof(u64) == 8, "unexpected u64 size");
     uassert(num_max > 0);
@@ -732,7 +743,7 @@ str__to_unsigned_num(str_c self, u64* num, u64 num_max)
 }
 
 static Exception
-str__to_double(str_c self, double* num, i32 exp_min, i32 exp_max)
+str__to_double(str_s self, double* num, i32 exp_min, i32 exp_max)
 {
     _Static_assert(sizeof(double) == 8, "unexpected double precision");
     if (unlikely(self.len == 0)) {
@@ -908,7 +919,7 @@ str__to_double(str_c self, double* num, i32 exp_min, i32 exp_max)
 }
 
 static Exception
-str_to_f32(str_c self, f32* num)
+str_to_f32(str_s self, f32* num)
 {
     f64 res = 0;
     Exc r = str__to_double(self, &res, -37, 38);
@@ -917,13 +928,13 @@ str_to_f32(str_c self, f32* num)
 }
 
 static Exception
-str_to_f64(str_c self, f64* num)
+str_to_f64(str_s self, f64* num)
 {
     return str__to_double(self, num, -307, 308);
 }
 
 static Exception
-str_to_i8(str_c self, i8* num)
+str_to_i8(str_s self, i8* num)
 {
     i64 res = 0;
     Exc r = str__to_signed_num(self, &res, INT8_MIN, INT8_MAX);
@@ -932,7 +943,7 @@ str_to_i8(str_c self, i8* num)
 }
 
 static Exception
-str_to_i16(str_c self, i16* num)
+str_to_i16(str_s self, i16* num)
 {
     i64 res = 0;
     var r = str__to_signed_num(self, &res, INT16_MIN, INT16_MAX);
@@ -941,7 +952,7 @@ str_to_i16(str_c self, i16* num)
 }
 
 static Exception
-str_to_i32(str_c self, i32* num)
+str_to_i32(str_s self, i32* num)
 {
     i64 res = 0;
     var r = str__to_signed_num(self, &res, INT32_MIN, INT32_MAX);
@@ -951,7 +962,7 @@ str_to_i32(str_c self, i32* num)
 
 
 static Exception
-str_to_i64(str_c self, i64* num)
+str_to_i64(str_s self, i64* num)
 {
     i64 res = 0;
     // NOTE:INT64_MIN+1 because negating of INT64_MIN leads to UB!
@@ -961,7 +972,7 @@ str_to_i64(str_c self, i64* num)
 }
 
 static Exception
-str_to_u8(str_c self, u8* num)
+str_to_u8(str_s self, u8* num)
 {
     u64 res = 0;
     Exc r = str__to_unsigned_num(self, &res, UINT8_MAX);
@@ -970,7 +981,7 @@ str_to_u8(str_c self, u8* num)
 }
 
 static Exception
-str_to_u16(str_c self, u16* num)
+str_to_u16(str_s self, u16* num)
 {
     u64 res = 0;
     Exc r = str__to_unsigned_num(self, &res, UINT16_MAX);
@@ -979,7 +990,7 @@ str_to_u16(str_c self, u16* num)
 }
 
 static Exception
-str_to_u32(str_c self, u32* num)
+str_to_u32(str_s self, u32* num)
 {
     u64 res = 0;
     Exc r = str__to_unsigned_num(self, &res, UINT32_MAX);
@@ -988,7 +999,7 @@ str_to_u32(str_c self, u32* num)
 }
 
 static Exception
-str_to_u64(str_c self, u64* num)
+str_to_u64(str_s self, u64* num)
 {
     u64 res = 0;
     Exc r = str__to_unsigned_num(self, &res, UINT64_MAX);
@@ -1049,7 +1060,7 @@ str__fmt_callback(const char* buf, void* user, u32 len)
     return (ctx->buf != NULL) ? &ctx->buf[ctx->length] : ctx->tmp;
 }
 
-static str_c
+static str_s
 str__fmtva(IAllocator allc, const char* format, va_list va)
 {
     cexsp__context ctx = {
@@ -1060,7 +1071,7 @@ str__fmtva(IAllocator allc, const char* format, va_list va)
 
     if (unlikely(ctx.has_error)) {
         mem$free(allc, ctx.buf);
-        return (str_c){ 0 };
+        return (str_s){ 0 };
     }
 
     if (ctx.buf) {
@@ -1071,20 +1082,20 @@ str__fmtva(IAllocator allc, const char* format, va_list va)
         uassert(ctx.length <= arr$len(ctx.tmp) - 1);
         ctx.buf = mem$malloc(allc, ctx.length + 1);
         if (ctx.buf == NULL) {
-            return (str_c){ 0 };
+            return (str_s){ 0 };
         }
         memcpy(ctx.buf, ctx.tmp, ctx.length);
         ctx.buf[ctx.length] = '\0';
     }
-    return (str_c){ .buf = ctx.buf, .len = ctx.length };
+    return (str_s){ .buf = ctx.buf, .len = ctx.length };
 }
 
-static str_c
+static str_s
 str_fmt(IAllocator allc, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    str_c result = str__fmtva(allc, format, va);
+    str_s result = str__fmtva(allc, format, va);
     va_end(va);
     return result;
 }
@@ -1093,7 +1104,7 @@ str_cfmt(IAllocator allc, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    str_c result = str__fmtva(allc, format, va);
+    str_s result = str__fmtva(allc, format, va);
     va_end(va);
     return result.buf;
 }
@@ -1103,13 +1114,13 @@ str_tfmt(const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    str_c result = str__fmtva(tmem$, format, va);
+    str_s result = str__fmtva(tmem$, format, va);
     va_end(va);
     return result.buf;
 }
 
 static char*
-str_tnew(str_c s)
+str_tnew(str_s s)
 {
     if (s.buf == NULL) {
         return NULL;
@@ -1141,7 +1152,7 @@ str_tcopy(char* s)
 
 static arr$(char*) str_tsplit(char* s, const char* split_by)
 {
-    str_c src = str_cstr(s);
+    str_s src = str_cstr(s);
     if (src.buf == NULL || split_by == NULL) {
         return NULL;
     }
@@ -1150,7 +1161,7 @@ static arr$(char*) str_tsplit(char* s, const char* split_by)
         return NULL;
     }
 
-    for$iter(str_c, it, str_iter_split(src, split_by, &it.iterator))
+    for$iter(str_s, it, str_iter_split(src, split_by, &it.iterator))
     {
         char* tok = str_tnew(*it.val);
         arr$push(result, tok);
@@ -1208,6 +1219,7 @@ const struct __module__str str = {
     // clang-format off
     .cstr = str_cstr,
     .cbuf = str_cbuf,
+    .eq = str_eq,
     .sub = str_sub,
     .copy = str_copy,
     .vsprintf = str_vsprintf,

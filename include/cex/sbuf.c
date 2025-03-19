@@ -170,6 +170,11 @@ sbuf_update_len(sbuf_c* self)
 static Exception
 sbuf_replace(sbuf_c* self, const char* oldstr, const char* newstr)
 {
+    (void)self;
+    (void)oldstr;
+    (void)newstr;
+    return "TODO: str_s api needed";
+    /*
     uassert(self != NULL);
 
     sbuf_head_s* head = sbuf__head(*self);
@@ -180,16 +185,14 @@ sbuf_replace(sbuf_c* self, const char* oldstr, const char* newstr)
     if (unlikely(oldstr == NULL || newstr == NULL)) {
         return Error.argument;
     }
+
     u32 old_len = strlen(oldstr);
 
-    str_c s = str.cbuf(*self, head->length);
+    str_s s = str.cbuf(*self, head->length);
 
     if (unlikely(s.len == 0)) {
         return Error.ok;
     }
-
-    return "TODO: str_c api needed";
-    /*
         u32 capacity = head->capacity;
 
         isize idx = -1;

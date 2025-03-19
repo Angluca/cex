@@ -10,7 +10,7 @@
 #endif
 
 Exception
-os_listdir(str_c path, sbuf_c* out)
+os_listdir(const char* path, sbuf_c* out)
 {
     return os__listdir_(path, out);
 }
@@ -46,7 +46,7 @@ os_unsetenv(const char* name)
 }
 
 Exception
-os__path__exists(str_c path)
+os__path__exists(str_s path)
 {
     return os__path__exists_(path);
 }
@@ -58,13 +58,13 @@ os__path__join(sbuf_c* out, const char* format, ...)
     va_list va;
     va_start(va, format);
     sbuf.clear(out);
-    Exc result = sbuf.vsprintf(out, format, va);
+    Exc result = sbuf.appendf(out, format, va);
     va_end(va);
     return result;
 }
 
-str_c
-os__path__splitext(str_c path, bool return_ext)
+str_s
+os__path__splitext(str_s path, bool return_ext)
 {
     if (path.len == 0) {
         return str$("");

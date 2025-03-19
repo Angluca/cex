@@ -305,7 +305,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     if (s == 0) {
                         s = (char*)"(null)";
                     } else {
-                        // NOTE: cex is str_c passed as %s, s will be length
+                        // NOTE: cex is str_s passed as %s, s will be length
                         // try to double check sensible value of pointer
                         s = (char*)"(str_c->%S)";
                     }
@@ -321,8 +321,8 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 // copy the string in
                 goto scopy;
             case 'S': {
-                // NOTE: CEX extra (support of str_c)
-                str_c sv = va_arg(va, str_c);
+                // NOTE: CEX extra (support of str_s)
+                str_s sv = va_arg(va, str_s);
                 s = sv.buf;
                 if (s == 0) {
                     s = (char*)"(null)";

@@ -239,35 +239,35 @@ test$case(test_sbuf_replace)
     tassert_eqs(EOK, sbuf.append(&s, "123123123"));
     u32 cap = sbuf.capacity(&s);
 
-    tassert_eqs(EOK, sbuf.replace(&s, str.cstr("123"), str.cstr("456")));
+    tassert_eqs(EOK, sbuf.replace(&s, "123", "456"));
     tassert_eqs(s, "456456456");
     tassert_eqi(sbuf.len(&s), 9);
     tassert_eqi(sbuf.capacity(&s), cap);
 
-    tassert_eqs(EOK, sbuf.replace(&s, str.cstr("456"), str.cstr("78")));
+    tassert_eqs(EOK, sbuf.replace(&s, "456", "78"));
     tassert_eqs(s, "787878");
     tassert_eqi(sbuf.len(&s), 6);
     tassert_eqi(sbuf.capacity(&s), cap);
     tassert_eqi(s[sbuf.len(&s)], 0);
 
-    tassert_eqs(EOK, sbuf.replace(&s, str.cstr("78"), str.cstr("321")));
+    tassert_eqs(EOK, sbuf.replace(&s, "78", "321"));
     tassert_eqs(s, "321321321");
     tassert_eqi(sbuf.len(&s), 9);
     tassert_eqi(sbuf.capacity(&s), cap);
     tassert_eqi(s[sbuf.len(&s)], 0);
 
-    tassert_eqs(EOK, sbuf.replace(&s, str.cstr("32"), str.cstr("")));
+    tassert_eqs(EOK, sbuf.replace(&s, "32", ""));
     tassert_eqs(s, "111");
     tassert_eqi(sbuf.len(&s), 3);
     tassert_eqi(sbuf.capacity(&s), cap);
     tassert_eqi(s[sbuf.len(&s)], 0);
 
-    tassert_eqs(EOK, sbuf.replace(&s, str.cstr("1"), str.cstr("2")));
+    tassert_eqs(EOK, sbuf.replace(&s, "1", "2"));
     tassert_eqs(s, "222");
     tassert_eqi(sbuf.len(&s), 3);
     tassert_eqi(sbuf.capacity(&s), cap);
 
-    tassert_eqs(EOK, sbuf.replace(&s, str.cstr("2"), str.cstr("")));
+    tassert_eqs(EOK, sbuf.replace(&s, "2", ""));
     tassert_eqs(s, "");
     tassert_eqi(sbuf.len(&s), 0);
     tassert_eqi(sbuf.capacity(&s), cap);
@@ -289,7 +289,7 @@ test$case(test_sbuf_replace_resize)
     tassert_eqi(sbuf.len(&s), sbuf.capacity(&s));
 
     usize prev_len = sbuf.len(&s);
-    tassert_eqs(EOK, sbuf.replace(&s, str.cstr("A"), str.cstr("AB")));
+    tassert_eqs(EOK, sbuf.replace(&s, "A", "AB"));
     tassert_eqi(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
     tassert_eqi(sbuf.len(&s), prev_len + 1);
 
@@ -308,15 +308,15 @@ test$case(test_sbuf_replace_error_checks)
     memset(s, 0xff, sbuf.capacity(&s));
 
     tassert_eqs(EOK, sbuf.append(&s, "1234567890A"));
-    tassert_eqs(Error.argument, sbuf.replace(&s, str.cstr(NULL), str.cstr("AB")));
-    tassert_eqs(Error.argument, sbuf.replace(&s, str.cstr("9"), str.cstr(NULL)));
-    tassert_eqs(Error.argument, sbuf.replace(&s, str.cstr(""), str.cstr("asda")));
+    tassert_eqs(Error.argument, sbuf.replace(&s, NULL, "AB"));
+    tassert_eqs(Error.argument, sbuf.replace(&s, "9", NULL));
+    tassert_eqs(Error.argument, sbuf.replace(&s, "", "asda"));
 
     tassert_eqs("1234567890A", s);
     tassert_eqi(sbuf.len(&s), 11);
     sbuf.clear(&s);
     tassert_eqi(sbuf.len(&s), 0);
-    tassert_eqs(Error.ok, sbuf.replace(&s, str.cstr("123"), str.cstr("asda")));
+    tassert_eqs(Error.ok, sbuf.replace(&s, "123", "asda"));
 
 
     sbuf.destroy(&s);
@@ -383,18 +383,18 @@ test$case(test_sbuf_appendf_long_growth)
         snprintf(buf, arr$len(buf), "%04d", i);
         tassert_eqs(EOK, sbuf.appendf(&s, "%04d", i));
 
-        str_c v = str.cstr(s);
+        str_s v = str.cstr(s);
         tassertf(str.ends_with(v, str.cstr(buf)), "i=%d, s=%s", i, v.buf);
         tassert_eqi(s[sbuf.len(&s)], '\0');
         tassert_eqi(s[sbuf.capacity(&s)], '\0');
     }
     tassert_eqi(n_max * 4, sbuf.len(&s));
 
-    str_c sv = str.cstr(s);
+    str_s sv = str.cstr(s);
 
     for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
-        str_c sub1 = str.sub(sv, i * 4, i * 4 + 4);
+        str_s sub1 = str.sub(sv, i * 4, i * 4 + 4);
 
         tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
         tassertf(str.cmp(sub1, str.cstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
@@ -417,15 +417,15 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
         snprintf(buf, arr$len(buf), "%04d", i);
         tassert_eqs(EOK, sbuf.appendf(&s, "%04d", i));
 
-        str_c v = str.cstr(s);
+        str_s v = str.cstr(s);
         tassertf(str.ends_with(v, str.cstr(buf)), "i=%d, s=%s", i, v.buf);
         tassert_eqi(s[sbuf.len(&s)], '\0');
         tassert_eqi(s[sbuf.capacity(&s)], '\0');
     }
     tassert_eqi(n_max * 4, sbuf.len(&s));
 
-    var sv2 = sbuf.to_str(&s);
-    str_c sv = str.cstr(s);
+    var sv2 = str.cstr(s);
+    str_s sv = str.cstr(s);
     tassert_eqi(str.cmp(sv2, sv), 0);
     tassert_eqi(sv2.len, sv.len);
     tassert(sv2.buf == sv.buf);
@@ -433,7 +433,7 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
 
     for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
-        str_c sub1 = str.sub(sv, i * 4, i * 4 + 4);
+        str_s sub1 = str.sub(sv, i * 4, i * 4 + 4);
         tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
         tassertf(str.cmp(sub1, str.cstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }

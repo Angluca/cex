@@ -520,7 +520,7 @@ cexds_hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size
             return cexds_hash_string(key, key_size, seed);
 
         case _CexDsKeyType__cexstr: {
-            str_c* s = (str_c*)key;
+            str_s* s = (str_s*)key;
             return cexds_hash_string(s->buf, s->len, seed);
         }
     }
@@ -586,8 +586,8 @@ cexds_is_key_equal(
             return 0 == strcmp((char*)key, (char*)hm_key);
 
         case _CexDsKeyType__cexstr: {
-            str_c* _k = (str_c*)key;
-            str_c* _hm = (str_c*)hm_key;
+            str_s* _k = (str_s*)key;
+            str_s* _hm = (str_s*)hm_key;
             if (_k->len != _hm->len) {
                 return false;
             }
@@ -1002,7 +1002,7 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
                 break;
 
             case _CexDsKeyType__cexstr: {
-                str_c* s = (str_c*)((char*)a + elemsize * old_index + keyoffset);
+                str_s* s = (str_s*)((char*)a + elemsize * old_index + keyoffset);
                 key_data_p = s;
                 break;
             }

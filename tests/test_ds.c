@@ -802,7 +802,7 @@ test$case(test_hashmap_keytype)
         int value;
     }* map4 = hm$new(map4, mem$);
 
-    hm$(str_c, int) map5 = hm$new(map5, mem$);
+    hm$(str_s, int) map5 = hm$new(map5, mem$);
 
     tassert_eqi(cexds_header(intmap)->hm_key_type, _CexDsKeyType__generic);
     tassert_eqi(cexds_header(intmap64)->hm_key_type, _CexDsKeyType__generic);
@@ -829,7 +829,7 @@ test$case(test_hashmap_hash)
     const char* key = "foobar";
     char key_buf[10] = "foobar";
     char key_buf2[6] = "foobar";
-    str_c key_str = str.cbuf(key_buf2, sizeof(key_buf2));
+    str_s key_str = str.cbuf(key_buf2, sizeof(key_buf2));
 
     // Make sure pointers are different
     tassert(str.cmp(key_str, str$("foobar")) == 0);
@@ -937,10 +937,10 @@ test$case(test_hashmap_bufkey)
             char(**): _Generic(                                                                    \
                 (k),                                                                               \
                 char*: (key_len = 0),                                                              \
-                str_c: (key = *(((size_t**)key) + 1)),                                             \
+                str_s: (key = *(((size_t**)key) + 1)),                                             \
                 default: (key = NULL)                                                              \
             ),                                                                                     \
-            str_c*: (key_len = 0),                                                                 \
+            str_s*: (key_len = 0),                                                                 \
             default: (key_len = 0)                                                                 \
         );                                                                                         \
         printf("key: %p, key_len: %ld, key_size: %ld\n", key, key_len, key_size);                  \
@@ -948,7 +948,7 @@ test$case(test_hashmap_bufkey)
 
 test$case(test_hashmap_cex_string)
 {
-    hm$(str_c, int) smap = hm$new(smap, mem$);
+    hm$(str_s, int) smap = hm$new(smap, mem$);
 
     char key_buf[10] = "bar";
     char key_buf2[10] = "baz";
@@ -972,7 +972,7 @@ test$case(test_hashmap_cex_string)
     (void)imap;
 
     char* c = "foobar";
-    str_c s = (str_c){ .buf = c, .len = 6 };
+    str_s s = (str_s){ .buf = c, .len = 6 };
 
 
     _hm$test(imap, 2);

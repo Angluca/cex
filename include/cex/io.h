@@ -54,10 +54,10 @@ Exception
 (*read)(io_c* self, void* obj_buffer, usize obj_el_size, usize* obj_count);
 
 Exception
-(*readall)(io_c* self, str_c* s);
+(*readall)(io_c* self, str_s* s);
 
 Exception
-(*readline)(io_c* self, str_c* s);
+(*readline)(io_c* self, str_s* s);
 
 Exception
 (*fprintf)(FILE* stream, const char* format, ...);
@@ -72,7 +72,7 @@ void
 (*close)(io_c* self);
 
 Exception
-(*fload)(const char* path, str_c* out_content, IAllocator allc);
+(*fload)(const char* path, str_s* out_content, IAllocator allc);
 
     // clang-format on
 };

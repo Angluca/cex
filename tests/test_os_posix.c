@@ -18,10 +18,9 @@ test$setup()
 
 test$case(test_os_listdir)
 {
-    sbuf_c listdir = { 0 };
-    tassert_eqe(EOK, sbuf.create(&listdir, 1024, mem$));
+    sbuf_c listdir = sbuf.create(1024, mem$);
 
-    tassert_eqe(EOK, os.listdir(str$("tests/data/"), &listdir));
+    tassert_eqe(EOK, os.listdir("tests/data/", &listdir));
     tassert(sbuf.len(&listdir) > 0);
 
     u32 nit = 0;
@@ -33,7 +32,7 @@ test$case(test_os_listdir)
         "text_file_zero_byte.txt",   "",
     };
     (void)expected;
-    for$iter(str_c, it, sbuf.iter_split(&listdir, "\n", &it.iterator))
+    for$iter(str_s, it, str.iter_split(str.cstr(listdir), "\n", &it.iterator))
     {
         // io.printf("%d: %S\n", it.idx.i, *it.val);
         tassert_eqi(it.idx.i, nit);
@@ -55,7 +54,7 @@ test$case(test_os_listdir)
     tassert_eqi(nit, arr$len(expected));
 
     tassert(sbuf.len(&listdir) > 0);
-    tassert_eqe(Error.not_found, os.listdir(str$("tests/data/unknownfolder"), &listdir));
+    tassert_eqe(Error.not_found, os.listdir("tests/data/unknownfolder", &listdir));
     tassert_eqi(sbuf.len(&listdir), 0);
 
     sbuf.destroy(&listdir);
@@ -64,11 +63,9 @@ test$case(test_os_listdir)
 
 test$case(test_os_getcwd)
 {
-    sbuf_c s = { 0 };
-    tassert_eqe(EOK, sbuf.create(&s, 10, mem$));
+    sbuf_c s = sbuf.create( 10, mem$);
     tassert_eqe(EOK, os.getcwd(&s));
-    io.printf("'%S'\n", sbuf.to_str(&s));
-    tassert_eqi(true, str.ends_with(sbuf.to_str(&s), str$("cex")));
+    tassert_eqi(true, str.ends_with(str.cstr(s), str$("cex")));
 
     sbuf.destroy(&s);
     return EOK;
@@ -92,7 +89,7 @@ test$case(test_os_path_exists)
     char buf[PATH_MAX + 10];
     memset(buf, 'a', arr$len(buf));
     buf[PATH_MAX + 8] = '\0';
-    str_c s = str.cbuf(buf, arr$len(buf));
+    str_s s = str.cbuf(buf, arr$len(buf));
     s.len++;
 
     // Path is too long, and exceeds PATH_MAX buffer size
@@ -106,8 +103,7 @@ test$case(test_os_path_exists)
 
 test$case(test_os_path_join)
 {
-    sbuf_c s = { 0 };
-    tassert_eqe(EOK, sbuf.create(&s, 10, mem$));
+    sbuf_c s = sbuf.create(10, mem$);
     tassert_eqe(EOK, os.path.join(&s, "%S/%s_%d.txt", str$("cexstr"), "foo", 10));
     tassert_eqs("cexstr/foo_10.txt", s);
     sbuf.destroy(&s);

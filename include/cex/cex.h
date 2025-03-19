@@ -564,33 +564,30 @@ _Static_assert(sizeof(Allocator_i) == sizeof(usize) * 10, "size");
 
 /*
  *                  CEX STRING DATATYPE
- *  NOTE: methods implementation in cex/str.c
+ *  methods implementation in cex/str.c
  */
 typedef struct
 {
-    // NOTE: len comes first which prevents bad casting of str_c to char*
-    // stb_sprintf() has special case of you accidentally pass str_c to
-    // %s format specifier (it will show -> (str_c->%S))
     usize len;
     char* buf;
-} str_c;
+} str_s;
 
-_Static_assert(alignof(str_c) == alignof(usize), "align");
-_Static_assert(sizeof(str_c) == sizeof(usize) * 2, "size");
+_Static_assert(alignof(str_s) == alignof(usize), "align");
+_Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
 
 
 /**
- * @brief creates str_c, instance from string literals/constants: str$("my string")
+ * @brief creates str_s, instance from string literals/constants: str$("my string")
  *
  * Uses compile time string length calculation, only literals
  *
  */
 #define str$(string)                                                                               \
-    (str_c){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
+    (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
 
 /**
- * @brief creates slice of str_c instance
+ * @brief creates slice of str_s instance
  */
 #define str$slice(str_self, ...)                                                                   \
     ({                                                                                             \

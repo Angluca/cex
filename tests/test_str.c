@@ -28,7 +28,7 @@ test$case(test_cstr)
     const char* cstr = "hello";
 
 
-    str_c s = str.cstr(cstr);
+    str_s s = str.cstr(cstr);
     tassert_eqs(s.buf, cstr);
     tassert_eqi(s.len, 5); // lazy init until str.length() is called
     tassert(s.buf == cstr);
@@ -38,13 +38,13 @@ test$case(test_cstr)
 
     tassert_eqi(s.len, 5); // now s.len is set
 
-    str_c snull = str.cstr(NULL);
+    str_s snull = str.cstr(NULL);
     tassert_eqs(snull.buf, NULL);
     tassert_eqi(snull.len, 0);
     tassert_eqi(str.len(snull), 0);
     tassert_eqi(str.is_valid(snull), false);
 
-    str_c sempty = str.cstr("");
+    str_s sempty = str.cstr("");
     tassert_eqs(sempty.buf, "");
     tassert_eqi(sempty.len, 0);
     tassert_eqi(str.len(sempty), 0);
@@ -57,12 +57,11 @@ test$case(test_cstr_sdollar)
 {
     const char* cstr = "hello";
 
-    sbuf_c sb;
-    tassert_eqs(EOK, sbuf.create(&sb, 10, mem$));
-    tassert_eqs(EOK, sbuf.append(&sb, str$("hello")));
+    sbuf_c sb = sbuf.create(10, mem$);
+    tassert_eqs(EOK, sbuf.append(&sb, "hello"));
     sbuf.destroy(&sb);
 
-    str_c s2 = str$("hello");
+    str_s s2 = str$("hello");
     tassert_eqs(s2.buf, cstr);
     tassert_eqi(s2.len, 5); // lazy init until str.length() is called
     tassert(s2.buf == cstr);
@@ -71,13 +70,13 @@ test$case(test_cstr_sdollar)
 
 
     char* str_null = NULL;
-    str_c snull = str.cstr(str_null);
+    str_s snull = str.cstr(str_null);
     tassert_eqs(snull.buf, NULL);
     tassert_eqi(snull.len, 0);
     tassert_eqi(str.len(snull), 0);
     tassert_eqi(str.is_valid(snull), false);
 
-    str_c sempty = str$("");
+    str_s sempty = str$("");
     tassert_eqs(sempty.buf, "");
     tassert_eqi(sempty.len, 0);
     tassert_eqi(str.len(sempty), 0);
@@ -112,7 +111,7 @@ test$case(test_copy)
     char buf[8];
     memset(buf, 'a', arr$len(buf));
 
-    str_c s = str.cstr("1234567");
+    str_s s = str.cstr("1234567");
     tassert_eqi(s.len, 7);
 
     memset(buf, 'a', arr$len(buf));
@@ -138,13 +137,13 @@ test$case(test_copy)
     // buffer reset to "" string
     tassert_eqs("", buf);
 
-    str_c sbig = str.cstr("12345678");
+    str_s sbig = str.cstr("12345678");
     memset(buf, 'a', arr$len(buf));
     tassert_eqs(Error.overflow, str.copy(sbig, buf, arr$len(buf)));
     // string is truncated
     tassert_eqs("1234567", buf);
 
-    str_c ssmall = str.cstr("1234");
+    str_s ssmall = str.cstr("1234");
     memset(buf, 'a', arr$len(buf));
     tassert_eqs(Error.ok, str.copy(ssmall, buf, arr$len(buf)));
     tassert_eqs("1234", buf);
@@ -154,8 +153,8 @@ test$case(test_copy)
 test$case(test_sub_positive_start)
 {
 
-    str_c sub;
-    str_c s = str.cstr("123456");
+    str_s sub;
+    str_s s = str.cstr("123456");
     tassert_eqi(s.len, 6);
     tassert_eqi(str.is_valid(s), true);
 
@@ -234,11 +233,11 @@ test$case(test_sub_positive_start)
 test$case(test_sub_negative_start)
 {
 
-    str_c s = str.cstr("123456");
+    str_s s = str.cstr("123456");
     tassert_eqi(s.len, 6);
     tassert_eqi(str.is_valid(s), true);
 
-    str_c s_empty = { 0 };
+    str_s s_empty = { 0 };
     var sub = str.sub(s_empty, 0, 2);
     tassert_eqi(sub.len, 0);
     tassert(sub.buf == NULL);
@@ -315,7 +314,7 @@ test$case(test_sub_negative_start)
 test$case(test_iter)
 {
 
-    str_c s = str.cstr("123456");
+    str_s s = str.cstr("123456");
     tassert_eqi(s.len, 6);
     u32 nit = 0;
     for$iter(char, it, str.iter(s, &it.iterator))
@@ -374,7 +373,7 @@ test$case(test_iter)
 test$case(test_iter_split)
 {
 
-    str_c s = str.cstr("123456");
+    str_s s = str.cstr("123456");
     u32 nit = 0;
     char buf[128] = { 0 };
 
@@ -383,7 +382,7 @@ test$case(test_iter_split)
     const char* expected1[] = {
         "123456",
     };
-    for$iter(str_c, it, str.iter_split(s, ",", &it.iterator))
+    for$iter(str_s, it, str.iter_split(s, ",", &it.iterator))
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
@@ -398,7 +397,7 @@ test$case(test_iter_split)
         "123",
         "456",
     };
-    for$iter(str_c, it, str.iter_split(s, ",", &it.iterator))
+    for$iter(str_s, it, str.iter_split(s, ",", &it.iterator))
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
@@ -415,7 +414,7 @@ test$case(test_iter_split)
         "88",
         "99",
     };
-    for$iter(str_c, it, str.iter_split(s, ",", &it.iterator))
+    for$iter(str_s, it, str.iter_split(s, ",", &it.iterator))
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
@@ -432,7 +431,7 @@ test$case(test_iter_split)
         "",
     };
     s = str.cstr("123,456,88,");
-    for$iter(str_c, it, str.iter_split(s, ",", &it.iterator))
+    for$iter(str_s, it, str.iter_split(s, ",", &it.iterator))
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
@@ -450,7 +449,7 @@ test$case(test_iter_split)
         "88",
         "99",
     };
-    for$iter(str_c, it, str.iter_split(s, ",@#", &it.iterator))
+    for$iter(str_s, it, str.iter_split(s, ",@#", &it.iterator))
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
@@ -467,7 +466,7 @@ test$case(test_iter_split)
         "",
     };
     s = str.cstr("123\n456\n");
-    for$iter(str_c, it, str.iter_split(s, "\n", &it.iterator))
+    for$iter(str_s, it, str.iter_split(s, "\n", &it.iterator))
     {
         tassert_eqi(str.is_valid(*it.val), true);
         tassert_eqs(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
@@ -481,7 +480,7 @@ test$case(test_iter_split)
 test$case(test_find)
 {
 
-    str_c s = str.cstr("123456");
+    str_s s = str.cstr("123456");
     tassert_eqi(s.len, 6);
 
     // match first
@@ -540,7 +539,7 @@ test$case(test_find)
 test$case(test_rfind)
 {
 
-    str_c s = str.cstr("123456");
+    str_s s = str.cstr("123456");
     tassert_eqi(s.len, 6);
 
     // match first
@@ -601,7 +600,7 @@ test$case(test_rfind)
 
 test$case(test_contains_starts_ends)
 {
-    str_c s = str.cstr("123456");
+    str_s s = str.cstr("123456");
     tassert_eqi(1, str.contains(s, str.cstr("1")));
     tassert_eqi(1, str.contains(s, str.cstr("123456")));
     tassert_eqi(0, str.contains(s, str.cstr("1234567")));
@@ -635,7 +634,7 @@ test$case(test_contains_starts_ends)
 
 test$case(test_remove_prefix)
 {
-    str_c out;
+    str_s out;
 
     out = str.remove_prefix(str$("prefix_str_prefix"), str$("prefix"));
     tassert_eqi(str.cmp(out, str$("_str_prefix")), 0);
@@ -661,7 +660,7 @@ test$case(test_remove_prefix)
 
 test$case(test_remove_suffix)
 {
-    str_c out;
+    str_s out;
 
     out = str.remove_suffix(str$("suffix_str_suffix"), str$("suffix"));
     tassert_eqi(str.cmp(out, str$("suffix_str_")), 0);
@@ -687,9 +686,9 @@ test$case(test_remove_suffix)
 
 test$case(test_strip)
 {
-    str_c s = str.cstr("\n\t \r123\n\t\r 456 \r\n\t");
+    str_s s = str.cstr("\n\t \r123\n\t\r 456 \r\n\t");
     (void)s;
-    str_c out;
+    str_s out;
 
     // LEFT
     out = str.lstrip(str.cstr(NULL));
@@ -801,7 +800,7 @@ test$case(test_cmpi)
 test$case(str_to__signed_num)
 {
     i64 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("1");
@@ -983,7 +982,7 @@ test$case(str_to__signed_num)
 test$case(test_str_to_i8)
 {
     i8 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("127");
@@ -1019,7 +1018,7 @@ test$case(test_str_to_i8)
 test$case(test_str_to_i16)
 {
     i16 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("-32768");
@@ -1047,7 +1046,7 @@ test$case(test_str_to_i16)
 test$case(test_str_to_i32)
 {
     i32 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("-2147483648");
@@ -1076,7 +1075,7 @@ test$case(test_str_to_i32)
 test$case(test_str_to_i64)
 {
     i64 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("-9223372036854775807");
@@ -1104,7 +1103,7 @@ test$case(test_str_to_i64)
 test$case(str_to__unsigned_num)
 {
     u64 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("1");
@@ -1271,7 +1270,7 @@ test$case(str_to__unsigned_num)
 test$case(test_str_to_u8)
 {
     u8 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("255");
@@ -1297,7 +1296,7 @@ test$case(test_str_to_u8)
 test$case(test_str_to_u16)
 {
     u16 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("65535");
@@ -1323,7 +1322,7 @@ test$case(test_str_to_u16)
 test$case(test_str_to_u32)
 {
     u32 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("4294967295");
@@ -1348,7 +1347,7 @@ test$case(test_str_to_u32)
 test$case(test_str_to_u64)
 {
     u64 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("18446744073709551615");
@@ -1372,7 +1371,7 @@ test$case(test_str_to_u64)
 test$case(str_to__double)
 {
     double num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("1");
@@ -1566,7 +1565,7 @@ test$case(str_to__double)
 test$case(test_str_to_f32)
 {
     f32 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("1.4");
@@ -1603,7 +1602,7 @@ test$case(test_str_to_f32)
 test$case(test_str_to_f64)
 {
     f64 num;
-    str_c s;
+    str_s s;
 
     num = 0;
     s = str$("1.4");
@@ -1642,7 +1641,7 @@ test$case(test_str_sprintf)
     char buffer[10] = { 0 };
 
     memset(buffer, 'z', sizeof(buffer));
-    str_c s = str.sprintf(buffer, sizeof(buffer), "%s", "1234");
+    str_s s = str.sprintf(buffer, sizeof(buffer), "%s", "1234");
     tassert_eqs("1234", buffer);
     tassert_eqi(str.cmp(s, str$("1234")), 0);
     tassert_eqi(s.len, 4);
@@ -1693,11 +1692,11 @@ test$case(test_str_sprintf)
 test$case(test_s_macros)
 {
 
-    str_c s = str.cstr("123456");
+    str_s s = str.cstr("123456");
     tassert_eqi(s.len, 6);
     tassert_eqi(str.is_valid(s), true);
 
-    str_c s2 = str$("fofo");
+    str_s s2 = str$("fofo");
     tassert_eqi(s2.len, 4);
     tassert_eqi(str.is_valid(s2), true);
 
@@ -1706,7 +1705,7 @@ test$case(test_s_macros)
     tassert_eqi(str.cmp(s2, str$("")), 0);
     tassert_eqi(str.is_valid(s2), true);
 
-    str_c m = str$("\
+    str_s m = str$("\
 foo\n\
 bar\n\
 zoo\n");
@@ -1721,7 +1720,7 @@ test$case(test_sfmt)
     mem$scope(tmem$, _)
     {
         // loading this test!
-        str_c fcontent;
+        str_s fcontent;
         e$ret(io.fload(__FILE__, &fcontent, tmem$));
         tassert(fcontent.buf != NULL);
         tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
@@ -1756,7 +1755,7 @@ test$case(test_cfmt)
     mem$scope(tmem$, _)
     {
         // loading this test!
-        str_c fcontent;
+        str_s fcontent;
         e$ret(io.fload(__FILE__, &fcontent, tmem$));
         tassert(fcontent.buf != NULL);
         tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
@@ -1791,7 +1790,7 @@ test$case(test_tfmt)
     mem$scope(tmem$, _)
     {
         // loading this test!
-        str_c fcontent;
+        str_s fcontent;
         e$ret(io.fload(__FILE__, &fcontent, tmem$));
         tassert(fcontent.buf != NULL);
         tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
@@ -1824,7 +1823,7 @@ test$case(test_fmt_edge)
     mem$scope(tmem$, _)
     {
         // loading this test!
-        str_c fcontent;
+        str_s fcontent;
         e$ret(io.fload(__FILE__, &fcontent, tmem$));
         tassert(fcontent.buf != NULL);
         tassert(fcontent.len > CEX_SPRINTF_MIN * 2);
@@ -1889,7 +1888,7 @@ test$case(test_tnew)
 {
     mem$scope(tmem$, _)
     {
-        str_c fcontent;
+        str_s fcontent;
         e$ret(io.fload(__FILE__, &fcontent, tmem$));
         tassert(fcontent.buf != NULL);
 
@@ -1901,7 +1900,7 @@ test$case(test_tnew)
         tassert_eqi(snew[fcontent.len], 0);
         mem$free(tmem$, snew); // assert if snew doesn't belong to tmem$
 
-        snew = str.tnew((str_c){ 0 });
+        snew = str.tnew((str_s){ 0 });
         tassert(snew == NULL);
     }
 
@@ -1940,7 +1939,7 @@ test$case(test_tsplit)
         res = str.tsplit("foo", NULL);
         tassert(res == NULL);
 
-        str_c s = str.cstr("123456");
+        str_s s = str.cstr("123456");
         u32 nit = 0;
         const char* expected1[] = {
             "123456",

@@ -54,25 +54,24 @@ test$setup()
 test$case(stb_sprintf_str)
 {
 
-    sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 128, mem$));
-    tassert_eqs(EOK, sbuf.sprintf(&s, "%s11", "abcdefgh"));
+    sbuf_c s = sbuf.create(128, mem$);
+    tassert_eqs(EOK, sbuf.appendf(&s, "%s11", "abcdefgh"));
     tassert_eqs(s, "abcdefgh11");
 
-    str_c sv = str.cstr("45678");
-    str_c sv_sub = str.sub(sv, 1, 3);
+    str_s sv = str.cstr("45678");
+    str_s sv_sub = str.sub(sv, 1, 3);
     tassert_eqi(str.cmp(sv_sub, str$("56")), 0);
 
     _Static_assert(sizeof(char*) == sizeof(usize), "size");
 
 
     // WARNING: dangerous trick, sprintf(), tries to distinguish
-    // str_c by checking if sv_sub addres < 1024*1024, this may not be portable
+    // str_s by checking if sv_sub addres < 1024*1024, this may not be portable
     // especially on embedded and may require additional testing
-    tassert_eqs(EOK, sbuf.sprintf(&s, "%s", sv_sub));
+    tassert_eqs(EOK, sbuf.appendf(&s, "%s", sv_sub));
     tassert_eqs(s, "abcdefgh11(str_c->%S)");
 
-    tassert_eqs(EOK, sbuf.sprintf(&s, "%S", sv_sub));
+    tassert_eqs(EOK, sbuf.appendf(&s, "%S", sv_sub));
     tassert_eqs(s, "abcdefgh11(str_c->%S)56");
 
     sbuf.destroy(&s);

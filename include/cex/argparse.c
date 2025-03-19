@@ -65,7 +65,7 @@ argparse_usage(argparse_c* self)
     fprintf(stdout, "Usage:\n");
     if (self->usage) {
 
-        for$iter(str_c, it, str.iter_split(str.cstr(self->usage), "\n", &it.iterator))
+        for$iter(str_s, it, str.iter_split(str.cstr(self->usage), "\n", &it.iterator))
         {
             if (it.val->len == 0) {
                 break;

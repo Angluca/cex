@@ -51,8 +51,8 @@ App__process_plain(App_c* app, io_c* file)
         return "zero file size";
     }
 
-    // str_c is a CEX string view, it's not compatible with char* with caveats
-    str_c line; // it carries pointer + length
+    // str_s is a CEX string view, it's not compatible with char* with caveats
+    str_s line; // it carries pointer + length
 
     Exc r = EOK;
     while ((r = io.readline(file, &line)) == EOK) {
@@ -84,7 +84,7 @@ App__process_csv(App_c* app, io_c* file)
     Exc result = EOK;
     dict_c csvmap = {0};
     sbuf_c rbuf = {0}; 
-    str_c contents = {0};
+    str_s contents = {0};
 
     struct csvcols
     {
@@ -96,7 +96,7 @@ App__process_csv(App_c* app, io_c* file)
     e$goto(io.readall(file, &contents), fail);
     e$goto(dict$new(&csvmap, struct csvcols, col_idx, app->allocator), fail);
 
-    for$iter(str_c, it, str.iter_split(contents, "\n", &it.iterator))
+    for$iter(str_s, it, str.iter_split(contents, "\n", &it.iterator))
     {
         var line = str.strip(*it.val);
         if (unlikely(it.idx.i == 0)) {
@@ -106,7 +106,7 @@ App__process_csv(App_c* app, io_c* file)
                 goto fail;
             }
 
-            for$iter(str_c, tok, str.iter_split(line, ",", &tok.iterator))
+            for$iter(str_s, tok, str.iter_split(line, ",", &tok.iterator))
             {
                 struct csvcols col_rec = { .col_idx = tok.idx.i };
                 var col = str.strip(*tok.val);
@@ -124,7 +124,7 @@ App__process_csv(App_c* app, io_c* file)
         e$goto(sbuf.sprintf(&rbuf, "  {"), fail);
 
 
-        for$iter(str_c, tok, str.iter_split(line, ",", &tok.iterator))
+        for$iter(str_s, tok, str.iter_split(line, ",", &tok.iterator))
         {
             struct csvcols* rec;
             e$except_null(rec = dict.geti(&csvmap, tok.idx.i)) {

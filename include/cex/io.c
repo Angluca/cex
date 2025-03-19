@@ -202,14 +202,14 @@ io_read(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize* obj_cou
 }
 
 Exception
-io_readall(io_c* self, str_c* s)
+io_readall(io_c* self, str_s* s)
 {
     uassert(self != NULL);
     uassert(self->file != NULL);
     uassert(s != NULL);
 
     // invalidate result if early exit
-    *s = (str_c){
+    *s = (str_s){
         .buf = NULL,
         .len = 0,
     };
@@ -223,7 +223,7 @@ io_readall(io_c* self, str_c* s)
 
     if (unlikely(self->_fsize == 0)) {
 
-        *s = (str_c){
+        *s = (str_s){
             .buf = "",
             .len = 0,
         };
@@ -261,7 +261,7 @@ io_readall(io_c* self, str_c* s)
         return "File size changed";
     }
 
-    *s = (str_c){
+    *s = (str_s){
         .buf = self->_fbuf,
         .len = read_size,
     };
@@ -273,7 +273,7 @@ io_readall(io_c* self, str_c* s)
 }
 
 Exception
-io_readline(io_c* self, str_c* s)
+io_readline(io_c* self, str_s* s)
 {
     uassert(self != NULL);
     uassert(self->file != NULL);
@@ -351,14 +351,14 @@ io_readline(io_c* self, str_c* s)
     }
 
     if (cursor == 0) {
-        // return valid str_c, but empty string
-        *s = (str_c){
+        // return valid str_s, but empty string
+        *s = (str_s){
             .buf = "",
             .len = cursor,
         };
         return (feof(self->file) ? Error.eof : Error.ok);
     } else {
-        *s = (str_c){
+        *s = (str_s){
             .buf = self->_fbuf,
             .len = cursor,
         };
@@ -366,7 +366,7 @@ io_readline(io_c* self, str_c* s)
     }
 
 fail:
-    *s = (str_c){
+    *s = (str_s){
         .buf = NULL,
         .len = 0,
     };
@@ -446,10 +446,10 @@ io_close(io_c* self)
 
 
 Exception
-io_fload(const char* path, str_c* out_content, IAllocator allc)
+io_fload(const char* path, str_s* out_content, IAllocator allc)
 {
     // invalidate result if early exit
-    *out_content = (str_c){
+    *out_content = (str_s){
         .buf = NULL,
         .len = 0,
     };
