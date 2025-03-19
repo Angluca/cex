@@ -72,18 +72,17 @@ sbuf__grow_buffer(sbuf_c* self, u32 length)
 sbuf_c
 sbuf_create(u32 capacity, IAllocator allocator)
 {
-    uassert(capacity != 0);
-    uassert(allocator != NULL);
+    if (unlikely(allocator == NULL)) {
+        uassert(allocator != NULL);
+        return NULL;
+    }
 
     if (capacity < 512) {
-        // NOTE: if buffer is too small, allocate more size based on sbuf__alloc_capacity() formula
-        // otherwise use exact number from a user to build the initial buffer
         capacity = sbuf__alloc_capacity(capacity);
     }
 
     char* buf = mem$malloc(allocator, capacity);
-
-    if (buf == NULL) {
+    if (unlikely(buf == NULL)) {
         return NULL;
     }
 
@@ -165,6 +164,8 @@ sbuf_update_len(sbuf_c* self)
     uassert((*self)[head->capacity] == '\0');
 
     head->length = strlen(*self);
+    (*self)[head->capacity] = '\0';
+    (*self)[head->length] = '\0';
 }
 
 Exception

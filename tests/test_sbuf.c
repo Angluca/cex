@@ -282,7 +282,7 @@ test$case(test_sbuf_replace)
 
 test$case(test_sbuf_replace_resize)
 {
-    sbuf_c s = sbuf.create(5, mem$);
+    sbuf_c s = sbuf.create(0, mem$);
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
