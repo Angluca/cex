@@ -1721,7 +1721,8 @@ if __name__ == "__main__":
             " mode)"
         ),
     )
-    process_parser.add_argument("--fakedir", help="fff.h fake directory", default="tests/fake/")
+    # process_parser.add_argument("--fakedir", help="fff.h fake directory", default="tests/fake/")
+    process_parser.add_argument("--fakedir", help="fff.h fake directory", default=None)
     process_parser.add_argument(
         "--namespace",
         help="module/class namespace, inferred from file name",

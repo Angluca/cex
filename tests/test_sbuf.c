@@ -1,11 +1,12 @@
-#include <cex/test.h>
 #include <cex/all.c>
+#include <cex/test.h>
 #include <stdio.h>
 
 /*
-* SUITE INIT / SHUTDOWN
-*/
-test$teardown(){
+ * SUITE INIT / SHUTDOWN
+ */
+test$teardown()
+{
     return EOK;
 }
 
@@ -16,13 +17,14 @@ test$setup()
 }
 
 /*
-*
-*   TEST SUITE
-*
-*/
+ *
+ *   TEST SUITE
+ *
+ */
 
 Exception
-append_to_cap(sbuf_c* s){
+append_to_cap(sbuf_c* s)
+{
     tassert(s != NULL);
     u8 c = 'A';
     str_c s1 = {
@@ -30,7 +32,7 @@ append_to_cap(sbuf_c* s){
         .len = 1,
     };
 
-    for(usize i = sbuf.len(s); i < sbuf.capacity(s); i++){
+    for (usize i = sbuf.len(s); i < sbuf.capacity(s); i++) {
         c = 'A' + i;
         tassert_eqs(EOK, sbuf.append(s, s1));
     }
@@ -39,12 +41,14 @@ append_to_cap(sbuf_c* s){
 }
 
 Exception
-sprintf_to_cap(sbuf_c* s){
+sprintf_to_cap(sbuf_c* s)
+{
     tassert(s != NULL);
     u8 c = 'A';
-    for(usize i = sbuf.len(s); i < sbuf.capacity(s); i++){
+    for (usize i = sbuf.len(s); i < sbuf.capacity(s); i++) {
         c = 'A' + i;
-        e$except_silent(err, sbuf.sprintf(s, "%c", c)) {
+        e$except_silent(err, sbuf.sprintf(s, "%c", c))
+        {
             return err;
         }
     }
@@ -55,8 +59,7 @@ sprintf_to_cap(sbuf_c* s){
 
 test$case(test_sbuf_new)
 {
-    sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
+    sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -73,15 +76,12 @@ test$case(test_sbuf_new)
     s = sbuf.destroy(&s);
     tassert(s == NULL);
     return EOK;
-
 }
 
 test$case(test_sbuf_static)
 {
-    char buf[128] = {'a'};
-    sbuf_c s;
-
-    tassert_eqs(EOK, sbuf.create_static(&s, buf, arr$len(buf)));
+    char buf[128] = { 'a' };
+    sbuf_c s = sbuf.create_static(buf, arr$len(buf));
     tassert(s != NULL);
     tassert(s != buf);
     tassert(s == buf + sizeof(sbuf_head_s));
@@ -98,7 +98,8 @@ test$case(test_sbuf_static)
     tassert_eqs(s, "");
 
     // All nullified + for$array works!
-    for$array(it, s, sbuf.capacity(&s)) {
+    for$array(it, s, sbuf.capacity(&s))
+    {
         tassert_eqi(*it.val, 0);
     }
 
@@ -106,15 +107,13 @@ test$case(test_sbuf_static)
     s = sbuf.destroy(&s);
     tassert(s == NULL);
     return EOK;
-
 }
 
 
 test$case(test_sbuf_append_char_grow)
 {
-    sbuf_c s;
+    sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -135,14 +134,41 @@ test$case(test_sbuf_append_char_grow)
     s = sbuf.destroy(&s);
     tassert(s == NULL);
     return EOK;
+}
 
+test$case(test_sbuf_append_char_grow_temp)
+{
+    mem$scope(tmem$, _)
+    {
+        sbuf_c s = sbuf.create_temp();
+
+        tassert_eqi(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);
+
+        // wipe all nullterm
+        memset(s, 0xff, sbuf.capacity(&s));
+
+        tassert_eqe(append_to_cap(&s), EOK);
+
+        tassert_eqi(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);
+        tassert_eqi(sbuf.len(&s), sbuf.capacity(&s));
+
+        tassert_eqs(EOK, sbuf.append(&s, str$("B")));
+        tassert_eqi(sbuf.capacity(&s), 256 - sizeof(sbuf_head_s) - 1);
+
+        // check null term
+        tassert_eqi(s[sbuf.len(&s)], 0);
+        tassert_eqi(s[sbuf.capacity(&s)], 0);
+
+        s = sbuf.destroy(&s);
+        tassert(s == NULL);
+    }
+    return EOK;
 }
 
 test$case(test_sbuf_append_str_grow)
 {
-    sbuf_c s;
+    sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -162,14 +188,11 @@ test$case(test_sbuf_append_str_grow)
     s = sbuf.destroy(&s);
     tassert(s == NULL);
     return EOK;
-
 }
 
 test$case(test_sbuf_clear)
 {
-    sbuf_c s;
-
-    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
+    sbuf_c s = sbuf.create(5, mem$);
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s));
 
@@ -188,15 +211,13 @@ test$case(test_sbuf_clear)
     sbuf.destroy(&s);
     tassert(s == NULL);
     return EOK;
-
 }
 
 test$case(test_sbuf_destroy)
 {
-    sbuf_c s;
     char buf[128];
     char* alt_s = buf + sizeof(sbuf_head_s);
-    tassert_eqs(EOK, sbuf.create_static(&s, buf, arr$len(buf)));
+    sbuf_c s = sbuf.create_static(buf, arr$len(buf));
     tassert(buf[0] != '\0');
     tassert_eqs(EOK, sbuf.append(&s, str$("1234567890A")));
     tassert(*alt_s == '1');
@@ -212,15 +233,13 @@ test$case(test_sbuf_destroy)
     tassert_eqs("", buf);
     tassert_eqi(0, strlen(buf));
     return EOK;
-
 }
 
 test$case(test_sbuf_replace)
 {
-    sbuf_c s;
     char buf[128];
 
-    tassert_eqs(EOK, sbuf.create_static(&s, buf, arr$len(buf)));
+    sbuf_c s = sbuf.create_static(buf, arr$len(buf));
     tassert_eqs(EOK, sbuf.append(&s, str$("123123123")));
     u32 cap = sbuf.capacity(&s);
 
@@ -251,7 +270,7 @@ test$case(test_sbuf_replace)
     tassert_eqs(s, "222");
     tassert_eqi(sbuf.len(&s), 3);
     tassert_eqi(sbuf.capacity(&s), cap);
-    
+
     tassert_eqs(EOK, sbuf.replace(&s, str.cstr("2"), str.cstr("")));
     tassert_eqs(s, "");
     tassert_eqi(sbuf.len(&s), 0);
@@ -263,9 +282,7 @@ test$case(test_sbuf_replace)
 
 test$case(test_sbuf_replace_resize)
 {
-    sbuf_c s;
-
-    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
+    sbuf_c s = sbuf.create(5, mem$);
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -278,7 +295,7 @@ test$case(test_sbuf_replace_resize)
     usize prev_len = sbuf.len(&s);
     tassert_eqs(EOK, sbuf.replace(&s, str.cstr("A"), str.cstr("AB")));
     tassert_eqi(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
-    tassert_eqi(sbuf.len(&s), prev_len+1);
+    tassert_eqi(sbuf.len(&s), prev_len + 1);
 
 
     sbuf.destroy(&s);
@@ -287,9 +304,8 @@ test$case(test_sbuf_replace_resize)
 
 test$case(test_sbuf_replace_error_checks)
 {
-    sbuf_c s;
+    sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
@@ -313,13 +329,12 @@ test$case(test_sbuf_replace_error_checks)
 
 test$case(test_sbuf_sprintf)
 {
-    sbuf_c s;
+    sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
-    memset(s, 0xff, sbuf.capacity(&s)+1);
+    memset(s, 0xff, sbuf.capacity(&s) + 1);
     tassert_eqi(s[sbuf.len(&s)], -1);
     tassert_eqi(s[sbuf.capacity(&s)], -1);
 
@@ -345,7 +360,7 @@ test$case(test_sbuf_sprintf)
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
     tassert_eqe(EOK, append_to_cap(&s));
     tassert_eqs(EOK, sbuf.sprintf(&s, "%s", "B"));
-    tassert_eqi(sbuf.len(&s), prev_cap+1);
+    tassert_eqi(sbuf.len(&s), prev_cap + 1);
     tassert_eqi(s[prev_cap], 'B');
     tassert_eqi(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
@@ -361,15 +376,14 @@ test$case(test_sbuf_sprintf)
 
 test$case(test_sbuf_sprintf_long_growth)
 {
-    sbuf_c s;
+    sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eqs(EOK, sbuf.create(&s, 5, mem$));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     char buf[16];
     char svbuf[16];
     const u32 n_max = 1000;
-    for(u32 i = 0; i < n_max; i++) {
+    for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
         tassert_eqs(EOK, sbuf.sprintf(&s, "%04d", i));
 
@@ -378,13 +392,13 @@ test$case(test_sbuf_sprintf_long_growth)
         tassert_eqi(s[sbuf.len(&s)], '\0');
         tassert_eqi(s[sbuf.capacity(&s)], '\0');
     }
-    tassert_eqi(n_max*4, sbuf.len(&s));
+    tassert_eqi(n_max * 4, sbuf.len(&s));
 
     str_c sv = str.cstr(s);
 
-    for(u32 i = 0; i < n_max; i++) {
+    for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
-        str_c sub1 = str.sub(sv, i*4, i*4+4);
+        str_c sub1 = str.sub(sv, i * 4, i * 4 + 4);
 
         tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
         tassertf(str.cmp(sub1, str.cstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
@@ -396,15 +410,14 @@ test$case(test_sbuf_sprintf_long_growth)
 
 test$case(test_sbuf_sprintf_long_growth_prebuild_buffer)
 {
-    sbuf_c s;
+    sbuf_c s = sbuf.create(1024 * 1024, mem$);
 
-    tassert_eqs(EOK, sbuf.create(&s, 1024*1024, mem$));
-    tassert_eqi(sbuf.capacity(&s), 1024*1024 - sizeof(sbuf_head_s) - 1);
+    tassert_eqi(sbuf.capacity(&s), 1024 * 1024 - sizeof(sbuf_head_s) - 1);
 
     char buf[16];
     char svbuf[16];
     const u32 n_max = 1000;
-    for(u32 i = 0; i < n_max; i++) {
+    for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
         tassert_eqs(EOK, sbuf.sprintf(&s, "%04d", i));
 
@@ -413,7 +426,7 @@ test$case(test_sbuf_sprintf_long_growth_prebuild_buffer)
         tassert_eqi(s[sbuf.len(&s)], '\0');
         tassert_eqi(s[sbuf.capacity(&s)], '\0');
     }
-    tassert_eqi(n_max*4, sbuf.len(&s));
+    tassert_eqi(n_max * 4, sbuf.len(&s));
 
     var sv2 = sbuf.to_str(&s);
     str_c sv = str.cstr(s);
@@ -422,9 +435,9 @@ test$case(test_sbuf_sprintf_long_growth_prebuild_buffer)
     tassert(sv2.buf == sv.buf);
 
 
-    for(u32 i = 0; i < n_max; i++) {
+    for (u32 i = 0; i < n_max; i++) {
         snprintf(buf, arr$len(buf), "%04d", i);
-        str_c sub1 = str.sub(sv, i*4, i*4+4);
+        str_c sub1 = str.sub(sv, i * 4, i * 4 + 4);
         tassert_eqs(EOK, str.copy(sub1, svbuf, 16));
         tassertf(str.cmp(sub1, str.cstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }
@@ -434,14 +447,12 @@ test$case(test_sbuf_sprintf_long_growth_prebuild_buffer)
 }
 test$case(test_sbuf_sprintf_static)
 {
-    sbuf_c s;
     char buf[32];
-
-    tassert_eqs(EOK, sbuf.create_static(&s, buf, arr$len(buf)));
+    sbuf_c s = sbuf.create_static(buf, arr$len(buf));
     tassert_eqi(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
-    memset(s, 0xff, sbuf.capacity(&s)+1);
+    memset(s, 0xff, sbuf.capacity(&s) + 1);
     tassert_eqi(s[sbuf.len(&s)], -1);
     tassert_eqi(s[sbuf.capacity(&s)], -1);
 
@@ -477,10 +488,9 @@ test$case(test_sbuf_sprintf_static)
 test$case(test_iter_split)
 {
 
-    sbuf_c s;
     char str_buf[128];
     char buf[32];
-    tassert_eqs(EOK, sbuf.create_static(&s, str_buf, arr$len(str_buf)));
+    sbuf_c s = sbuf.create_static(str_buf, arr$len(str_buf));
     tassert(s != buf);
 
     tassert_eqe(EOK, sbuf.append(&s, str$("123456")));
@@ -593,8 +603,7 @@ test$case(test_iter_split)
 
 test$case(test_sbuf__is_valid__no_null_term)
 {
-    sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
+    sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -606,13 +615,11 @@ test$case(test_sbuf__is_valid__no_null_term)
     // manual free (because s.destroy() does sanity checks of head)
     mem$->free(mem$, head);
     return EOK;
-
 }
 
 test$case(test_sbuf__is_valid__len_gt_cap)
 {
-    sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
+    sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -625,13 +632,11 @@ test$case(test_sbuf__is_valid__len_gt_cap)
     // manual free (because s.destroy() does sanity checks of head)
     mem$->free(mem$, head);
     return EOK;
-
 }
 
 test$case(test_sbuf__is_valid__zero_cap)
 {
-    sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
+    sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -643,13 +648,11 @@ test$case(test_sbuf__is_valid__zero_cap)
     // manual free (because s.destroy() does sanity checks of head)
     mem$->free(mem$, head);
     return EOK;
-
 }
 
 test$case(test_sbuf__is_valid__bad_magic)
 {
-    sbuf_c s;
-    tassert_eqs(EOK, sbuf.create(&s, 20, mem$));
+    sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
     sbuf_head_s* head = sbuf__head(s);
@@ -661,12 +664,11 @@ test$case(test_sbuf__is_valid__bad_magic)
     // manual free (because s.destroy() does sanity checks of head)
     mem$->free(mem$, head);
     return EOK;
-
 }
 
 test$case(test_sbuf__is_valid__null_pointer)
 {
-    sbuf_c s = {0};
+    sbuf_c s = { 0 };
     tassert_eqi(sbuf.isvalid(&s), false);
 
     tassert_eqi(sbuf.isvalid(NULL), false);
@@ -681,11 +683,12 @@ test$case(test_sbuf__is_valid__null_pointer)
     return EOK;
 }
 /*
-*
-* MAIN (AUTO GENERATED)
-*
-*/
-int main(int argc, char *argv[])
+ *
+ * MAIN (AUTO GENERATED)
+ *
+ */
+int
+main(int argc, char* argv[])
 {
     test$args_parse(argc, argv);
     test$print_header();  // >>> all tests below
@@ -693,6 +696,7 @@ int main(int argc, char *argv[])
     test$run(test_sbuf_new);
     test$run(test_sbuf_static);
     test$run(test_sbuf_append_char_grow);
+    test$run(test_sbuf_append_char_grow_temp);
     test$run(test_sbuf_append_str_grow);
     test$run(test_sbuf_clear);
     test$run(test_sbuf_destroy);
