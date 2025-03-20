@@ -19,6 +19,7 @@ char*           (*clone)(char* s, IAllocator allc);
 Exception       (*copy)(char* dest, const char* src, usize destlen);
 bool            (*ends_with)(const char* str, const char* suffix);
 bool            (*eq)(const char* a, const char* b);
+bool            (*eqi)(const char *a, const char *b);
 char*           (*find)(const char* haystack, const char* needle);
 char*           (*findr)(const char* haystack, const char* needle);
 char*           (*fmt)(IAllocator allc, const char* format, ...);

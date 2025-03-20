@@ -370,6 +370,28 @@ test$case(test_eq)
     return EOK;
 }
 
+test$case(test_eqi)
+{
+    tassert_eqi(str.eqi("", ""), 1);
+    tassert_eqi(str.eqi(NULL, ""), 0);
+    tassert_eqi(str.eqi("", NULL), 0);
+    tassert_eqi(str.eqi("1", "1"), 1);
+    tassert_eqi(str.eqi("123456", "123456"), 1);
+    tassert_eqi(str.eqi("123456", "12345"), 0);
+    tassert_eqi(str.eqi("12345", "123456"), 0);
+    tassert_eqi(str.eqi("12345", ""), 0);
+    tassert_eqi(str.eqi("", "123456"), 0);
+
+    char* s = "abcdefghijklmnopqrstuvwxyz123!@#тест";
+    char* s2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123!@#тест";
+    tassert(str.eqi(s, s2));
+
+    tassert(!str.eqi(s, s2+1));
+    tassert(!str.eqi(s+1, s2));
+
+    return EOK;
+}
+
 test$case(test_iter_split)
 {
 
@@ -2100,6 +2122,7 @@ main(int argc, char* argv[])
     test$run(test_sub_positive_start);
     test$run(test_sub_negative_start);
     test$run(test_eq);
+    test$run(test_eqi);
     test$run(test_iter_split);
     test$run(test_find);
     test$run(test_rfind);

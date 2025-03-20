@@ -73,6 +73,21 @@ str_eq(const char* a, const char* b)
     return strcmp(a, b) == 0;
 }
 
+bool str_eqi(const char *a, const char *b) {
+    if (unlikely(a == NULL || b == NULL)) {
+        // NOTE: if both are NULL - this function intentionally return false
+        return false;
+    }
+    while (*a && *b) {
+        if (tolower((u8)*a) != tolower((u8)*b)) {
+            return false;
+        }
+        a++;
+        b++;
+    }
+    return (*a == '\0' && *b == '\0');
+}
+
 static bool
 str__slice__eq(str_s a, str_s b)
 {
@@ -1309,6 +1324,7 @@ const struct __module__str str = {
     .sstr = str_sstr,
     .sbuf = str_sbuf,
     .eq = str_eq,
+    .eqi = str_eqi,
     .sub = str_sub,
     .copy = str_copy,
     .replace = str_replace,
