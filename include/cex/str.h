@@ -23,7 +23,7 @@ char*           (*find)(const char* haystack, const char* needle);
 char*           (*findr)(const char* haystack, const char* needle);
 char*           (*fmt)(IAllocator allc, const char* format, ...);
 char*           (*join)(arr$(char*) str_arr, const char* join_by, IAllocator allc);
-usize           (*len)(char* s);
+usize           (*len)(const char* s);
 char*           (*replace)(const char* str, const char* old_sub, const char* new_sub, IAllocator allc);
 str_s           (*sbuf)(char* s, usize length);
 arr$(char*)     (*split)(char* s, const char* split_by, IAllocator allc);
@@ -54,14 +54,14 @@ struct {  // sub-module .slice >>>
 struct {  // sub-module .convert >>>
     Exception       (*to_f32)(const char* s, f32* num);
     Exception       (*to_f64)(const char* s, f64* num);
-    Exception       (*to_i16)(str_s self, i16* num);
-    Exception       (*to_i32)(str_s self, i32* num);
-    Exception       (*to_i64)(str_s self, i64* num);
-    Exception       (*to_i8)(str_s self, i8* num);
-    Exception       (*to_u16)(str_s self, u16* num);
-    Exception       (*to_u32)(str_s self, u32* num);
-    Exception       (*to_u64)(str_s self, u64* num);
-    Exception       (*to_u8)(str_s self, u8* num);
+    Exception       (*to_i16)(const char* s, i16* num);
+    Exception       (*to_i32)(const char* s, i32* num);
+    Exception       (*to_i64)(const char* s, i64* num);
+    Exception       (*to_i8)(const char* s, i8* num);
+    Exception       (*to_u16)(const char* s, u16* num);
+    Exception       (*to_u32)(const char* s, u32* num);
+    Exception       (*to_u64)(const char* s, u64* num);
+    Exception       (*to_u8)(const char* s, u8* num);
 } convert;  // sub-module .convert <<<
     // clang-format on
 };
