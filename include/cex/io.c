@@ -107,7 +107,7 @@ io_ftell(FILE* file, usize* size)
 }
 
 usize
-io_fsize(FILE* file)
+io__file__size(FILE* file)
 {
     uassert(file != NULL);
 
@@ -166,7 +166,7 @@ io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_co
 }
 
 Exception
-io_read_all(FILE* file, str_s* s, IAllocator allc)
+io_fread_all(FILE* file, str_s* s, IAllocator allc)
 {
     Exc result = Error.runtime;
     char* _fbuf = NULL;
@@ -181,13 +181,13 @@ io_read_all(FILE* file, str_s* s, IAllocator allc)
 
     // Forbid console and stdin
     if (unlikely(io_isatty(file))) {
-        result = "io.read_all() not allowed for pipe/socket/std[in/out/err]";
+        result = "io.fread_all() not allowed for pipe/socket/std[in/out/err]";
         goto fail;
     }
 
-    usize _fsize = io_fsize(file);
+    usize _fsize = io__file__size(file);
     if (unlikely(_fsize > INT32_MAX)) {
-        result = "io.read_all() file is too big.";
+        result = "io.fread_all() file is too big.";
         goto fail;
     }
     if (unlikely(_fsize == 0)) {
@@ -254,7 +254,7 @@ fail:
 }
 
 Exception
-io_read_line(FILE* file, str_s* s, IAllocator allc)
+io_fread_line(FILE* file, str_s* s, IAllocator allc)
 {
     Exc result = Error.runtime;
     usize cursor = 0;
@@ -408,7 +408,7 @@ io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize 
 }
 
 Exception
-io_fwrite_line(FILE* file, char* line)
+io__file__writeln(FILE* file, char* line)
 {
     errno = 0;
     if (file == NULL) {
@@ -446,7 +446,7 @@ io_fclose(FILE** file)
 
 
 Exception
-io_fsave(const char* path, const char* contents)
+io__file__save(const char* path, const char* contents)
 {
     if (path == NULL) {
         return Error.argument;
@@ -474,7 +474,7 @@ io_fsave(const char* path, const char* contents)
 }
 
 char*
-io_fload(const char* path, IAllocator allc)
+io__file__load(const char* path, IAllocator allc)
 {
     errno = 0;
     uassert(allc != NULL);
@@ -489,7 +489,7 @@ io_fload(const char* path, IAllocator allc)
     }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, io_read_all(file, &out_content, allc))
+    e$except_silent(err, io_fread_all(file, &out_content, allc))
     {
         if (err == Error.eof){
             uassert(out_content.buf == NULL);
@@ -508,7 +508,7 @@ io_fload(const char* path, IAllocator allc)
 }
 
 char*
-io_fread_line(FILE* file, IAllocator allc)
+io__file__readln(FILE* file, IAllocator allc)
 {
     errno = 0;
     uassert(allc != NULL);
@@ -518,7 +518,7 @@ io_fread_line(FILE* file, IAllocator allc)
     }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, io_read_line(file, &out_content, allc))
+    e$except_silent(err, io_fread_line(file, &out_content, allc))
     {
         if (err == Error.eof) {
             return NULL;
@@ -543,17 +543,20 @@ const struct __module__io io = {
     .fseek = io_fseek,
     .rewind = io_rewind,
     .ftell = io_ftell,
-    .fsize = io_fsize,
     .fread = io_fread,
-    .read_all = io_read_all,
-    .read_line = io_read_line,
+    .fread_all = io_fread_all,
+    .fread_line = io_fread_line,
     .fprintf = io_fprintf,
     .printf = io_printf,
     .fwrite = io_fwrite,
-    .fwrite_line = io_fwrite_line,
     .fclose = io_fclose,
-    .fsave = io_fsave,
-    .fload = io_fload,
-    .fread_line = io_fread_line,
+
+    .file = {  // sub-module .file >>>
+        .size = io__file__size,
+        .writeln = io__file__writeln,
+        .save = io__file__save,
+        .load = io__file__load,
+        .readln = io__file__readln,
+    },  // sub-module .file <<<
     // clang-format on
 };

@@ -10,22 +10,25 @@ struct __module__io
 void            (*fclose)(FILE** file);
 Exception       (*fflush)(FILE* file);
 int             (*fileno)(FILE* file);
-char*           (*fload)(const char* path, IAllocator allc);
 Exception       (*fopen)(FILE** file, const char* filename, const char* mode);
 Exception       (*fprintf)(FILE* stream, const char* format, ...);
 Exception       (*fread)(FILE* file, void* obj_buffer, usize obj_el_size, usize* obj_count);
-char*           (*fread_line)(FILE* file, IAllocator allc);
-Exception       (*fsave)(const char* path, const char* contents);
+Exception       (*fread_all)(FILE* file, str_s* s, IAllocator allc);
+Exception       (*fread_line)(FILE* file, str_s* s, IAllocator allc);
 Exception       (*fseek)(FILE* file, long offset, int whence);
-usize           (*fsize)(FILE* file);
 Exception       (*ftell)(FILE* file, usize* size);
 Exception       (*fwrite)(FILE* file, const void* obj_buffer, usize obj_el_size, usize obj_count);
-Exception       (*fwrite_line)(FILE* file, char* line);
 bool            (*isatty)(FILE* file);
 void            (*printf)(const char* format, ...);
-Exception       (*read_all)(FILE* file, str_s* s, IAllocator allc);
-Exception       (*read_line)(FILE* file, str_s* s, IAllocator allc);
 void            (*rewind)(FILE* file);
+
+struct {  // sub-module .file >>>
+    char*           (*load)(const char* path, IAllocator allc);
+    char*           (*readln)(FILE* file, IAllocator allc);
+    Exception       (*save)(const char* path, const char* contents);
+    usize           (*size)(FILE* file);
+    Exception       (*writeln)(FILE* file, char* line);
+} file;  // sub-module .file <<<
     // clang-format on
 };
 extern const struct __module__io io; // CEX Autogen
