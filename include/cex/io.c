@@ -5,87 +5,57 @@
 #include <errno.h>
 #include <unistd.h>
 
+
 Exception
-io_open(io_c* self, const char* filename, const char* mode, IAllocator allocator)
+io_fopen(FILE** file, const char* filename, const char* mode)
 {
-    if (self == NULL) {
-        uassert(self != NULL);
+    if (file == NULL) {
+        uassert(file != NULL);
         return Error.argument;
     }
+
+    *file = NULL;
+
     if (filename == NULL) {
-        uassert(filename != NULL);
         return Error.argument;
     }
     if (mode == NULL) {
         uassert(mode != NULL);
         return Error.argument;
     }
-    if (allocator == NULL) {
-        uassert(allocator != NULL);
-        return Error.argument;
-    }
 
-
-    *self = (io_c){
-        .file = fopen(filename, mode),
-        ._allocator = allocator,
-    };
-
-    if (self->file == NULL) {
-        *self = (io_c){ 0 };
+    *file = fopen(filename, mode);
+    if (*file == NULL) {
         switch (errno) {
             case ENOENT:
                 return Error.not_found;
             default:
                 return strerror(errno);
         }
-    } else {
-        return Error.ok;
     }
-}
-
-io_c
-io_fattach(FILE* fh, IAllocator allocator)
-{
-    if (allocator == NULL) {
-        uassert(allocator != NULL);
-    }
-    if (fh == NULL) {
-        uassert(fh != NULL);
-    }
-
-    return (io_c){ .file = fh,
-                   ._allocator = allocator,
-                   ._flags = {
-                       .is_attached = true,
-                   } };
+    return Error.ok;
 }
 
 int
-io_fileno(io_c* self)
+io_fileno(FILE* file)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
-
-    return fileno(self->file);
+    uassert(file != NULL);
+    return fileno(file);
 }
 
 bool
-io_isatty(io_c* self)
+io_isatty(FILE* file)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
-
-    return isatty(fileno(self->file)) == 1;
+    uassert(file != NULL);
+    return isatty(fileno(file)) == 1;
 }
 
 Exception
-io_flush(io_c* self)
+io_fflush(FILE* file)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
+    uassert(file != NULL);
 
-    int ret = fflush(self->file);
+    int ret = fflush(file);
     if (unlikely(ret == -1)) {
         return Error.io;
     } else {
@@ -94,12 +64,11 @@ io_flush(io_c* self)
 }
 
 Exception
-io_seek(io_c* self, long offset, int whence)
+io_fseek(FILE* file, long offset, int whence)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
+    uassert(file != NULL);
 
-    int ret = fseek(self->file, offset, whence);
+    int ret = fseek(file, offset, whence);
     if (unlikely(ret == -1)) {
         if (errno == EINVAL) {
             return Error.argument;
@@ -112,21 +81,18 @@ io_seek(io_c* self, long offset, int whence)
 }
 
 void
-io_rewind(io_c* self)
+io_rewind(FILE* file)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
-
-    rewind(self->file);
+    uassert(file != NULL);
+    rewind(file);
 }
 
 Exception
-io_tell(io_c* self, usize* size)
+io_ftell(FILE* file, usize* size)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
+    uassert(file != NULL);
 
-    long ret = ftell(self->file);
+    long ret = ftell(file);
     if (unlikely(ret < 0)) {
         if (errno == EINVAL) {
             return Error.argument;
@@ -141,41 +107,39 @@ io_tell(io_c* self, usize* size)
 }
 
 usize
-io_size(io_c* self)
+io_fsize(FILE* file)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
+    uassert(file != NULL);
 
-    if (self->_fsize == 0) {
-        // Do some caching
-        usize old_pos = 0;
-        e$except_silent(err, io_tell(self, &old_pos))
-        {
-            return 0;
-        }
-        e$except_silent(err, io_seek(self, 0, SEEK_END))
-        {
-            return 0;
-        }
-        e$except_silent(err, io_tell(self, &self->_fsize))
-        {
-            return 0;
-        }
-        e$except_silent(err, io_seek(self, old_pos, SEEK_SET))
-        {
-            return 0;
-        }
+    usize fsize = 0;
+    usize old_pos = 0;
+
+    e$except_silent(err, io_ftell(file, &old_pos))
+    {
+        return 0;
+    }
+    e$except_silent(err, io_fseek(file, 0, SEEK_END))
+    {
+        return 0;
+    }
+    e$except_silent(err, io_ftell(file, &fsize))
+    {
+        return 0;
+    }
+    e$except_silent(err, io_fseek(file, old_pos, SEEK_SET))
+    {
+        return 0;
     }
 
-    return self->_fsize;
+    return fsize;
 }
 
 Exception
-io_read(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
+io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
-
+    if (file == NULL) {
+        return Error.argument;
+    }
     if (obj_buffer == NULL) {
         return Error.argument;
     }
@@ -186,10 +150,10 @@ io_read(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize* obj_cou
         return Error.argument;
     }
 
-    const usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, self->file);
+    const usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, file);
 
     if (ret_count != *obj_count) {
-        if (ferror(self->file)) {
+        if (ferror(file)) {
             *obj_count = 0;
             return Error.io;
         } else {
@@ -202,95 +166,107 @@ io_read(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize* obj_cou
 }
 
 Exception
-io_readall(io_c* self, str_s* s)
+io_read_all(FILE* file, str_s* s, IAllocator allc)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
-    uassert(s != NULL);
+    Exc result = Error.runtime;
+    char* _fbuf = NULL;
+    usize _fbuf_size = 0;
 
-    // invalidate result if early exit
+    if (file == NULL) {
+        result = Error.argument;
+        goto fail;
+    }
+    uassert(s != NULL);
+    uassert(allc != NULL);
+
+    // Forbid console and stdin
+    if (unlikely(io_isatty(file))) {
+        result = "io.read_all() not allowed for pipe/socket/std[in/out/err]";
+        goto fail;
+    }
+
+    usize _fsize = io_fsize(file);
+    if (unlikely(_fsize > INT32_MAX)) {
+        result = "io.read_all() file is too big.";
+        goto fail;
+    }
+    if (unlikely(_fsize == 0)) {
+        result = Error.eof;
+        goto fail;
+    }
+
+    // allocate extra 16 bytes, to catch condition when file size grows
+    // this may be indication we are trying to read stream
+    usize exp_size = _fsize + 1 + 15;
+
+    if (_fbuf == NULL) {
+        _fbuf = mem$malloc(allc, exp_size);
+        _fbuf_size = exp_size;
+    } else {
+        if (_fbuf_size < exp_size) {
+            _fbuf = mem$realloc(allc, _fbuf, exp_size);
+            _fbuf_size = exp_size;
+        }
+    }
+    if (unlikely(_fbuf == NULL)) {
+        _fbuf_size = 0;
+        result = Error.memory;
+        goto fail;
+    }
+
+
+    usize read_size = _fbuf_size;
+    e$except_silent(err, io_fread(file, _fbuf, sizeof(char), &read_size))
+    {
+        result = err;
+        goto fail;
+    }
+    if (unlikely(read_size != _fsize)) {
+        result = "File size changed";
+        goto fail;
+    }
+    if (unlikely(read_size == 0)) {
+        result = Error.eof;
+        goto fail;
+    }
+
+    *s = (str_s){
+        .buf = _fbuf,
+        .len = read_size,
+    };
+    _fbuf[read_size] = '\0';
+    return EOK;
+
+fail:
     *s = (str_s){
         .buf = NULL,
         .len = 0,
     };
 
-    // Forbid console and stdin
-    if (io_isatty(self)) {
-        return "io.readall() not allowed for pipe/socket/std[in/out/err]";
+    if (io_fseek(file, 0, SEEK_END)) {
+        // unused result
     }
 
-    self->_fsize = io_size(self);
-    if (self->_fsize > INT32_MAX) {
-        return "io.readall() file is too big.";
+    if (_fbuf) {
+        mem$free(allc, _fbuf);
     }
-
-    // allocate extra 16 bytes, to catch condition when file size grows
-    // this may be indication we are trying to read stream
-    usize exp_size = self->_fsize + 1 + 15;
-
-    if (self->_fbuf == NULL) {
-        self->_fbuf = mem$malloc(self->_allocator, exp_size);
-        self->_fbuf_size = exp_size;
-    } else {
-        if (self->_fbuf_size < exp_size) {
-            self->_fbuf = mem$realloc(self->_allocator, self->_fbuf, exp_size);
-            self->_fbuf_size = exp_size;
-        }
-    }
-    if (unlikely(self->_fbuf == NULL)) {
-        self->_fbuf_size = 0;
-        return Error.memory;
-    }
-
-    if (unlikely(self->_fsize == 0)) {
-
-        *s = (str_s){
-            .buf = self->_fbuf,
-            .len = 0,
-        };
-        self->_fbuf[0] = '\0';
-        self->_fbuf_size = 0;
-        e$except(err, io_seek(self, 0, SEEK_END))
-        {
-            ;
-        }
-        return Error.eof;
-    }
-
-    usize read_size = self->_fbuf_size;
-    e$except_silent(err, io_read(self, self->_fbuf, sizeof(char), &read_size))
-    {
-        return err;
-    }
-
-    if (read_size != self->_fsize) {
-        return "File size changed";
-    }
-
-    *s = (str_s){
-        .buf = self->_fbuf,
-        .len = read_size,
-    };
-
-    // Always null terminate
-    self->_fbuf[read_size] = '\0';
-
-    return read_size == 0 ? Error.eof : Error.ok;
+    return result;
 }
 
 Exception
-io_readline(io_c* self, str_s* s)
+io_read_line(FILE* file, str_s* s, IAllocator allc)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
-    uassert(s != NULL);
-
-
-    Exc result = Error.ok;
+    Exc result = Error.runtime;
     usize cursor = 0;
-    FILE* fh = self->file;
-    char* buf = self->_fbuf;
-    usize buf_size = self->_fbuf_size;
+    FILE* fh = file;
+    char* buf = NULL;
+    usize buf_size = 0;
+
+    if (unlikely(file == NULL)) {
+        result = Error.argument;
+        goto fail;
+    }
+    uassert(s != NULL);
 
     int c = EOF;
     while ((c = fgetc(fh)) != EOF) {
@@ -308,70 +284,69 @@ io_readline(io_c* self, str_s* s)
         }
 
         if (unlikely(cursor >= buf_size)) {
-            if (self->_fbuf == NULL) {
+            if (buf == NULL) {
                 uassert(cursor == 0 && "no buf, cursor expected 0");
 
-                self->_fbuf = buf = mem$malloc(self->_allocator, 4096);
-                if (self->_fbuf == NULL) {
+                buf = mem$malloc(allc, 256);
+                if (buf == NULL) {
                     result = Error.memory;
                     goto fail;
                 }
-                self->_fbuf_size = buf_size = 4096 - 1; // keep extra for null
-                self->_fbuf[self->_fbuf_size] = '\0';
-                self->_fbuf[cursor] = '\0';
+                buf_size = 256 - 1; // keep extra for null
+                buf[buf_size] = '\0';
+                buf[cursor] = '\0';
             } else {
                 uassert(cursor > 0 && "no buf, cursor expected 0");
-                uassert(self->_fbuf_size > 0 && "empty buffer, weird");
+                uassert(buf_size > 0 && "empty buffer, weird");
 
-                if (self->_fbuf_size + 1 < 4096) {
+                if (buf_size + 1 < 256) {
                     // Cap minimal buf size
-                    self->_fbuf_size = 4095;
+                    buf_size = 256 - 1;
                 }
 
                 // Grow initial size by factor of 2
-                self->_fbuf = buf = mem$realloc(
-                    self->_allocator,
-                    self->_fbuf,
-                    (self->_fbuf_size + 1) * 2
-                );
-                if (self->_fbuf == NULL) {
-                    self->_fbuf_size = 0;
+                buf = mem$realloc(allc, buf, (buf_size + 1) * 2);
+                if (buf == NULL) {
+                    buf_size = 0;
                     result = Error.memory;
                     goto fail;
                 }
-                self->_fbuf_size = buf_size = (self->_fbuf_size + 1) * 2 - 1;
-                self->_fbuf[self->_fbuf_size] = '\0';
+                buf_size = (buf_size + 1) * 2 - 1;
+                buf[buf_size] = '\0';
             }
         }
         buf[cursor] = c;
         cursor++;
     }
 
-    if (self->_fbuf != NULL) {
-        self->_fbuf[cursor] = '\0';
-    }
 
-    if (ferror(self->file)) {
+    if (unlikely(ferror(file))) {
         result = Error.io;
         goto fail;
     }
 
-    if (cursor == 0) {
-        // return valid str_s, but empty string
-        *s = (str_s){
-            .buf = "",
-            .len = cursor,
-        };
-        return (feof(self->file) ? Error.eof : Error.ok);
-    } else {
-        *s = (str_s){
-            .buf = self->_fbuf,
-            .len = cursor,
-        };
-        return Error.ok;
+    if (unlikely(cursor == 0 && feof(file))) {
+        result = Error.eof;
+        goto fail;
     }
 
+    if (buf != NULL) {
+        buf[cursor] = '\0';
+    } else {
+        buf = mem$malloc(allc, 1);
+        buf[0] = '\0';
+        cursor = 0;
+    }
+    *s = (str_s){
+        .buf = buf,
+        .len = cursor,
+    };
+    return Error.ok;
+
 fail:
+    if (buf) {
+        mem$free(allc, buf);
+    }
     *s = (str_s){
         .buf = NULL,
         .len = 0,
@@ -406,10 +381,12 @@ io_printf(const char* format, ...)
 }
 
 Exception
-io_write(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize obj_count)
+io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize obj_count)
 {
-    uassert(self != NULL);
-    uassert(self->file != NULL);
+    if (file == NULL) {
+        uassert(file != NULL);
+        return Error.argument;
+    }
 
     if (obj_buffer == NULL) {
         return Error.argument;
@@ -421,7 +398,7 @@ io_write(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize obj_cou
         return Error.argument;
     }
 
-    const usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, self->file);
+    const usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, file);
 
     if (ret_count != obj_count) {
         return Error.io;
@@ -430,26 +407,71 @@ io_write(io_c* self, void* restrict obj_buffer, usize obj_el_size, usize obj_cou
     }
 }
 
-void
-io_close(io_c* self)
+Exception
+io_fwrite_line(FILE* file, char* line)
 {
-    if (self != NULL) {
-
-        if (self->file != NULL && !self->_flags.is_attached) {
-            uassert(self->_allocator != NULL && "allocator not set");
-            // prevent closing attached FILE* (i.e. stdin/out or other)
-            fclose(self->file);
-        }
-
-        if (self->_fbuf != NULL) {
-            uassert(self->_allocator != NULL && "allocator not set");
-            mem$free(self->_allocator, self->_fbuf);
-        }
-
-        memset(self, 0, sizeof(*self));
+    errno = 0;
+    if (file == NULL) {
+        uassert(file != NULL);
+        return Error.argument;
     }
+    if (line == NULL) {
+        return Error.argument;
+    }
+    usize line_len = strlen(line);
+    usize ret_count = fwrite(line, 1, line_len, file);
+    if (ret_count != line_len) {
+        return Error.io;
+    }
+
+    char new_line[] = { '\n' };
+    ret_count = fwrite(new_line, 1, sizeof(new_line), file);
+
+    if (ret_count != sizeof(new_line)) {
+        return Error.io;
+    }
+    return Error.ok;
 }
 
+void
+io_fclose(FILE** file)
+{
+    uassert(file != NULL);
+
+    if (*file != NULL) {
+        fclose(*file);
+    }
+    *file = NULL;
+}
+
+
+Exception
+io_fsave(const char* path, const char* contents)
+{
+    if (path == NULL) {
+        return Error.argument;
+    }
+
+    if (contents == NULL) {
+        return Error.argument;
+    }
+
+    FILE* file;
+    e$except_silent(err, io_fopen(&file, path, "w"))
+    {
+        return err;
+    }
+
+    usize contents_len = strlen(contents);
+    e$except_silent(err, io_fwrite(file, contents, 1, contents_len))
+    {
+        io_fclose(&file);
+        return err;
+    }
+
+    io_fclose(&file);
+    return EOK;
+}
 
 char*
 io_fload(const char* path, IAllocator allc)
@@ -460,18 +482,48 @@ io_fload(const char* path, IAllocator allc)
         errno = EINVAL;
         return NULL;
     }
-    io_c self = { 0 };
-    e$except_silent(err, io_open(&self, path, "r", allc))
+    FILE* file;
+    e$except_silent(err, io_fopen(&file, path, "r"))
     {
         return NULL;
     }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, io_readall(&self, &out_content))
+    e$except_silent(err, io_read_all(file, &out_content, allc))
     {
-        if (err == Error.eof && out_content.buf != NULL) {
+        if (err == Error.eof){
+            uassert(out_content.buf == NULL);
+            out_content.buf = mem$malloc(allc, 1);
+            if (out_content.buf) {
+                out_content.buf[0] = '\0';
+            }
             return out_content.buf;
         }
+        if (out_content.buf) {
+            mem$free(allc, out_content.buf);
+        }
+        return NULL;
+    }
+    return out_content.buf;
+}
+
+char*
+io_fread_line(FILE* file, IAllocator allc)
+{
+    errno = 0;
+    uassert(allc != NULL);
+    if (file == NULL) {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    str_s out_content = (str_s){ 0 };
+    e$except_silent(err, io_read_line(file, &out_content, allc))
+    {
+        if (err == Error.eof) {
+            return NULL;
+        }
+
         if (out_content.buf) {
             mem$free(allc, out_content.buf);
         }
@@ -484,22 +536,24 @@ io_fload(const char* path, IAllocator allc)
 const struct __module__io io = {
     // Autogenerated by CEX
     // clang-format off
-    .open = io_open,
-    .fattach = io_fattach,
+    .fopen = io_fopen,
     .fileno = io_fileno,
     .isatty = io_isatty,
-    .flush = io_flush,
-    .seek = io_seek,
+    .fflush = io_fflush,
+    .fseek = io_fseek,
     .rewind = io_rewind,
-    .tell = io_tell,
-    .size = io_size,
-    .read = io_read,
-    .readall = io_readall,
-    .readline = io_readline,
+    .ftell = io_ftell,
+    .fsize = io_fsize,
+    .fread = io_fread,
+    .read_all = io_read_all,
+    .read_line = io_read_line,
     .fprintf = io_fprintf,
     .printf = io_printf,
-    .write = io_write,
-    .close = io_close,
+    .fwrite = io_fwrite,
+    .fwrite_line = io_fwrite_line,
+    .fclose = io_fclose,
+    .fsave = io_fsave,
     .fload = io_fload,
+    .fread_line = io_fread_line,
     // clang-format on
 };
