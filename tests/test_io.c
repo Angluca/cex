@@ -105,6 +105,9 @@ test$case(test_read_line)
     tassert_eqi(content.len, 9);
     mem$free(mem$, content.buf);
 
+    // filesize doesn't wreck file internal cursor
+    tassert_eqi(50, io.file.size(file));
+
     tassert_eqs(Error.ok, io.fread_line(file, &content, mem$));
     tassert_eqs(content.buf, "000000003");
     tassert_eqi(content.len, 9);
