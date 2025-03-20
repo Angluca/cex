@@ -2055,6 +2055,31 @@ test$case(test_str_chaining)
 
     return EOK;
 }
+
+test$case(test_str_tolower)
+{
+    char* s = str.lower("ABCDEFGHIJKLMNOPQRSTUVWXYZ123!@#тест", mem$);
+    tassert(s);
+    tassert_eqs(s, "abcdefghijklmnopqrstuvwxyz123!@#тест");
+    mem$free(mem$, s);
+
+    s = str.lower(NULL, mem$);
+    tassert(s == NULL);
+
+    return EOK;
+}
+
+test$case(test_str_toupper)
+{
+    char* s = str.upper("abcdefghijklmnopqrstuvwxyz123!@#тест", mem$);
+    tassert(s);
+    tassert_eqs(s, "ABCDEFGHIJKLMNOPQRSTUVWXYZ123!@#тест");
+    mem$free(mem$, s);
+
+    s = str.upper(NULL, mem$);
+    tassert(s == NULL);
+    return EOK;
+}
 /*
  *
 
@@ -2109,6 +2134,8 @@ main(int argc, char* argv[])
     test$run(test_str_replace);
     test$run(test_tjoin);
     test$run(test_str_chaining);
+    test$run(test_str_tolower);
+    test$run(test_str_toupper);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

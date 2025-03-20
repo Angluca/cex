@@ -24,6 +24,7 @@ char*           (*findr)(const char* haystack, const char* needle);
 char*           (*fmt)(IAllocator allc, const char* format, ...);
 char*           (*join)(arr$(char*) str_arr, const char* join_by, IAllocator allc);
 usize           (*len)(const char* s);
+char*           (*lower)(char* s, IAllocator allc);
 char*           (*replace)(const char* str, const char* old_sub, const char* new_sub, IAllocator allc);
 str_s           (*sbuf)(char* s, usize length);
 arr$(char*)     (*split)(char* s, const char* split_by, IAllocator allc);
@@ -32,6 +33,7 @@ Exception       (*sprintf)(char* dest, usize dest_len, const char* format, ...);
 str_s           (*sstr)(const char* ccharptr);
 bool            (*starts_with)(const char* str, const char* prefix);
 str_s           (*sub)(const char* s, isize start, isize end);
+char*           (*upper)(char* s, IAllocator allc);
 Exception       (*vsprintf)(char* dest, usize dest_len, const char* format, va_list va);
 
 struct {  // sub-module .slice >>>

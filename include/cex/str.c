@@ -1,5 +1,6 @@
 #pragma once
 #include "_sprintf.h"
+#include <ctype.h>
 #include "all.h"
 #include <ctype.h>
 #include <float.h>
@@ -128,7 +129,9 @@ str_copy(char* dest, const char* src, usize destlen)
     return Error.ok;
 }
 
-char* str_replace(const char* str, const char* old_sub, const char* new_sub, IAllocator allc) {
+char*
+str_replace(const char* str, const char* old_sub, const char* new_sub, IAllocator allc)
+{
     if (str == NULL || old_sub == NULL || new_sub == NULL || old_sub[0] == '\0') {
         return NULL;
     }
@@ -1156,6 +1159,44 @@ str_clone(char* s, IAllocator allc)
     return result;
 }
 
+static char*
+str_lower(char* s, IAllocator allc)
+{
+    if (s == NULL) {
+        return NULL;
+    }
+    usize slen = strlen(s);
+    uassert(slen < PTRDIFF_MAX);
+
+    char* result = mem$malloc(allc, slen + 1);
+    if (result) {
+        for (usize i = 0; i < slen; i++) {
+            result[i] = tolower(s[i]);
+        }
+        result[slen] = '\0';
+    }
+    return result;
+}
+
+static char*
+str_upper(char* s, IAllocator allc)
+{
+    if (s == NULL) {
+        return NULL;
+    }
+    usize slen = strlen(s);
+    uassert(slen < PTRDIFF_MAX);
+
+    char* result = mem$malloc(allc, slen + 1);
+    if (result) {
+        for (usize i = 0; i < slen; i++) {
+            result[i] = toupper(s[i]);
+        }
+        result[slen] = '\0';
+    }
+    return result;
+}
+
 static arr$(char*) str_split(char* s, const char* split_by, IAllocator allc)
 {
     str_s src = str_sstr(s);
@@ -1179,7 +1220,7 @@ static arr$(char*) str_split(char* s, const char* split_by, IAllocator allc)
 static arr$(char*) str_split_lines(char* s, IAllocator allc)
 {
     uassert(allc != NULL);
-    if (s == NULL){
+    if (s == NULL) {
         return NULL;
     }
     arr$(char*) result = arr$new(result, allc);
@@ -1188,25 +1229,25 @@ static arr$(char*) str_split_lines(char* s, IAllocator allc)
     }
     char c;
     char* line_start = s;
-    while((c = *s))
-    {
-        switch(c) {
+    while ((c = *s)) {
+        switch (c) {
             case '\r':
-                if (s[1] == '\n') goto default_next;
+                if (s[1] == '\n') {
+                    goto default_next;
+                }
                 fallthrough();
             case '\n':
             case '\v':
-            case '\f':
-                {
-                    str_s line = {.buf = line_start, .len = s - line_start};
-                    if (line.len > 0 && line.buf[line.len-1] == '\r') {
-                        line.len--;
-                    }
-                    char* tok = str__slice__clone(line, allc);
-                    arr$push(result, tok);
-                    line_start = s + 1;
-                    fallthrough();
+            case '\f': {
+                str_s line = { .buf = line_start, .len = s - line_start };
+                if (line.len > 0 && line.buf[line.len - 1] == '\r') {
+                    line.len--;
                 }
+                char* tok = str__slice__clone(line, allc);
+                arr$push(result, tok);
+                line_start = s + 1;
+                fallthrough();
+            }
             default:
             default_next:
                 s++;
@@ -1280,6 +1321,8 @@ const struct __module__str str = {
     .ends_with = str_ends_with,
     .fmt = str_fmt,
     .clone = str_clone,
+    .lower = str_lower,
+    .upper = str_upper,
     .split = str_split,
     .split_lines = str_split_lines,
     .join = str_join,
