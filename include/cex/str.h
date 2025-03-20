@@ -27,6 +27,7 @@ usize           (*len)(char* s);
 char*           (*replace)(const char* str, const char* old_sub, const char* new_sub, IAllocator allc);
 str_s           (*sbuf)(char* s, usize length);
 arr$(char*)     (*split)(char* s, const char* split_by, IAllocator allc);
+arr$(char*)     (*split_lines)(char* s, IAllocator allc);
 Exception       (*sprintf)(char* dest, usize dest_len, const char* format, ...);
 str_s           (*sstr)(const char* ccharptr);
 bool            (*starts_with)(const char* str, const char* prefix);

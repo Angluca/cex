@@ -1928,6 +1928,54 @@ test$case(test_tsplit)
 
     return EOK;
 }
+test$case(test_split_lines)
+{
+    mem$scope(tmem$, _)
+    {
+        var s = str.sstr("123\n456\r\n789\r");
+        const char* expected[] = {
+            "123",
+            "456",
+            "789",
+        };
+        arr$(char*) res = str.split_lines(s.buf, _);
+        tassert(res != NULL);
+        tassert_eqi(arr$len(res), 3);
+
+        u32 nit = 0;
+        for$arr(v, res)
+        {
+            tassert_eqs(v, expected[nit]);
+            nit++;
+        }
+    }
+
+    mem$scope(tmem$, _)
+    {
+        var s = str.sstr("ab c\n\nde fg\rkl\r\nfff\fvvv\v");
+        const char* expected[] = {
+            "ab c",
+            "",
+            "de fg",
+            "kl",
+            "fff",
+            "vvv",
+        };
+        arr$(char*) res = str.split_lines(s.buf, _);
+        tassert(res != NULL);
+        tassert_eqi(arr$len(res), 6);
+        tassert_eqi(arr$len(res), arr$len(expected));
+
+        u32 nit = 0;
+        for$arr(v, res)
+        {
+            tassert_eqs(v, expected[nit]);
+            nit++;
+        }
+    }
+
+    return EOK;
+}
 
 test$case(test_str_replace)
 {
@@ -2042,6 +2090,7 @@ main(int argc, char* argv[])
     test$run(test_slice_clone);
     test$run(test_clone);
     test$run(test_tsplit);
+    test$run(test_split_lines);
     test$run(test_str_replace);
     test$run(test_tjoin);
     test$run(test_str_chaining);

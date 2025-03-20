@@ -1167,6 +1167,45 @@ static arr$(char*) str_split(char* s, const char* split_by, IAllocator allc)
     return result;
 }
 
+static arr$(char*) str_split_lines(char* s, IAllocator allc)
+{
+    uassert(allc != NULL);
+    if (s == NULL){
+        return NULL;
+    }
+    arr$(char*) result = arr$new(result, allc);
+    if (result == NULL) {
+        return NULL;
+    }
+    char c;
+    char* line_start = s;
+    while((c = *s))
+    {
+        switch(c) {
+            case '\r':
+                if (s[1] == '\n') goto default_next;
+                fallthrough();
+            case '\n':
+            case '\v':
+            case '\f':
+                {
+                    str_s line = {.buf = line_start, .len = s - line_start};
+                    if (line.len > 0 && line.buf[line.len-1] == '\r') {
+                        line.len--;
+                    }
+                    char* tok = str__slice__clone(line, allc);
+                    arr$push(result, tok);
+                    line_start = s + 1;
+                    fallthrough();
+                }
+            default:
+            default_next:
+                s++;
+        }
+    }
+    return result;
+}
+
 static char*
 str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
 {
@@ -1233,6 +1272,7 @@ const struct __module__str str = {
     .fmt = str_fmt,
     .clone = str_clone,
     .split = str_split,
+    .split_lines = str_split_lines,
     .join = str_join,
 
     .slice = {  // sub-module .slice >>>
