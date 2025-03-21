@@ -3,10 +3,10 @@
 
 #ifdef _WIN32
 #include "_os_win.c"
-#define ostr$sPATH_SEP '\\'
+#define os$PATH_SEP '\\'
 #else
 #include "_os_posix.c"
-#define ostr$sPATH_SEP '/'
+#define os$PATH_SEP '/'
 #endif
 
 Exception
@@ -54,15 +54,15 @@ os__path__exists(const char* path)
 char*
 os__path__join(arr$(char*) parts, IAllocator allc)
 {
-    char sep[2] = {ostr$sPATH_SEP, '\0'};
+    char sep[2] = { os$PATH_SEP, '\0' };
     return str.join(parts, sep, allc);
 }
 
 str_s
 os__path__splitext(const char* path, bool return_ext)
 {
-    if(path == NULL) {
-        return (str_s){0};
+    if (path == NULL) {
+        return (str_s){ 0 };
     }
     usize pathlen = strlen(path);
     if (pathlen == 0) {
@@ -100,6 +100,137 @@ os__path__splitext(const char* path, bool return_ext)
     }
 }
 
+#define os$cmd(args...)                                                                            \
+    ({                                                                                             \
+        const char* _args[] = { args, NULL };                                                      \
+        usize _args_len = arr$len(_args);                                                          \
+        os_cmd_c _cmd = { 0 };                                                                     \
+        Exc result = EOK;                                                                          \
+        e$except(err, os.cmd.run(_args, _args_len, &_cmd))                                         \
+        {                                                                                          \
+            result = err;                                                                          \
+        }                                                                                          \
+        if (result == EOK) {                                                                       \
+            e$except(err, os.cmd.wait(&_cmd))                                                      \
+            {                                                                                      \
+                result = err;                                                                      \
+            }                                                                                      \
+            if (result == EOK && _cmd._subpr.return_status != 0) {                                 \
+                result = Error.runtime;                                                            \
+            }                                                                                      \
+        }                                                                                          \
+        result;                                                                                    \
+    })
+
+Exception
+os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
+{
+    uassert(out_cmd != NULL);
+    memset(out_cmd, 0, sizeof(os_cmd_c));
+
+    if (args == NULL || args_len == 0) {
+        return e$raise(Error.argument, "`args` argument is empty or null");
+    }
+    if (args_len == 1 || args[args_len - 1] != NULL) {
+        return e$raise(Error.argument, "`args` last item must be a NULL");
+    }
+
+    for (u32 i = 0; i < args_len - 1; i++) {
+        if (args[i] == NULL) {
+            return e$raise(
+                Error.argument,
+                "`args` item[%d] is NULL, which may indicate string operation failure",
+                i
+            );
+        }
+    }
+
+
+#ifdef _WIN32
+    // FIX:  WIN32 uncompilable
+
+    // https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
+
+    STARTUPINFO siStartInfo;
+    ZeroMemory(&siStartInfo, sizeof(siStartInfo));
+    siStartInfo.cb = sizeof(STARTUPINFO);
+    // NOTE: theoretically setting NULL to std handles should not be a problem
+    // https://docs.microsoft.com/en-us/windows/console/getstdhandle?redirectedfrom=MSDN#attachdetach-behavior
+    // TODO: check for errors in GetStdHandle
+    siStartInfo.hStdError = redirect.fderr ? *redirect.fderr : GetStdHandle(STD_ERROR_HANDLE);
+    siStartInfo.hStdOutput = redirect.fdout ? *redirect.fdout : GetStdHandle(STD_OUTPUT_HANDLE);
+    siStartInfo.hStdInput = redirect.fdin ? *redirect.fdin : GetStdHandle(STD_INPUT_HANDLE);
+    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+    PROCESS_INFORMATION piProcInfo;
+    ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
+
+    // TODO: use a more reliable rendering of the command instead of cmd_render
+    // cmd_render is for logging primarily
+    nob_cmd_render(cmd, &sb);
+    nob_sb_append_null(&sb);
+    BOOL bSuccess = CreateProcessA(
+        NULL,
+        sb.items,
+        NULL,
+        NULL,
+        TRUE,
+        0,
+        NULL,
+        NULL,
+        &siStartInfo,
+        &piProcInfo
+    );
+    nob_sb_free(sb);
+
+    if (!bSuccess) {
+        nob_log(
+            NOB_ERROR,
+            "Could not create child process: %s",
+            nob_win32_error_message(GetLastError())
+        );
+        return NOB_INVALID_PROC;
+    }
+
+    CloseHandle(piProcInfo.hThread);
+
+    return piProcInfo.hProcess;
+#else
+    pid_t cpid = fork();
+    if (cpid < 0) {
+        return e$raise(Error.os, "Could not fork child process: %s", strerror(errno));
+    }
+
+    if (cpid == 0) {
+        if (execvp(args[0], (char* const*)args) < 0) {
+            log$error("Could not exec child process: %s", strerror(errno));
+            exit(1);
+        }
+        uassert(false && "unreachable");
+    }
+
+    *out_cmd = (os_cmd_c){ .is_subprocess = false,
+                           ._subpr = {
+                               .child = cpid,
+                               .alive = 1,
+                           } };
+    return EOK;
+
+#endif
+}
+
+Exception
+os__cmd__wait(os_cmd_c* self)
+{
+    uassert(self != NULL);
+
+    if (subprocess_join(&self->_subpr, &self->_subpr.return_status)) {
+        uassert(errno != 0);
+        return strerror(errno);
+    }
+    return EOK;
+}
+
 
 const struct __module__os os = {
     // Autogenerated by CEX
@@ -115,5 +246,10 @@ const struct __module__os os = {
         .join = os__path__join,
         .splitext = os__path__splitext,
     },  // sub-module .path <<<
+
+    .cmd = {  // sub-module .cmd >>>
+        .run = os__cmd__run,
+        .wait = os__cmd__wait,
+    },  // sub-module .cmd <<<
     // clang-format on
 };

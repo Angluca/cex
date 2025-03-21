@@ -1,6 +1,12 @@
 #pragma once
-#include <cex/cex.h>
-#include <cex/sbuf.h>
+#include <cex/all.h>
+#include <cex/os/subprocess.h>
+
+typedef struct os_cmd_c
+{
+    bool is_subprocess;
+    struct subprocess_s _subpr;
+} os_cmd_c;
 
 
 struct __module__os
@@ -19,6 +25,11 @@ struct {  // sub-module .path >>>
     char*           (*join)(arr$(char*) parts, IAllocator allc);
     str_s           (*splitext)(const char* path, bool return_ext);
 } path;  // sub-module .path <<<
+
+struct {  // sub-module .cmd >>>
+    Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
+    Exception       (*wait)(os_cmd_c* self);
+} cmd;  // sub-module .cmd <<<
     // clang-format on
 };
 extern const struct __module__os os; // CEX Autogen

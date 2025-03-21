@@ -39,19 +39,25 @@ void _cex_allocator_memscope_cleanup(IAllocator* allc);
 #define mem$ _cex__default_global__allocator_heap__allc
 #define mem$malloc(alloc, size, alignment...)                                                      \
     ({                                                                                             \
+        /* NOLINTBEGIN*/\
         usize _alignment[] = { alignment };                                                        \
         (alloc)->malloc((alloc), size, (sizeof(_alignment) > 0) ? _alignment[0] : 0);              \
+        /* NOLINTEND*/\
     })
 #define mem$calloc(alloc, nmemb, size, alignment...)                                               \
     ({                                                                                             \
+        /* NOLINTBEGIN */                                                                          \
         usize _alignment[] = { alignment };                                                        \
         (alloc)->calloc((alloc), nmemb, size, (sizeof(_alignment) > 0) ? _alignment[0] : 0);       \
+        /* NOLINTEND*/\
     })
 
 #define mem$realloc(alloc, old_ptr, size, alignment...)                                            \
     ({                                                                                             \
+        /* NOLINTBEGIN */                                                                          \
         usize _alignment[] = { alignment };                                                        \
         (alloc)->realloc((alloc), old_ptr, size, (sizeof(_alignment) > 0) ? _alignment[0] : 0);    \
+        /* NOLINTEND*/\
     })
 
 #define mem$free(alloc, ptr)                                                                       \

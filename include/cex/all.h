@@ -1,10 +1,12 @@
-#include "mem.h"
-#include "AllocatorHeap.h"
-#include "AllocatorArena.h"
-#include "cex.h"
-#include "sbuf.h"
-#include "str.h"
-#include "io.h"
-#include "ds.h"
-#include "test.h"
+#pragma once
+#include <cex/cex.h>
+#include <cex/mem.h>
+#include <cex/AllocatorHeap.h>
+#include <cex/AllocatorArena.h>
+#include <cex/sbuf.h>
+#include <cex/io.h>
+#include <cex/ds.h>
+#include <cex/test.h>
+#include <cex/os/os.h>
+#include <cex/str.h>
 

@@ -27,7 +27,7 @@ enum _CexDsKeyType_e
 };
 extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocator allc);
 extern void cexds_arrfreef(void* a);
-extern bool cexds_arr_integrity(void* arr, size_t magic_num);
+extern bool cexds_arr_integrity(const void* arr, size_t magic_num);
 extern void cexds_hmfree_func(void* p, size_t elemsize);
 extern void cexds_hmclear_func(struct cexds_hash_index* t, struct cexds_hash_index* old_table, size_t cexds_hash_seed);
 extern void* cexds_hminit(size_t elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
@@ -133,13 +133,16 @@ struct cexds_arr_new_kwargs_s
 
 #define arr$pushm(a, items...)                                                                     \
     ({                                                                                             \
+        /* NOLINTBEGIN */                                                                            \
         typeof(*a) _args[] = { items };                                                            \
         _Static_assert(sizeof(_args) > 0, "You must pass at least one item");                      \
         arr$pusha(a, _args, arr$len(_args));                                                       \
+        /* NOLINTEND */                                                                            \
     })
 
 #define arr$pusha(a, array, array_len...)                                                          \
     ({                                                                                             \
+        /* NOLINTBEGIN */                                                                          \
         cexds_arr_integrity(a, CEXDS_ARR_MAGIC);                                                   \
         uassert(array != NULL);                                                                    \
         usize _arr_len_va[] = { array_len };                                                       \
@@ -150,6 +153,7 @@ struct cexds_arr_new_kwargs_s
             uassert(false && "arr$pusha memory error");                                            \
             abort();                                                                               \
         }                                                                                          \
+        /* NOLINTEND */                                                                            \
         for (usize i = 0; i < arr_len; i++) {                                                      \
             (a)[cexds_header(a)->length++] = ((array)[i]);                                         \
         }                                                                                          \
@@ -177,19 +181,25 @@ struct cexds_arr_new_kwargs_s
 #define arr$grow(a, add_len, min_cap)                                                              \
     ((a) = cexds_arrgrowf((a), sizeof *(a), (add_len), (min_cap), NULL))
 
+
+// NOLINT
 #define arr$len(arr)                                                                               \
     ({                                                                                             \
         _Pragma("GCC diagnostic push");                                                            \
         /* NOTE: temporary disable syntax error to support both static array length and arr$(T) */ \
         _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\"");                                \
+        /* NOLINTBEGIN */                                                                          \
         __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0]))   /* check if array or ptr */ \
             ? (cexds_arr_integrity(arr, 0), cexds_header(arr)->length) /* some pointer or arr$ */  \
             : (sizeof(arr) / sizeof((arr)[0])                          /* static array[] */        \
               );                                                                                   \
+        /* NOLINTEND */                                                                            \
         _Pragma("GCC diagnostic pop");                                                             \
     })
+// NOLINT
 
 #define for$arr(v, array, array_len...)                                                            \
+        /* NOLINTBEGIN*/\
     usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
@@ -197,12 +207,14 @@ struct cexds_arr_new_kwargs_s
     typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
     usize cex$tmpname(arr_index) = 0;                                                              \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
+        /* NOLINTEND */                                                                            \
     for (typeof((array)[0]) v = { 0 };                                                             \
          (cex$tmpname(arr_index) < cex$tmpname(arr_length) &&                                      \
           ((v) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1));                               \
          cex$tmpname(arr_index)++)
 
 #define for$arrp(v, array, array_len...)                                                           \
+        /* NOLINTBEGIN*/\
     usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
@@ -210,6 +222,7 @@ struct cexds_arr_new_kwargs_s
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
     typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
     usize cex$tmpname(arr_index) = 0;                                                              \
+        /* NOLINTEND */                                                                            \
     for (typeof((array)[0])* v = cex$tmpname(arr_arrp);                                            \
          cex$tmpname(arr_index) < cex$tmpname(arr_length);                                         \
          cex$tmpname(arr_index)++, v++)

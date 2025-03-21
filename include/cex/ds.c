@@ -27,7 +27,7 @@ size_t cexds_rehash_items;
 #define cexds_item_ptr(t, i, elemsize) ((char*)a + elemsize * i)
 
 bool
-cexds_arr_integrity(void* arr, size_t magic_num)
+cexds_arr_integrity(const void* arr, size_t magic_num)
 {
     (void)magic_num;
     cexds_array_header* hdr = cexds_header(arr);

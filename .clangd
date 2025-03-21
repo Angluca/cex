@@ -1,7 +1,7 @@
 Diagnostics:
   ClangTidy:
     # annoying fff.h Suspicious usage of 'sizeof(A*)'; pointer to aggregate' 
-    Remove: bugprone-sizeof-expression
+    # Remove: bugprone-sizeof-expression
 
 CompileFlags:
   Add: [
