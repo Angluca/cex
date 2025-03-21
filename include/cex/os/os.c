@@ -223,6 +223,9 @@ Exception
 os__cmd__wait(os_cmd_c* self)
 {
     uassert(self != NULL);
+    if (!self->_subpr.alive) {
+        return Error.empty;
+    }
 
     if (subprocess_join(&self->_subpr, &self->_subpr.return_status)) {
         uassert(errno != 0);
