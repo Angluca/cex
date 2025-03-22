@@ -5,10 +5,10 @@
 
 typedef struct os_cmd_flags_s
 {
-    u32 combine_stdouterr : 1;
-    u32 no_inherit_env : 1;
-    u32 no_search_path : 1;
-    u32 no_window : 1;
+    u32 combine_stdouterr : 1; // if 1 - combines output from stderr to stdout
+    u32 no_inherit_env : 1;    // if 1 - disables using existing env variable of parent process
+    u32 no_search_path : 1;    // if 1 - disables propagating PATH= env to command line
+    u32 no_window : 1;         // if 1 - disables creation of new window if OS supported
 } os_cmd_flags_s;
 _Static_assert(sizeof(os_cmd_flags_s) == sizeof(u32), "size?");
 
@@ -16,7 +16,7 @@ typedef struct os_cmd_c
 {
     struct subprocess_s _subpr;
     os_cmd_flags_s _flags;
-    bool is_subprocess;
+    bool _is_subprocess;
 } os_cmd_c;
 
 struct __module__os
@@ -46,6 +46,6 @@ struct {  // sub-module .cmd >>>
     Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
     Exception       (*wait)(os_cmd_c* self);
 } cmd;  // sub-module .cmd <<<
-    // clang-format on
+          // clang-format on
 };
 extern const struct __module__os os; // CEX Autogen

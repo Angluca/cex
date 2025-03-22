@@ -141,18 +141,26 @@ os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_
     }
 
     *self = (os_cmd_c){
-        .is_subprocess = true,
+        ._is_subprocess = true,
         ._flags = (flags) ? *flags : (os_cmd_flags_s){ 0 },
     };
 
-    // TODO: set flags
+    int sub_flags = 0;
+    if (!self->_flags.no_inherit_env) {
+        sub_flags |= subprocess_option_inherit_environment;
+    }
+    if (self->_flags.no_window) {
+        sub_flags |= subprocess_option_no_window;
+    }
+    if (!self->_flags.no_search_path) {
+        sub_flags |= subprocess_option_search_user_path;
+    }
+    if (self->_flags.combine_stdouterr) {
+        sub_flags |= subprocess_option_combined_stdout_stderr;
+    }
 
-    int result = subprocess_create(
-        (const char* const*)args,
-        subprocess_option_inherit_environment | subprocess_option_search_user_path,
-        &self->_subpr
-    );
-    if (0 != result) {
+    int result = subprocess_create((const char* const*)args, sub_flags, &self->_subpr);
+    if (result != 0) {
         uassert(errno != 0);
         return strerror(errno);
     }
@@ -203,8 +211,7 @@ os__cmd__read_all(os_cmd_c* self, IAllocator allc)
     uassert(allc != NULL);
     if (self->_subpr.stdout_file) {
         str_s out = { 0 };
-        if(io.fread_all(self->_subpr.stdout_file, &out, allc))
-        {
+        if (io.fread_all(self->_subpr.stdout_file, &out, allc)) {
             return NULL;
         }
         return out.buf;
@@ -219,8 +226,7 @@ os__cmd__read_line(os_cmd_c* self, IAllocator allc)
     uassert(allc != NULL);
     if (self->_subpr.stdout_file) {
         str_s out = { 0 };
-        if(io.fread_line(self->_subpr.stdout_file, &out, allc))
-        {
+        if (io.fread_line(self->_subpr.stdout_file, &out, allc)) {
             return NULL;
         }
         return out.buf;
@@ -331,7 +337,7 @@ os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
         uassert(false && "unreachable");
     }
 
-    *out_cmd = (os_cmd_c){ .is_subprocess = false,
+    *out_cmd = (os_cmd_c){ ._is_subprocess = false,
                            ._subpr = {
                                .child = cpid,
                                .alive = 1,

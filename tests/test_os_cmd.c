@@ -147,6 +147,55 @@ test$case(os_cmd_read_line_huge)
     return EOK;
 }
 
+test$case(os_cmd_read_all_only_stdout)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, "tests/build/os_test/write_lines", "stderr", "10", NULL);
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
+
+        char* output = os.cmd.read_all(&c, _);
+        tassert(output != NULL);
+        tassert_eqs(output, "");
+
+        int err_code = 1;
+        tassert_eqe(Error.ok, os.cmd.join(&c, &err_code));
+        tassert_eqi(err_code, 0);
+        tassert_eqe(EOK, os.cmd.destroy(&c));
+    }
+    return EOK;
+}
+
+
+test$case(os_cmd_read_all_combined_stderr)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, "tests/build/os_test/write_lines", "stderr", "10", NULL);
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){.combine_stdouterr = 1}));
+
+        char* output = os.cmd.read_all(&c, _);
+        tassert(output != NULL);
+        int err_code = 1;
+        tassert_eqe(Error.ok, os.cmd.join(&c, &err_code));
+        tassert_eqi(err_code, 0);
+        tassert_eqe(EOK, os.cmd.destroy(&c));
+
+        arr$(char*) lines = str.split_lines(output, _);
+        tassert_eqi(arr$len(lines), 10);
+        for(u32 i = 0; i < arr$len(lines); i++){
+            tassert_eqs(str.fmt(_, "%09d", i), lines[i]);
+        }
+
+        tassert_eqi(strlen(output) / 10, arr$len(lines));
+    }
+    return EOK;
+}
+
 
 int
 main(int argc, char* argv[])
@@ -159,6 +208,8 @@ main(int argc, char* argv[])
     test$run(os_cmd_read_all_small);
     test$run(os_cmd_read_all_huge);
     test$run(os_cmd_read_line_huge);
+    test$run(os_cmd_read_all_only_stdout);
+    test$run(os_cmd_read_all_combined_stderr);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
