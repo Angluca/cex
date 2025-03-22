@@ -2,12 +2,22 @@
 #include <cex/all.h>
 #include <cex/os/subprocess.h>
 
+
+typedef struct os_cmd_flags_s
+{
+    u32 combine_stdouterr : 1;
+    u32 no_inherit_env : 1;
+    u32 no_search_path : 1;
+    u32 no_window : 1;
+} os_cmd_flags_s;
+_Static_assert(sizeof(os_cmd_flags_s) == sizeof(u32), "size?");
+
 typedef struct os_cmd_c
 {
-    bool is_subprocess;
     struct subprocess_s _subpr;
+    os_cmd_flags_s _flags;
+    bool is_subprocess;
 } os_cmd_c;
-
 
 struct __module__os
 {
@@ -27,6 +37,11 @@ struct {  // sub-module .path >>>
 } path;  // sub-module .path <<<
 
 struct {  // sub-module .cmd >>>
+    Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
+    Exception       (*destroy)(os_cmd_c* self);
+    Exception       (*join)(os_cmd_c* self, i32* out_ret_code);
+    char*           (*read_all)(os_cmd_c* self, IAllocator allc);
+    Exception       (*ret_code)(os_cmd_c* self);
     Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
     Exception       (*wait)(os_cmd_c* self);
 } cmd;  // sub-module .cmd <<<

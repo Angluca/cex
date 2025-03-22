@@ -1,4 +1,5 @@
 #pragma once
+#include "all.h"
 #include "cex.c"
 #include "sbuf.c"
 #include "mem.c"

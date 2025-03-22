@@ -123,6 +123,113 @@ os__path__splitext(const char* path, bool return_ext)
     })
 
 Exception
+os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags)
+{
+    (void)env;
+    uassert(self != NULL);
+    if (args == NULL || arr$len(args) == 0) {
+        return "`args` is empty or null";
+    }
+    usize args_len = arr$len(args);
+    if (args_len == 1 || args[args_len - 1] != NULL) {
+        return "`args` last item must be a NULL";
+    }
+    for (u32 i = 0; i < args_len - 1; i++) {
+        if (args[i] == NULL) {
+            return "one of `args` items is NULL, which may indicate string operation failure";
+        }
+    }
+
+    *self = (os_cmd_c){
+        .is_subprocess = true,
+        ._flags = (flags) ? *flags : (os_cmd_flags_s){ 0 },
+    };
+
+    // TODO: set flags
+
+    int result = subprocess_create(
+        (const char* const*)args,
+        subprocess_option_inherit_environment | subprocess_option_search_user_path,
+        &self->_subpr
+    );
+    if (0 != result) {
+        uassert(errno != 0);
+        return strerror(errno);
+    }
+
+    return EOK;
+}
+Exception
+os__cmd__join(os_cmd_c* self, i32* out_ret_code)
+{
+    uassert(self != NULL);
+    int ret_code = 0;
+
+    int result = subprocess_join(&self->_subpr, &ret_code);
+    if (result != 0) {
+        if (out_ret_code) {
+            *out_ret_code = -1;
+        }
+        return Error.os;
+    }
+    if (out_ret_code) {
+        *out_ret_code = ret_code;
+    }
+    if (ret_code != 0) {
+        return Error.runtime;
+    }
+    return EOK;
+}
+
+Exception
+os__cmd__ret_code(os_cmd_c* self)
+{
+    uassert(self != NULL);
+    int ret_code = 0;
+    int result = subprocess_join(&self->_subpr, &ret_code);
+    if (result != 0) {
+        return Error.os;
+    }
+    if (ret_code != 0) {
+        return Error.runtime;
+    }
+    return EOK;
+}
+
+char*
+os__cmd__read_all(os_cmd_c* self, IAllocator allc)
+{
+    uassert(self != NULL);
+    uassert(allc != NULL);
+    if (self->_subpr.stdout_file) {
+        str_s out = { 0 };
+        e$except(err, io.fread_all(self->_subpr.stdout_file, &out, allc))
+        {
+            return NULL;
+        }
+        return out.buf;
+    }
+    uassert(false);
+    return NULL;
+}
+
+Exception
+os__cmd__destroy(os_cmd_c* self)
+{
+    if (self == NULL) {
+        return EOK;
+    }
+
+    if (self->_subpr.alive) {
+        return Error.exists;
+    }
+
+    subprocess_destroy(&self->_subpr);
+    memset(self, 0, sizeof(os_cmd_c));
+    return EOK;
+}
+
+Exception
 os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 {
     uassert(out_cmd != NULL);
@@ -251,6 +358,11 @@ const struct __module__os os = {
     },  // sub-module .path <<<
 
     .cmd = {  // sub-module .cmd >>>
+        .create = os__cmd__create,
+        .join = os__cmd__join,
+        .ret_code = os__cmd__ret_code,
+        .read_all = os__cmd__read_all,
+        .destroy = os__cmd__destroy,
         .run = os__cmd__run,
         .wait = os__cmd__wait,
     },  // sub-module .cmd <<<
