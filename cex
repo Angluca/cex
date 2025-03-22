@@ -536,6 +536,7 @@ class CEXTestBuilder:
             assert os.path.exists(self.src_path), f"test not exist: {self.src_path}"
             assert self.src_path.endswith(".c"), "path must end with .c"
             test_files_list.append(self.src_path)
+            self.force_rebuild = True
 
         compiler_args = [
             "-DCEXTEST",
