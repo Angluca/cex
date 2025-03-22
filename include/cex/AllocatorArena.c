@@ -485,7 +485,7 @@ AllocatorArena_sanitize(IAllocator allc)
     }
     allocator_arena_page_s* page = self->last_page;
     while (page) {
-        uassert(page->cursor < page->capacity);
+        uassert(page->cursor <= page->capacity);
         uassert(mem$asan_poison_check(page->__poison_area, sizeof(page->__poison_area)));
 
         u32 i = 0;
