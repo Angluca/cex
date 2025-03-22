@@ -103,6 +103,8 @@ cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocat
             hdr->allocator->scope_depth(hdr->allocator) == hdr->allocator_scope_depth &&
             "passing object between different mem$scope() will lead to use-after-free / ASAN poison issues"
         );
+        // NOTE: we must unpoison to prevent false ASAN use-after-poison check if data is copied
+        mem$asan_unpoison(hdr->__poison_area, sizeof(hdr->__poison_area));
         b = mem$realloc(
             cexds_header(a)->allocator,
             cexds_base(a),
