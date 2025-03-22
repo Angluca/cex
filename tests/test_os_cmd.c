@@ -122,6 +122,31 @@ test$case(os_cmd_read_all_huge)
     return EOK;
 }
 
+test$case(os_cmd_read_line_huge)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, "tests/build/os_test/write_lines", "stdout", "100000", NULL);
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
+
+        char* line;
+        u32 lcnt = 0;
+        while((line = os.cmd.read_line(&c, _))){
+            tassert_eqs(str.fmt(_, "%09d", lcnt), line);
+            lcnt++;
+        }
+        int err_code = 1;
+        tassert_eqe(Error.ok, os.cmd.join(&c, &err_code));
+        tassert_eqi(err_code, 0);
+        tassert_eqe(EOK, os.cmd.destroy(&c));
+
+        tassert_eqi(lcnt, 100000);
+    }
+    return EOK;
+}
+
 
 int
 main(int argc, char* argv[])
@@ -133,6 +158,7 @@ main(int argc, char* argv[])
     test$run(os_cmd_create);
     test$run(os_cmd_read_all_small);
     test$run(os_cmd_read_all_huge);
+    test$run(os_cmd_read_line_huge);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

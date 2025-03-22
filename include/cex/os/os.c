@@ -203,13 +203,28 @@ os__cmd__read_all(os_cmd_c* self, IAllocator allc)
     uassert(allc != NULL);
     if (self->_subpr.stdout_file) {
         str_s out = { 0 };
-        e$except(err, io.fread_all(self->_subpr.stdout_file, &out, allc))
+        if(io.fread_all(self->_subpr.stdout_file, &out, allc))
         {
             return NULL;
         }
         return out.buf;
     }
-    uassert(false);
+    return NULL;
+}
+
+char*
+os__cmd__read_line(os_cmd_c* self, IAllocator allc)
+{
+    uassert(self != NULL);
+    uassert(allc != NULL);
+    if (self->_subpr.stdout_file) {
+        str_s out = { 0 };
+        if(io.fread_line(self->_subpr.stdout_file, &out, allc))
+        {
+            return NULL;
+        }
+        return out.buf;
+    }
     return NULL;
 }
 
@@ -362,6 +377,7 @@ const struct __module__os os = {
         .join = os__cmd__join,
         .ret_code = os__cmd__ret_code,
         .read_all = os__cmd__read_all,
+        .read_line = os__cmd__read_line,
         .destroy = os__cmd__destroy,
         .run = os__cmd__run,
         .wait = os__cmd__wait,

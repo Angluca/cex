@@ -41,6 +41,7 @@ struct {  // sub-module .cmd >>>
     Exception       (*destroy)(os_cmd_c* self);
     Exception       (*join)(os_cmd_c* self, i32* out_ret_code);
     char*           (*read_all)(os_cmd_c* self, IAllocator allc);
+    char*           (*read_line)(os_cmd_c* self, IAllocator allc);
     Exception       (*ret_code)(os_cmd_c* self);
     Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
     Exception       (*wait)(os_cmd_c* self);
