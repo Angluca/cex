@@ -1244,28 +1244,29 @@ static arr$(char*) str_split_lines(char* s, IAllocator allc)
     }
     char c;
     char* line_start = s;
-    while ((c = *s)) {
+    char* cur = s;
+    while ((c = *cur)) {
         switch (c) {
             case '\r':
-                if (s[1] == '\n') {
+                if (cur[1] == '\n') {
                     goto default_next;
                 }
                 fallthrough();
             case '\n':
             case '\v':
             case '\f': {
-                str_s line = { .buf = line_start, .len = s - line_start };
+                str_s line = { .buf = line_start, .len = cur - line_start };
                 if (line.len > 0 && line.buf[line.len - 1] == '\r') {
                     line.len--;
                 }
                 char* tok = str__slice__clone(line, allc);
                 arr$push(result, tok);
-                line_start = s + 1;
+                line_start = cur + 1;
                 fallthrough();
             }
             default:
             default_next:
-                s++;
+                cur++;
         }
     }
     return result;
