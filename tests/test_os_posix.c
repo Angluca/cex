@@ -20,7 +20,7 @@ test$case(test_os_listdir)
 {
     sbuf_c listdir = sbuf.create(1024, mem$);
 
-    tassert_eqe(EOK, os.listdir("tests/data/", &listdir));
+    tassert_eqe(EOK, os.fs.listdir("tests/data/", &listdir));
     tassert(sbuf.len(&listdir) > 0);
 
     u32 nit = 0;
@@ -54,7 +54,7 @@ test$case(test_os_listdir)
     tassert_eqi(nit, arr$len(expected));
 
     tassert(sbuf.len(&listdir) > 0);
-    tassert_eqe(Error.not_found, os.listdir("tests/data/unknownfolder", &listdir));
+    tassert_eqe(Error.not_found, os.fs.listdir("tests/data/unknownfolder", &listdir));
     tassert_eqi(sbuf.len(&listdir), 0);
 
     sbuf.destroy(&listdir);
@@ -64,7 +64,7 @@ test$case(test_os_listdir)
 test$case(test_os_getcwd)
 {
     sbuf_c s = sbuf.create(10, mem$);
-    tassert_eqe(EOK, os.getcwd(&s));
+    tassert_eqe(EOK, os.fs.getcwd(&s));
     tassert_eqi(true, str.slice.ends_with(str.sstr(s), str$s("cex")));
 
     sbuf.destroy(&s);
@@ -110,25 +110,25 @@ test$case(test_os_path_join)
 test$case(test_os_setenv)
 {
     // get non existing
-    tassert_eqs(os.getenv("test_os_posix", NULL), NULL);
+    tassert_eqs(os.env.get("test_os_posix", NULL), NULL);
     // get non existing, with default
-    tassert_eqs(os.getenv("test_os_posix", "envdef"), "envdef");
+    tassert_eqs(os.env.get("test_os_posix", "envdef"), "envdef");
 
     // set env
-    os.setenv("test_os_posix", "foo", true);
-    tassert_eqs(os.getenv("test_os_posix", NULL), "foo");
+    os.env.set("test_os_posix", "foo", true);
+    tassert_eqs(os.env.get("test_os_posix", NULL), "foo");
 
     // set without replacing
-    os.setenv("test_os_posix", "bar", false);
-    tassert_eqs(os.getenv("test_os_posix", NULL), "foo");
+    os.env.set("test_os_posix", "bar", false);
+    tassert_eqs(os.env.get("test_os_posix", NULL), "foo");
 
     // set with replacing
-    os.setenv("test_os_posix", "bar", true);
-    tassert_eqs(os.getenv("test_os_posix", NULL), "bar");
+    os.env.set("test_os_posix", "bar", true);
+    tassert_eqs(os.env.get("test_os_posix", NULL), "bar");
 
     // unset env
-    os.unsetenv("test_os_posix");
-    tassert_eqs(os.getenv("test_os_posix", NULL), NULL);
+    os.env.unset("test_os_posix");
+    tassert_eqs(os.env.get("test_os_posix", NULL), NULL);
 
     return EOK;
 }
