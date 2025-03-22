@@ -181,6 +181,12 @@ os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_
     return EOK;
 }
 
+bool
+os__cmd__is_alive(os_cmd_c* self)
+{
+    return subprocess_alive(&self->_subpr);
+}
+
 Exception
 os__cmd__kill(os_cmd_c* self)
 {
@@ -212,7 +218,7 @@ os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
         u64 timeout_elapsed_ms = 0;
         u64 timeout_ms = timeout_sec * 1000;
         do {
-            if (subprocess_alive(&self->_subpr)) {
+            if (os__cmd__is_alive(self)) {
                 os_sleep(100); // 100 ms sleep
             } else {
                 subprocess_join(&self->_subpr, &ret_code);
@@ -395,6 +401,7 @@ const struct __module__os os = {
 
     .cmd = {  // sub-module .cmd >>>
         .create = os__cmd__create,
+        .is_alive = os__cmd__is_alive,
         .kill = os__cmd__kill,
         .join = os__cmd__join,
         .read_all = os__cmd__read_all,

@@ -39,6 +39,7 @@ struct {  // sub-module .path >>>
 
 struct {  // sub-module .cmd >>>
     Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
+    bool            (*is_alive)(os_cmd_c* self);
     Exception       (*join)(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code);
     Exception       (*kill)(os_cmd_c* self);
     char*           (*read_all)(os_cmd_c* self, IAllocator allc);

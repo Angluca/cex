@@ -190,6 +190,7 @@ test$case(os_cmd_join_timeout)
 {
     os_cmd_c c = { 0 };
     // WTF: if we call subprocess_terminate() on empty struct it will kill self!
+    tassert_eqi(0, os.cmd.is_alive(&c));
     e$ret(os.cmd.kill(&c));
 
     mem$scope(tmem$, _)
@@ -197,6 +198,7 @@ test$case(os_cmd_join_timeout)
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, "tests/build/os_test/sleep", "2", NULL);
         tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_eqi(1, os.cmd.is_alive(&c));
 
         int err_code = 0;
         tassert_eqe(Error.timeout, os.cmd.join(&c, 1, &err_code));
