@@ -29,7 +29,6 @@ test$case(my_run)
     tassert_eqe(Error.argument, os$cmd("ls", "soo", NULL, "foo"));
     tassert_eqe(Error.runtime, os$cmd("sleepasdlkajdlja", "2"));
     os_cmd_c c = { 0 };
-    tassert_eqe(Error.empty, os.cmd.wait(&c));
     e$ret(os.cmd.run(command_line, arr$len(command_line), &c));
 
     tassert_eqe(Error.runtime, os$cmd("cat", "/asdljqlw/asdlkjasdlji"));
@@ -41,9 +40,6 @@ test$case(my_run)
         arr$(const char*) args = arr$new(args, _);
         arr$pusha(args, command_line);
         e$ret(os.cmd.run(args, arr$len(args), &c));
-        e$ret(os.cmd.wait(&c));
-
-        tassert_eqe(Error.empty, os.cmd.wait(&c));
     }
     return EOK;
 }
@@ -62,9 +58,8 @@ test$case(os_cmd_create)
         // printf("%s\n", output);
         tassert(str.starts_with(output, "Usage: "));
         int err_code = 0;
-        tassert_eqe(Error.runtime, os.cmd.join(&c, &err_code));
+        tassert_eqe(Error.runtime, os.cmd.join(&c, 0, &err_code));
         tassert_eqi(err_code, 1);
-        tassert_eqe(EOK, os.cmd.destroy(&c));
     }
     return EOK;
 }
@@ -82,13 +77,12 @@ test$case(os_cmd_read_all_small)
         tassert(output != NULL);
         // printf("%s\n", output);
         int err_code = 1;
-        tassert_eqe(Error.ok, os.cmd.join(&c, &err_code));
+        tassert_eqe(Error.ok, os.cmd.join(&c, 0, &err_code));
         tassert_eqi(err_code, 0);
-        tassert_eqe(EOK, os.cmd.destroy(&c));
 
         arr$(char*) lines = str.split_lines(output, _);
         tassert_eqi(arr$len(lines), 10);
-        for(u32 i = 0; i < arr$len(lines); i++){
+        for (u32 i = 0; i < arr$len(lines); i++) {
             tassert_eqs(str.fmt(_, "%09d", i), lines[i]);
         }
 
@@ -109,13 +103,12 @@ test$case(os_cmd_read_all_huge)
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
         int err_code = 1;
-        tassert_eqe(Error.ok, os.cmd.join(&c, &err_code));
+        tassert_eqe(Error.ok, os.cmd.join(&c, 0, &err_code));
         tassert_eqi(err_code, 0);
-        tassert_eqe(EOK, os.cmd.destroy(&c));
 
         arr$(char*) lines = str.split_lines(output, _);
         tassert_eqi(arr$len(lines), 100000);
-        for(u32 i = 0; i < arr$len(lines); i++){
+        for (u32 i = 0; i < arr$len(lines); i++) {
             tassert_eqs(str.fmt(_, "%09d", i), lines[i]);
         }
     }
@@ -133,14 +126,13 @@ test$case(os_cmd_read_line_huge)
 
         char* line;
         u32 lcnt = 0;
-        while((line = os.cmd.read_line(&c, _))){
+        while ((line = os.cmd.read_line(&c, _))) {
             tassert_eqs(str.fmt(_, "%09d", lcnt), line);
             lcnt++;
         }
         int err_code = 1;
-        tassert_eqe(Error.ok, os.cmd.join(&c, &err_code));
+        tassert_eqe(Error.ok, os.cmd.join(&c, 0, &err_code));
         tassert_eqi(err_code, 0);
-        tassert_eqe(EOK, os.cmd.destroy(&c));
 
         tassert_eqi(lcnt, 100000);
     }
@@ -161,9 +153,8 @@ test$case(os_cmd_read_all_only_stdout)
         tassert_eqs(output, "");
 
         int err_code = 1;
-        tassert_eqe(Error.ok, os.cmd.join(&c, &err_code));
+        tassert_eqe(Error.ok, os.cmd.join(&c, 0, &err_code));
         tassert_eqi(err_code, 0);
-        tassert_eqe(EOK, os.cmd.destroy(&c));
     }
     return EOK;
 }
@@ -176,18 +167,17 @@ test$case(os_cmd_read_all_combined_stderr)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, "tests/build/os_test/write_lines", "stderr", "10", NULL);
-        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){.combine_stdouterr = 1}));
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .combine_stdouterr = 1 }));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
         int err_code = 1;
-        tassert_eqe(Error.ok, os.cmd.join(&c, &err_code));
+        tassert_eqe(Error.ok, os.cmd.join(&c, 0, &err_code));
         tassert_eqi(err_code, 0);
-        tassert_eqe(EOK, os.cmd.destroy(&c));
 
         arr$(char*) lines = str.split_lines(output, _);
         tassert_eqi(arr$len(lines), 10);
-        for(u32 i = 0; i < arr$len(lines); i++){
+        for (u32 i = 0; i < arr$len(lines); i++) {
             tassert_eqs(str.fmt(_, "%09d", i), lines[i]);
         }
 

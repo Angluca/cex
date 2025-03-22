@@ -17,4 +17,5 @@ const struct _CEX_Error_struct Error = {
     .runtime = "RuntimeError",       // generic runtime error
     .assert = "AssertError",         // generic runtime check
     .os = "OSError",                 // generic OS check
+    .timeout = "TimeoutError",       // await interval timeout
 };

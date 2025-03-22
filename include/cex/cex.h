@@ -86,7 +86,8 @@ extern const struct _CEX_Error_struct
     Exc argsparse;
     Exc runtime;
     Exc assert;
-    Exc os; /**< Generic OS error */
+    Exc os;
+    Exc timeout;
 } Error;
 
 #ifndef __cex__fprintf

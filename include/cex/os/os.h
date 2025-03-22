@@ -28,6 +28,7 @@ Exception       (*getcwd)(sbuf_c* out);
 const char*     (*getenv)(const char* name, const char* deflt);
 Exception       (*listdir)(const char* path, sbuf_c* out);
 void            (*setenv)(const char* name, const char* value, bool overwrite);
+void            (*sleep)(u32 period_millisec);
 void            (*unsetenv)(const char* name);
 
 struct {  // sub-module .path >>>
@@ -38,14 +39,11 @@ struct {  // sub-module .path >>>
 
 struct {  // sub-module .cmd >>>
     Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
-    Exception       (*destroy)(os_cmd_c* self);
-    Exception       (*join)(os_cmd_c* self, i32* out_ret_code);
+    Exception       (*join)(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code);
     char*           (*read_all)(os_cmd_c* self, IAllocator allc);
     char*           (*read_line)(os_cmd_c* self, IAllocator allc);
-    Exception       (*ret_code)(os_cmd_c* self);
     Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
-    Exception       (*wait)(os_cmd_c* self);
 } cmd;  // sub-module .cmd <<<
-          // clang-format on
+    // clang-format on
 };
 extern const struct __module__os os; // CEX Autogen
