@@ -191,9 +191,6 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     if (page == NULL) {
         return NULL;
     }
-    // u8 extra_padding = mem$aligned_round(page->cursor, 8) - page->cursor;
-    // page->cursor += extra_padding;
-    // rec.ptr_padding += extra_padding;
     uassert(page->capacity - page->cursor >= rec.size + rec.ptr_padding + rec.ptr_alignment);
     uassert(page->cursor % 8 == 0);
     uassert(rec.ptr_padding <= 8);
@@ -312,7 +309,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
         if (size == rec->size) {
             return old_ptr;
         }
-        // we cant change size/padding of this allocation, because this will break iterating
+        // we can't change size/padding of this allocation, because this will break iterating
         // ptr_padding is only u8 size, we cant store size, change, so we currently poison new size
         mem$asan_poison((char*)old_ptr + size, rec->size - size);
         return old_ptr;
@@ -321,7 +318,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
     if (unlikely(self->last_page && self->last_page->last_alloc == old_ptr)) {
         allocator_arena_rec_s nrec = _cex_alloc_estimate_alloc_size(size, alignment);
         if (nrec.size == 0) {
-            return NULL;
+            goto fail;
         }
         bool is_created = false;
         allocator_arena_page_s* page = _cex_allocator_arena__request_page_size(
@@ -330,7 +327,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
             &is_created
         );
         if (page == NULL) {
-            return NULL;
+            goto fail;
         }
         if (!is_created) {
             // If new page was created, fall back to malloc/copy/free method
@@ -358,12 +355,14 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
 
     void* new_ptr = _cex_allocator_arena__malloc(allc, size, alignment);
     if (new_ptr == NULL) {
-        return NULL;
+        goto fail;
     }
     memcpy(new_ptr, old_ptr, rec->size);
-    memset((char*)new_ptr + rec->size, 0, size - rec->size);
     _cex_allocator_arena__free(allc, old_ptr);
     return new_ptr;
+fail:
+    _cex_allocator_arena__free(allc, old_ptr);
+    return NULL;
 }
 
 
@@ -386,11 +385,17 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
     _cex_allocator_arena__validate(allc);
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     uassert(self->scope_depth > 0);
+
+#ifdef CEXTEST
+    bool AllocatorArena_sanitize(IAllocator allc);
+    uassert(AllocatorArena_sanitize(allc));
+#endif
     self->scope_depth--;
     if (self->scope_depth >= arr$len(self->scope_stack)) {
         // Scope overflow, wait until we reach CEX_ALLOCATOR_MAX_SCOPE_STACK
         return;
     }
+
     usize used_mark = self->scope_stack[self->scope_depth];
 
     allocator_arena_page_s* page = self->last_page;

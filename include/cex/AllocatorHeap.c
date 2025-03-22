@@ -187,8 +187,8 @@ static void*
 _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize alignment)
 {
     _cex_allocator_heap__validate(self);
-    uassert(ptr != NULL);
     if (unlikely(ptr == NULL)) {
+        uassert(ptr != NULL);
         return NULL;
     }
     AllocatorHeap_c* a = (AllocatorHeap_c*)self;
@@ -213,19 +213,19 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
             (alignment <= 8 && old_alignment != 8) || (alignment > 8 && alignment != old_alignment)
         )) {
         uassert(alignment == old_alignment && "given alignment doesn't match to old one");
-        return NULL;
+        goto fail;
     }
 
     u64 new_hdr = _cex_allocator_heap__hdr_make(size, alignment);
     if (unlikely(new_hdr == 0)) {
-        return NULL;
+        goto fail;
     }
     usize new_full_size = _cex_allocator_heap__hdr_get_size(new_hdr);
     uassert(new_full_size > size);
 
     u8* raw_result = realloc(p - old_offset, new_full_size);
     if (unlikely(raw_result == NULL)) {
-        return NULL;
+        goto fail;
     }
     u8* result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
     uassert(mem$aligned_pointer(result, 8) == result);
@@ -252,6 +252,10 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     }
 
     return result;
+
+fail:
+    free(ptr);
+    return NULL;
 }
 
 static void*
