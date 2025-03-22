@@ -23,7 +23,6 @@ void            (*printf)(const char* format, ...);
 void            (*rewind)(FILE* file);
 
 struct {  // sub-module .file >>>
-    Exception       (*drain)(FILE* file);
     char*           (*load)(const char* path, IAllocator allc);
     char*           (*readln)(FILE* file, IAllocator allc);
     Exception       (*save)(const char* path, const char* contents);

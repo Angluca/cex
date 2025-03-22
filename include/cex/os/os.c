@@ -284,6 +284,28 @@ os__cmd__read_line(os_cmd_c* self, IAllocator allc)
     return NULL;
 }
 
+Exception
+os__cmd__write_line(os_cmd_c* self, char* line)
+{
+    uassert(self != NULL);
+    if (line == NULL) {
+        return Error.argument;
+    }
+
+    if (self->_subpr.stdin_file == NULL) {
+        return Error.not_found;
+    }
+
+    // fwrite(l, 1, strlen(l), fin);
+    e$except_silent(err, io.file.writeln(self->_subpr.stdin_file, line))
+    {
+        return err;
+    }
+    fflush(self->_subpr.stdin_file);
+
+    return EOK;
+}
+
 
 Exception
 os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
@@ -406,6 +428,7 @@ const struct __module__os os = {
         .join = os__cmd__join,
         .read_all = os__cmd__read_all,
         .read_line = os__cmd__read_line,
+        .write_line = os__cmd__write_line,
         .run = os__cmd__run,
     },  // sub-module .cmd <<<
     // clang-format on

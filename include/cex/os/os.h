@@ -45,6 +45,7 @@ struct {  // sub-module .cmd >>>
     char*           (*read_all)(os_cmd_c* self, IAllocator allc);
     char*           (*read_line)(os_cmd_c* self, IAllocator allc);
     Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
+    Exception       (*write_line)(os_cmd_c* self, char* line);
 } cmd;  // sub-module .cmd <<<
     // clang-format on
 };

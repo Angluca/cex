@@ -206,12 +206,66 @@ test$case(os_cmd_join_timeout)
 
         tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
 
+        err_code = 777;
         tassert_eqe(Error.ok, os.cmd.join(&c, 3, &err_code));
         tassert_eqi(err_code, 0);
     }
     return EOK;
 }
 
+test$case(os_cmd_huge_join)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, "tests/build/os_test/write_lines", "stdout", "100000", NULL);
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
+
+        int err_code = 1;
+        tassert_eqe(Error.timeout, os.cmd.join(&c, 1, &err_code));
+        tassert_eqi(err_code, -1);
+    }
+    return EOK;
+}
+
+test$case(os_cmd_huge_join_stderr)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, "tests/build/os_test/write_lines", "stderr", "100000", NULL);
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
+
+        int err_code = 1;
+        tassert_eqe(Error.timeout, os.cmd.join(&c, 1, &err_code));
+        tassert_eqi(err_code, -1);
+    }
+    return EOK;
+}
+
+test$case(os_cmd_stdin_communucation)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, "tests/build/os_test/echo_server", NULL);
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert(os.cmd.is_alive(&c));
+
+        tassert_eqs("welcome to echo server", os.cmd.read_line(&c, _));
+        tassert_eqe(EOK, os.cmd.write_line(&c, "hello"));
+        tassert_eqs("out: hello", os.cmd.read_line(&c, _));
+        tassert_eqe(EOK, os.cmd.write_line(&c, "world"));
+        tassert_eqs("out: world", os.cmd.read_line(&c, _));
+        tassert_eqe(EOK, os.cmd.write_line(&c, "end"));
+
+        tassert_eqe(Error.ok, os.cmd.join(&c, 1, NULL));
+    }
+    return EOK;
+}
 
 int
 main(int argc, char* argv[])
@@ -227,6 +281,9 @@ main(int argc, char* argv[])
     test$run(os_cmd_read_all_only_stdout);
     test$run(os_cmd_read_all_combined_stderr);
     test$run(os_cmd_join_timeout);
+    test$run(os_cmd_huge_join);
+    test$run(os_cmd_huge_join_stderr);
+    test$run(os_cmd_stdin_communucation);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

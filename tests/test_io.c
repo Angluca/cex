@@ -583,29 +583,7 @@ test$case(test_fload)
     return EOK;
 }
 
-test$case(test_drain)
-{
-    FILE* file;
-    tassert_eqs(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
 
-    str_s content;
-    tassert_eqs(Error.ok, io.fread_line(file, &content, mem$));
-    tassert_eqs(content.buf, "000000001");
-    tassert_eqi(content.len, 9);
-    mem$free(mem$, content.buf);
-
-    tassert_eqs(Error.argument, io.file.drain(NULL));
-    tassert_eqs(Error.ok, io.file.drain(file));
-    tassert_eqs(Error.eof, io.file.drain(file));
-
-
-    tassert_eqs(Error.eof, io.fread_line(file, &content, mem$));
-    tassert_eqs(content.buf, NULL);
-    tassert_eqi(content.len, 0);
-    mem$free(mem$, content.buf);
-    io.fclose(&file);
-    return EOK;
-}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -642,7 +620,6 @@ main(int argc, char* argv[])
     test$run(test_fload_not_found);
     test$run(test_write_line);
     test$run(test_fload);
-    test$run(test_drain);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
