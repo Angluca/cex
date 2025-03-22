@@ -186,6 +186,30 @@ test$case(os_cmd_read_all_combined_stderr)
     return EOK;
 }
 
+test$case(os_cmd_join_timeout)
+{
+    os_cmd_c c = { 0 };
+    // WTF: if we call subprocess_terminate() on empty struct it will kill self!
+    e$ret(os.cmd.kill(&c));
+
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, "tests/build/os_test/sleep", "2", NULL);
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
+
+        int err_code = 0;
+        tassert_eqe(Error.timeout, os.cmd.join(&c, 1, &err_code));
+        tassert_eqi(err_code, -1);
+
+        tassert_eqe(EOK, os.cmd.create(&c, args, NULL, NULL));
+
+        tassert_eqe(Error.ok, os.cmd.join(&c, 3, &err_code));
+        tassert_eqi(err_code, 0);
+    }
+    return EOK;
+}
+
 
 int
 main(int argc, char* argv[])
@@ -200,6 +224,7 @@ main(int argc, char* argv[])
     test$run(os_cmd_read_line_huge);
     test$run(os_cmd_read_all_only_stdout);
     test$run(os_cmd_read_all_combined_stderr);
+    test$run(os_cmd_join_timeout);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

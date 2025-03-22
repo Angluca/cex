@@ -127,7 +127,7 @@ os__path__splitext(const char* path, bool return_ext)
             result = err;                                                                          \
         }                                                                                          \
         if (result == EOK) {                                                                       \
-            e$except(err, os.cmd.join(&_cmd, 0, NULL))                                                      \
+            e$except(err, os.cmd.join(&_cmd, 0, NULL))                                             \
             {                                                                                      \
                 result = err;                                                                      \
             }                                                                                      \
@@ -182,20 +182,28 @@ os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_
 }
 
 Exception
+os__cmd__kill(os_cmd_c* self)
+{
+    if (subprocess_alive(&self->_subpr)) {
+        if (subprocess_terminate(&self->_subpr) != 0) {
+            return Error.os;
+        }
+    }
+    return EOK;
+}
+
+Exception
 os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
 {
-    (void)timeout_sec;
     uassert(self != NULL);
     Exc result = Error.os;
-    int ret_code = 0;
+    int ret_code = 1;
 
     if (timeout_sec == 0) {
         // timeout_sec == 0 -> infinite wait
         int join_result = subprocess_join(&self->_subpr, &ret_code);
         if (join_result != 0) {
-            if (out_ret_code) {
-                *out_ret_code = -1;
-            }
+            ret_code = -1;
             result = Error.os;
             goto end;
         }
@@ -207,30 +215,33 @@ os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
             if (subprocess_alive(&self->_subpr)) {
                 os_sleep(100); // 100 ms sleep
             } else {
-
-            }             
-        } while(timeout_elapsed_ms < timeout_ms);
+                subprocess_join(&self->_subpr, &ret_code);
+                break;
+            }
+            timeout_elapsed_ms += 100;
+        } while (timeout_elapsed_ms < timeout_ms);
 
         if (timeout_elapsed_ms >= timeout_ms) {
             result = Error.timeout;
-            subprocess_terminate(&self->_subpr);
+            if (os__cmd__kill(self)) { // discard
+            }
             subprocess_join(&self->_subpr, NULL);
             ret_code = -1;
             goto end;
         }
     }
-    if (out_ret_code) {
-        *out_ret_code = ret_code;
-    }
+
     if (ret_code != 0) {
         result = Error.runtime;
         goto end;
     }
 
-
     result = Error.ok;
 
 end:
+    if (out_ret_code) {
+        *out_ret_code = ret_code;
+    }
     subprocess_destroy(&self->_subpr);
     memset(self, 0, sizeof(os_cmd_c));
     return result;
@@ -384,6 +395,7 @@ const struct __module__os os = {
 
     .cmd = {  // sub-module .cmd >>>
         .create = os__cmd__create,
+        .kill = os__cmd__kill,
         .join = os__cmd__join,
         .read_all = os__cmd__read_all,
         .read_line = os__cmd__read_line,
