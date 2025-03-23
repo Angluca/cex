@@ -1,5 +1,6 @@
 #pragma once
 #include "os.h"
+#include "cex/cex.h"
 
 #ifdef _WIN32
 #define os$PATH_SEP '\\'
@@ -28,12 +29,13 @@ os_sleep(u32 period_millisec)
 #endif
 }
 
-static Exception os__fs__rename(const char *old_path, const char *new_path)
+static Exception
+os__fs__rename(const char* old_path, const char* new_path)
 {
-    if (old_path == NULL || old_path[0] == '\0'){
+    if (old_path == NULL || old_path[0] == '\0') {
         return Error.argument;
     }
-    if (new_path == NULL || new_path[0] == '\0'){
+    if (new_path == NULL || new_path[0] == '\0') {
         return Error.argument;
     }
 #ifdef _WIN32
@@ -104,7 +106,7 @@ os__fs__file_type(const char* path)
     return NOB_FILE_REGULAR;
 #else // _WIN32
     struct stat statbuf;
-    if (stat(path, &statbuf) < 0) {
+    if (lstat(path, &statbuf) < 0) {
         if (errno == ENOENT) {
             result.result = Error.not_found;
         } else {
@@ -114,15 +116,35 @@ os__fs__file_type(const char* path)
     }
     result.is_valid = true;
     result.result = EOK;
+    result.is_other = true;
 
-    if (S_ISREG(statbuf.st_mode)) {
-        result.is_file = true;
-    } else if (S_ISDIR(statbuf.st_mode)) {
-        result.is_directory = true;
-    } else if (S_ISLNK(statbuf.st_mode)) {
-        result.is_symlink = true;
+    if (!S_ISLNK(statbuf.st_mode)) {
+        if (S_ISREG(statbuf.st_mode)) {
+            result.is_file = true;
+            result.is_other = false;
+        }
+        if (S_ISDIR(statbuf.st_mode)) {
+            result.is_directory = true;
+            result.is_other = false;
+        }
     } else {
-        result.is_other = true;
+        result.is_symlink = true;
+        if (stat(path, &statbuf) < 0) {
+            if (errno == ENOENT) {
+                result.result = Error.not_found;
+            } else {
+                result.result = strerror(errno);
+            }
+            return result;
+        }
+        if (S_ISREG(statbuf.st_mode)) {
+            result.is_file = true;
+            result.is_other = false;
+        }
+        if (S_ISDIR(statbuf.st_mode)) {
+            result.is_directory = true;
+            result.is_other = false;
+        }
     }
     return result;
 #endif
@@ -147,28 +169,33 @@ os__fs__remove(const char* path)
 #endif
 }
 
-static arr$(char*)
-os__fs__dir_list(const char* path, IAllocator allc)
+
+Exception
+os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
 {
-
-    if (unlikely(path == NULL)) {
-        return NULL;
+    (void)user_ctx;
+    if (path == NULL || path[0] == '\0') {
+        return Error.argument;
     }
-    if (allc == NULL) {
-        return NULL;
-    }
-    arr$(char*) result = arr$new(result, allc);
-
-#ifdef _WIN32
-#error "TODO: add minirent.h for windows use"
-#endif
-
+    Exc result = Error.os;
+    uassert(callback_fn != NULL && "you must provide callback_fn");
 
     DIR* dp = opendir(path);
 
     if (unlikely(dp == NULL)) {
-        goto fail;
+        if (errno == ENOENT) {
+            result = Error.not_found;
+        }
+        goto end;
     }
+
+    u32 path_len = strlen(path);
+    if (path_len > PATH_MAX - 256) {
+        result = Error.overflow;
+        goto end;
+    }
+
+    char path_buf[PATH_MAX];
 
     struct dirent* ep;
     while ((ep = readdir(dp)) != NULL) {
@@ -178,23 +205,104 @@ os__fs__dir_list(const char* path, IAllocator allc)
         if (str.eq(ep->d_name, "..")) {
             continue;
         }
-        arr$push(result, str.clone(ep->d_name, allc));
+        memcpy(path_buf, path, path_len);
+        u32 path_offset = 0;
+        if (path_buf[path_len - 1] != '/' && path_buf[path_len - 1] != '\\') {
+            path_buf[path_len] = os$PATH_SEP;
+            path_offset = 1;
+        }
+
+        e$except_silent(
+            err,
+            str.copy(
+                path_buf + path_len + path_offset,
+                ep->d_name,
+                sizeof(path_buf) - path_len - 1 - path_offset
+            )
+        )
+        {
+            result = err;
+            goto end;
+        }
+
+        var ftype = os.fs.file_type(path_buf);
+        if (ftype.result != EOK) {
+            result = ftype.result;
+            goto end;
+        }
+
+        if (ftype.is_symlink) {
+            continue; // does not follow symlinks!
+        }
+
+        if (is_recursive && ftype.is_directory) {
+            e$except_silent(err, os__fs__dir_walk(path_buf, is_recursive, callback_fn, user_ctx))
+            {
+                result = err;
+                goto end;
+            }
+
+        } else {
+            e$except_silent(err, callback_fn(path_buf, ftype, user_ctx))
+            {
+                result = err;
+                goto end;
+            }
+        }
     }
 
     if (errno != 0) {
-        goto fail;
+        result = strerror(errno);
+        goto end;
     }
 
+    result = EOK;
 end:
     if (dp != NULL) {
         (void)closedir(dp);
     }
     return result;
+}
 
-fail:
-    arr$free(result);
-    result = NULL;
-    goto end;
+static Exception
+_os__fs__dir_list_walker(const char* path, os_fs_filetype_s ftype, void* user_ctx)
+{
+    (void)ftype;
+    arr$(const char*) arr = *(arr$(const char*)*)user_ctx;
+    uassert(arr != NULL);
+
+    // Doing graceful memory check, otherwise arr$push will assert
+    if (!arr$grow_check(arr, 1)) {
+        return Error.memory;
+    }
+    arr$push(arr, path);
+    *(arr$(const char*)*)user_ctx = arr; // in case of reallocation update this
+    return EOK;
+}
+
+static arr$(char*) os__fs__dir_list(const char* path, bool is_recursive, IAllocator allc)
+{
+
+    if (unlikely(path == NULL)) {
+        return NULL;
+    }
+    if (allc == NULL) {
+        return NULL;
+    }
+    arr$(char*) result = arr$new(result, allc);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    // NOTE: we specially pass &result, in order to maintain realloc-pointer change
+    e$except_silent(err, os__fs__dir_walk(path, is_recursive, _os__fs__dir_list_walker, &result))
+    {
+        if (result != NULL) {
+            arr$free(result);
+        }
+        result = NULL;
+    }
+    return result;
 }
 
 static Exception
@@ -328,18 +436,18 @@ os__path__split(const char* path, bool return_dir)
 
     for (usize i = pathlen; i-- > 0;) {
         if (path[i] == '/' || path[i] == '\\') {
-                last_slash_idx = i;
+            last_slash_idx = i;
             break;
-        } 
+        }
     }
-    if (last_slash_idx != -1){
+    if (last_slash_idx != -1) {
         if (return_dir) {
             return str.sub(path, 0, last_slash_idx == 0 ? 1 : last_slash_idx);
         } else {
-            if ((usize)last_slash_idx == pathlen-1){
+            if ((usize)last_slash_idx == pathlen - 1) {
                 return str$s("");
             } else {
-                return str.sub(path, last_slash_idx+1, 0);
+                return str.sub(path, last_slash_idx + 1, 0);
             }
         }
 
@@ -688,6 +796,7 @@ const struct __module__os os = {
         .mkdir = os__fs__mkdir,
         .file_type = os__fs__file_type,
         .remove = os__fs__remove,
+        .dir_walk = os__fs__dir_walk,
         .dir_list = os__fs__dir_list,
         .getcwd = os__fs__getcwd,
     },  // sub-module .fs <<<
