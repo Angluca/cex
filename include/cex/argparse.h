@@ -8,7 +8,7 @@
 #ifndef ARGPARSE_H
 #define ARGPARSE_H
 
-#include <cex/cex.h>
+#include <cex/cex_base.h>
 #include <stdint.h>
 
 struct argparse_c;

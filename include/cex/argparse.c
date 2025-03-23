@@ -7,8 +7,7 @@
  */
 #pragma once
 #include "argparse.h"
-#include <cex/cex.h>
-#include <cex/str.h>
+#include <cex/all.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>

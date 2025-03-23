@@ -6,7 +6,7 @@ static void* _cex_allocator_heap__malloc(IAllocator self,usize size, usize align
 static void* _cex_allocator_heap__calloc(IAllocator self,usize nmemb, usize size, usize alignment);
 static void* _cex_allocator_heap__realloc(IAllocator self,void* ptr, usize size, usize alignment);
 static void* _cex_allocator_heap__free(IAllocator self,void* ptr);
-static const struct Allocator2_i*  _cex_allocator_heap__scope_enter(IAllocator self);
+static const struct Allocator_i*  _cex_allocator_heap__scope_enter(IAllocator self);
 static void _cex_allocator_heap__scope_exit(IAllocator self);
 static u32 _cex_allocator_heap__scope_depth(IAllocator self);
 
@@ -296,7 +296,7 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
     return NULL;
 }
 
-static const struct Allocator2_i*
+static const struct Allocator_i*
 _cex_allocator_heap__scope_enter(IAllocator self)
 {
     _cex_allocator_heap__validate(self);

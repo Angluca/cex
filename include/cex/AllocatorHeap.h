@@ -3,7 +3,7 @@
 
 typedef struct
 {
-    alignas(64) const Allocator2_i alloc;
+    alignas(64) const Allocator_i alloc;
     // below goes sanity check stuff
     struct
     {

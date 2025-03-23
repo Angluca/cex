@@ -366,7 +366,7 @@ fail:
 }
 
 
-static const struct Allocator2_i*
+static const struct Allocator_i*
 _cex_allocator_arena__scope_enter(IAllocator allc)
 {
     _cex_allocator_arena__validate(allc);
@@ -435,7 +435,7 @@ _cex_allocator_arena__scope_depth(IAllocator allc)
     return self->scope_depth;
 }
 
-const Allocator2_i*
+const Allocator_i*
 AllocatorArena_create(usize page_size)
 {
     if (page_size < 1024 || page_size >= UINT32_MAX) {

@@ -13,7 +13,7 @@ typedef struct
     } header;
     u32 length;
     u32 capacity;
-    const Allocator2_i* allocator;
+    const Allocator_i* allocator;
 } __attribute__((packed)) sbuf_head_s;
 
 _Static_assert(alignof(sbuf_head_s) == 1, "align");

@@ -1,5 +1,5 @@
 #pragma once
-#include "cex.h"
+#include "cex_base.h"
 #include <stddef.h>
 #include <threads.h>
 
@@ -9,15 +9,15 @@
 #define CEX_ALLOCATOR_TEMP_PAGE_SIZE 1024 * 256
 
 // clang-format off
-#define IAllocator const struct Allocator2_i* 
-typedef struct Allocator2_i
+#define IAllocator const struct Allocator_i* 
+typedef struct Allocator_i
 {
     // >>> cacheline
     alignas(64) void* (*const malloc)(IAllocator self, usize size, usize alignment);
     void* (*const calloc)(IAllocator self, usize nmemb, usize size, usize alignment);
     void* (*const realloc)(IAllocator self, void* ptr, usize new_size, usize alignment);
     void* (*const free)(IAllocator self, void* ptr);
-    const struct Allocator2_i* (*const scope_enter)(IAllocator self);   /* Only for arenas/temp alloc! */
+    const struct Allocator_i* (*const scope_enter)(IAllocator self);   /* Only for arenas/temp alloc! */
     void (*const scope_exit)(IAllocator self);    /* Only for arenas/temp alloc! */
     u32 (*const scope_depth)(IAllocator self);  /* Current mem$scope depth */
     struct {
@@ -26,11 +26,11 @@ typedef struct Allocator2_i
         bool is_temp;
     } meta;
     //<<< 64 byte cacheline
-} Allocator2_i;
+} Allocator_i;
 // clang-format on
-_Static_assert(alignof(Allocator2_i) == 64, "size");
-_Static_assert(sizeof(Allocator2_i) == 64, "size");
-_Static_assert(sizeof((Allocator2_i){ 0 }.meta) == 8, "size");
+_Static_assert(alignof(Allocator_i) == 64, "size");
+_Static_assert(sizeof(Allocator_i) == 64, "size");
+_Static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
 
 
 void _cex_allocator_memscope_cleanup(IAllocator* allc);

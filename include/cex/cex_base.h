@@ -512,60 +512,6 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
          it.val = (iter_func))
 
 
-/*
- *                 RESOURCE ALLOCATORS
- */
-
-typedef struct Allocator_i
-{
-    // >>> cacheline
-    void* (*const malloc)(usize size);
-    void* (*const calloc)(usize nmemb, usize size);
-    void* (*const realloc)(void* ptr, usize new_size);
-    void* (*const malloc_aligned)(usize alignment, usize size);
-    void* (*const realloc_aligned)(void* ptr, usize alignment, usize new_size);
-    void (*const free)(void* ptr);
-    FILE* (*const fopen)(const char* filename, const char* mode);
-    int (*const open)(const char* pathname, int flags, unsigned int mode);
-    //<<< 64 byte cacheline
-    int (*const fclose)(FILE* stream);
-    int (*const close)(int fd);
-} Allocator_i;
-_Static_assert(alignof(Allocator_i) == alignof(usize), "size");
-_Static_assert(sizeof(Allocator_i) == sizeof(usize) * 10, "size");
-
-
-/// Represents char* slice (string view) + may not be null-term at len!
-typedef struct
-{
-    usize len;
-    char* buf;
-} str_s;
-
-_Static_assert(alignof(str_s) == alignof(usize), "align");
-_Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
-
-
-/**
- * @brief creates str_s, instance from string literals/constants: str$s("my string")
- *
- * Uses compile time string length calculation, only literals
- *
- */
-#define str$s(string)                                                                               \
-    (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
-
-
-/**
- * @brief creates slice of str_s instance
- */
-#define str$sslice(str_self, ...)                                                                   \
-    ({                                                                                             \
-        slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
-        _arr$slice_get(__slice, str_self.buf, str_self.len, __VA_ARGS__);                          \
-        __slice;                                                                                   \
-    })
-
 // Check windows
 #if _WIN32 || _WIN64
 #if _WIN64

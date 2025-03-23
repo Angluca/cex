@@ -9,10 +9,10 @@ class Bundler:
         assert os.path.exists(cex_lib_dir)
         assert os.path.exists(cex_bundle_dir)
 
-        assert os.path.exists(os.path.join(cex_lib_dir, "cex.h"))
-        assert os.path.exists(os.path.join(cex_lib_dir, "cex.c"))
+        assert os.path.exists(os.path.join(cex_lib_dir, "cex_base.h"))
+        assert os.path.exists(os.path.join(cex_lib_dir, "cex_base.c"))
 
-        assert os.path.exists(os.path.join(cex_lib_dir, "allocators.h"))
+        assert os.path.exists(os.path.join(cex_lib_dir, "all.h"))
 
         self.cex_lib_path = cex_lib_dir
         self.cex_bundle_dir = cex_bundle_dir
@@ -26,6 +26,8 @@ class Bundler:
             if "#pragma once" in line:
                 continue
             if re.search(r"#include\s+\"\w+\.[h|c]\"", line, re.MULTILINE):
+                continue
+            if re.search(r"#include\s+\<cex.*\.[h|c]\>", line, re.MULTILINE):
                 continue
             out.append(line.rstrip())
 
@@ -41,59 +43,64 @@ class Bundler:
                 continue
             if re.search(r"#include\s+\"\w+\.[h|c]\"", line, re.MULTILINE):
                 continue
+            if re.search(r"#include\s+\<cex.*\.[h|c]\>", line, re.MULTILINE):
+                continue
             out.append(line.rstrip())
 
         return out
 
-    def bundle_code(self):
-
-        cbuf = io.StringIO()
-
-        code_files = sorted(
-            [
-                fn
-                for fn in os.listdir(self.cex_lib_path)
-                if fn.endswith(".c") and "cex.c" not in fn
-            ]
-        )
-
-        with open(os.path.join(self.cex_lib_path, "cex.c")) as fh:
-            cbuf.write(fh.read())
-
-        for fn in code_files:
-            cbuf.write("\n\n")
-            cbuf.write("/*\n")
-            cbuf.write(f"*                   {fn}\n")
-            cbuf.write("*/\n")
-            if os.path.basename(fn).startswith("_"):
-                h_lines = self.parse_header(
-                    os.path.join(self.cex_lib_path, fn.replace(".c", ".h"))
-                )
-                cbuf.write("\n".join(h_lines))
-                cbuf.write("\n\n")
-
-            h_lines = self.parse_code(os.path.join(self.cex_lib_path, fn))
-            cbuf.write("\n".join(h_lines))
-
-        with open(os.path.join(self.cex_bundle_dir, "cex.c"), "w") as fh:
-            fh.write(cbuf.getvalue())
-
+    # def bundle_code(self):
+    #
+    #     cbuf = io.StringIO()
+    #
+    #     code_files = sorted(
+    #         [
+    #             fn
+    #             for fn in os.listdir(self.cex_lib_path)
+    #             if fn.endswith(".c") and "cex.c" not in fn
+    #         ]
+    #     )
+    #
+    #     with open(os.path.join(self.cex_lib_path, "cex_base.c")) as fh:
+    #         cbuf.write(fh.read())
+    #
+    #     for fn in code_files:
+    #         cbuf.write("\n\n")
+    #         cbuf.write("/*\n")
+    #         cbuf.write(f"*                   {fn}\n")
+    #         cbuf.write("*/\n")
+    #         if os.path.basename(fn).startswith("_"):
+    #             h_lines = self.parse_header(
+    #                 os.path.join(self.cex_lib_path, fn.replace(".c", ".h"))
+    #             )
+    #             cbuf.write("\n".join(h_lines))
+    #             cbuf.write("\n\n")
+    #
+    #         h_lines = self.parse_code(os.path.join(self.cex_lib_path, fn))
+    #         cbuf.write("\n".join(h_lines))
+    #
+    #     with open(os.path.join(self.cex_bundle_dir, "cex.c"), "w") as fh:
+    #         fh.write(cbuf.getvalue())
+    #
     def bundle_headers(self):
         # NOTE: adding manually in order to preserve interdependencies
         headers = [
-            "allocators.h",
-            "cextest.h",
+            "mem.h",
+            "AllocatorHeap.h",
+            "AllocatorArena.h",
+            "ds.h",
             "str.h",
             "sbuf.h",
-            "list.h",
-            "dict.h",
             "io.h",
             "argparse.h",
+            "os/os.h",
         ]
         print(f"Bundling: {headers}")
         hbuf = io.StringIO()
+        hbuf.write("#ifndef CEX_HEADER_H\n")
+        hbuf.write("#define CEX_HEADER_H\n")
 
-        with open(os.path.join(self.cex_lib_path, "cex.h")) as fh:
+        with open(os.path.join(self.cex_lib_path, "cex_base.h")) as fh:
             hbuf.write(fh.read())
 
         for h in headers:
@@ -105,17 +112,40 @@ class Bundler:
             h_lines = self.parse_header(os.path.join(self.cex_lib_path, h))
             hbuf.write("\n".join(h_lines))
 
+        hbuf.write("\n\n")
+        hbuf.write("/*\n")
+        hbuf.write("*                   CEX IMPLEMENTATION \n")
+        hbuf.write("*/\n")
+        hbuf.write("\n\n")
+        hbuf.write("#ifdef CEX_IMPLEMENTATION\n")
+
+        h_lines = self.parse_code(os.path.join(self.cex_lib_path, "cex_base.c"))
+        hbuf.write("\n".join(h_lines))
+
+        for h in headers:
+            h = h.replace(".h", ".c")
+            hbuf.write("\n\n")
+            hbuf.write("/*\n")
+            hbuf.write(f"*                   {h}\n")
+            hbuf.write("*/\n")
+
+            h_lines = self.parse_code(os.path.join(self.cex_lib_path, h))
+            hbuf.write("\n".join(h_lines))
+
+        hbuf.write("\n\n#endif // #ifdef CEX_IMPLEMENTATION\n")
+        hbuf.write("\n\n#endif // #ifndef CEX_HEADER_H\n")
+
         # print(hbuf.getvalue())
         with open(os.path.join(self.cex_bundle_dir, "cex.h"), "w") as fh:
             fh.write(hbuf.getvalue())
 
     def bundle(self):
         self.bundle_headers()
-        self.bundle_code()
+        # self.bundle_code()
         pass
 
 
 if __name__ == "__main__":
 
-    b = Bundler("./include/_cexcore/", "./include")
+    b = Bundler("./include/cex/", "./")
     b.bundle()

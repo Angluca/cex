@@ -1,7 +1,6 @@
 #pragma once
-#include "sbuf.h"
+#include "cex/all.h"
 #include "_sprintf.h"
-#include "cex.h"
 #include <stdarg.h>
 
 struct _sbuf__sprintf_ctx
