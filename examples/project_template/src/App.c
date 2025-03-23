@@ -61,7 +61,7 @@ App_main(App_c* app, IAllocator allocator)
     // try to run tests `cex test run all` and see if it's correct
     log$info("Num Arg * 3 = %u", mylib.mul(app->num_arg, 3));
 
-    for$array(it, app->args, app->args_count) {
+    for$each(it, app->args, app->args_count) {
         log$debug("Arg #%ld: %s", it.idx, *it.val);
     }
 

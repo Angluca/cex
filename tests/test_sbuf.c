@@ -93,10 +93,10 @@ test$case(test_sbuf_static)
     tassert_eqi(s[head->capacity], 0);
     tassert_eqs(s, "");
 
-    // All nullified + for$array works!
-    for$array(it, s, sbuf.capacity(&s))
+    // All nullified + for$each works!
+    for$each(it, s, sbuf.capacity(&s))
     {
-        tassert_eqi(*it.val, 0);
+        tassert_eqi(it, 0);
     }
 
     // can be also virtually destroyed

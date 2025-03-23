@@ -31,7 +31,7 @@ test$case(my_run)
     os_cmd_c c = { 0 };
     e$ret(os.cmd.run(command_line, arr$len(command_line), &c));
 
-    tassert_eqe(Error.runtime, os$cmd("cat", "/asdljqlw/asdlkjasdlji"));
+    tassert_eqe(Error.runtime, os$cmd("tests/build/os_test/cat", "/asdljqlw/asdlkjasdlji"));
 
     mem$scope(tmem$, _)
     {

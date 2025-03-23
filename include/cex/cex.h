@@ -457,35 +457,6 @@ struct _cex_arr_slice
 
 
 /**
- * @brief Iterates through array: itvar is struct {eltype* val, usize idx}
- */
-#define for$array(it, array, length)                                                               \
-    struct cex$tmpname(__cex_arriter_)                                                             \
-    {                                                                                              \
-        typeof(*array)* val;                                                                       \
-        usize idx;                                                                                 \
-    };                                                                                             \
-    usize cex$tmpname(__cex_arriter__length) = (length); /* prevents multi call of (length)*/      \
-    for (struct cex$tmpname(__cex_arriter_) it = { .val = array, .idx = 0 };                       \
-         it.idx < cex$tmpname(__cex_arriter__length);                                              \
-         it.val++, it.idx++)
-
-/**
- * @brief Iterates through array (reverse order): itvar is struct {eltype* val, usize idx}
- */
-#define for$array_rev(it, array, length)                                                           \
-    struct cex$tmpname(__cex_arriter_)                                                             \
-    {                                                                                              \
-        typeof(*array)* val;                                                                       \
-        usize idx;                                                                                 \
-    };                                                                                             \
-    usize cex$tmpname(__cex_arriter__length) = (length); /* prevents multi call of (length)*/      \
-    for (struct cex$tmpname(__cex_arriter_)                                                        \
-             it = { .val = (array) + cex$tmpname(__cex_arriter__length),                           \
-                    .idx = cex$tmpname(__cex_arriter__length) };                                   \
-         it.idx-- > 0 && (it.val--);)
-
-/**
  * @brief cex_iterator_s - CEX iterator interface
  */
 typedef struct

@@ -59,9 +59,9 @@ test$case(app_main_read_all)
     tassert_eqi(app.files_count, 3);
 
     // Let's loop through all files and parse them
-    // NOTE: for$array is an iterator for plain arrays, `it` is an iterator variable which has
+    // NOTE: for$each is an iterator for plain arrays, `it` is an iterator variable which has
     // automatic type based on array element. it.val is a pointer to data, it.idx.i - index.
-    for$array(it, app.files, app.files_count)
+    for$each(it, app.files, app.files_count)
     {
         log$debug("Checking file #%ld: %s\n", it.idx, *it.val);
         tassert_eqs(*it.val, files[it.idx]);

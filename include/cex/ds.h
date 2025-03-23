@@ -198,7 +198,7 @@ struct cexds_arr_new_kwargs_s
     })
 // NOLINT
 
-#define for$arr(v, array, array_len...)                                                            \
+#define for$each(v, array, array_len...)                                                            \
         /* NOLINTBEGIN*/\
     usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
@@ -213,7 +213,7 @@ struct cexds_arr_new_kwargs_s
           ((v) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1));                               \
          cex$tmpname(arr_index)++)
 
-#define for$arrp(v, array, array_len...)                                                           \
+#define for$eachp(v, array, array_len...)                                                           \
         /* NOLINTBEGIN*/\
     usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \

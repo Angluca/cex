@@ -38,9 +38,9 @@ test$case(test_os_listdir)
         tassert_eqi(it.idx.i, nit);
 
         bool is_found = false;
-        for$array(itf, expected, arr$len(expected))
+        for$each(itf, expected, arr$len(expected))
         {
-            if (str.slice.cmp(*it.val, str.sstr(*itf.val)) == 0) {
+            if (str.slice.cmp(*it.val, str.sstr(itf)) == 0) {
                 is_found = true;
                 break;
             }

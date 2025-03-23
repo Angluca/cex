@@ -1895,7 +1895,7 @@ test$case(test_tsplit)
         res = str.split(s.buf, ",", _);
         tassert_eqi(arr$len(res), 1);
 
-        for$arr(v, res)
+        for$each(v, res)
         {
             tassert_eqi(strcmp(v, expected1[nit]), 0);
             nit++;
@@ -1914,7 +1914,7 @@ test$case(test_tsplit)
         tassert(res != NULL);
         tassert_eqi(arr$len(res), 2);
 
-        for$arr(v, res)
+        for$each(v, res)
         {
             tassert_eqi(strcmp(v, expected[nit]), 0);
             nit++;
@@ -1934,7 +1934,7 @@ test$case(test_tsplit)
         tassert(res != NULL);
         tassert_eqi(arr$len(res), 3);
 
-        for$arr(v, res)
+        for$each(v, res)
         {
             tassert_eqs(v, expected[nit]);
             nit++;
@@ -1955,7 +1955,7 @@ test$case(test_tsplit)
         tassert(res != NULL);
         tassert_eqi(arr$len(res), 4);
 
-        for$arr(v, res)
+        for$each(v, res)
         {
             tassert_eqs(v, expected[nit]);
             nit++;
@@ -1979,7 +1979,7 @@ test$case(test_split_lines)
         tassert_eqi(arr$len(res), 3);
 
         u32 nit = 0;
-        for$arr(v, res)
+        for$each(v, res)
         {
             tassert_eqs(v, expected[nit]);
             nit++;
@@ -2003,7 +2003,7 @@ test$case(test_split_lines)
         tassert_eqi(arr$len(res), arr$len(expected));
 
         u32 nit = 0;
-        for$arr(v, res)
+        for$each(v, res)
         {
             tassert_eqs(v, expected[nit]);
             nit++;

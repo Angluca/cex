@@ -314,14 +314,14 @@ test$case(test_for_arr)
 {
     char buf[] = { 'a', 'b', 'c' };
     char buf_zero[] = {};
-    for$arr(v, buf_zero)
+    for$each(v, buf_zero)
     {
         (void)v;
         tassert(false && "must not happen!");
     }
     arr$(char*) array = arr$new(array, mem$);
     tassert(mem$aligned_pointer(array, 64) == array);
-    for$arr(v, array)
+    for$each(v, array)
     {
         (void)v;
         tassert(false && "must not happen!");
@@ -333,7 +333,7 @@ test$case(test_for_arr)
     tassert_eqi(3, arr$len(buf));
     tassert_eqi(3, arr$len(array));
 
-    for$arr(v, array)
+    for$each(v, array)
     {
         printf("v: %s\n", v);
     }
@@ -344,13 +344,13 @@ test$case(test_for_arr)
     tassert_eqi(pbuf[0], 'a');
     tassert_eqs(pbuf2[0], "foo");
 
-    for$arr(c, buf)
+    for$each(c, buf)
     {
         printf("c: %c\n", c);
     }
 
     u32 n = 0;
-    for$arrp(v, array)
+    for$eachp(v, array)
     {
         isize i = v - array;
         tassert_eqi(n, i);
@@ -359,7 +359,7 @@ test$case(test_for_arr)
     }
 
     n = 0;
-    for$arrp(v, buf)
+    for$eachp(v, buf)
     {
         isize i = v - buf;
         tassert_eqi(n, i);
@@ -367,8 +367,8 @@ test$case(test_for_arr)
         n++;
     }
 
-    // TODO: check if possible for$arr(*v, &arr)??
-    // for$arr(c, &buf) {
+    // TODO: check if possible for$each(*v, &arr)??
+    // for$each(c, &buf) {
     //     printf("c: %c\n", *c);
     // }
     typeof((&buf)[0])* pbuf_ptr = &((&buf)[0]);
@@ -410,7 +410,7 @@ test$case(test_for_arr_custom_size)
 {
 
     arr$(char*) array = arr$new(array, mem$);
-    for$arr(v, array)
+    for$each(v, array)
     {
         (void)v;
         tassert(false && "must not happen!");
@@ -421,7 +421,7 @@ test$case(test_for_arr_custom_size)
 
     u32 n = 0;
     tassert_eqi(3, arr$len(array));
-    for$arr(v, array, arr$len(array) - 1)
+    for$each(v, array, arr$len(array) - 1)
     {
         printf("v: %s\n", v);
         n++;
@@ -431,7 +431,7 @@ test$case(test_for_arr_custom_size)
     char buf[] = { 'a', 'b', 'c' };
     n = 0;
     tassert_eqi(3, arr$len(buf));
-    for$arr(c, buf, 2)
+    for$each(c, buf, 2)
     {
         printf("c: %c\n", c);
         n++;
@@ -446,7 +446,7 @@ test$case(test_for_arr_for_struct)
 {
     arr$(my_struct) array = arr$new(array, mem$);
     tassert_eqi(arr$cap(array), 16);
-    for$arr(v, array)
+    for$each(v, array)
     {
         (void)v;
         tassert(false && "must not happen!");
@@ -458,7 +458,7 @@ test$case(test_for_arr_for_struct)
 
     u32 n = 0;
     // v - is a copy of the array element
-    for$arr(v, array)
+    for$each(v, array)
     {
         printf("v: %s\n", v.my_string);
         n++;
@@ -470,7 +470,7 @@ test$case(test_for_arr_for_struct)
     tassert_eqi(array[1].key, 200);
 
     n = 0;
-    for$arrp(v, array, arr$len(array))
+    for$eachp(v, array, arr$len(array))
     {
         isize i = v - array;
         printf("v: %s\n", v->my_string);
@@ -536,7 +536,7 @@ test$case(test_arr_pushm)
     }
     tassert_eqi(1000, arr$len(arr));
 
-    for$arr(v, arr)
+    for$each(v, arr)
     {
         tassert(v < 10);
     }
@@ -707,7 +707,7 @@ test$case(test_hashmap_basic_struct)
     tassert_eqi(hm$getp(intmap, 3)[0].foo, 3);
 
     u32 n = 0;
-    for$arr(v, intmap)
+    for$each(v, intmap)
     {
         tassert_eqi(intmap[n].key, v.key);
         // hasmap also supports bounds checked arr$at
@@ -718,7 +718,7 @@ test$case(test_hashmap_basic_struct)
     tassert_eqi(n, arr$len(intmap));
 
     n = 0;
-    for$arrp(v, intmap)
+    for$eachp(v, intmap)
     {
         tassert_eqi(intmap[n].key, v->key);
         tassert_eqi(intmap[n].value.foo, v->value.foo);

@@ -1286,7 +1286,7 @@ str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
 
     char* result = NULL;
     usize cursor = 0;
-    for$arr(s, str_arr)
+    for$each(s, str_arr)
     {
         if (s == NULL) {
             if (result != NULL) {

@@ -210,17 +210,17 @@ test$case(random_buf)
     for(u32 i = 0; i < 10000; i++){
         memset(b3, 0, sizeof(b3));
         Random.buf(&rnd, b3, sizeof(b3)); 
-        for$array(it, b3, sizeof(b3)) {
-            if(*it.val != 0){
-                cnt[it.idx]++;
+        for$eachp(it, b3, sizeof(b3)) {
+            if(*it != 0){
+                cnt[it-b3]++;
             }
         }
     }
-    for$array(it, cnt, arr$len(cnt)) {
+    for$each(it, cnt, arr$len(cnt)) {
         // every byte changed
-        tassert(*it.val > 0);
+        tassert(it > 0);
         // every byte changed at least 50% of time
-        tassert(*it.val > 5000);
+        tassert(it > 5000);
     }
     return EOK;
 }

@@ -157,7 +157,7 @@ App_main(App_c* app, IAllocator allocator)
     Exc result = EOK;
 
     io_c f = { 0 };
-    for$array(it, app->files, app->files_count)
+    for$each(it, app->files, app->files_count)
     {
         uassert(*it.val != NULL && "unexpected null file name");
         e$ret(io.fopen(&f, *it.val, "r", allocator));

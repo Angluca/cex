@@ -192,7 +192,7 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
             tassert(p != NULL);
             tassert(mem$aligned_pointer(p, 8) == p);
 
-            for$arr(alignment, align)
+            for$each(alignment, align)
             {
                 tassert(page == allc->last_page && "this test case expected to use one page");
                 tassert(alignment >= 8);
@@ -261,7 +261,7 @@ test$case(test_allocator_arena_scope_sanitization)
                 tassert(p != NULL);
                 tassert(mem$aligned_pointer(p, 8) == p);
 
-                for$arr(alignment, align)
+                for$each(alignment, align)
                 {
                     tassert(alignment >= 8);
                     tassert(alignment <= 64);
