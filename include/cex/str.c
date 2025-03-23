@@ -1158,7 +1158,7 @@ str__slice__clone(str_s s, IAllocator allc)
 }
 
 static char*
-str_clone(char* s, IAllocator allc)
+str_clone(const char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1175,7 +1175,7 @@ str_clone(char* s, IAllocator allc)
 }
 
 static char*
-str_lower(char* s, IAllocator allc)
+str_lower(const char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1194,7 +1194,7 @@ str_lower(char* s, IAllocator allc)
 }
 
 static char*
-str_upper(char* s, IAllocator allc)
+str_upper(const char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1212,7 +1212,7 @@ str_upper(char* s, IAllocator allc)
     return result;
 }
 
-static arr$(char*) str_split(char* s, const char* split_by, IAllocator allc)
+static arr$(char*) str_split(const char* s, const char* split_by, IAllocator allc)
 {
     str_s src = str_sstr(s);
     if (src.buf == NULL || split_by == NULL) {
@@ -1232,7 +1232,7 @@ static arr$(char*) str_split(char* s, const char* split_by, IAllocator allc)
     return result;
 }
 
-static arr$(char*) str_split_lines(char* s, IAllocator allc)
+static arr$(char*) str_split_lines(const char* s, IAllocator allc)
 {
     uassert(allc != NULL);
     if (s == NULL) {
@@ -1243,8 +1243,8 @@ static arr$(char*) str_split_lines(char* s, IAllocator allc)
         return NULL;
     }
     char c;
-    char* line_start = s;
-    char* cur = s;
+    const char* line_start = s;
+    const char* cur = s;
     while ((c = *cur)) {
         switch (c) {
             case '\r':
@@ -1255,7 +1255,7 @@ static arr$(char*) str_split_lines(char* s, IAllocator allc)
             case '\n':
             case '\v':
             case '\f': {
-                str_s line = { .buf = line_start, .len = cur - line_start };
+                str_s line = { .buf = (char*)line_start, .len = cur - line_start };
                 if (line.len > 0 && line.buf[line.len - 1] == '\r') {
                     line.len--;
                 }
