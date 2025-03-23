@@ -1,69 +1,3 @@
-/**
- * @brief CEX built-in testing framework
- *
- * Supported features:
- * - setup/teardown functions prior and past each test
- * - integrated CEX Exceptions used as test case result success measures
- * - special test asserts
- * - individual test runs
- * - mocking (with fff.h)
- * - new cases automatically added when you run the test via cex cli
- * - testing static function via #include ".c"
- * - enabling/disabling uassert() for testing code with production -DNDEBUG simulation
- *
- * Generic test composition
- *
- *
-```
-#include <cex/all.c>
-#include <cex/test/fff.h>
-#include <cex/test/test.h>
-
-IAllocator allocator;
-
-test$teardown(){
-    allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
-    return EOK;
-}
-
-test$setup(){
-    uassert_enable(); // re-enable if you disabled it in some test case
-    allocator = mem$;
-    return EOK;
-}
-
-test$case(my_test)
-{
-    // Has malloc, but no free(), allocator will send memory leak warning
-    void* a = allocator->malloc(100);
-
-    tassert(true == 1);
-    tassert_eqi(1, 1);
-    tassert_eql(1, 1L);
-    tassert_eqf(1.0, 1.0);
-    tassert_eqe(EOK, Error.ok);
-
-    uassert_disable();
-    uassert(false && "this will be disabled, no abort!");
-
-    tassertf(true == 0, "true != %d", false);
-
-    return EOK;
-}
-
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-
-    test$run(my_test);
-
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
-```
- */
 #pragma once
 #include "cex/cex.h"
 #include <float.h>
@@ -95,13 +29,9 @@ main(int argc, char* argv[])
 #elif defined(__GNUC__) || defined(__GNUG__)
 #define test$NOOPT __attribute__((optimize("O0")))
 #elif defined(_MSC_VER)
-#warning "MSVS is untested"
+#error "MSVC deprecated"
 #endif
 
-//
-//  atest.h settings, you can alter them in main() function, for example replace
-//  out_stream by fopen() file
-//
 struct __CexTestContext_s
 {
     FILE* out_stream; // by default uses stdout, however you can replace it by any FILE*

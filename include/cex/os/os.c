@@ -480,24 +480,6 @@ os__path__dirname(const char* path, IAllocator allc)
     return str.slice.clone(fname, allc);
 }
 
-#define os$cmd(args...)                                                                            \
-    ({                                                                                             \
-        const char* _args[] = { args, NULL };                                                      \
-        usize _args_len = arr$len(_args);                                                          \
-        os_cmd_c _cmd = { 0 };                                                                     \
-        Exc result = EOK;                                                                          \
-        e$except(err, os.cmd.run(_args, _args_len, &_cmd))                                         \
-        {                                                                                          \
-            result = err;                                                                          \
-        }                                                                                          \
-        if (result == EOK) {                                                                       \
-            e$except(err, os.cmd.join(&_cmd, 0, NULL))                                             \
-            {                                                                                      \
-                result = err;                                                                      \
-            }                                                                                      \
-        }                                                                                          \
-        result;                                                                                    \
-    })
 
 static Exception
 os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags)
