@@ -78,7 +78,7 @@ test$case(test_os_path_exists)
     tassert_eqe(EOK, os.path.exists("."));
     tassert_eqe(EOK, os.path.exists(".."));
     tassert_eqe(EOK, os.path.exists("./tests"));
-    tassert_eqe(EOK, os.path.exists("./tests/test_os_posix.c"));
+    tassert_eqe(EOK, os.path.exists(__FILE__));
     tassert_eqe(Error.not_found, os.path.exists("./tests/test_os_posix.cpp"));
 
     tassert_eqe(EOK, os.path.exists("tests/"));

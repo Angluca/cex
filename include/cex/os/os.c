@@ -2,16 +2,19 @@
 #include "os.h"
 
 #ifdef _WIN32
-#include "_os_win.c"
 #define os$PATH_SEP '\\'
 #else
-#include "_os_posix.c"
 #define os$PATH_SEP '/'
 #endif
 
 #ifdef _WIN32
 #include <Windows.h>
 #else
+#include <dirent.h>
+#include <linux/limits.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #endif
 
@@ -26,15 +29,120 @@ os_sleep(u32 period_millisec)
 }
 
 Exception
-os__fs__listdir(const char* path, sbuf_c* out)
+os__fs__mkdir(const char* path)
 {
-    return os__listdir_(path, out);
+    if (path == NULL || path[0] == '\0') {
+        return Error.argument;
+    }
+#ifdef _WIN32
+    int result = mkdir(path);
+#else
+    int result = mkdir(path, 0755);
+#endif
+    if (result < 0) {
+        uassert(errno != 0);
+        if (errno == EEXIST) {
+            return EOK;
+        }
+        return strerror(errno);
+    }
+    return EOK;
+}
+
+Exception
+os__fs__remove(const char* path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return Error.argument;
+    }
+#ifdef _WIN32
+    if (!DeleteFileA(path)) {
+        return  nob_win32_error_message(GetLastError());
+    }
+    return EOK;
+#else
+    if (remove(path) < 0) {
+        return strerror(errno);
+    }
+    return EOK;
+#endif
+}
+
+Exception
+os__fs__listdir(const char* path, sbuf_c* out_buf)
+{
+
+    if (unlikely(path == NULL)) {
+        return Error.argument;
+    }
+    if (out_buf == NULL) {
+        return Error.argument;
+    }
+#ifdef _WIN32
+#error "TODO: add minirent.h for windows use"
+#endif
+
+    // use own as temp outfer for dir name (because path, may not be a valid null-term string)
+    DIR* dp = NULL;
+    Exc result = Error.ok;
+
+    uassert(sbuf.isvalid(out_buf) && "buf is not valid sbuf_c (or missing initialization)");
+
+    sbuf.clear(out_buf);
+
+    e$goto(result = sbuf.append(out_buf, path), fail);
+
+    dp = opendir(*out_buf);
+
+    if (unlikely(dp == NULL)) {
+        result = Error.not_found;
+        goto fail;
+    }
+    sbuf.clear(out_buf);
+
+    struct dirent* ep;
+    while ((ep = readdir(dp)) != NULL) {
+        if (str.eq(ep->d_name, ".")) {
+            continue;
+        }
+        if (str.eq(ep->d_name, "..")) {
+            continue;
+        }
+        e$goto(result = sbuf.appendf(out_buf, "%s\n", ep->d_name), fail);
+    }
+
+end:
+    if (dp != NULL) {
+        (void)closedir(dp);
+    }
+    return result;
+
+fail:
+    sbuf.clear(out_buf);
+    goto end;
+    return os__fs__listdir(path, out_buf);
 }
 
 Exception
 os__fs__getcwd(sbuf_c* out)
 {
-    return os__getcwd_(out);
+
+    uassert(sbuf.isvalid(out) && "out is not valid sbuf_c (or missing initialization)");
+
+    e$except_silent(err, sbuf.grow(out, PATH_MAX + 1))
+    {
+        return err;
+    }
+    sbuf.clear(out);
+
+    errno = 0;
+    if (unlikely(getcwd(*out, sbuf.capacity(out)) == NULL)) {
+        return strerror(errno);
+    }
+
+    sbuf.update_len(out);
+
+    return EOK;
 }
 
 const char*
@@ -62,9 +170,62 @@ os__env__unset(const char* name)
 }
 
 Exception
-os__path__exists(const char* path)
+os__path__exists(const char* file_path)
 {
-    return os__path__exists_(path);
+
+    if (file_path == NULL) {
+        return Error.argument;
+    }
+
+    usize path_len = strlen(file_path);
+    if (path_len == 0) return Error.argument;
+
+    if(path_len >= PATH_MAX) {
+        return Error.argument;
+    }
+
+#if _WIN32
+    errno = 0;
+    DWORD dwAttrib = GetFileAttributesA(file_path);
+    if(dwAttrib != INVALID_FILE_ATTRIBUTES) {
+        
+        return EOK;
+    } else {
+        /*
+        Here are some common file-related functions and the types of errors they might set:
+CreateFile: Used to open or create a file.
+ERROR_FILE_NOT_FOUND (2): The file does not exist.
+ERROR_PATH_NOT_FOUND (3): The specified path does not exist.
+ERROR_ACCESS_DENIED (5): The file cannot be accessed due to permissions.
+ERROR_SHARING_VIOLATION (32): The file is in use by another process.
+ReadFile: Used to read data from a file.
+ERROR_HANDLE_EOF (38): Attempted to read past the end of the file.
+ERROR_IO_DEVICE (1117): An I/O error occurred.
+WriteFile: Used to write data to a file.
+ERROR_DISK_FULL (112): The disk is full.
+ERROR_ACCESS_DENIED (5): The file is read-only or locked.
+CloseHandle: Used to close a file handle.
+ERROR_INVALID_HANDLE (6): The handle is invalid.
+DeleteFile: Used to delete a file.
+ERROR_FILE_NOT_FOUND (2): The file does not exist.
+ERROR_ACCESS_DENIED (5): The file is read-only or in use.
+MoveFile: Used to move or rename a file.
+ERROR_FILE_EXISTS (80): The destination file already exists.
+ERROR_ACCESS_DENIED (5): The file is in use or locked.
+Example: Using GetLastError() with File Operations
+    */
+        // TODO: handle other win32 errors!
+        uassert(false && "TODO handle other win32 errors!");
+        return Error.not_found;
+    }
+#else
+    struct stat statbuf;
+    if (stat(file_path, &statbuf) < 0) {
+        if (errno == ENOENT) return Error.not_found;
+        return strerror(errno);
+    }
+    return EOK;
+#endif
 }
 
 char*
@@ -254,18 +415,21 @@ end:
 }
 
 FILE*
-os__cmd__stdout(os_cmd_c* self) {
+os__cmd__stdout(os_cmd_c* self)
+{
     return self->_subpr.stdout_file;
 }
 
 
 FILE*
-os__cmd__stderr(os_cmd_c* self) {
+os__cmd__stderr(os_cmd_c* self)
+{
     return self->_subpr.stderr_file;
 }
 
 FILE*
-os__cmd__stdin(os_cmd_c* self) {
+os__cmd__stdin(os_cmd_c* self)
+{
     return self->_subpr.stdin_file;
 }
 
@@ -425,6 +589,8 @@ const struct __module__os os = {
     .sleep = os_sleep,
 
     .fs = {  // sub-module .fs >>>
+        .mkdir = os__fs__mkdir,
+        .remove = os__fs__remove,
         .listdir = os__fs__listdir,
         .getcwd = os__fs__getcwd,
     },  // sub-module .fs <<<

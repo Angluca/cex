@@ -28,7 +28,9 @@ void            (*sleep)(u32 period_millisec);
 
 struct {  // sub-module .fs >>>
     Exception       (*getcwd)(sbuf_c* out);
-    Exception       (*listdir)(const char* path, sbuf_c* out);
+    Exception       (*listdir)(const char* path, sbuf_c* out_buf);
+    Exception       (*mkdir)(const char* path);
+    Exception       (*remove)(const char* path);
 } fs;  // sub-module .fs <<<
 
 struct {  // sub-module .env >>>
@@ -38,7 +40,7 @@ struct {  // sub-module .env >>>
 } env;  // sub-module .env <<<
 
 struct {  // sub-module .path >>>
-    Exception       (*exists)(const char* path);
+    Exception       (*exists)(const char* file_path);
     char*           (*join)(arr$(char*) parts, IAllocator allc);
     str_s           (*splitext)(const char* path, bool return_ext);
 } path;  // sub-module .path <<<
