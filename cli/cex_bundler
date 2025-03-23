@@ -89,10 +89,12 @@ class Bundler:
             "AllocatorHeap.h",
             "AllocatorArena.h",
             "ds.h",
+            "_sprintf.h",
             "str.h",
             "sbuf.h",
             "io.h",
             "argparse.h",
+            "os/subprocess.h",
             "os/os.h",
         ]
         print(f"Bundling: {headers}")

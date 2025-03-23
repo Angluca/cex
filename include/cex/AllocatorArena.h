@@ -64,8 +64,8 @@ struct __class__AllocatorArena
     // clang-format off
 
 const Allocator_i* (*create)(usize page_size);
-void       (*destroy)(IAllocator self);
-bool       (*sanitize)(IAllocator allc);
+void            (*destroy)(IAllocator self);
+bool            (*sanitize)(IAllocator allc);
     // clang-format on
 };
-extern const struct __class__AllocatorArena AllocatorArena; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __class__AllocatorArena AllocatorArena; // CEX Autogen

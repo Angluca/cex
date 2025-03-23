@@ -279,6 +279,7 @@ int __cex_test_uassert_enabled = 1;
 #define __CEX_OUT_STREAM stderr
 #define __cex_test_postmortem_ctx NULL
 #define __cex_test_postmortem_exists() 0
+#define __cex_test_postmortem_f(ctx)
 #endif
 
 #ifndef __cex__abort

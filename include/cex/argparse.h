@@ -128,5 +128,5 @@ Exception       (*parse)(argparse_c* self, int argc, char** argv);
 void            (*usage)(argparse_c* self);
     // clang-format on
 };
-extern const struct __module__argparse argparse; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__argparse argparse; // CEX Autogen
 #endif

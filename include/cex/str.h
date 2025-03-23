@@ -98,4 +98,4 @@ struct {  // sub-module .convert >>>
 } convert;  // sub-module .convert <<<
     // clang-format on
 };
-extern const struct __module__str str; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__str str; // CEX Autogen

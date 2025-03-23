@@ -1305,7 +1305,7 @@ class CEXProcessor:
             # Algo, no empty lines should be between declaration and extern,
             #  because empty line remains and stacking at consequent calls
             ifc_contents.append(
-                f"extern const struct {ns_struct_name} {ns}; // CEX Autogen\n"
+                f"__attribute__ ((visibility(\"hidden\"))) extern const struct {ns_struct_name} {ns}; // CEX Autogen\n"
             )
         else:
             # NOTE: need extra line for endif handling

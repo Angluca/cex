@@ -39,4 +39,4 @@ u32             (*len)(const sbuf_c* self);
 void            (*update_len)(sbuf_c* self);
     // clang-format on
 };
-extern const struct __module__sbuf sbuf; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__sbuf sbuf; // CEX Autogen

@@ -1,5 +1,5 @@
 #pragma once
-#include "cex/all.h"
+#include "all.h"
 #include "_sprintf.h"
 #include <stdarg.h>
 

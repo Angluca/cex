@@ -281,6 +281,7 @@ int __cex_test_uassert_enabled = 1;
 #define __CEX_OUT_STREAM stderr
 #define __cex_test_postmortem_ctx NULL
 #define __cex_test_postmortem_exists() 0
+#define __cex_test_postmortem_f(ctx)
 #endif
 
 #ifndef __cex__abort
@@ -806,11 +807,11 @@ struct __class__AllocatorArena
     // clang-format off
 
 const Allocator_i* (*create)(usize page_size);
-void       (*destroy)(IAllocator self);
-bool       (*sanitize)(IAllocator allc);
+void            (*destroy)(IAllocator self);
+bool            (*sanitize)(IAllocator allc);
     // clang-format on
 };
-extern const struct __class__AllocatorArena AllocatorArena; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __class__AllocatorArena AllocatorArena; // CEX Autogen
 
 /*
 *                   ds.h
@@ -1220,6 +1221,128 @@ enum
 #define cexds_shmode_func_wrapper(t, e, m) cexds_shmode_func(e, m)
 
 /*
+*                   _sprintf.h
+*/
+// stb_sprintf - v1.10 - public domain snprintf() implementation
+// originally by Jeff Roberts / RAD Game Tools, 2015/10/20
+// http://github.com/nothings/stb
+//
+// allowed types:  sc uidBboXx p AaGgEef n
+// lengths      :  hh h ll j z t I64 I32 I
+//
+// Contributors:
+//    Fabian "ryg" Giesen (reformatting)
+//    github:aganm (attribute format)
+//
+// Contributors (bugfixes):
+//    github:d26435
+//    github:trex78
+//    github:account-login
+//    Jari Komppa (SI suffixes)
+//    Rohit Nirmal
+//    Marcin Wojdyr
+//    Leonard Ritter
+//    Stefano Zanotti
+//    Adam Allison
+//    Arvid Gerstmann
+//    Markus Kolb
+//
+// LICENSE:
+//
+//   See end of file for license information.
+
+
+/*
+Single file sprintf replacement.
+
+Originally written by Jeff Roberts at RAD Game Tools - 2015/10/20.
+Hereby placed in public domain.
+
+This is a full sprintf replacement that supports everything that
+the C runtime sprintfs support, including float/double, 64-bit integers,
+hex floats, field parameters (%*.*d stuff), length reads backs, etc.
+
+It compiles to roughly 8K with float support, and 4K without.
+As a comparison, when using MSVC static libs, calling sprintf drags
+in 16K.
+
+
+FLOATS/DOUBLES:
+===============
+This code uses a internal float->ascii conversion method that uses
+doubles with error correction (double-doubles, for ~105 bits of
+precision).  This conversion is round-trip perfect - that is, an atof
+of the values output here will give you the bit-exact double back.
+
+If you don't need float or doubles at all, define STB_SPRINTF_NOFLOAT
+and you'll save 4K of code space.
+
+64-BIT INTS:
+============
+This library also supports 64-bit integers and you can use MSVC style or
+GCC style indicators (%I64d or %lld).  It supports the C99 specifiers
+for size_t and ptr_diff_t (%jd %zd) as well.
+
+EXTRAS:
+=======
+Like some GCCs, for integers and floats, you can use a ' (single quote)
+specifier and commas will be inserted on the thousands: "%'d" on 12345
+would print 12,345.
+
+For integers and floats, you can use a "$" specifier and the number
+will be converted to float and then divided to get kilo, mega, giga or
+tera and then printed, so "%$d" 1000 is "1.0 k", "%$.2d" 2536000 is
+"2.53 M", etc. For byte values, use two $:s, like "%$$d" to turn
+2536000 to "2.42 Mi". If you prefer JEDEC suffixes to SI ones, use three
+$:s: "%$$$d" -> "2.42 M". To remove the space between the number and the
+suffix, add "_" specifier: "%_$d" -> "2.53M".
+
+In addition to octal and hexadecimal conversions, you can print
+integers in binary: "%b" for 256 would print 100.
+*/
+
+// SETTINGS
+
+// #define CEX_SPRINTF_NOFLOAT // disables floating point code (2x less in size)
+#ifndef CEX_SPRINTF_MIN
+#define CEX_SPRINTF_MIN 512 // size of stack based buffer for small strings
+#endif
+
+// #define CEXSP_STATIC   // makes all functions static
+
+#ifdef CEXSP_STATIC
+#define CEXSP__PUBLICDEC static
+#define CEXSP__PUBLICDEF static
+#else
+#define CEXSP__PUBLICDEC extern
+#define CEXSP__PUBLICDEF
+#endif
+
+#define CEXSP__ATTRIBUTE_FORMAT(fmt, va) __attribute__((format(printf, fmt, va)))
+
+typedef char* cexsp_callback_f(const char* buf, void* user, u32 len);
+
+typedef struct cexsp__context
+{
+    char* buf;
+    FILE* file;
+    IAllocator allc;
+    u32 capacity;
+    u32 length;
+    u32 has_error;
+    char tmp[CEX_SPRINTF_MIN];
+} cexsp__context;
+
+// clang-format off
+CEXSP__PUBLICDEF int cexsp__vfprintf(FILE* stream, const char* format, va_list va);
+CEXSP__PUBLICDEF int cexsp__fprintf(FILE* stream, const char* format, ...);
+CEXSP__PUBLICDEC int cexsp__vsnprintf(char* buf, int count, char const* fmt, va_list va);
+CEXSP__PUBLICDEC int cexsp__snprintf(char* buf, int count, char const* fmt, ...) CEXSP__ATTRIBUTE_FORMAT(3, 4);
+CEXSP__PUBLICDEC int cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const* fmt, va_list va);
+CEXSP__PUBLICDEC void cexsp__set_separators(char comma, char period);
+// clang-format on
+
+/*
 *                   str.h
 */
 /**
@@ -1320,7 +1443,7 @@ struct {  // sub-module .convert >>>
 } convert;  // sub-module .convert <<<
     // clang-format on
 };
-extern const struct __module__str str; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__str str; // CEX Autogen
 
 /*
 *                   sbuf.h
@@ -1364,7 +1487,7 @@ u32             (*len)(const sbuf_c* self);
 void            (*update_len)(sbuf_c* self);
     // clang-format on
 };
-extern const struct __module__sbuf sbuf; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__sbuf sbuf; // CEX Autogen
 
 /*
 *                   io.h
@@ -1400,7 +1523,7 @@ struct {  // sub-module .file >>>
 } file;  // sub-module .file <<<
     // clang-format on
 };
-extern const struct __module__io io; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
 
 /*
 *                   argparse.h
@@ -1534,8 +1657,1215 @@ Exception       (*parse)(argparse_c* self, int argc, char** argv);
 void            (*usage)(argparse_c* self);
     // clang-format on
 };
-extern const struct __module__argparse argparse; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__argparse argparse; // CEX Autogen
 #endif
+
+/*
+*                   os/subprocess.h
+*/
+/*
+   The latest version of this library is available on GitHub;
+   https://github.com/sheredom/subprocess.h
+*/
+
+/*
+   This is free and unencumbered software released into the public domain.
+
+   Anyone is free to copy, modify, publish, use, compile, sell, or
+   distribute this software, either in source code form or as a compiled
+   binary, for any purpose, commercial or non-commercial, and by any
+   means.
+
+   In jurisdictions that recognize copyright laws, the author or authors
+   of this software dedicate any and all copyright interest in the
+   software to the public domain. We make this dedication for the benefit
+   of the public at large and to the detriment of our heirs and
+   successors. We intend this dedication to be an overt act of
+   relinquishment in perpetuity of all present and future rights to this
+   software under copyright law.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+   OTHER DEALINGS IN THE SOFTWARE.
+
+   For more information, please refer to <http://unlicense.org/>
+*/
+
+#ifndef SHEREDOM_SUBPROCESS_H_INCLUDED
+#define SHEREDOM_SUBPROCESS_H_INCLUDED
+
+#if defined(_MSC_VER)
+#pragma warning(push, 1)
+
+/* disable warning: '__cplusplus' is not defined as a preprocessor macro,
+ * replacing with '0' for '#if/#elif' */
+#pragma warning(disable : 4668)
+#endif
+
+#include <stdio.h>
+#include <string.h>
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
+#if defined(__TINYC__)
+#define SUBPROCESS_ATTRIBUTE(a) __attribute((a))
+#else
+#define SUBPROCESS_ATTRIBUTE(a) __attribute__((a))
+#endif
+
+#if defined(_MSC_VER)
+#define subprocess_pure
+#define subprocess_weak __inline
+#define subprocess_tls __declspec(thread)
+#elif defined(__MINGW32__)
+#define subprocess_pure SUBPROCESS_ATTRIBUTE(pure)
+#define subprocess_weak static SUBPROCESS_ATTRIBUTE(used)
+#define subprocess_tls __thread
+#elif defined(__clang__) || defined(__GNUC__) || defined(__TINYC__)
+#define subprocess_pure SUBPROCESS_ATTRIBUTE(pure)
+#define subprocess_weak SUBPROCESS_ATTRIBUTE(weak)
+#define subprocess_tls __thread
+#else
+#error Non clang, non gcc, non MSVC compiler found!
+#endif
+
+struct subprocess_s;
+
+enum subprocess_option_e {
+  // stdout and stderr are the same FILE.
+  subprocess_option_combined_stdout_stderr = 0x1,
+
+  // The child process should inherit the environment variables of the parent.
+  subprocess_option_inherit_environment = 0x2,
+
+  // Enable asynchronous reading of stdout/stderr before it has completed.
+  subprocess_option_enable_async = 0x4,
+
+  // Enable the child process to be spawned with no window visible if supported
+  // by the platform.
+  subprocess_option_no_window = 0x8,
+
+  // Search for program names in the PATH variable. Always enabled on Windows.
+  // Note: this will **not** search for paths in any provided custom environment
+  // and instead uses the PATH of the spawning process.
+  subprocess_option_search_user_path = 0x10
+};
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+/// @brief Create a process.
+/// @param command_line An array of strings for the command line to execute for
+/// this process. The last element must be NULL to signify the end of the array.
+/// The memory backing this parameter only needs to persist until this function
+/// returns.
+/// @param options A bit field of subprocess_option_e's to pass.
+/// @param out_process The newly created process.
+/// @return On success zero is returned.
+subprocess_weak int subprocess_create(const char *const command_line[],
+                                      int options,
+                                      struct subprocess_s *const out_process);
+
+/// @brief Create a process (extended create).
+/// @param command_line An array of strings for the command line to execute for
+/// this process. The last element must be NULL to signify the end of the array.
+/// The memory backing this parameter only needs to persist until this function
+/// returns.
+/// @param options A bit field of subprocess_option_e's to pass.
+/// @param environment An optional array of strings for the environment to use
+/// for a child process (each element of the form FOO=BAR). The last element
+/// must be NULL to signify the end of the array.
+/// @param out_process The newly created process.
+/// @return On success zero is returned.
+///
+/// If `options` contains `subprocess_option_inherit_environment`, then
+/// `environment` must be NULL.
+subprocess_weak int
+subprocess_create_ex(const char *const command_line[], int options,
+                     const char *const environment[],
+                     struct subprocess_s *const out_process);
+
+/// @brief Get the standard input file for a process.
+/// @param process The process to query.
+/// @return The file for standard input of the process.
+///
+/// The file returned can be written to by the parent process to feed data to
+/// the standard input of the process.
+subprocess_pure subprocess_weak FILE *
+subprocess_stdin(const struct subprocess_s *const process);
+
+/// @brief Get the standard output file for a process.
+/// @param process The process to query.
+/// @return The file for standard output of the process.
+///
+/// The file returned can be read from by the parent process to read data from
+/// the standard output of the child process.
+subprocess_pure subprocess_weak FILE *
+subprocess_stdout(const struct subprocess_s *const process);
+
+/// @brief Get the standard error file for a process.
+/// @param process The process to query.
+/// @return The file for standard error of the process.
+///
+/// The file returned can be read from by the parent process to read data from
+/// the standard error of the child process.
+///
+/// If the process was created with the subprocess_option_combined_stdout_stderr
+/// option bit set, this function will return NULL, and the subprocess_stdout
+/// function should be used for both the standard output and error combined.
+subprocess_pure subprocess_weak FILE *
+subprocess_stderr(const struct subprocess_s *const process);
+
+/// @brief Wait for a process to finish execution.
+/// @param process The process to wait for.
+/// @param out_return_code The return code of the returned process (can be
+/// NULL).
+/// @return On success zero is returned.
+///
+/// Joining a process will close the stdin pipe to the process.
+subprocess_weak int subprocess_join(struct subprocess_s *const process,
+                                    int *const out_return_code);
+
+/// @brief Destroy a previously created process.
+/// @param process The process to destroy.
+/// @return On success zero is returned.
+///
+/// If the process to be destroyed had not finished execution, it may out live
+/// the parent process.
+subprocess_weak int subprocess_destroy(struct subprocess_s *const process);
+
+/// @brief Terminate a previously created process.
+/// @param process The process to terminate.
+/// @return On success zero is returned.
+///
+/// If the process to be destroyed had not finished execution, it will be
+/// terminated (i.e killed).
+subprocess_weak int subprocess_terminate(struct subprocess_s *const process);
+
+/// @brief Read the standard output from the child process.
+/// @param process The process to read from.
+/// @param buffer The buffer to read into.
+/// @param size The maximum number of bytes to read.
+/// @return The number of bytes actually read into buffer. Can only be 0 if the
+/// process has complete.
+///
+/// The only safe way to read from the standard output of a process during it's
+/// execution is to use the `subprocess_option_enable_async` option in
+/// conjunction with this method.
+subprocess_weak unsigned
+subprocess_read_stdout(struct subprocess_s *const process, char *const buffer,
+                       unsigned size);
+
+/// @brief Read the standard error from the child process.
+/// @param process The process to read from.
+/// @param buffer The buffer to read into.
+/// @param size The maximum number of bytes to read.
+/// @return The number of bytes actually read into buffer. Can only be 0 if the
+/// process has complete.
+///
+/// The only safe way to read from the standard error of a process during it's
+/// execution is to use the `subprocess_option_enable_async` option in
+/// conjunction with this method.
+subprocess_weak unsigned
+subprocess_read_stderr(struct subprocess_s *const process, char *const buffer,
+                       unsigned size);
+
+/// @brief Returns if the subprocess is currently still alive and executing.
+/// @param process The process to check.
+/// @return If the process is still alive non-zero is returned.
+subprocess_weak int subprocess_alive(struct subprocess_s *const process);
+
+#if defined(__cplusplus)
+#define SUBPROCESS_CAST(type, x) static_cast<type>(x)
+#define SUBPROCESS_PTR_CAST(type, x) reinterpret_cast<type>(x)
+#define SUBPROCESS_CONST_CAST(type, x) const_cast<type>(x)
+#define SUBPROCESS_NULL NULL
+#else
+#define SUBPROCESS_CAST(type, x) ((type)(x))
+#define SUBPROCESS_PTR_CAST(type, x) ((type)(x))
+#define SUBPROCESS_CONST_CAST(type, x) ((type)(x))
+#define SUBPROCESS_NULL 0
+#endif
+
+#if !defined(_WIN32)
+#include <signal.h>
+#include <spawn.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
+
+#if defined(_WIN32)
+
+#if (_MSC_VER < 1920)
+#ifdef _WIN64
+typedef __int64 subprocess_intptr_t;
+typedef unsigned __int64 subprocess_size_t;
+#else
+typedef int subprocess_intptr_t;
+typedef unsigned int subprocess_size_t;
+#endif
+#else
+#include <inttypes.h>
+
+typedef intptr_t subprocess_intptr_t;
+typedef size_t subprocess_size_t;
+#endif
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#endif
+
+typedef struct _PROCESS_INFORMATION *LPPROCESS_INFORMATION;
+typedef struct _SECURITY_ATTRIBUTES *LPSECURITY_ATTRIBUTES;
+typedef struct _STARTUPINFOA *LPSTARTUPINFOA;
+typedef struct _OVERLAPPED *LPOVERLAPPED;
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(push, 1)
+#endif
+#ifdef __MINGW32__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
+struct subprocess_subprocess_information_s {
+  void *hProcess;
+  void *hThread;
+  unsigned long dwProcessId;
+  unsigned long dwThreadId;
+};
+
+struct subprocess_security_attributes_s {
+  unsigned long nLength;
+  void *lpSecurityDescriptor;
+  int bInheritHandle;
+};
+
+struct subprocess_startup_info_s {
+  unsigned long cb;
+  char *lpReserved;
+  char *lpDesktop;
+  char *lpTitle;
+  unsigned long dwX;
+  unsigned long dwY;
+  unsigned long dwXSize;
+  unsigned long dwYSize;
+  unsigned long dwXCountChars;
+  unsigned long dwYCountChars;
+  unsigned long dwFillAttribute;
+  unsigned long dwFlags;
+  unsigned short wShowWindow;
+  unsigned short cbReserved2;
+  unsigned char *lpReserved2;
+  void *hStdInput;
+  void *hStdOutput;
+  void *hStdError;
+};
+
+struct subprocess_overlapped_s {
+  uintptr_t Internal;
+  uintptr_t InternalHigh;
+  union {
+    struct {
+      unsigned long Offset;
+      unsigned long OffsetHigh;
+    } DUMMYSTRUCTNAME;
+    void *Pointer;
+  } DUMMYUNIONNAME;
+
+  void *hEvent;
+};
+
+#ifdef __MINGW32__
+#pragma GCC diagnostic pop
+#endif
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
+__declspec(dllimport) unsigned long __stdcall GetLastError(void);
+__declspec(dllimport) int __stdcall SetHandleInformation(void *, unsigned long,
+                                                         unsigned long);
+__declspec(dllimport) int __stdcall CreatePipe(void **, void **,
+                                               LPSECURITY_ATTRIBUTES,
+                                               unsigned long);
+__declspec(dllimport) void *__stdcall CreateNamedPipeA(
+    const char *, unsigned long, unsigned long, unsigned long, unsigned long,
+    unsigned long, unsigned long, LPSECURITY_ATTRIBUTES);
+__declspec(dllimport) int __stdcall ReadFile(void *, void *, unsigned long,
+                                             unsigned long *, LPOVERLAPPED);
+__declspec(dllimport) unsigned long __stdcall GetCurrentProcessId(void);
+__declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
+__declspec(dllimport) void *__stdcall CreateFileA(const char *, unsigned long,
+                                                  unsigned long,
+                                                  LPSECURITY_ATTRIBUTES,
+                                                  unsigned long, unsigned long,
+                                                  void *);
+__declspec(dllimport) void *__stdcall CreateEventA(LPSECURITY_ATTRIBUTES, int,
+                                                   int, const char *);
+__declspec(dllimport) int __stdcall CreateProcessA(
+    const char *, char *, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, int,
+    unsigned long, void *, const char *, LPSTARTUPINFOA, LPPROCESS_INFORMATION);
+__declspec(dllimport) int __stdcall CloseHandle(void *);
+__declspec(dllimport) unsigned long __stdcall WaitForSingleObject(
+    void *, unsigned long);
+__declspec(dllimport) int __stdcall GetExitCodeProcess(
+    void *, unsigned long *lpExitCode);
+__declspec(dllimport) int __stdcall TerminateProcess(void *, unsigned int);
+__declspec(dllimport) unsigned long __stdcall WaitForMultipleObjects(
+    unsigned long, void *const *, int, unsigned long);
+__declspec(dllimport) int __stdcall GetOverlappedResult(void *, LPOVERLAPPED,
+                                                        unsigned long *, int);
+
+#if defined(_DLL)
+#define SUBPROCESS_DLLIMPORT __declspec(dllimport)
+#else
+#define SUBPROCESS_DLLIMPORT
+#endif
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#endif
+
+SUBPROCESS_DLLIMPORT int __cdecl _fileno(FILE *);
+SUBPROCESS_DLLIMPORT int __cdecl _open_osfhandle(subprocess_intptr_t, int);
+SUBPROCESS_DLLIMPORT subprocess_intptr_t __cdecl _get_osfhandle(int);
+
+#ifndef __MINGW32__
+void *__cdecl _alloca(subprocess_size_t);
+#else
+#include <malloc.h>
+#endif
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+#else
+typedef size_t subprocess_size_t;
+#endif
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpadded"
+#endif
+struct subprocess_s {
+  FILE *stdin_file;
+  FILE *stdout_file;
+  FILE *stderr_file;
+
+#if defined(_WIN32)
+  void *hProcess;
+  void *hStdInput;
+  void *hEventOutput;
+  void *hEventError;
+#else
+  pid_t child;
+  int return_status;
+#endif
+
+  subprocess_size_t alive;
+};
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+#if defined(__clang__)
+#if __has_warning("-Wunsafe-buffer-usage")
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
+#endif
+#endif
+
+#if defined(_WIN32)
+subprocess_weak int subprocess_create_named_pipe_helper(void **rd, void **wr);
+int subprocess_create_named_pipe_helper(void **rd, void **wr) {
+  const unsigned long pipeAccessInbound = 0x00000001;
+  const unsigned long fileFlagOverlapped = 0x40000000;
+  const unsigned long pipeTypeByte = 0x00000000;
+  const unsigned long pipeWait = 0x00000000;
+  const unsigned long genericWrite = 0x40000000;
+  const unsigned long openExisting = 3;
+  const unsigned long fileAttributeNormal = 0x00000080;
+  const void *const invalidHandleValue =
+      SUBPROCESS_PTR_CAST(void *, ~(SUBPROCESS_CAST(subprocess_intptr_t, 0)));
+  struct subprocess_security_attributes_s saAttr = {sizeof(saAttr),
+                                                    SUBPROCESS_NULL, 1};
+  char name[256] = {0};
+  static subprocess_tls long index = 0;
+  const long unique = index++;
+
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#pragma warning(push, 1)
+#pragma warning(disable : 4996)
+  _snprintf(name, sizeof(name) - 1,
+            "\\\\.\\pipe\\sheredom_subprocess_h.%08lx.%08lx.%ld",
+            GetCurrentProcessId(), GetCurrentThreadId(), unique);
+#pragma warning(pop)
+#else
+  snprintf(name, sizeof(name) - 1,
+           "\\\\.\\pipe\\sheredom_subprocess_h.%08lx.%08lx.%ld",
+           GetCurrentProcessId(), GetCurrentThreadId(), unique);
+#endif
+
+  *rd =
+      CreateNamedPipeA(name, pipeAccessInbound | fileFlagOverlapped,
+                       pipeTypeByte | pipeWait, 1, 4096, 4096, SUBPROCESS_NULL,
+                       SUBPROCESS_PTR_CAST(LPSECURITY_ATTRIBUTES, &saAttr));
+
+  if (invalidHandleValue == *rd) {
+    return -1;
+  }
+
+  *wr = CreateFileA(name, genericWrite, SUBPROCESS_NULL,
+                    SUBPROCESS_PTR_CAST(LPSECURITY_ATTRIBUTES, &saAttr),
+                    openExisting, fileAttributeNormal, SUBPROCESS_NULL);
+
+  if (invalidHandleValue == *wr) {
+    return -1;
+  }
+
+  return 0;
+}
+#endif
+
+int subprocess_create(const char *const commandLine[], int options,
+                      struct subprocess_s *const out_process) {
+  return subprocess_create_ex(commandLine, options, SUBPROCESS_NULL,
+                              out_process);
+}
+
+int subprocess_create_ex(const char *const commandLine[], int options,
+                         const char *const environment[],
+                         struct subprocess_s *const out_process) {
+#if defined(_WIN32)
+  int fd;
+  void *rd, *wr;
+  char *commandLineCombined;
+  subprocess_size_t len;
+  int i, j;
+  int need_quoting;
+  unsigned long flags = 0;
+  const unsigned long startFUseStdHandles = 0x00000100;
+  const unsigned long handleFlagInherit = 0x00000001;
+  const unsigned long createNoWindow = 0x08000000;
+  struct subprocess_subprocess_information_s processInfo;
+  struct subprocess_security_attributes_s saAttr = {sizeof(saAttr),
+                                                    SUBPROCESS_NULL, 1};
+  char *used_environment = SUBPROCESS_NULL;
+  struct subprocess_startup_info_s startInfo = {0,
+                                                SUBPROCESS_NULL,
+                                                SUBPROCESS_NULL,
+                                                SUBPROCESS_NULL,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                SUBPROCESS_NULL,
+                                                SUBPROCESS_NULL,
+                                                SUBPROCESS_NULL,
+                                                SUBPROCESS_NULL};
+
+  startInfo.cb = sizeof(startInfo);
+  startInfo.dwFlags = startFUseStdHandles;
+
+  if (subprocess_option_no_window == (options & subprocess_option_no_window)) {
+    flags |= createNoWindow;
+  }
+
+  if (subprocess_option_inherit_environment !=
+      (options & subprocess_option_inherit_environment)) {
+    if (SUBPROCESS_NULL == environment) {
+      used_environment = SUBPROCESS_CONST_CAST(char *, "\0\0");
+    } else {
+      // We always end with two null terminators.
+      len = 2;
+
+      for (i = 0; environment[i]; i++) {
+        for (j = 0; '\0' != environment[i][j]; j++) {
+          len++;
+        }
+
+        // For the null terminator too.
+        len++;
+      }
+
+      used_environment = SUBPROCESS_CAST(char *, _alloca(len));
+
+      // Re-use len for the insertion position
+      len = 0;
+
+      for (i = 0; environment[i]; i++) {
+        for (j = 0; '\0' != environment[i][j]; j++) {
+          used_environment[len++] = environment[i][j];
+        }
+
+        used_environment[len++] = '\0';
+      }
+
+      // End with the two null terminators.
+      used_environment[len++] = '\0';
+      used_environment[len++] = '\0';
+    }
+  } else {
+    if (SUBPROCESS_NULL != environment) {
+      return -1;
+    }
+  }
+
+  if (!CreatePipe(&rd, &wr, SUBPROCESS_PTR_CAST(LPSECURITY_ATTRIBUTES, &saAttr),
+                  0)) {
+    return -1;
+  }
+
+  if (!SetHandleInformation(wr, handleFlagInherit, 0)) {
+    return -1;
+  }
+
+  fd = _open_osfhandle(SUBPROCESS_PTR_CAST(subprocess_intptr_t, wr), 0);
+
+  if (-1 != fd) {
+    out_process->stdin_file = _fdopen(fd, "wb");
+
+    if (SUBPROCESS_NULL == out_process->stdin_file) {
+      return -1;
+    }
+  }
+
+  startInfo.hStdInput = rd;
+
+  if (options & subprocess_option_enable_async) {
+    if (subprocess_create_named_pipe_helper(&rd, &wr)) {
+      return -1;
+    }
+  } else {
+    if (!CreatePipe(&rd, &wr,
+                    SUBPROCESS_PTR_CAST(LPSECURITY_ATTRIBUTES, &saAttr), 0)) {
+      return -1;
+    }
+  }
+
+  if (!SetHandleInformation(rd, handleFlagInherit, 0)) {
+    return -1;
+  }
+
+  fd = _open_osfhandle(SUBPROCESS_PTR_CAST(subprocess_intptr_t, rd), 0);
+
+  if (-1 != fd) {
+    out_process->stdout_file = _fdopen(fd, "rb");
+
+    if (SUBPROCESS_NULL == out_process->stdout_file) {
+      return -1;
+    }
+  }
+
+  startInfo.hStdOutput = wr;
+
+  if (subprocess_option_combined_stdout_stderr ==
+      (options & subprocess_option_combined_stdout_stderr)) {
+    out_process->stderr_file = out_process->stdout_file;
+    startInfo.hStdError = startInfo.hStdOutput;
+  } else {
+    if (options & subprocess_option_enable_async) {
+      if (subprocess_create_named_pipe_helper(&rd, &wr)) {
+        return -1;
+      }
+    } else {
+      if (!CreatePipe(&rd, &wr,
+                      SUBPROCESS_PTR_CAST(LPSECURITY_ATTRIBUTES, &saAttr), 0)) {
+        return -1;
+      }
+    }
+
+    if (!SetHandleInformation(rd, handleFlagInherit, 0)) {
+      return -1;
+    }
+
+    fd = _open_osfhandle(SUBPROCESS_PTR_CAST(subprocess_intptr_t, rd), 0);
+
+    if (-1 != fd) {
+      out_process->stderr_file = _fdopen(fd, "rb");
+
+      if (SUBPROCESS_NULL == out_process->stderr_file) {
+        return -1;
+      }
+    }
+
+    startInfo.hStdError = wr;
+  }
+
+  if (options & subprocess_option_enable_async) {
+    out_process->hEventOutput =
+        CreateEventA(SUBPROCESS_PTR_CAST(LPSECURITY_ATTRIBUTES, &saAttr), 1, 1,
+                     SUBPROCESS_NULL);
+    out_process->hEventError =
+        CreateEventA(SUBPROCESS_PTR_CAST(LPSECURITY_ATTRIBUTES, &saAttr), 1, 1,
+                     SUBPROCESS_NULL);
+  } else {
+    out_process->hEventOutput = SUBPROCESS_NULL;
+    out_process->hEventError = SUBPROCESS_NULL;
+  }
+
+  // Combine commandLine together into a single string
+  len = 0;
+  for (i = 0; commandLine[i]; i++) {
+    // for the trailing \0
+    len++;
+
+    // Quote the argument if it has a space in it
+    if (strpbrk(commandLine[i], "\t\v ") != SUBPROCESS_NULL ||
+        commandLine[i][0] == SUBPROCESS_NULL)
+      len += 2;
+
+    for (j = 0; '\0' != commandLine[i][j]; j++) {
+      switch (commandLine[i][j]) {
+      default:
+        break;
+      case '\\':
+        if (commandLine[i][j + 1] == '"') {
+          len++;
+        }
+
+        break;
+      case '"':
+        len++;
+        break;
+      }
+      len++;
+    }
+  }
+
+  commandLineCombined = SUBPROCESS_CAST(char *, _alloca(len));
+
+  if (!commandLineCombined) {
+    return -1;
+  }
+
+  // Gonna re-use len to store the write index into commandLineCombined
+  len = 0;
+
+  for (i = 0; commandLine[i]; i++) {
+    if (0 != i) {
+      commandLineCombined[len++] = ' ';
+    }
+
+    need_quoting = strpbrk(commandLine[i], "\t\v ") != SUBPROCESS_NULL ||
+                   commandLine[i][0] == SUBPROCESS_NULL;
+    if (need_quoting) {
+      commandLineCombined[len++] = '"';
+    }
+
+    for (j = 0; '\0' != commandLine[i][j]; j++) {
+      switch (commandLine[i][j]) {
+      default:
+        break;
+      case '\\':
+        if (commandLine[i][j + 1] == '"') {
+          commandLineCombined[len++] = '\\';
+        }
+
+        break;
+      case '"':
+        commandLineCombined[len++] = '\\';
+        break;
+      }
+
+      commandLineCombined[len++] = commandLine[i][j];
+    }
+    if (need_quoting) {
+      commandLineCombined[len++] = '"';
+    }
+  }
+
+  commandLineCombined[len] = '\0';
+
+  if (!CreateProcessA(
+          SUBPROCESS_NULL,
+          commandLineCombined, // command line
+          SUBPROCESS_NULL,     // process security attributes
+          SUBPROCESS_NULL,     // primary thread security attributes
+          1,                   // handles are inherited
+          flags,               // creation flags
+          used_environment,    // used environment
+          SUBPROCESS_NULL,     // use parent's current directory
+          SUBPROCESS_PTR_CAST(LPSTARTUPINFOA,
+                              &startInfo), // STARTUPINFO pointer
+          SUBPROCESS_PTR_CAST(LPPROCESS_INFORMATION, &processInfo))) {
+    return -1;
+  }
+
+  out_process->hProcess = processInfo.hProcess;
+
+  out_process->hStdInput = startInfo.hStdInput;
+
+  // We don't need the handle of the primary thread in the called process.
+  CloseHandle(processInfo.hThread);
+
+  if (SUBPROCESS_NULL != startInfo.hStdOutput) {
+    CloseHandle(startInfo.hStdOutput);
+
+    if (startInfo.hStdError != startInfo.hStdOutput) {
+      CloseHandle(startInfo.hStdError);
+    }
+  }
+
+  out_process->alive = 1;
+
+  return 0;
+#else
+  int stdinfd[2];
+  int stdoutfd[2];
+  int stderrfd[2];
+  pid_t child;
+  extern char **environ;
+  char *const empty_environment[1] = {SUBPROCESS_NULL};
+  posix_spawn_file_actions_t actions;
+  char *const *used_environment;
+
+  if (subprocess_option_inherit_environment ==
+      (options & subprocess_option_inherit_environment)) {
+    if (SUBPROCESS_NULL != environment) {
+      return -1;
+    }
+  }
+
+  if (0 != pipe(stdinfd)) {
+    return -1;
+  }
+
+  if (0 != pipe(stdoutfd)) {
+    return -1;
+  }
+
+  if (subprocess_option_combined_stdout_stderr !=
+      (options & subprocess_option_combined_stdout_stderr)) {
+    if (0 != pipe(stderrfd)) {
+      return -1;
+    }
+  }
+
+  if (environment) {
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+#pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
+    used_environment = SUBPROCESS_CONST_CAST(char *const *, environment);
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+  } else if (subprocess_option_inherit_environment ==
+             (options & subprocess_option_inherit_environment)) {
+    used_environment = environ;
+  } else {
+    used_environment = empty_environment;
+  }
+
+  if (0 != posix_spawn_file_actions_init(&actions)) {
+    return -1;
+  }
+
+  // Close the stdin write end
+  if (0 != posix_spawn_file_actions_addclose(&actions, stdinfd[1])) {
+    posix_spawn_file_actions_destroy(&actions);
+    return -1;
+  }
+
+  // Map the read end to stdin
+  if (0 !=
+      posix_spawn_file_actions_adddup2(&actions, stdinfd[0], STDIN_FILENO)) {
+    posix_spawn_file_actions_destroy(&actions);
+    return -1;
+  }
+
+  // Close the stdout read end
+  if (0 != posix_spawn_file_actions_addclose(&actions, stdoutfd[0])) {
+    posix_spawn_file_actions_destroy(&actions);
+    return -1;
+  }
+
+  // Map the write end to stdout
+  if (0 !=
+      posix_spawn_file_actions_adddup2(&actions, stdoutfd[1], STDOUT_FILENO)) {
+    posix_spawn_file_actions_destroy(&actions);
+    return -1;
+  }
+
+  if (subprocess_option_combined_stdout_stderr ==
+      (options & subprocess_option_combined_stdout_stderr)) {
+    if (0 != posix_spawn_file_actions_adddup2(&actions, STDOUT_FILENO,
+                                              STDERR_FILENO)) {
+      posix_spawn_file_actions_destroy(&actions);
+      return -1;
+    }
+  } else {
+    // Close the stderr read end
+    if (0 != posix_spawn_file_actions_addclose(&actions, stderrfd[0])) {
+      posix_spawn_file_actions_destroy(&actions);
+      return -1;
+    }
+    // Map the write end to stdout
+    if (0 != posix_spawn_file_actions_adddup2(&actions, stderrfd[1],
+                                              STDERR_FILENO)) {
+      posix_spawn_file_actions_destroy(&actions);
+      return -1;
+    }
+  }
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+#pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
+  if (subprocess_option_search_user_path ==
+      (options & subprocess_option_search_user_path)) {
+    if (0 != posix_spawnp(&child, commandLine[0], &actions, SUBPROCESS_NULL,
+                          SUBPROCESS_CONST_CAST(char *const *, commandLine),
+                          used_environment)) {
+      posix_spawn_file_actions_destroy(&actions);
+      return -1;
+    }
+  } else {
+    if (0 != posix_spawn(&child, commandLine[0], &actions, SUBPROCESS_NULL,
+                         SUBPROCESS_CONST_CAST(char *const *, commandLine),
+                         used_environment)) {
+      posix_spawn_file_actions_destroy(&actions);
+      return -1;
+    }
+  }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+  // Close the stdin read end
+  close(stdinfd[0]);
+  // Store the stdin write end
+  out_process->stdin_file = fdopen(stdinfd[1], "wb");
+
+  // Close the stdout write end
+  close(stdoutfd[1]);
+  // Store the stdout read end
+  out_process->stdout_file = fdopen(stdoutfd[0], "rb");
+
+  if (subprocess_option_combined_stdout_stderr ==
+      (options & subprocess_option_combined_stdout_stderr)) {
+    out_process->stderr_file = out_process->stdout_file;
+  } else {
+    // Close the stderr write end
+    close(stderrfd[1]);
+    // Store the stderr read end
+    out_process->stderr_file = fdopen(stderrfd[0], "rb");
+  }
+
+  // Store the child's pid
+  out_process->child = child;
+
+  out_process->alive = 1;
+
+  posix_spawn_file_actions_destroy(&actions);
+  return 0;
+#endif
+}
+
+FILE *subprocess_stdin(const struct subprocess_s *const process) {
+  return process->stdin_file;
+}
+
+FILE *subprocess_stdout(const struct subprocess_s *const process) {
+  return process->stdout_file;
+}
+
+FILE *subprocess_stderr(const struct subprocess_s *const process) {
+  if (process->stdout_file != process->stderr_file) {
+    return process->stderr_file;
+  } else {
+    return SUBPROCESS_NULL;
+  }
+}
+
+int subprocess_join(struct subprocess_s *const process,
+                    int *const out_return_code) {
+#if defined(_WIN32)
+  const unsigned long infinite = 0xFFFFFFFF;
+
+  if (process->stdin_file) {
+    fclose(process->stdin_file);
+    process->stdin_file = SUBPROCESS_NULL;
+  }
+
+  if (process->hStdInput) {
+    CloseHandle(process->hStdInput);
+    process->hStdInput = SUBPROCESS_NULL;
+  }
+
+  WaitForSingleObject(process->hProcess, infinite);
+
+  if (out_return_code) {
+    if (!GetExitCodeProcess(
+            process->hProcess,
+            SUBPROCESS_PTR_CAST(unsigned long *, out_return_code))) {
+      return -1;
+    }
+  }
+
+  process->alive = 0;
+
+  return 0;
+#else
+  int status;
+
+  if (process->stdin_file) {
+    fclose(process->stdin_file);
+    process->stdin_file = SUBPROCESS_NULL;
+  }
+
+  if (process->child) {
+    if (process->child != waitpid(process->child, &status, 0)) {
+      return -1;
+    }
+
+    process->child = 0;
+
+    if (WIFEXITED(status)) {
+      process->return_status = WEXITSTATUS(status);
+    } else {
+      process->return_status = EXIT_FAILURE;
+    }
+
+    process->alive = 0;
+  }
+
+  if (out_return_code) {
+    *out_return_code = process->return_status;
+  }
+
+  return 0;
+#endif
+}
+
+int subprocess_destroy(struct subprocess_s *const process) {
+  if (process->stdin_file) {
+    fclose(process->stdin_file);
+    process->stdin_file = SUBPROCESS_NULL;
+  }
+
+  if (process->stdout_file) {
+    fclose(process->stdout_file);
+
+    if (process->stdout_file != process->stderr_file) {
+      fclose(process->stderr_file);
+    }
+
+    process->stdout_file = SUBPROCESS_NULL;
+    process->stderr_file = SUBPROCESS_NULL;
+  }
+
+#if defined(_WIN32)
+  if (process->hProcess) {
+    CloseHandle(process->hProcess);
+    process->hProcess = SUBPROCESS_NULL;
+
+    if (process->hStdInput) {
+      CloseHandle(process->hStdInput);
+    }
+
+    if (process->hEventOutput) {
+      CloseHandle(process->hEventOutput);
+    }
+
+    if (process->hEventError) {
+      CloseHandle(process->hEventError);
+    }
+  }
+#endif
+
+  return 0;
+}
+
+int subprocess_terminate(struct subprocess_s *const process) {
+#if defined(_WIN32)
+  unsigned int killed_process_exit_code;
+  int success_terminate;
+  int windows_call_result;
+
+  killed_process_exit_code = 99;
+  windows_call_result =
+      TerminateProcess(process->hProcess, killed_process_exit_code);
+  success_terminate = (windows_call_result == 0) ? 1 : 0;
+  return success_terminate;
+#else
+  int result;
+  result = kill(process->child, 9);
+  return result;
+#endif
+}
+
+unsigned subprocess_read_stdout(struct subprocess_s *const process,
+                                char *const buffer, unsigned size) {
+#if defined(_WIN32)
+  void *handle;
+  unsigned long bytes_read = 0;
+  struct subprocess_overlapped_s overlapped = {0, 0, {{0, 0}}, SUBPROCESS_NULL};
+  overlapped.hEvent = process->hEventOutput;
+
+  handle = SUBPROCESS_PTR_CAST(void *,
+                               _get_osfhandle(_fileno(process->stdout_file)));
+
+  if (!ReadFile(handle, buffer, size, &bytes_read,
+                SUBPROCESS_PTR_CAST(LPOVERLAPPED, &overlapped))) {
+    const unsigned long errorIoPending = 997;
+    unsigned long error = GetLastError();
+
+    // Means we've got an async read!
+    if (error == errorIoPending) {
+      if (!GetOverlappedResult(handle,
+                               SUBPROCESS_PTR_CAST(LPOVERLAPPED, &overlapped),
+                               &bytes_read, 1)) {
+        const unsigned long errorIoIncomplete = 996;
+        const unsigned long errorHandleEOF = 38;
+        error = GetLastError();
+
+        if ((error != errorIoIncomplete) && (error != errorHandleEOF)) {
+          return 0;
+        }
+      }
+    }
+  }
+
+  return SUBPROCESS_CAST(unsigned, bytes_read);
+#else
+  const int fd = fileno(process->stdout_file);
+  const ssize_t bytes_read = read(fd, buffer, size);
+
+  if (bytes_read < 0) {
+    return 0;
+  }
+
+  return SUBPROCESS_CAST(unsigned, bytes_read);
+#endif
+}
+
+unsigned subprocess_read_stderr(struct subprocess_s *const process,
+                                char *const buffer, unsigned size) {
+#if defined(_WIN32)
+  void *handle;
+  unsigned long bytes_read = 0;
+  struct subprocess_overlapped_s overlapped = {0, 0, {{0, 0}}, SUBPROCESS_NULL};
+  overlapped.hEvent = process->hEventError;
+
+  handle = SUBPROCESS_PTR_CAST(void *,
+                               _get_osfhandle(_fileno(process->stderr_file)));
+
+  if (!ReadFile(handle, buffer, size, &bytes_read,
+                SUBPROCESS_PTR_CAST(LPOVERLAPPED, &overlapped))) {
+    const unsigned long errorIoPending = 997;
+    unsigned long error = GetLastError();
+
+    // Means we've got an async read!
+    if (error == errorIoPending) {
+      if (!GetOverlappedResult(handle,
+                               SUBPROCESS_PTR_CAST(LPOVERLAPPED, &overlapped),
+                               &bytes_read, 1)) {
+        const unsigned long errorIoIncomplete = 996;
+        const unsigned long errorHandleEOF = 38;
+        error = GetLastError();
+
+        if ((error != errorIoIncomplete) && (error != errorHandleEOF)) {
+          return 0;
+        }
+      }
+    }
+  }
+
+  return SUBPROCESS_CAST(unsigned, bytes_read);
+#else
+  const int fd = fileno(process->stderr_file);
+  const ssize_t bytes_read = read(fd, buffer, size);
+
+  if (bytes_read < 0) {
+    return 0;
+  }
+
+  return SUBPROCESS_CAST(unsigned, bytes_read);
+#endif
+}
+
+int subprocess_alive(struct subprocess_s *const process) {
+  int is_alive = SUBPROCESS_CAST(int, process->alive);
+
+  if (!is_alive) {
+    return 0;
+  }
+#if defined(_WIN32)
+  {
+    const unsigned long zero = 0x0;
+    const unsigned long wait_object_0 = 0x00000000L;
+
+    is_alive = wait_object_0 != WaitForSingleObject(process->hProcess, zero);
+  }
+#else
+  {
+    int status;
+    is_alive = 0 == waitpid(process->child, &status, WNOHANG);
+
+    // If the process was successfully waited on we need to cleanup now.
+    if (!is_alive) {
+      if (WIFEXITED(status)) {
+        process->return_status = WEXITSTATUS(status);
+      } else {
+        process->return_status = EXIT_FAILURE;
+      }
+
+      // Since we've already successfully waited on the process, we need to wipe
+      // the child now.
+      process->child = 0;
+
+      if (subprocess_join(process, SUBPROCESS_NULL)) {
+        return -1;
+      }
+    }
+  }
+#endif
+
+  if (!is_alive) {
+    process->alive = 0;
+  }
+
+  return is_alive;
+}
+
+#if defined(__clang__)
+#if __has_warning("-Wunsafe-buffer-usage")
+#pragma clang diagnostic pop
+#endif
+#endif
+
+#if defined(__cplusplus)
+} // extern "C"
+#endif
+
+#endif /* SHEREDOM_SUBPROCESS_H_INCLUDED */
 
 /*
 *                   os/os.h
@@ -1635,7 +2965,7 @@ struct {  // sub-module .cmd >>>
 } cmd;  // sub-module .cmd <<<
     // clang-format on
 };
-extern const struct __module__os os; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
 
 /*
 *                   CEX IMPLEMENTATION 
@@ -3722,6 +5052,1679 @@ cexds_strreset(cexds_string_arena* a)
 }
 
 /*
+*                   _sprintf.c
+*/
+/*
+This code is based on refactored stb_sprintf.h
+
+Original code
+https://github.com/nothings/stb/tree/master
+ALTERNATIVE A - MIT License
+stb_sprintf - v1.10 - public domain snprintf() implementation
+Copyright (c) 2017 Sean Barrett
+*/
+
+#ifndef CEX_SPRINTF_NOFLOAT
+// internal float utility functions
+static i32 cexsp__real_to_str(
+    char const** start,
+    u32* len,
+    char* out,
+    i32* decimal_pos,
+    double value,
+    u32 frac_digits
+);
+static i32 cexsp__real_to_parts(i64* bits, i32* expo, double value);
+#define CEXSP__SPECIAL 0x7000
+#endif
+
+static char cexsp__period = '.';
+static char cexsp__comma = ',';
+static struct
+{
+    short temp; // force next field to be 2-byte aligned
+    char pair[201];
+} cexsp__digitpair = { 0,
+                       "00010203040506070809101112131415161718192021222324"
+                       "25262728293031323334353637383940414243444546474849"
+                       "50515253545556575859606162636465666768697071727374"
+                       "75767778798081828384858687888990919293949596979899" };
+
+CEXSP__PUBLICDEF void
+cexsp__set_separators(char pcomma, char pperiod)
+{
+    cexsp__period = pperiod;
+    cexsp__comma = pcomma;
+}
+
+#define CEXSP__LEFTJUST 1
+#define CEXSP__LEADINGPLUS 2
+#define CEXSP__LEADINGSPACE 4
+#define CEXSP__LEADING_0X 8
+#define CEXSP__LEADINGZERO 16
+#define CEXSP__INTMAX 32
+#define CEXSP__TRIPLET_COMMA 64
+#define CEXSP__NEGATIVE 128
+#define CEXSP__METRIC_SUFFIX 256
+#define CEXSP__HALFWIDTH 512
+#define CEXSP__METRIC_NOSPACE 1024
+#define CEXSP__METRIC_1024 2048
+#define CEXSP__METRIC_JEDEC 4096
+
+static void
+cexsp__lead_sign(u32 fl, char* sign)
+{
+    sign[0] = 0;
+    if (fl & CEXSP__NEGATIVE) {
+        sign[0] = 1;
+        sign[1] = '-';
+    } else if (fl & CEXSP__LEADINGSPACE) {
+        sign[0] = 1;
+        sign[1] = ' ';
+    } else if (fl & CEXSP__LEADINGPLUS) {
+        sign[0] = 1;
+        sign[1] = '+';
+    }
+}
+
+static u32
+cexsp__strlen_limited(char const* s, u32 limit)
+{
+    char const* sn = s;
+    // handle the last few characters to find actual size
+    while (limit && *sn) {
+        ++sn;
+        --limit;
+    }
+
+    return (u32)(sn - s);
+}
+
+CEXSP__PUBLICDEF int
+cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const* fmt, va_list va)
+{
+    static char hex[] = "0123456789abcdefxp";
+    static char hexu[] = "0123456789ABCDEFXP";
+    char* bf;
+    char const* f;
+    int tlen = 0;
+
+    bf = buf;
+    f = fmt;
+    for (;;) {
+        i32 fw, pr, tz;
+        u32 fl;
+
+// macros for the callback buffer stuff
+#define cexsp__chk_cb_bufL(bytes)                                                                  \
+    {                                                                                              \
+        int len = (int)(bf - buf);                                                                 \
+        if ((len + (bytes)) >= CEX_SPRINTF_MIN) {                                                  \
+            tlen += len;                                                                           \
+            if (0 == (bf = buf = callback(buf, user, len)))                                        \
+                goto done;                                                                         \
+        }                                                                                          \
+    }
+#define cexsp__chk_cb_buf(bytes)                                                                   \
+    {                                                                                              \
+        if (callback) {                                                                            \
+            cexsp__chk_cb_bufL(bytes);                                                             \
+        }                                                                                          \
+    }
+#define cexsp__flush_cb()                                                                          \
+    {                                                                                              \
+        cexsp__chk_cb_bufL(CEX_SPRINTF_MIN - 1);                                                   \
+    } // flush if there is even one byte in the buffer
+#define cexsp__cb_buf_clamp(cl, v)                                                                 \
+    cl = v;                                                                                        \
+    if (callback) {                                                                                \
+        int lg = CEX_SPRINTF_MIN - (int)(bf - buf);                                                \
+        if (cl > lg)                                                                               \
+            cl = lg;                                                                               \
+    }
+
+        // fast copy everything up to the next % (or end of string)
+        for (;;) {
+            if (f[0] == '%') {
+                goto scandd;
+            }
+            if (f[0] == 0) {
+                goto endfmt;
+            }
+            cexsp__chk_cb_buf(1);
+            *bf++ = f[0];
+            ++f;
+        }
+    scandd:
+
+        ++f;
+
+        // ok, we have a percent, read the modifiers first
+        fw = 0;
+        pr = -1;
+        fl = 0;
+        tz = 0;
+
+        // flags
+        for (;;) {
+            switch (f[0]) {
+                // if we have left justify
+                case '-':
+                    fl |= CEXSP__LEFTJUST;
+                    ++f;
+                    continue;
+                // if we have leading plus
+                case '+':
+                    fl |= CEXSP__LEADINGPLUS;
+                    ++f;
+                    continue;
+                // if we have leading space
+                case ' ':
+                    fl |= CEXSP__LEADINGSPACE;
+                    ++f;
+                    continue;
+                // if we have leading 0x
+                case '#':
+                    fl |= CEXSP__LEADING_0X;
+                    ++f;
+                    continue;
+                // if we have thousand commas
+                case '\'':
+                    fl |= CEXSP__TRIPLET_COMMA;
+                    ++f;
+                    continue;
+                // if we have kilo marker (none->kilo->kibi->jedec)
+                case '$':
+                    if (fl & CEXSP__METRIC_SUFFIX) {
+                        if (fl & CEXSP__METRIC_1024) {
+                            fl |= CEXSP__METRIC_JEDEC;
+                        } else {
+                            fl |= CEXSP__METRIC_1024;
+                        }
+                    } else {
+                        fl |= CEXSP__METRIC_SUFFIX;
+                    }
+                    ++f;
+                    continue;
+                // if we don't want space between metric suffix and number
+                case '_':
+                    fl |= CEXSP__METRIC_NOSPACE;
+                    ++f;
+                    continue;
+                // if we have leading zero
+                case '0':
+                    fl |= CEXSP__LEADINGZERO;
+                    ++f;
+                    goto flags_done;
+                default:
+                    goto flags_done;
+            }
+        }
+    flags_done:
+
+        // get the field width
+        if (f[0] == '*') {
+            fw = va_arg(va, u32);
+            ++f;
+        } else {
+            while ((f[0] >= '0') && (f[0] <= '9')) {
+                fw = fw * 10 + f[0] - '0';
+                f++;
+            }
+        }
+        // get the precision
+        if (f[0] == '.') {
+            ++f;
+            if (f[0] == '*') {
+                pr = va_arg(va, u32);
+                ++f;
+            } else {
+                pr = 0;
+                while ((f[0] >= '0') && (f[0] <= '9')) {
+                    pr = pr * 10 + f[0] - '0';
+                    f++;
+                }
+            }
+        }
+
+        // handle integer size overrides
+        switch (f[0]) {
+            // are we halfwidth?
+            case 'h':
+                fl |= CEXSP__HALFWIDTH;
+                ++f;
+                if (f[0] == 'h') {
+                    ++f; // QUARTERWIDTH
+                }
+                break;
+            // are we 64-bit (unix style)
+            case 'l':
+                fl |= ((sizeof(long) == 8) ? CEXSP__INTMAX : 0);
+                ++f;
+                if (f[0] == 'l') {
+                    fl |= CEXSP__INTMAX;
+                    ++f;
+                }
+                break;
+            // are we 64-bit on intmax? (c99)
+            case 'j':
+                fl |= (sizeof(size_t) == 8) ? CEXSP__INTMAX : 0;
+                ++f;
+                break;
+            // are we 64-bit on size_t or ptrdiff_t? (c99)
+            case 'z':
+                fl |= (sizeof(ptrdiff_t) == 8) ? CEXSP__INTMAX : 0;
+                ++f;
+                break;
+            case 't':
+                fl |= (sizeof(ptrdiff_t) == 8) ? CEXSP__INTMAX : 0;
+                ++f;
+                break;
+            // are we 64-bit (msft style)
+            case 'I':
+                if ((f[1] == '6') && (f[2] == '4')) {
+                    fl |= CEXSP__INTMAX;
+                    f += 3;
+                } else if ((f[1] == '3') && (f[2] == '2')) {
+                    f += 3;
+                } else {
+                    fl |= ((sizeof(void*) == 8) ? CEXSP__INTMAX : 0);
+                    ++f;
+                }
+                break;
+            default:
+                break;
+        }
+
+        // handle each replacement
+        switch (f[0]) {
+#define CEXSP__NUMSZ 512 // big enough for e308 (with commas) or e-307
+            char num[CEXSP__NUMSZ];
+            char lead[8];
+            char tail[8];
+            char* s;
+            char const* h;
+            u32 l, n, cs;
+            u64 n64;
+#ifndef CEX_SPRINTF_NOFLOAT
+            double fv;
+#endif
+            i32 dp;
+            char const* sn;
+
+            case 's':
+                // get the string
+                s = va_arg(va, char*);
+                if ((void*)s <= (void*)(1024 * 1024)) {
+                    if (s == 0) {
+                        s = (char*)"(null)";
+                    } else {
+                        // NOTE: cex is str_s passed as %s, s will be length
+                        // try to double check sensible value of pointer
+                        s = (char*)"(str_c->%S)";
+                    }
+                }
+                // get the length, limited to desired precision
+                // always limit to ~0u chars since our counts are 32b
+                l = cexsp__strlen_limited(s, (pr >= 0) ? (unsigned)pr : ~0u);
+                lead[0] = 0;
+                tail[0] = 0;
+                pr = 0;
+                dp = 0;
+                cs = 0;
+                // copy the string in
+                goto scopy;
+            case 'S': {
+                // NOTE: CEX extra (support of str_s)
+                str_s sv = va_arg(va, str_s);
+                s = sv.buf;
+                if (s == 0) {
+                    s = (char*)"(null)";
+                    l = cexsp__strlen_limited(s, (pr >= 0) ? (unsigned)pr : ~0u);
+                } else {
+                    l = sv.len > 0xffffffff ? 0xffffffff : sv.len;
+                }
+                lead[0] = 0;
+                tail[0] = 0;
+                pr = 0;
+                dp = 0;
+                cs = 0;
+                // copy the string in
+                goto scopy;
+            }
+            case 'c': // char
+                // get the character
+                s = num + CEXSP__NUMSZ - 1;
+                *s = (char)va_arg(va, int);
+                l = 1;
+                lead[0] = 0;
+                tail[0] = 0;
+                pr = 0;
+                dp = 0;
+                cs = 0;
+                goto scopy;
+
+            case 'n': // weird write-bytes specifier
+            {
+                int* d = va_arg(va, int*);
+                *d = tlen + (int)(bf - buf);
+            } break;
+
+#ifdef CEX_SPRINTF_NOFLOAT
+            case 'A':               // float
+            case 'a':               // hex float
+            case 'G':               // float
+            case 'g':               // float
+            case 'E':               // float
+            case 'e':               // float
+            case 'f':               // float
+                va_arg(va, double); // eat it
+                s = (char*)"No float";
+                l = 8;
+                lead[0] = 0;
+                tail[0] = 0;
+                pr = 0;
+                cs = 0;
+                CEXSP__NOTUSED(dp);
+                goto scopy;
+#else
+            case 'A': // hex float
+            case 'a': // hex float
+                h = (f[0] == 'A') ? hexu : hex;
+                fv = va_arg(va, double);
+                if (pr == -1) {
+                    pr = 6; // default is 6
+                }
+                // read the double into a string
+                if (cexsp__real_to_parts((i64*)&n64, &dp, fv)) {
+                    fl |= CEXSP__NEGATIVE;
+                }
+
+                s = num + 64;
+
+                cexsp__lead_sign(fl, lead);
+
+                if (dp == -1023) {
+                    dp = (n64) ? -1022 : 0;
+                } else {
+                    n64 |= (((u64)1) << 52);
+                }
+                n64 <<= (64 - 56);
+                if (pr < 15) {
+                    n64 += ((((u64)8) << 56) >> (pr * 4));
+                }
+                // add leading chars
+
+                lead[1 + lead[0]] = '0';
+                lead[2 + lead[0]] = 'x';
+                lead[0] += 2;
+                *s++ = h[(n64 >> 60) & 15];
+                n64 <<= 4;
+                if (pr) {
+                    *s++ = cexsp__period;
+                }
+                sn = s;
+
+                // print the bits
+                n = pr;
+                if (n > 13) {
+                    n = 13;
+                }
+                if (pr > (i32)n) {
+                    tz = pr - n;
+                }
+                pr = 0;
+                while (n--) {
+                    *s++ = h[(n64 >> 60) & 15];
+                    n64 <<= 4;
+                }
+
+                // print the expo
+                tail[1] = h[17];
+                if (dp < 0) {
+                    tail[2] = '-';
+                    dp = -dp;
+                } else {
+                    tail[2] = '+';
+                }
+                n = (dp >= 1000) ? 6 : ((dp >= 100) ? 5 : ((dp >= 10) ? 4 : 3));
+                tail[0] = (char)n;
+                for (;;) {
+                    tail[n] = '0' + dp % 10;
+                    if (n <= 3) {
+                        break;
+                    }
+                    --n;
+                    dp /= 10;
+                }
+
+                dp = (int)(s - sn);
+                l = (int)(s - (num + 64));
+                s = num + 64;
+                cs = 1 + (3 << 24);
+                goto scopy;
+
+            case 'G': // float
+            case 'g': // float
+                h = (f[0] == 'G') ? hexu : hex;
+                fv = va_arg(va, double);
+                if (pr == -1) {
+                    pr = 6;
+                } else if (pr == 0) {
+                    pr = 1; // default is 6
+                }
+                // read the double into a string
+                if (cexsp__real_to_str(&sn, &l, num, &dp, fv, (pr - 1) | 0x80000000)) {
+                    fl |= CEXSP__NEGATIVE;
+                }
+
+                // clamp the precision and delete extra zeros after clamp
+                n = pr;
+                if (l > (u32)pr) {
+                    l = pr;
+                }
+                while ((l > 1) && (pr) && (sn[l - 1] == '0')) {
+                    --pr;
+                    --l;
+                }
+
+                // should we use %e
+                if ((dp <= -4) || (dp > (i32)n)) {
+                    if (pr > (i32)l) {
+                        pr = l - 1;
+                    } else if (pr) {
+                        --pr; // when using %e, there is one digit before the decimal
+                    }
+                    goto doexpfromg;
+                }
+                // this is the insane action to get the pr to match %g semantics for %f
+                if (dp > 0) {
+                    pr = (dp < (i32)l) ? l - dp : 0;
+                } else {
+                    pr = -dp + ((pr > (i32)l) ? (i32)l : pr);
+                }
+                goto dofloatfromg;
+
+            case 'E': // float
+            case 'e': // float
+                h = (f[0] == 'E') ? hexu : hex;
+                fv = va_arg(va, double);
+                if (pr == -1) {
+                    pr = 6; // default is 6
+                }
+                // read the double into a string
+                if (cexsp__real_to_str(&sn, &l, num, &dp, fv, pr | 0x80000000)) {
+                    fl |= CEXSP__NEGATIVE;
+                }
+            doexpfromg:
+                tail[0] = 0;
+                cexsp__lead_sign(fl, lead);
+                if (dp == CEXSP__SPECIAL) {
+                    s = (char*)sn;
+                    cs = 0;
+                    pr = 0;
+                    goto scopy;
+                }
+                s = num + 64;
+                // handle leading chars
+                *s++ = sn[0];
+
+                if (pr) {
+                    *s++ = cexsp__period;
+                }
+
+                // handle after decimal
+                if ((l - 1) > (u32)pr) {
+                    l = pr + 1;
+                }
+                for (n = 1; n < l; n++) {
+                    *s++ = sn[n];
+                }
+                // trailing zeros
+                tz = pr - (l - 1);
+                pr = 0;
+                // dump expo
+                tail[1] = h[0xe];
+                dp -= 1;
+                if (dp < 0) {
+                    tail[2] = '-';
+                    dp = -dp;
+                } else {
+                    tail[2] = '+';
+                }
+                n = (dp >= 100) ? 5 : 4;
+                tail[0] = (char)n;
+                for (;;) {
+                    tail[n] = '0' + dp % 10;
+                    if (n <= 3) {
+                        break;
+                    }
+                    --n;
+                    dp /= 10;
+                }
+                cs = 1 + (3 << 24); // how many tens
+                goto flt_lead;
+
+            case 'f': // float
+                fv = va_arg(va, double);
+            doafloat:
+                // do kilos
+                if (fl & CEXSP__METRIC_SUFFIX) {
+                    double divisor;
+                    divisor = 1000.0f;
+                    if (fl & CEXSP__METRIC_1024) {
+                        divisor = 1024.0;
+                    }
+                    while (fl < 0x4000000) {
+                        if ((fv < divisor) && (fv > -divisor)) {
+                            break;
+                        }
+                        fv /= divisor;
+                        fl += 0x1000000;
+                    }
+                }
+                if (pr == -1) {
+                    pr = 6; // default is 6
+                }
+                // read the double into a string
+                if (cexsp__real_to_str(&sn, &l, num, &dp, fv, pr)) {
+                    fl |= CEXSP__NEGATIVE;
+                }
+            dofloatfromg:
+                tail[0] = 0;
+                cexsp__lead_sign(fl, lead);
+                if (dp == CEXSP__SPECIAL) {
+                    s = (char*)sn;
+                    cs = 0;
+                    pr = 0;
+                    goto scopy;
+                }
+                s = num + 64;
+
+                // handle the three decimal varieties
+                if (dp <= 0) {
+                    i32 i;
+                    // handle 0.000*000xxxx
+                    *s++ = '0';
+                    if (pr) {
+                        *s++ = cexsp__period;
+                    }
+                    n = -dp;
+                    if ((i32)n > pr) {
+                        n = pr;
+                    }
+                    i = n;
+                    while (i) {
+                        if ((((usize)s) & 3) == 0) {
+                            break;
+                        }
+                        *s++ = '0';
+                        --i;
+                    }
+                    while (i >= 4) {
+                        *(u32*)s = 0x30303030;
+                        s += 4;
+                        i -= 4;
+                    }
+                    while (i) {
+                        *s++ = '0';
+                        --i;
+                    }
+                    if ((i32)(l + n) > pr) {
+                        l = pr - n;
+                    }
+                    i = l;
+                    while (i) {
+                        *s++ = *sn++;
+                        --i;
+                    }
+                    tz = pr - (n + l);
+                    cs = 1 + (3 << 24); // how many tens did we write (for commas below)
+                } else {
+                    cs = (fl & CEXSP__TRIPLET_COMMA) ? ((600 - (u32)dp) % 3) : 0;
+                    if ((u32)dp >= l) {
+                        // handle xxxx000*000.0
+                        n = 0;
+                        for (;;) {
+                            if ((fl & CEXSP__TRIPLET_COMMA) && (++cs == 4)) {
+                                cs = 0;
+                                *s++ = cexsp__comma;
+                            } else {
+                                *s++ = sn[n];
+                                ++n;
+                                if (n >= l) {
+                                    break;
+                                }
+                            }
+                        }
+                        if (n < (u32)dp) {
+                            n = dp - n;
+                            if ((fl & CEXSP__TRIPLET_COMMA) == 0) {
+                                while (n) {
+                                    if ((((usize)s) & 3) == 0) {
+                                        break;
+                                    }
+                                    *s++ = '0';
+                                    --n;
+                                }
+                                while (n >= 4) {
+                                    *(u32*)s = 0x30303030;
+                                    s += 4;
+                                    n -= 4;
+                                }
+                            }
+                            while (n) {
+                                if ((fl & CEXSP__TRIPLET_COMMA) && (++cs == 4)) {
+                                    cs = 0;
+                                    *s++ = cexsp__comma;
+                                } else {
+                                    *s++ = '0';
+                                    --n;
+                                }
+                            }
+                        }
+                        cs = (int)(s - (num + 64)) + (3 << 24); // cs is how many tens
+                        if (pr) {
+                            *s++ = cexsp__period;
+                            tz = pr;
+                        }
+                    } else {
+                        // handle xxxxx.xxxx000*000
+                        n = 0;
+                        for (;;) {
+                            if ((fl & CEXSP__TRIPLET_COMMA) && (++cs == 4)) {
+                                cs = 0;
+                                *s++ = cexsp__comma;
+                            } else {
+                                *s++ = sn[n];
+                                ++n;
+                                if (n >= (u32)dp) {
+                                    break;
+                                }
+                            }
+                        }
+                        cs = (int)(s - (num + 64)) + (3 << 24); // cs is how many tens
+                        if (pr) {
+                            *s++ = cexsp__period;
+                        }
+                        if ((l - dp) > (u32)pr) {
+                            l = pr + dp;
+                        }
+                        while (n < l) {
+                            *s++ = sn[n];
+                            ++n;
+                        }
+                        tz = pr - (l - dp);
+                    }
+                }
+                pr = 0;
+
+                // handle k,m,g,t
+                if (fl & CEXSP__METRIC_SUFFIX) {
+                    char idx;
+                    idx = 1;
+                    if (fl & CEXSP__METRIC_NOSPACE) {
+                        idx = 0;
+                    }
+                    tail[0] = idx;
+                    tail[1] = ' ';
+                    {
+                        if (fl >> 24) { // SI kilo is 'k', JEDEC and SI kibits are 'K'.
+                            if (fl & CEXSP__METRIC_1024) {
+                                tail[idx + 1] = "_KMGT"[fl >> 24];
+                            } else {
+                                tail[idx + 1] = "_kMGT"[fl >> 24];
+                            }
+                            idx++;
+                            // If printing kibits and not in jedec, add the 'i'.
+                            if (fl & CEXSP__METRIC_1024 && !(fl & CEXSP__METRIC_JEDEC)) {
+                                tail[idx + 1] = 'i';
+                                idx++;
+                            }
+                            tail[0] = idx;
+                        }
+                    }
+                };
+
+            flt_lead:
+                // get the length that we copied
+                l = (u32)(s - (num + 64));
+                s = num + 64;
+                goto scopy;
+#endif
+
+            case 'B': // upper binary
+            case 'b': // lower binary
+                h = (f[0] == 'B') ? hexu : hex;
+                lead[0] = 0;
+                if (fl & CEXSP__LEADING_0X) {
+                    lead[0] = 2;
+                    lead[1] = '0';
+                    lead[2] = h[0xb];
+                }
+                l = (8 << 4) | (1 << 8);
+                goto radixnum;
+
+            case 'o': // octal
+                h = hexu;
+                lead[0] = 0;
+                if (fl & CEXSP__LEADING_0X) {
+                    lead[0] = 1;
+                    lead[1] = '0';
+                }
+                l = (3 << 4) | (3 << 8);
+                goto radixnum;
+
+            case 'p': // pointer
+                fl |= (sizeof(void*) == 8) ? CEXSP__INTMAX : 0;
+                pr = sizeof(void*) * 2;
+                fl &= ~CEXSP__LEADINGZERO; // 'p' only prints the pointer with zeros
+                                           // fall through - to X
+
+            case 'X': // upper hex
+            case 'x': // lower hex
+                h = (f[0] == 'X') ? hexu : hex;
+                l = (4 << 4) | (4 << 8);
+                lead[0] = 0;
+                if (fl & CEXSP__LEADING_0X) {
+                    lead[0] = 2;
+                    lead[1] = '0';
+                    lead[2] = h[16];
+                }
+            radixnum:
+                // get the number
+                if (fl & CEXSP__INTMAX) {
+                    n64 = va_arg(va, u64);
+                } else {
+                    n64 = va_arg(va, u32);
+                }
+
+                s = num + CEXSP__NUMSZ;
+                dp = 0;
+                // clear tail, and clear leading if value is zero
+                tail[0] = 0;
+                if (n64 == 0) {
+                    lead[0] = 0;
+                    if (pr == 0) {
+                        l = 0;
+                        cs = 0;
+                        goto scopy;
+                    }
+                }
+                // convert to string
+                for (;;) {
+                    *--s = h[n64 & ((1 << (l >> 8)) - 1)];
+                    n64 >>= (l >> 8);
+                    if (!((n64) || ((i32)((num + CEXSP__NUMSZ) - s) < pr))) {
+                        break;
+                    }
+                    if (fl & CEXSP__TRIPLET_COMMA) {
+                        ++l;
+                        if ((l & 15) == ((l >> 4) & 15)) {
+                            l &= ~15;
+                            *--s = cexsp__comma;
+                        }
+                    }
+                };
+                // get the tens and the comma pos
+                cs = (u32)((num + CEXSP__NUMSZ) - s) + ((((l >> 4) & 15)) << 24);
+                // get the length that we copied
+                l = (u32)((num + CEXSP__NUMSZ) - s);
+                // copy it
+                goto scopy;
+
+            case 'u': // unsigned
+            case 'i':
+            case 'd': // integer
+                // get the integer and abs it
+                if (fl & CEXSP__INTMAX) {
+                    i64 _i64 = va_arg(va, i64);
+                    n64 = (u64)_i64;
+                    if ((f[0] != 'u') && (_i64 < 0)) {
+                        n64 = (u64)-_i64;
+                        fl |= CEXSP__NEGATIVE;
+                    }
+                } else {
+                    i32 i = va_arg(va, i32);
+                    n64 = (u32)i;
+                    if ((f[0] != 'u') && (i < 0)) {
+                        n64 = (u32)-i;
+                        fl |= CEXSP__NEGATIVE;
+                    }
+                }
+
+#ifndef CEX_SPRINTF_NOFLOAT
+                if (fl & CEXSP__METRIC_SUFFIX) {
+                    if (n64 < 1024) {
+                        pr = 0;
+                    } else if (pr == -1) {
+                        pr = 1;
+                    }
+                    fv = (double)(i64)n64;
+                    goto doafloat;
+                }
+#endif
+
+                // convert to string
+                s = num + CEXSP__NUMSZ;
+                l = 0;
+
+                for (;;) {
+                    // do in 32-bit chunks (avoid lots of 64-bit divides even with constant
+                    // denominators)
+                    char* o = s - 8;
+                    if (n64 >= 100000000) {
+                        n = (u32)(n64 % 100000000);
+                        n64 /= 100000000;
+                    } else {
+                        n = (u32)n64;
+                        n64 = 0;
+                    }
+                    if ((fl & CEXSP__TRIPLET_COMMA) == 0) {
+                        do {
+                            s -= 2;
+                            *(u16*)s = *(u16*)&cexsp__digitpair.pair[(n % 100) * 2];
+                            n /= 100;
+                        } while (n);
+                    }
+                    while (n) {
+                        if ((fl & CEXSP__TRIPLET_COMMA) && (l++ == 3)) {
+                            l = 0;
+                            *--s = cexsp__comma;
+                            --o;
+                        } else {
+                            *--s = (char)(n % 10) + '0';
+                            n /= 10;
+                        }
+                    }
+                    if (n64 == 0) {
+                        if ((s[0] == '0') && (s != (num + CEXSP__NUMSZ))) {
+                            ++s;
+                        }
+                        break;
+                    }
+                    while (s != o) {
+                        if ((fl & CEXSP__TRIPLET_COMMA) && (l++ == 3)) {
+                            l = 0;
+                            *--s = cexsp__comma;
+                            --o;
+                        } else {
+                            *--s = '0';
+                        }
+                    }
+                }
+
+                tail[0] = 0;
+                cexsp__lead_sign(fl, lead);
+
+                // get the length that we copied
+                l = (u32)((num + CEXSP__NUMSZ) - s);
+                if (l == 0) {
+                    *--s = '0';
+                    l = 1;
+                }
+                cs = l + (3 << 24);
+                if (pr < 0) {
+                    pr = 0;
+                }
+
+            scopy:
+                // get fw=leading/trailing space, pr=leading zeros
+                if (pr < (i32)l) {
+                    pr = l;
+                }
+                n = pr + lead[0] + tail[0] + tz;
+                if (fw < (i32)n) {
+                    fw = n;
+                }
+                fw -= n;
+                pr -= l;
+
+                // handle right justify and leading zeros
+                if ((fl & CEXSP__LEFTJUST) == 0) {
+                    if (fl & CEXSP__LEADINGZERO) // if leading zeros, everything is in pr
+                    {
+                        pr = (fw > pr) ? fw : pr;
+                        fw = 0;
+                    } else {
+                        fl &= ~CEXSP__TRIPLET_COMMA; // if no leading zeros, then no commas
+                    }
+                }
+
+                // copy the spaces and/or zeros
+                if (fw + pr) {
+                    i32 i;
+                    u32 c;
+
+                    // copy leading spaces (or when doing %8.4d stuff)
+                    if ((fl & CEXSP__LEFTJUST) == 0) {
+                        while (fw > 0) {
+                            cexsp__cb_buf_clamp(i, fw);
+                            fw -= i;
+                            while (i) {
+                                if ((((usize)bf) & 3) == 0) {
+                                    break;
+                                }
+                                *bf++ = ' ';
+                                --i;
+                            }
+                            while (i >= 4) {
+                                *(u32*)bf = 0x20202020;
+                                bf += 4;
+                                i -= 4;
+                            }
+                            while (i) {
+                                *bf++ = ' ';
+                                --i;
+                            }
+                            cexsp__chk_cb_buf(1);
+                        }
+                    }
+
+                    // copy leader
+                    sn = lead + 1;
+                    while (lead[0]) {
+                        cexsp__cb_buf_clamp(i, lead[0]);
+                        lead[0] -= (char)i;
+                        while (i) {
+                            *bf++ = *sn++;
+                            --i;
+                        }
+                        cexsp__chk_cb_buf(1);
+                    }
+
+                    // copy leading zeros
+                    c = cs >> 24;
+                    cs &= 0xffffff;
+                    cs = (fl & CEXSP__TRIPLET_COMMA) ? ((u32)(c - ((pr + cs) % (c + 1)))) : 0;
+                    while (pr > 0) {
+                        cexsp__cb_buf_clamp(i, pr);
+                        pr -= i;
+                        if ((fl & CEXSP__TRIPLET_COMMA) == 0) {
+                            while (i) {
+                                if ((((usize)bf) & 3) == 0) {
+                                    break;
+                                }
+                                *bf++ = '0';
+                                --i;
+                            }
+                            while (i >= 4) {
+                                *(u32*)bf = 0x30303030;
+                                bf += 4;
+                                i -= 4;
+                            }
+                        }
+                        while (i) {
+                            if ((fl & CEXSP__TRIPLET_COMMA) && (cs++ == c)) {
+                                cs = 0;
+                                *bf++ = cexsp__comma;
+                            } else {
+                                *bf++ = '0';
+                            }
+                            --i;
+                        }
+                        cexsp__chk_cb_buf(1);
+                    }
+                }
+
+                // copy leader if there is still one
+                sn = lead + 1;
+                while (lead[0]) {
+                    i32 i;
+                    cexsp__cb_buf_clamp(i, lead[0]);
+                    lead[0] -= (char)i;
+                    while (i) {
+                        *bf++ = *sn++;
+                        --i;
+                    }
+                    cexsp__chk_cb_buf(1);
+                }
+
+                // copy the string
+                n = l;
+                while (n) {
+                    i32 i;
+                    cexsp__cb_buf_clamp(i, n);
+                    n -= i;
+                    // disabled CEXSP__UNALIGNED
+                    // CEXSP__UNALIGNED(while (i >= 4) {
+                    //     *(u32 volatile*)bf = *(u32 volatile*)s;
+                    //     bf += 4;
+                    //     s += 4;
+                    //     i -= 4;
+                    // })
+                    while (i) {
+                        *bf++ = *s++;
+                        --i;
+                    }
+                    cexsp__chk_cb_buf(1);
+                }
+
+                // copy trailing zeros
+                while (tz) {
+                    i32 i;
+                    cexsp__cb_buf_clamp(i, tz);
+                    tz -= i;
+                    while (i) {
+                        if ((((usize)bf) & 3) == 0) {
+                            break;
+                        }
+                        *bf++ = '0';
+                        --i;
+                    }
+                    while (i >= 4) {
+                        *(u32*)bf = 0x30303030;
+                        bf += 4;
+                        i -= 4;
+                    }
+                    while (i) {
+                        *bf++ = '0';
+                        --i;
+                    }
+                    cexsp__chk_cb_buf(1);
+                }
+
+                // copy tail if there is one
+                sn = tail + 1;
+                while (tail[0]) {
+                    i32 i;
+                    cexsp__cb_buf_clamp(i, tail[0]);
+                    tail[0] -= (char)i;
+                    while (i) {
+                        *bf++ = *sn++;
+                        --i;
+                    }
+                    cexsp__chk_cb_buf(1);
+                }
+
+                // handle the left justify
+                if (fl & CEXSP__LEFTJUST) {
+                    if (fw > 0) {
+                        while (fw) {
+                            i32 i;
+                            cexsp__cb_buf_clamp(i, fw);
+                            fw -= i;
+                            while (i) {
+                                if ((((usize)bf) & 3) == 0) {
+                                    break;
+                                }
+                                *bf++ = ' ';
+                                --i;
+                            }
+                            while (i >= 4) {
+                                *(u32*)bf = 0x20202020;
+                                bf += 4;
+                                i -= 4;
+                            }
+                            while (i--) {
+                                *bf++ = ' ';
+                            }
+                            cexsp__chk_cb_buf(1);
+                        }
+                    }
+                }
+                break;
+
+            default: // unknown, just copy code
+                s = num + CEXSP__NUMSZ - 1;
+                *s = f[0];
+                l = 1;
+                fw = fl = 0;
+                lead[0] = 0;
+                tail[0] = 0;
+                pr = 0;
+                dp = 0;
+                cs = 0;
+                goto scopy;
+        }
+        ++f;
+    }
+endfmt:
+
+    if (!callback) {
+        *bf = 0;
+    } else {
+        cexsp__flush_cb();
+    }
+
+done:
+    return tlen + (int)(bf - buf);
+}
+
+// cleanup
+#undef CEXSP__LEFTJUST
+#undef CEXSP__LEADINGPLUS
+#undef CEXSP__LEADINGSPACE
+#undef CEXSP__LEADING_0X
+#undef CEXSP__LEADINGZERO
+#undef CEXSP__INTMAX
+#undef CEXSP__TRIPLET_COMMA
+#undef CEXSP__NEGATIVE
+#undef CEXSP__METRIC_SUFFIX
+#undef CEXSP__NUMSZ
+#undef cexsp__chk_cb_bufL
+#undef cexsp__chk_cb_buf
+#undef cexsp__flush_cb
+#undef cexsp__cb_buf_clamp
+
+// ============================================================================
+//   wrapper functions
+
+static char*
+cexsp__clamp_callback(const char* buf, void* user, u32 len)
+{
+    cexsp__context* c = (cexsp__context*)user;
+    c->length += len;
+
+    if (len > c->capacity) {
+        len = c->capacity;
+    }
+
+    if (len) {
+        if (buf != c->buf) {
+            const char *s, *se;
+            char* d;
+            d = c->buf;
+            s = buf;
+            se = buf + len;
+            do {
+                *d++ = *s++;
+            } while (s < se);
+        }
+        c->buf += len;
+        c->capacity -= len;
+    }
+
+    if (c->capacity <= 0) {
+        return c->tmp;
+    }
+    return (c->capacity >= CEX_SPRINTF_MIN) ? c->buf : c->tmp; // go direct into buffer if you can
+}
+
+
+CEXSP__PUBLICDEF int
+cexsp__vsnprintf(char* buf, int count, char const* fmt, va_list va)
+{
+    cexsp__context c;
+
+    if (!buf || count <= 0) {
+        return -1;
+    } else {
+        int l;
+
+        c.buf = buf;
+        c.capacity = count;
+        c.length = 0;
+
+        cexsp__vsprintfcb(cexsp__clamp_callback, &c, cexsp__clamp_callback(0, &c, 0), fmt, va);
+
+        // zero-terminate
+        l = (int)(c.buf - buf);
+        if (l >= count) { // should never be greater, only equal (or less) than count
+            c.length = l;
+            l = count - 1;
+        }
+        buf[l] = 0;
+        uassert(c.length <= INT32_MAX && "length overflow");
+    }
+
+    return c.length;
+}
+
+CEXSP__PUBLICDEF int
+cexsp__snprintf(char* buf, int count, char const* fmt, ...)
+{
+    int result;
+    va_list va;
+    va_start(va, fmt);
+
+    result = cexsp__vsnprintf(buf, count, fmt, va);
+    va_end(va);
+
+    return result;
+}
+
+static char*
+cexsp__fprintf_callback(const char* buf, void* user, u32 len)
+{
+    cexsp__context* c = (cexsp__context*)user;
+    c->length += len;
+    if (len) {
+        if (fwrite(buf, sizeof(char), len, c->file) != (size_t)len) {
+            c->has_error = 1;
+        }
+    }
+    return c->tmp;
+}
+
+CEXSP__PUBLICDEF int
+cexsp__vfprintf(FILE* stream, const char* format, va_list va)
+{
+    cexsp__context c = { .file = stream, .length = 0 };
+
+    cexsp__vsprintfcb(cexsp__fprintf_callback, &c, cexsp__fprintf_callback(0, &c, 0), format, va);
+    uassert(c.length <= INT32_MAX && "length overflow");
+
+    return c.has_error == 0 ? (i32)c.length : -1;
+}
+
+CEXSP__PUBLICDEF int
+cexsp__fprintf(FILE* stream, const char* format, ...)
+{
+    int result;
+    va_list va;
+    va_start(va, format);
+    result = cexsp__vfprintf(stream, format, va);
+    va_end(va);
+    return result;
+}
+
+// =======================================================================
+//   low level float utility functions
+
+#ifndef CEX_SPRINTF_NOFLOAT
+
+// copies d to bits w/ strict aliasing (this compiles to nothing on /Ox)
+#define CEXSP__COPYFP(dest, src)                                                                   \
+    {                                                                                              \
+        int cn;                                                                                    \
+        for (cn = 0; cn < 8; cn++)                                                                 \
+            ((char*)&dest)[cn] = ((char*)&src)[cn];                                                \
+    }
+
+// get float info
+static i32
+cexsp__real_to_parts(i64* bits, i32* expo, double value)
+{
+    double d;
+    i64 b = 0;
+
+    // load value and round at the frac_digits
+    d = value;
+
+    CEXSP__COPYFP(b, d);
+
+    *bits = b & ((((u64)1) << 52) - 1);
+    *expo = (i32)(((b >> 52) & 2047) - 1023);
+
+    return (i32)((u64)b >> 63);
+}
+
+static double const cexsp__bot[23] = { 1e+000, 1e+001, 1e+002, 1e+003, 1e+004, 1e+005,
+                                       1e+006, 1e+007, 1e+008, 1e+009, 1e+010, 1e+011,
+                                       1e+012, 1e+013, 1e+014, 1e+015, 1e+016, 1e+017,
+                                       1e+018, 1e+019, 1e+020, 1e+021, 1e+022 };
+static double const cexsp__negbot[22] = { 1e-001, 1e-002, 1e-003, 1e-004, 1e-005, 1e-006,
+                                          1e-007, 1e-008, 1e-009, 1e-010, 1e-011, 1e-012,
+                                          1e-013, 1e-014, 1e-015, 1e-016, 1e-017, 1e-018,
+                                          1e-019, 1e-020, 1e-021, 1e-022 };
+static double const cexsp__negboterr[22] = {
+    -5.551115123125783e-018,  -2.0816681711721684e-019, -2.0816681711721686e-020,
+    -4.7921736023859299e-021, -8.1803053914031305e-022, 4.5251888174113741e-023,
+    4.5251888174113739e-024,  -2.0922560830128471e-025, -6.2281591457779853e-026,
+    -3.6432197315497743e-027, 6.0503030718060191e-028,  2.0113352370744385e-029,
+    -3.0373745563400371e-030, 1.1806906454401013e-032,  -7.7705399876661076e-032,
+    2.0902213275965398e-033,  -7.1542424054621921e-034, -7.1542424054621926e-035,
+    2.4754073164739869e-036,  5.4846728545790429e-037,  9.2462547772103625e-038,
+    -4.8596774326570872e-039
+};
+static double const cexsp__top[13] = { 1e+023, 1e+046, 1e+069, 1e+092, 1e+115, 1e+138, 1e+161,
+                                       1e+184, 1e+207, 1e+230, 1e+253, 1e+276, 1e+299 };
+static double const cexsp__negtop[13] = { 1e-023, 1e-046, 1e-069, 1e-092, 1e-115, 1e-138, 1e-161,
+                                          1e-184, 1e-207, 1e-230, 1e-253, 1e-276, 1e-299 };
+static double const cexsp__toperr[13] = { 8388608,
+                                          6.8601809640529717e+028,
+                                          -7.253143638152921e+052,
+                                          -4.3377296974619174e+075,
+                                          -1.5559416129466825e+098,
+                                          -3.2841562489204913e+121,
+                                          -3.7745893248228135e+144,
+                                          -1.7356668416969134e+167,
+                                          -3.8893577551088374e+190,
+                                          -9.9566444326005119e+213,
+                                          6.3641293062232429e+236,
+                                          -5.2069140800249813e+259,
+                                          -5.2504760255204387e+282 };
+static double const cexsp__negtoperr[13] = { 3.9565301985100693e-040,  -2.299904345391321e-063,
+                                             3.6506201437945798e-086,  1.1875228833981544e-109,
+                                             -5.0644902316928607e-132, -6.7156837247865426e-155,
+                                             -2.812077463003139e-178,  -5.7778912386589953e-201,
+                                             7.4997100559334532e-224,  -4.6439668915134491e-247,
+                                             -6.3691100762962136e-270, -9.436808465446358e-293,
+                                             8.0970921678014997e-317 };
+
+#if defined(_MSC_VER) && (_MSC_VER <= 1200)
+static u64 const cexsp__powten[20] = { 1,
+                                       10,
+                                       100,
+                                       1000,
+                                       10000,
+                                       100000,
+                                       1000000,
+                                       10000000,
+                                       100000000,
+                                       1000000000,
+                                       10000000000,
+                                       100000000000,
+                                       1000000000000,
+                                       10000000000000,
+                                       100000000000000,
+                                       1000000000000000,
+                                       10000000000000000,
+                                       100000000000000000,
+                                       1000000000000000000,
+                                       10000000000000000000U };
+#define cexsp__tento19th ((u64)1000000000000000000)
+#else
+static u64 const cexsp__powten[20] = { 1,
+                                       10,
+                                       100,
+                                       1000,
+                                       10000,
+                                       100000,
+                                       1000000,
+                                       10000000,
+                                       100000000,
+                                       1000000000,
+                                       10000000000ULL,
+                                       100000000000ULL,
+                                       1000000000000ULL,
+                                       10000000000000ULL,
+                                       100000000000000ULL,
+                                       1000000000000000ULL,
+                                       10000000000000000ULL,
+                                       100000000000000000ULL,
+                                       1000000000000000000ULL,
+                                       10000000000000000000ULL };
+#define cexsp__tento19th (1000000000000000000ULL)
+#endif
+
+#define cexsp__ddmulthi(oh, ol, xh, yh)                                                            \
+    {                                                                                              \
+        double ahi = 0, alo, bhi = 0, blo;                                                         \
+        i64 bt;                                                                                    \
+        oh = xh * yh;                                                                              \
+        CEXSP__COPYFP(bt, xh);                                                                     \
+        bt &= ((~(u64)0) << 27);                                                                   \
+        CEXSP__COPYFP(ahi, bt);                                                                    \
+        alo = xh - ahi;                                                                            \
+        CEXSP__COPYFP(bt, yh);                                                                     \
+        bt &= ((~(u64)0) << 27);                                                                   \
+        CEXSP__COPYFP(bhi, bt);                                                                    \
+        blo = yh - bhi;                                                                            \
+        ol = ((ahi * bhi - oh) + ahi * blo + alo * bhi) + alo * blo;                               \
+    }
+
+#define cexsp__ddtoS64(ob, xh, xl)                                                                 \
+    {                                                                                              \
+        double ahi = 0, alo, vh, t;                                                                \
+        ob = (i64)xh;                                                                              \
+        vh = (double)ob;                                                                           \
+        ahi = (xh - vh);                                                                           \
+        t = (ahi - xh);                                                                            \
+        alo = (xh - (ahi - t)) - (vh + t);                                                         \
+        ob += (i64)(ahi + alo + xl);                                                               \
+    }
+
+#define cexsp__ddrenorm(oh, ol)                                                                    \
+    {                                                                                              \
+        double s;                                                                                  \
+        s = oh + ol;                                                                               \
+        ol = ol - (s - oh);                                                                        \
+        oh = s;                                                                                    \
+    }
+
+#define cexsp__ddmultlo(oh, ol, xh, xl, yh, yl) ol = ol + (xh * yl + xl * yh);
+
+#define cexsp__ddmultlos(oh, ol, xh, yl) ol = ol + (xh * yl);
+
+static void
+cexsp__raise_to_power10(double* ohi, double* olo, double d, i32 power) // power can be -323
+                                                                       // to +350
+{
+    double ph, pl;
+    if ((power >= 0) && (power <= 22)) {
+        cexsp__ddmulthi(ph, pl, d, cexsp__bot[power]);
+    } else {
+        i32 e, et, eb;
+        double p2h, p2l;
+
+        e = power;
+        if (power < 0) {
+            e = -e;
+        }
+        et = (e * 0x2c9) >> 14; /* %23 */
+        if (et > 13) {
+            et = 13;
+        }
+        eb = e - (et * 23);
+
+        ph = d;
+        pl = 0.0;
+        if (power < 0) {
+            if (eb) {
+                --eb;
+                cexsp__ddmulthi(ph, pl, d, cexsp__negbot[eb]);
+                cexsp__ddmultlos(ph, pl, d, cexsp__negboterr[eb]);
+            }
+            if (et) {
+                cexsp__ddrenorm(ph, pl);
+                --et;
+                cexsp__ddmulthi(p2h, p2l, ph, cexsp__negtop[et]);
+                cexsp__ddmultlo(p2h, p2l, ph, pl, cexsp__negtop[et], cexsp__negtoperr[et]);
+                ph = p2h;
+                pl = p2l;
+            }
+        } else {
+            if (eb) {
+                e = eb;
+                if (eb > 22) {
+                    eb = 22;
+                }
+                e -= eb;
+                cexsp__ddmulthi(ph, pl, d, cexsp__bot[eb]);
+                if (e) {
+                    cexsp__ddrenorm(ph, pl);
+                    cexsp__ddmulthi(p2h, p2l, ph, cexsp__bot[e]);
+                    cexsp__ddmultlos(p2h, p2l, cexsp__bot[e], pl);
+                    ph = p2h;
+                    pl = p2l;
+                }
+            }
+            if (et) {
+                cexsp__ddrenorm(ph, pl);
+                --et;
+                cexsp__ddmulthi(p2h, p2l, ph, cexsp__top[et]);
+                cexsp__ddmultlo(p2h, p2l, ph, pl, cexsp__top[et], cexsp__toperr[et]);
+                ph = p2h;
+                pl = p2l;
+            }
+        }
+    }
+    cexsp__ddrenorm(ph, pl);
+    *ohi = ph;
+    *olo = pl;
+}
+
+// given a float value, returns the significant bits in bits, and the position of the
+//   decimal point in decimal_pos.  +/-INF and NAN are specified by special values
+//   returned in the decimal_pos parameter.
+// frac_digits is absolute normally, but if you want from first significant digits (got %g and %e),
+// or in 0x80000000
+static i32
+cexsp__real_to_str(
+    char const** start,
+    u32* len,
+    char* out,
+    i32* decimal_pos,
+    double value,
+    u32 frac_digits
+)
+{
+    double d;
+    i64 bits = 0;
+    i32 expo, e, ng, tens;
+
+    d = value;
+    CEXSP__COPYFP(bits, d);
+    expo = (i32)((bits >> 52) & 2047);
+    ng = (i32)((u64)bits >> 63);
+    if (ng) {
+        d = -d;
+    }
+
+    if (expo == 2047) // is nan or inf?
+    {
+        // CEX: lower case nan/inf
+        *start = (bits & ((((u64)1) << 52) - 1)) ? "nan" : "inf";
+        *decimal_pos = CEXSP__SPECIAL;
+        *len = 3;
+        return ng;
+    }
+
+    if (expo == 0) // is zero or denormal
+    {
+        if (((u64)bits << 1) == 0) // do zero
+        {
+            *decimal_pos = 1;
+            *start = out;
+            out[0] = '0';
+            *len = 1;
+            return ng;
+        }
+        // find the right expo for denormals
+        {
+            i64 v = ((u64)1) << 51;
+            while ((bits & v) == 0) {
+                --expo;
+                v >>= 1;
+            }
+        }
+    }
+
+    // find the decimal exponent as well as the decimal bits of the value
+    {
+        double ph, pl;
+
+        // log10 estimate - very specifically tweaked to hit or undershoot by no more than 1 of
+        // log10 of all expos 1..2046
+        tens = expo - 1023;
+        tens = (tens < 0) ? ((tens * 617) / 2048) : (((tens * 1233) / 4096) + 1);
+
+        // move the significant bits into position and stick them into an int
+        cexsp__raise_to_power10(&ph, &pl, d, 18 - tens);
+
+        // get full as much precision from double-double as possible
+        cexsp__ddtoS64(bits, ph, pl);
+
+        // check if we undershot
+        if (((u64)bits) >= cexsp__tento19th) {
+            ++tens;
+        }
+    }
+
+    // now do the rounding in integer land
+    frac_digits = (frac_digits & 0x80000000) ? ((frac_digits & 0x7ffffff) + 1)
+                                             : (tens + frac_digits);
+    if ((frac_digits < 24)) {
+        u32 dg = 1;
+        if ((u64)bits >= cexsp__powten[9]) {
+            dg = 10;
+        }
+        while ((u64)bits >= cexsp__powten[dg]) {
+            ++dg;
+            if (dg == 20) {
+                goto noround;
+            }
+        }
+        if (frac_digits < dg) {
+            u64 r;
+            // add 0.5 at the right position and round
+            e = dg - frac_digits;
+            if ((u32)e >= 24) {
+                goto noround;
+            }
+            r = cexsp__powten[e];
+            bits = bits + (r / 2);
+            if ((u64)bits >= cexsp__powten[dg]) {
+                ++tens;
+            }
+            bits /= r;
+        }
+    noround:;
+    }
+
+    // kill long trailing runs of zeros
+    if (bits) {
+        u32 n;
+        for (;;) {
+            if (bits <= 0xffffffff) {
+                break;
+            }
+            if (bits % 1000) {
+                goto donez;
+            }
+            bits /= 1000;
+        }
+        n = (u32)bits;
+        while ((n % 1000) == 0) {
+            n /= 1000;
+        }
+        bits = n;
+    donez:;
+    }
+
+    // convert to string
+    out += 64;
+    e = 0;
+    for (;;) {
+        u32 n;
+        char* o = out - 8;
+        // do the conversion in chunks of U32s (avoid most 64-bit divides, worth it, constant
+        // denomiators be damned)
+        if (bits >= 100000000) {
+            n = (u32)(bits % 100000000);
+            bits /= 100000000;
+        } else {
+            n = (u32)bits;
+            bits = 0;
+        }
+        while (n) {
+            out -= 2;
+            *(u16*)out = *(u16*)&cexsp__digitpair.pair[(n % 100) * 2];
+            n /= 100;
+            e += 2;
+        }
+        if (bits == 0) {
+            if ((e) && (out[0] == '0')) {
+                ++out;
+                --e;
+            }
+            break;
+        }
+        while (out != o) {
+            *--out = '0';
+            ++e;
+        }
+    }
+
+    *decimal_pos = tens;
+    *start = out;
+    *len = e;
+    return ng;
+}
+
+#undef cexsp__ddmulthi
+#undef cexsp__ddrenorm
+#undef cexsp__ddmultlo
+#undef cexsp__ddmultlos
+#undef CEXSP__SPECIAL
+#undef CEXSP__COPYFP
+
+#endif // CEX_SPRINTF_NOFLOAT
+
+
+/*
 *                   str.c
 */
 #include <ctype.h>
@@ -5102,7 +8105,6 @@ const struct __module__str str = {
 /*
 *                   sbuf.c
 */
-#include "cex/all.h"
 #include <stdarg.h>
 
 struct _sbuf__sprintf_ctx
@@ -6599,9 +9601,13 @@ const struct __module__argparse argparse = {
 };
 
 /*
+*                   os/subprocess.c
+*/
+
+
+/*
 *                   os/os.c
 */
-#include "cex/cex_base.h"
 
 #ifdef _WIN32
 #define os$PATH_SEP '\\'

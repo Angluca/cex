@@ -96,4 +96,4 @@ struct {  // sub-module .cmd >>>
 } cmd;  // sub-module .cmd <<<
     // clang-format on
 };
-extern const struct __module__os os; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen

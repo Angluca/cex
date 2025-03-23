@@ -31,4 +31,4 @@ struct {  // sub-module .file >>>
 } file;  // sub-module .file <<<
     // clang-format on
 };
-extern const struct __module__io io; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
