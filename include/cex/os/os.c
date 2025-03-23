@@ -18,7 +18,7 @@
 #include <unistd.h>
 #endif
 
-void
+static void
 os_sleep(u32 period_millisec)
 {
 #ifdef _WIN32
@@ -28,7 +28,7 @@ os_sleep(u32 period_millisec)
 #endif
 }
 
-Exception os__fs__rename(const char *old_path, const char *new_path)
+static Exception os__fs__rename(const char *old_path, const char *new_path)
 {
     if (old_path == NULL || old_path[0] == '\0'){
         return Error.argument;
@@ -54,7 +54,7 @@ Exception os__fs__rename(const char *old_path, const char *new_path)
 #endif // _WIN32
 }
 
-Exception
+static Exception
 os__fs__mkdir(const char* path)
 {
     if (path == NULL || path[0] == '\0') {
@@ -75,7 +75,7 @@ os__fs__mkdir(const char* path)
     return EOK;
 }
 
-os_fs_filetype_s
+static os_fs_filetype_s
 os__fs__file_type(const char* path)
 {
     os_fs_filetype_s result = { .result = Error.argument };
@@ -128,7 +128,7 @@ os__fs__file_type(const char* path)
 #endif
 }
 
-Exception
+static Exception
 os__fs__remove(const char* path)
 {
     if (path == NULL || path[0] == '\0') {
@@ -147,37 +147,28 @@ os__fs__remove(const char* path)
 #endif
 }
 
-Exception
-os__fs__listdir(const char* path, sbuf_c* out_buf)
+static arr$(char*)
+os__fs__dir_list(const char* path, IAllocator allc)
 {
 
     if (unlikely(path == NULL)) {
-        return Error.argument;
+        return NULL;
     }
-    if (out_buf == NULL) {
-        return Error.argument;
+    if (allc == NULL) {
+        return NULL;
     }
+    arr$(char*) result = arr$new(result, allc);
+
 #ifdef _WIN32
 #error "TODO: add minirent.h for windows use"
 #endif
 
-    // use own as temp outfer for dir name (because path, may not be a valid null-term string)
-    DIR* dp = NULL;
-    Exc result = Error.ok;
 
-    uassert(sbuf.isvalid(out_buf) && "buf is not valid sbuf_c (or missing initialization)");
-
-    sbuf.clear(out_buf);
-
-    e$goto(result = sbuf.append(out_buf, path), fail);
-
-    dp = opendir(*out_buf);
+    DIR* dp = opendir(path);
 
     if (unlikely(dp == NULL)) {
-        result = Error.not_found;
         goto fail;
     }
-    sbuf.clear(out_buf);
 
     struct dirent* ep;
     while ((ep = readdir(dp)) != NULL) {
@@ -187,7 +178,11 @@ os__fs__listdir(const char* path, sbuf_c* out_buf)
         if (str.eq(ep->d_name, "..")) {
             continue;
         }
-        e$goto(result = sbuf.appendf(out_buf, "%s\n", ep->d_name), fail);
+        arr$push(result, str.clone(ep->d_name, allc));
+    }
+
+    if (errno != 0) {
+        goto fail;
     }
 
 end:
@@ -197,12 +192,12 @@ end:
     return result;
 
 fail:
-    sbuf.clear(out_buf);
+    arr$free(result);
+    result = NULL;
     goto end;
-    return os__fs__listdir(path, out_buf);
 }
 
-Exception
+static Exception
 os__fs__getcwd(sbuf_c* out)
 {
 
@@ -224,7 +219,7 @@ os__fs__getcwd(sbuf_c* out)
     return EOK;
 }
 
-const char*
+static const char*
 os__env__get(const char* name, const char* deflt)
 {
     const char* result = getenv(name);
@@ -236,19 +231,19 @@ os__env__get(const char* name, const char* deflt)
     return result;
 }
 
-void
+static void
 os__env__set(const char* name, const char* value, bool overwrite)
 {
     setenv(name, value, overwrite);
 }
 
-void
+static void
 os__env__unset(const char* name)
 {
     unsetenv(name);
 }
 
-Exception
+static Exception
 os__path__exists(const char* file_path)
 {
 
@@ -311,14 +306,14 @@ Example: Using GetLastError() with File Operations
 #endif
 }
 
-char*
+static char*
 os__path__join(arr$(char*) parts, IAllocator allc)
 {
     char sep[2] = { os$PATH_SEP, '\0' };
     return str.join(parts, sep, allc);
 }
 
-str_s
+static str_s
 os__path__split(const char* path, bool return_dir)
 {
     if (path == NULL) {
@@ -341,7 +336,11 @@ os__path__split(const char* path, bool return_dir)
         if (return_dir) {
             return str.sub(path, 0, last_slash_idx == 0 ? 1 : last_slash_idx);
         } else {
-            return str.sub(path, last_slash_idx, 0);
+            if ((usize)last_slash_idx == pathlen-1){
+                return str$s("");
+            } else {
+                return str.sub(path, last_slash_idx+1, 0);
+            }
         }
 
     } else {
@@ -353,13 +352,23 @@ os__path__split(const char* path, bool return_dir)
     }
 }
 
-char*
+static char*
 os__path__basename(const char* path, IAllocator allc)
 {
     if (path == NULL || path[0] == '\0') {
         return NULL;
     }
     str_s fname = os__path__split(path, false);
+    return str.slice.clone(fname, allc);
+}
+
+static char*
+os__path__dirname(const char* path, IAllocator allc)
+{
+    if (path == NULL || path[0] == '\0') {
+        return NULL;
+    }
+    str_s fname = os__path__split(path, true);
     return str.slice.clone(fname, allc);
 }
 
@@ -382,7 +391,7 @@ os__path__basename(const char* path, IAllocator allc)
         result;                                                                                    \
     })
 
-Exception
+static Exception
 os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags)
 {
     (void)env;
@@ -428,13 +437,13 @@ os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_
     return EOK;
 }
 
-bool
+static bool
 os__cmd__is_alive(os_cmd_c* self)
 {
     return subprocess_alive(&self->_subpr);
 }
 
-Exception
+static Exception
 os__cmd__kill(os_cmd_c* self)
 {
     if (subprocess_alive(&self->_subpr)) {
@@ -445,7 +454,7 @@ os__cmd__kill(os_cmd_c* self)
     return EOK;
 }
 
-Exception
+static Exception
 os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
 {
     uassert(self != NULL);
@@ -500,26 +509,26 @@ end:
     return result;
 }
 
-FILE*
+static FILE*
 os__cmd__stdout(os_cmd_c* self)
 {
     return self->_subpr.stdout_file;
 }
 
 
-FILE*
+static FILE*
 os__cmd__stderr(os_cmd_c* self)
 {
     return self->_subpr.stderr_file;
 }
 
-FILE*
+static FILE*
 os__cmd__stdin(os_cmd_c* self)
 {
     return self->_subpr.stdin_file;
 }
 
-char*
+static char*
 os__cmd__read_all(os_cmd_c* self, IAllocator allc)
 {
     uassert(self != NULL);
@@ -534,7 +543,7 @@ os__cmd__read_all(os_cmd_c* self, IAllocator allc)
     return NULL;
 }
 
-char*
+static char*
 os__cmd__read_line(os_cmd_c* self, IAllocator allc)
 {
     uassert(self != NULL);
@@ -549,7 +558,7 @@ os__cmd__read_line(os_cmd_c* self, IAllocator allc)
     return NULL;
 }
 
-Exception
+static Exception
 os__cmd__write_line(os_cmd_c* self, char* line)
 {
     uassert(self != NULL);
@@ -571,7 +580,7 @@ os__cmd__write_line(os_cmd_c* self, char* line)
 }
 
 
-Exception
+static Exception
 os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 {
     uassert(out_cmd != NULL);
@@ -679,7 +688,7 @@ const struct __module__os os = {
         .mkdir = os__fs__mkdir,
         .file_type = os__fs__file_type,
         .remove = os__fs__remove,
-        .listdir = os__fs__listdir,
+        .dir_list = os__fs__dir_list,
         .getcwd = os__fs__getcwd,
     },  // sub-module .fs <<<
 
@@ -694,6 +703,7 @@ const struct __module__os os = {
         .join = os__path__join,
         .split = os__path__split,
         .basename = os__path__basename,
+        .dirname = os__path__dirname,
     },  // sub-module .path <<<
 
     .cmd = {  // sub-module .cmd >>>
