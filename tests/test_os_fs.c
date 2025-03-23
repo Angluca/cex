@@ -4,6 +4,7 @@
 #include <cex/test.h>
 #include <limits.h>
 
+#define TBUILDDIR "tests/build/"
 
 test$teardown()
 {
@@ -95,6 +96,118 @@ test$case(test_os_path_exists)
     return EOK;
 }
 
+test$case(test_os_mkdir)
+{
+    tassert_eqe(Error.argument, os.fs.mkdir(NULL));
+    tassert_eqe(Error.argument, os.fs.mkdir(""));
+
+    if (os.fs.remove(TBUILDDIR "mytestdir")) {
+    }
+
+    var ftype = os.fs.file_type(TBUILDDIR "mytestdir");
+    tassert_eqe(ftype.result, Error.not_found);
+    tassert_eqi(ftype.is_valid, 0);
+    tassert_eqi(ftype.is_directory, 0);
+    tassert_eqi(ftype.is_file, 0);
+    tassert_eqi(ftype.is_symlink, 0);
+    tassert_eqi(ftype.is_other, 0);
+
+    tassert_eqe(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eqe(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
+    tassert_eqe(Error.ok, os.path.exists(TBUILDDIR "mytestdir"));
+    ftype = os.fs.file_type(TBUILDDIR "mytestdir");
+    tassert_eqe(ftype.result, Error.ok);
+    tassert_eqi(ftype.is_valid, 1);
+    tassert_eqi(ftype.is_directory, 1);
+    tassert_eqi(ftype.is_file, 0);
+    tassert_eqi(ftype.is_symlink, 0);
+    tassert_eqi(ftype.is_other, 0);
+
+    // Already exists no error
+    tassert_eqe(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
+
+    tassert_eqe(Error.ok, os.fs.remove(TBUILDDIR "mytestdir"));
+    tassert_eqe(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
+
+    return EOK;
+}
+
+test$case(test_os_fs_file_type)
+{
+
+    tassert_eqe(EOK, os.path.exists(__FILE__));
+    var ftype = os.fs.file_type(__FILE__);
+    tassert_eqe(ftype.result, Error.ok);
+    tassert_eqi(ftype.is_valid, 1);
+    tassert_eqi(ftype.is_directory, 0);
+    tassert_eqi(ftype.is_file, 1);
+    tassert_eqi(ftype.is_symlink, 0);
+    tassert_eqi(ftype.is_other, 0);
+
+    return EOK;
+}
+
+test$case(test_os_rename_dir)
+{
+    if (os.fs.remove(TBUILDDIR "mytestdir")) {
+    }
+
+    tassert_eqe(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eqe(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
+    tassert_eqe(Error.ok, os.path.exists(TBUILDDIR "mytestdir"));
+
+    tassert_eqe(Error.ok, os.path.exists(TBUILDDIR "mytestdir"));
+
+    tassert_eqe(Error.argument, os.fs.rename("", "foo"));
+    tassert_eqe(Error.argument, os.fs.rename(NULL, "foo"));
+    tassert_eqe(Error.argument, os.fs.rename("foo", ""));
+    tassert_eqe(Error.argument, os.fs.rename("foo", NULL));
+
+    tassert_eqe(Error.ok, os.fs.rename(TBUILDDIR "mytestdir", TBUILDDIR "mytestdir2"));
+    tassert_eqe(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eqe(Error.ok, os.path.exists(TBUILDDIR "mytestdir2"));
+    var ftype = os.fs.file_type(TBUILDDIR "mytestdir2");
+    tassert_eqe(ftype.result, EOK);
+    tassert_eqi(ftype.is_valid, 1);
+    tassert_eqi(ftype.is_directory, 1);
+    tassert_eqi(ftype.is_file, 0);
+    tassert_eqi(ftype.is_symlink, 0);
+    tassert_eqi(ftype.is_other, 0);
+
+    tassert_eqe(EOK, os.fs.remove(TBUILDDIR "mytestdir2"));
+
+
+    return EOK;
+}
+
+test$case(test_os_rename_file)
+{
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {
+    }
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt2")) {
+    }
+
+    tassert_eqe(Error.not_found, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eqe(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt", "foo"));
+    tassert_eqe(Error.ok, os.path.exists(TBUILDDIR "mytestfile.txt"));
+
+    tassert_eqe(Error.ok, os.fs.rename(TBUILDDIR "mytestfile.txt", TBUILDDIR "mytestfile.txt2"));
+    tassert_eqe(Error.not_found, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eqe(Error.ok, os.path.exists(TBUILDDIR "mytestfile.txt2"));
+    var ftype = os.fs.file_type(TBUILDDIR "mytestfile.txt2");
+    tassert_eqe(ftype.result, EOK);
+    tassert_eqi(ftype.is_valid, 1);
+    tassert_eqi(ftype.is_directory, 0);
+    tassert_eqi(ftype.is_file, 1);
+    tassert_eqi(ftype.is_symlink, 0);
+    tassert_eqi(ftype.is_other, 0);
+
+    tassert_eqe(EOK, os.fs.remove(TBUILDDIR "mytestfile.txt2"));
+
+
+    return EOK;
+}
+
 test$case(test_os_path_join)
 {
     mem$scope(tmem$, ta)
@@ -134,53 +247,16 @@ test$case(test_os_setenv)
 }
 test$case(test_os_path_splitext)
 {
-    tassert_eqi(str.slice.cmp(os.path.splitext("foo.bar", true), str$s(".bar")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("foo.bar", false), str$s("foo")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split("foo.bar", true), str$s("")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split("foo", true), str$s("")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split(".", true), str$s("")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split("..", true), str$s("")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split("./", true), str$s(".")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split("../", true), str$s("..")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split("/my", true), str$s("/")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split("/", true), str$s("/")), 0);
+    tassert_eqi(str.slice.cmp(os.path.split("asd/", true), str$s("asd")), 0);
 
-    tassert_eqi(str.slice.cmp(os.path.splitext("foo", true), str$s("")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("foo", false), str$s("foo")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("foo.bar.exe", true), str$s(".exe")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("foo.bar.exe", false), str$s("foo.bar")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("foo/bar.exe", true), str$s(".exe")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("foo/bar.exe", false), str$s("foo/bar")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar.exe", true), str$s(".exe")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar.exe", false), str$s("bar.foo/bar")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar", true), str$s("")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar", false), str$s("bar.foo/bar")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext(".gitingnore", true), str$s("")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext(".gitingnore", false), str$s(".gitingnore")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("...gitingnore", true), str$s("")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("...gitingnore", false), str$s("...gitingnore")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar...", true), str$s(".")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar...", false), str$s("bar.foo/bar..")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar.", true), str$s(".")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar.", false), str$s("bar.foo/bar")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext(".", true), str$s("")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext(".", false), str$s(".")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("..", true), str$s("")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("..", false), str$s("..")), 0);
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("bar.foo/bar..exe", true), str$s(".exe")), 0);
-    tassert_eqi(
-        str.slice.cmp(os.path.splitext("bar.foo/bar..exe", false), str$s("bar.foo/bar.")),
-        0
-    );
-
-    tassert_eqi(str.slice.cmp(os.path.splitext("", true), str$s("")), 0);
-    tassert_eqi(str.slice.cmp(os.path.splitext("", false), str$s("")), 0);
-
-    tassert(os.path.splitext(NULL, false).buf == NULL);
-    tassert(os.path.splitext(NULL, true).buf == NULL);
     return EOK;
 }
 
@@ -193,6 +269,10 @@ main(int argc, char* argv[])
     test$run(test_os_listdir);
     test$run(test_os_getcwd);
     test$run(test_os_path_exists);
+    test$run(test_os_mkdir);
+    test$run(test_os_fs_file_type);
+    test$run(test_os_rename_dir);
+    test$run(test_os_rename_file);
     test$run(test_os_path_join);
     test$run(test_os_setenv);
     test$run(test_os_path_splitext);

@@ -28,6 +28,32 @@ os_sleep(u32 period_millisec)
 #endif
 }
 
+Exception os__fs__rename(const char *old_path, const char *new_path)
+{
+    if (old_path == NULL || old_path[0] == '\0'){
+        return Error.argument;
+    }
+    if (new_path == NULL || new_path[0] == '\0'){
+        return Error.argument;
+    }
+#ifdef _WIN32
+    if (!MoveFileEx(old_path, new_path, MOVEFILE_REPLACE_EXISTING)) {
+        return Error.os;
+    }
+    return EOK;
+#else
+    if (rename(old_path, new_path) < 0) {
+
+        if (errno == ENOENT) {
+            return Error.not_found;
+        } else {
+            return strerror(errno);
+        }
+    }
+    return EOK;
+#endif // _WIN32
+}
+
 Exception
 os__fs__mkdir(const char* path)
 {
@@ -49,6 +75,59 @@ os__fs__mkdir(const char* path)
     return EOK;
 }
 
+os_fs_filetype_s
+os__fs__file_type(const char* path)
+{
+    os_fs_filetype_s result = { .result = Error.argument };
+    if (path == NULL || path[0] == '\0') {
+        return result;
+    }
+
+#ifdef _WIN32
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES) {
+        nob_log(
+            NOB_ERROR,
+            "Could not get file attributes of %s: %s",
+            path,
+            nob_win32_error_message(GetLastError())
+        );
+        return -1;
+    }
+    result.is_valid = true;
+    result.result = EOK;
+
+    if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+        return NOB_FILE_DIRECTORY;
+    }
+    // TODO: detect symlinks on Windows (whatever that means on Windows anyway)
+    return NOB_FILE_REGULAR;
+#else // _WIN32
+    struct stat statbuf;
+    if (stat(path, &statbuf) < 0) {
+        if (errno == ENOENT) {
+            result.result = Error.not_found;
+        } else {
+            result.result = strerror(errno);
+        }
+        return result;
+    }
+    result.is_valid = true;
+    result.result = EOK;
+
+    if (S_ISREG(statbuf.st_mode)) {
+        result.is_file = true;
+    } else if (S_ISDIR(statbuf.st_mode)) {
+        result.is_directory = true;
+    } else if (S_ISLNK(statbuf.st_mode)) {
+        result.is_symlink = true;
+    } else {
+        result.is_other = true;
+    }
+    return result;
+#endif
+}
+
 Exception
 os__fs__remove(const char* path)
 {
@@ -57,7 +136,7 @@ os__fs__remove(const char* path)
     }
 #ifdef _WIN32
     if (!DeleteFileA(path)) {
-        return  nob_win32_error_message(GetLastError());
+        return nob_win32_error_message(GetLastError());
     }
     return EOK;
 #else
@@ -178,17 +257,19 @@ os__path__exists(const char* file_path)
     }
 
     usize path_len = strlen(file_path);
-    if (path_len == 0) return Error.argument;
+    if (path_len == 0) {
+        return Error.argument;
+    }
 
-    if(path_len >= PATH_MAX) {
+    if (path_len >= PATH_MAX) {
         return Error.argument;
     }
 
 #if _WIN32
     errno = 0;
     DWORD dwAttrib = GetFileAttributesA(file_path);
-    if(dwAttrib != INVALID_FILE_ATTRIBUTES) {
-        
+    if (dwAttrib != INVALID_FILE_ATTRIBUTES) {
+
         return EOK;
     } else {
         /*
@@ -221,7 +302,9 @@ Example: Using GetLastError() with File Operations
 #else
     struct stat statbuf;
     if (stat(file_path, &statbuf) < 0) {
-        if (errno == ENOENT) return Error.not_found;
+        if (errno == ENOENT) {
+            return Error.not_found;
+        }
         return strerror(errno);
     }
     return EOK;
@@ -236,7 +319,7 @@ os__path__join(arr$(char*) parts, IAllocator allc)
 }
 
 str_s
-os__path__splitext(const char* path, bool return_ext)
+os__path__split(const char* path, bool return_dir)
 {
     if (path == NULL) {
         return (str_s){ 0 };
@@ -246,35 +329,38 @@ os__path__splitext(const char* path, bool return_ext)
         return str$s("");
     }
 
-    usize last_char_idx = pathlen;
-    usize last_dot_idx = pathlen;
+    isize last_slash_idx = -1;
 
     for (usize i = pathlen; i-- > 0;) {
-        if (path[i] == '.') {
-            if (last_dot_idx == pathlen) {
-                last_dot_idx = i;
-            }
-        } else if (path[i] == '/' || path[i] == '\\') {
+        if (path[i] == '/' || path[i] == '\\') {
+                last_slash_idx = i;
             break;
-        } else if (last_dot_idx != pathlen) {
-            last_char_idx = i;
-            break;
-        }
+        } 
     }
-    if (last_char_idx < last_dot_idx) {
-        if (return_ext) {
-            return str.sub(path, last_dot_idx, 0);
+    if (last_slash_idx != -1){
+        if (return_dir) {
+            return str.sub(path, 0, last_slash_idx == 0 ? 1 : last_slash_idx);
         } else {
-            return str.sub(path, 0, last_dot_idx);
+            return str.sub(path, last_slash_idx, 0);
         }
 
     } else {
-        if (return_ext) {
+        if (return_dir) {
             return str$s("");
         } else {
             return str.sstr(path);
         }
     }
+}
+
+char*
+os__path__basename(const char* path, IAllocator allc)
+{
+    if (path == NULL || path[0] == '\0') {
+        return NULL;
+    }
+    str_s fname = os__path__split(path, false);
+    return str.slice.clone(fname, allc);
 }
 
 #define os$cmd(args...)                                                                            \
@@ -589,7 +675,9 @@ const struct __module__os os = {
     .sleep = os_sleep,
 
     .fs = {  // sub-module .fs >>>
+        .rename = os__fs__rename,
         .mkdir = os__fs__mkdir,
+        .file_type = os__fs__file_type,
         .remove = os__fs__remove,
         .listdir = os__fs__listdir,
         .getcwd = os__fs__getcwd,
@@ -604,7 +692,8 @@ const struct __module__os os = {
     .path = {  // sub-module .path >>>
         .exists = os__path__exists,
         .join = os__path__join,
-        .splitext = os__path__splitext,
+        .split = os__path__split,
+        .basename = os__path__basename,
     },  // sub-module .path <<<
 
     .cmd = {  // sub-module .cmd >>>
