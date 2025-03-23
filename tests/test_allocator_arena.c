@@ -1,5 +1,4 @@
 #include <cex/all.c>
-#include <cex/test.h>
 
 test$teardown()
 {

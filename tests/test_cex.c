@@ -1,8 +1,4 @@
 #include <cex/all.c>
-#include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <x86intrin.h>
 
 /*
  * SUITE INIT / SHUTDOWN

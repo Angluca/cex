@@ -1,6 +1,5 @@
 #include <cex/all.c>
 #include <lib/random/Random.c>
-#include <cex/test.h>
 
 struct foo {
     i32 arr[10];

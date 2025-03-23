@@ -1,6 +1,4 @@
 #include <cex/all.c>
-#include <cex/test.h>
-#include <stdio.h>
 
 /*
  * SUITE INIT / SHUTDOWN

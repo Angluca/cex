@@ -3,7 +3,7 @@
  * @brief General purpose pseudo-random number generator for CEX.
  */
 #pragma once
-#include <cex/cex.h>
+#include "cex.h"
 
 typedef struct Random_c
 {

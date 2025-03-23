@@ -1,10 +1,6 @@
 #include <cex/all.c>
 #include <lib/deque/deque.h>
 #include <lib/deque/deque.c>
-#include <lib/test/fff.h>
-#include <cex/test.h>
-#include <stdalign.h>
-#include <stdio.h>
 
 
 deque$typedef(deque_int, int, false);

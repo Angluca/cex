@@ -1,8 +1,5 @@
 #undef __SANITIZE_ADDRESS__ // disables sanitizer manual poison
 #include <cex/all.c>
-#include <cex/test.h>
-#include <unistd.h>
-#include <x86intrin.h>
 
 /*
  * SUITE INIT / SHUTDOWN

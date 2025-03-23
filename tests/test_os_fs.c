@@ -1,8 +1,4 @@
 #include <cex/all.c>
-#include <cex/io.c>
-#include <cex/os/os.c>
-#include <cex/test.h>
-#include <limits.h>
 
 #define TBUILDDIR "tests/build/"
 

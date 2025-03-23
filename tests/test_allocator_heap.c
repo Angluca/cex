@@ -1,7 +1,4 @@
 #include <cex/all.c>
-#include <cex/mem.h>
-#include <cex/test.h>
-#include <stdlib.h>
 
 test$teardown()
 {

@@ -96,6 +96,7 @@ class Bundler:
             "argparse.h",
             "os/subprocess.h",
             "os/os.h",
+            "test.h",
         ]
         print(f"Bundling: {headers}")
         hbuf = io.StringIO()

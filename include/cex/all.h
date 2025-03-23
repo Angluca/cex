@@ -8,5 +8,6 @@
 #include <cex/str.h>
 #include <cex/io.h>
 #include <cex/test.h>
+#include <cex/argparse.h>
 #include <cex/os/os.h>
 

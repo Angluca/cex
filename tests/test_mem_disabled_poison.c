@@ -1,8 +1,5 @@
 #define CEX_DISABLE_POISON 1
 #include <cex/all.c>
-#include <cex/test.h>
-#include <unistd.h>
-#include <x86intrin.h>
 
 /*
  * SUITE INIT / SHUTDOWN

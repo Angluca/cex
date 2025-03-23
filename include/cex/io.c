@@ -1,7 +1,6 @@
 #pragma once
-#include "io.h"
+#include "all.h"
 #include "_sprintf.h"
-#include "cex.h"
 #include <errno.h>
 #include <unistd.h>
 

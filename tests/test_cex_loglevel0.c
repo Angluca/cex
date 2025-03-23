@@ -1,10 +1,5 @@
 #define CEX_LOG_LVL 0
 #include <cex/all.c>
-#include <cex/test.h>
-#include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <x86intrin.h>
 
 /*
  * SUITE INIT / SHUTDOWN

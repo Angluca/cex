@@ -1,8 +1,5 @@
-// clang-format off
-#include "cex/test.h"
 #include <cex/all.h>
 #include <cex/all.c>
-// clang-format on
 
 
 test$teardown()

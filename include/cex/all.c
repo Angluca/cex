@@ -1,3 +1,5 @@
+#ifndef CEX_HEADER_H
+#define CEX_HEADER_H
 #pragma once
 #include "all.h"
 #include "cex_base.c"
@@ -10,5 +12,7 @@
 #include "io.c"
 #include "ds.c"
 #include "os/os.c"
+#include "argparse.c"
+#endif // CEX_HEADER_H
 
 

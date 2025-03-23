@@ -1,8 +1,5 @@
-#include <cex/test.h>
+#include <cex/all.h>
 #include <cex/all.c>
-#include <cex/argparse.c>
-#include <stdio.h>
-#include <x86intrin.h>
 
 #define PERM_READ (1 << 0)
 #define PERM_WRITE (1 << 1)
