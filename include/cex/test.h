@@ -1,5 +1,6 @@
 #pragma once
 #include "all.h"
+#ifdef CEXTEST
 
 #ifndef NAN
 #error "NAN is undefined on this platform"
@@ -434,3 +435,5 @@ __cex_test_run_postmortem()
 #define __STRINGIZE(x) __STRINGIZE_DETAIL(x)
 #define __CEXTEST_LOG_ERR(msg) (__FILE__ ":" __STRINGIZE(__LINE__) " -> " msg)
 #define __CEXTEST_NON_NULL(x) ((x != NULL) ? (x) : "")
+
+#endif //ifdef CEXTEST

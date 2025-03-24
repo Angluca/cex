@@ -1,4 +1,3 @@
-#include "_subprocess.h"
 #include <ctype.h>
 #include <errno.h>
 #include <float.h>
@@ -20,37 +19,36 @@
 #else
 #include <dirent.h>
 #include <linux/limits.h>
-#include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #endif
 
 /*
-*                  GLOBAL CEX VARS / DEFINES
-*/
+ *                  GLOBAL CEX VARS / DEFINES
+ */
+
+/// disables all asserts and safety checks (fast release mode)
+// #define NDEBUG
 
 /// custom fprintf() function for asserts/logs/etc
-// #define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                          
+// #define __cex__fprintf(stream, prefix, filename, line, func, format, ...)
 
 /// customize abort() behavior
 // #define __cex__abort()
 
+// customize uassert() behavior
+// #define __cex__assert()
+
 // you may override this level to manage log$* verbosity
 // #define CEX_LOG_LVL 5
-
-// customize uassert() behavior
-// #define __cex__assert()                                                                            \
 
 /// disable ASAN memory poisoning and mem$asan_poison*
 // #define CEX_DISABLE_POISON 1
 
 /// size of stack based buffer for small strings
-// #define CEX_SPRINTF_MIN 512 
+// #define CEX_SPRINTF_MIN 512
 
 /// disables float printing for io.printf/et al functions (code size reduction)
 // #define CEX_SPRINTF_NOFLOAT
-
-/// disables all asserts and safety checks (fast release mode)
-// #define NDEBUG
 

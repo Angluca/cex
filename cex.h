@@ -1,6 +1,5 @@
 #ifndef CEX_HEADER_H
 #define CEX_HEADER_H
-#include "_subprocess.h"
 #include <ctype.h>
 #include <errno.h>
 #include <float.h>
@@ -22,11 +21,39 @@
 #else
 #include <dirent.h>
 #include <linux/limits.h>
-#include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+
+/*
+ *                  GLOBAL CEX VARS / DEFINES
+ */
+
+/// disables all asserts and safety checks (fast release mode)
+// #define NDEBUG
+
+/// custom fprintf() function for asserts/logs/etc
+// #define __cex__fprintf(stream, prefix, filename, line, func, format, ...)
+
+/// customize abort() behavior
+// #define __cex__abort()
+
+// customize uassert() behavior
+// #define __cex__assert()
+
+// you may override this level to manage log$* verbosity
+// #define CEX_LOG_LVL 5
+
+/// disable ASAN memory poisoning and mem$asan_poison*
+// #define CEX_DISABLE_POISON 1
+
+/// size of stack based buffer for small strings
+// #define CEX_SPRINTF_MIN 512
+
+/// disables float printing for io.printf/et al functions (code size reduction)
+// #define CEX_SPRINTF_NOFLOAT
+
 
 
 /*
@@ -1292,7 +1319,7 @@ integers in binary: "%b" for 256 would print 100.
 #define CEX_SPRINTF_MIN 512 // size of stack based buffer for small strings
 #endif
 
-#define CEXSP_STATIC   // makes all functions static
+// #define CEXSP_STATIC   // makes all functions static
 
 #ifdef CEXSP_STATIC
 #define CEXSP__PUBLICDEC static
@@ -2945,6 +2972,7 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__os os; // C
 /*
 *                   test.h
 */
+#ifdef CEXTEST
 
 #ifndef NAN
 #error "NAN is undefined on this platform"
@@ -3380,6 +3408,8 @@ __cex_test_run_postmortem()
 #define __CEXTEST_LOG_ERR(msg) (__FILE__ ":" __STRINGIZE(__LINE__) " -> " msg)
 #define __CEXTEST_NON_NULL(x) ((x != NULL) ? (x) : "")
 
+#endif //ifdef CEXTEST
+
 /*
 *                   CEX IMPLEMENTATION 
 */
@@ -3387,24 +3417,6 @@ __cex_test_run_postmortem()
 
 #ifdef CEX_IMPLEMENTATION
 
-const struct _CEX_Error_struct Error = {
-    .ok = EOK,                       // Success
-    .memory = "MemoryError",         // memory allocation error
-    .io = "IOError",                 // IO error
-    .overflow = "OverflowError",     // buffer overflow
-    .argument = "ArgumentError",     // function argument error
-    .integrity = "IntegrityError",   // data integrity error
-    .exists = "ExistsError",         // entity or key already exists
-    .not_found = "NotFoundError",    // entity or key already exists
-    .skip = "ShouldBeSkipped",       // NOT an error, function result must be skipped
-    .empty = "EmptyError",           // resource is empty
-    .eof = "EOF",                    // end of file reached
-    .argsparse = "ProgramArgsError", // program arguments empty or incorrect
-    .runtime = "RuntimeError",       // generic runtime error
-    .assert = "AssertError",         // generic runtime check
-    .os = "OSError",                 // generic OS check
-    .timeout = "TimeoutError",       // await interval timeout
-};
 
 /*
 *                   cex_base.c
@@ -3554,6 +3566,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
 {
     _cex_allocator_heap__validate(self);
     AllocatorHeap_c* a = (AllocatorHeap_c*)self;
+    (void)a;
 
     u64 hdr = _cex_allocator_heap__hdr_make(size, alignment);
     if (hdr == 0) {
@@ -3636,6 +3649,7 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
         return NULL;
     }
     AllocatorHeap_c* a = (AllocatorHeap_c*)self;
+    (void)a;
 
     // Memory alignment
     // |                 <hdr>|<poisn>|---<data>---
@@ -3708,6 +3722,7 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
     _cex_allocator_heap__validate(self);
     if (ptr != NULL) {
         AllocatorHeap_c* a = (AllocatorHeap_c*)self;
+        (void)a;
 
         char* p = ptr;
         uassert(
@@ -4876,41 +4891,6 @@ cexds_hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size
 }
 
 static bool
-cexds_compare_strings_bounded(
-    const char* a_str,
-    const char* b_str,
-    size_t a_capacity,
-    size_t b_capacity
-)
-{
-    size_t i = 0;
-    size_t min_cap = a_capacity;
-    const char* long_str = NULL;
-
-    if (a_capacity != b_capacity) {
-        if (a_capacity > b_capacity) {
-            min_cap = b_capacity;
-            long_str = a_str;
-        } else {
-            min_cap = a_capacity;
-            long_str = b_str;
-        }
-    }
-    while (i < min_cap) {
-        if (a_str[i] != b_str[i]) {
-            return false;
-        } else if (a_str[i] == '\0') {
-            // both are equal and zero term
-            return true;
-        }
-        i++;
-    }
-    // Edge case when buf capacity are equal (long_str is NULL)
-    // or  buf[3] ="foo" / buf[100] = "foo", ensure that buf[100] ends with '\0'
-    return !long_str || long_str[i] == '\0';
-}
-
-static bool
 cexds_is_key_equal(
     void* a,
     size_t elemsize,
@@ -5101,7 +5081,6 @@ cexds_hminit(
     return a;
 }
 
-static char* cexds_strdup(char* str);
 
 void*
 cexds_hmput_key(
@@ -5398,19 +5377,6 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
     }
 
     return a;
-}
-
-static char*
-cexds_strdup(char* str)
-{
-    // to keep replaceable allocator simple, we don't want to use strdup.
-    // rolling our own also avoids problem of strdup vs _strdup
-    size_t len = strlen(str) + 1;
-    // char* p = (char*)CEXDS_REALLOC(NULL, 0, len);
-    // TODO
-    char* p = (char*)realloc(NULL, len);
-    memmove(p, str, len);
-    return p;
 }
 
 #ifndef CEXDS_STRING_ARENA_BLOCKSIZE_MIN

@@ -49,39 +49,6 @@ class Bundler:
 
         return out
 
-    # def bundle_code(self):
-    #
-    #     cbuf = io.StringIO()
-    #
-    #     code_files = sorted(
-    #         [
-    #             fn
-    #             for fn in os.listdir(self.cex_lib_path)
-    #             if fn.endswith(".c") and "cex.c" not in fn
-    #         ]
-    #     )
-    #
-    #     with open(os.path.join(self.cex_lib_path, "cex_base.c")) as fh:
-    #         cbuf.write(fh.read())
-    #
-    #     for fn in code_files:
-    #         cbuf.write("\n\n")
-    #         cbuf.write("/*\n")
-    #         cbuf.write(f"*                   {fn}\n")
-    #         cbuf.write("*/\n")
-    #         if os.path.basename(fn).startswith("_"):
-    #             h_lines = self.parse_header(
-    #                 os.path.join(self.cex_lib_path, fn.replace(".c", ".h"))
-    #             )
-    #             cbuf.write("\n".join(h_lines))
-    #             cbuf.write("\n\n")
-    #
-    #         h_lines = self.parse_code(os.path.join(self.cex_lib_path, fn))
-    #         cbuf.write("\n".join(h_lines))
-    #
-    #     with open(os.path.join(self.cex_bundle_dir, "cex.c"), "w") as fh:
-    #         fh.write(cbuf.getvalue())
-    #
     def bundle_headers(self):
         # NOTE: adding manually in order to preserve interdependencies
         headers = [
@@ -123,7 +90,7 @@ class Bundler:
         hbuf.write("\n\n")
         hbuf.write("#ifdef CEX_IMPLEMENTATION\n")
 
-        h_lines = self.parse_code(os.path.join(self.cex_lib_path, "cex_base.c"))
+        h_lines = self.parse_code(os.path.join(self.cex_lib_path, "cex_header.c"))
         hbuf.write("\n".join(h_lines))
 
         for h in headers:

@@ -110,6 +110,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
 {
     _cex_allocator_heap__validate(self);
     AllocatorHeap_c* a = (AllocatorHeap_c*)self;
+    (void)a;
 
     u64 hdr = _cex_allocator_heap__hdr_make(size, alignment);
     if (hdr == 0) {
@@ -192,6 +193,7 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
         return NULL;
     }
     AllocatorHeap_c* a = (AllocatorHeap_c*)self;
+    (void)a;
 
     // Memory alignment
     // |                 <hdr>|<poisn>|---<data>---
@@ -264,6 +266,7 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
     _cex_allocator_heap__validate(self);
     if (ptr != NULL) {
         AllocatorHeap_c* a = (AllocatorHeap_c*)self;
+        (void)a;
 
         char* p = ptr;
         uassert(

@@ -527,41 +527,6 @@ cexds_hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size
 }
 
 static bool
-cexds_compare_strings_bounded(
-    const char* a_str,
-    const char* b_str,
-    size_t a_capacity,
-    size_t b_capacity
-)
-{
-    size_t i = 0;
-    size_t min_cap = a_capacity;
-    const char* long_str = NULL;
-
-    if (a_capacity != b_capacity) {
-        if (a_capacity > b_capacity) {
-            min_cap = b_capacity;
-            long_str = a_str;
-        } else {
-            min_cap = a_capacity;
-            long_str = b_str;
-        }
-    }
-    while (i < min_cap) {
-        if (a_str[i] != b_str[i]) {
-            return false;
-        } else if (a_str[i] == '\0') {
-            // both are equal and zero term
-            return true;
-        }
-        i++;
-    }
-    // Edge case when buf capacity are equal (long_str is NULL)
-    // or  buf[3] ="foo" / buf[100] = "foo", ensure that buf[100] ends with '\0'
-    return !long_str || long_str[i] == '\0';
-}
-
-static bool
 cexds_is_key_equal(
     void* a,
     size_t elemsize,
@@ -752,7 +717,6 @@ cexds_hminit(
     return a;
 }
 
-static char* cexds_strdup(char* str);
 
 void*
 cexds_hmput_key(
@@ -1049,19 +1013,6 @@ cexds_hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyo
     }
 
     return a;
-}
-
-static char*
-cexds_strdup(char* str)
-{
-    // to keep replaceable allocator simple, we don't want to use strdup.
-    // rolling our own also avoids problem of strdup vs _strdup
-    size_t len = strlen(str) + 1;
-    // char* p = (char*)CEXDS_REALLOC(NULL, 0, len);
-    // TODO
-    char* p = (char*)realloc(NULL, len);
-    memmove(p, str, len);
-    return p;
 }
 
 #ifndef CEXDS_STRING_ARENA_BLOCKSIZE_MIN
