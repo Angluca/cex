@@ -67,4 +67,4 @@ tmux_run.sh
 compile_commands.json
 .cache
 docs/html/
-cex
+/cex

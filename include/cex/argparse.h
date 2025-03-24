@@ -5,11 +5,8 @@
  * Use of this source code is governed by a MIT-style license that can be found
  * in the LICENSE file.
  */
-#ifndef ARGPARSE_H
-#define ARGPARSE_H
-
-#include <cex/cex_base.h>
-#include <stdint.h>
+#pragma once
+#include "all.h"
 
 struct argparse_c;
 struct argparse_opt_s;
@@ -129,4 +126,3 @@ void            (*usage)(argparse_c* self);
     // clang-format on
 };
 __attribute__ ((visibility("hidden"))) extern const struct __module__argparse argparse; // CEX Autogen
-#endif

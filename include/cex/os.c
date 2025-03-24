@@ -1,22 +1,10 @@
 #pragma once
-#include "os.h"
-#include <cex/cex_base.h>
+#include "all.h"
 
 #ifdef _WIN32
 #define os$PATH_SEP '\\'
 #else
 #define os$PATH_SEP '/'
-#endif
-
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <dirent.h>
-#include <linux/limits.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 #endif
 
 static void
@@ -751,7 +739,7 @@ os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 
     if (cpid == 0) {
         if (execvp(args[0], (char* const*)args) < 0) {
-            log$error("Could not exec child process: %s", strerror(errno));
+            log$error("Could not exec child process: %s\n", strerror(errno));
             exit(1);
         }
         uassert(false && "unreachable");

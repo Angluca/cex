@@ -1,9 +1,5 @@
 #pragma once
-#include <cex/cex_base.h>
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include "all.h"
 
 #ifndef NAN
 #error "NAN is undefined on this platform"

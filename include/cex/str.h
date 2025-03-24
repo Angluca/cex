@@ -5,8 +5,6 @@
 
 #pragma once
 #include "all.h"
-#include <stdalign.h>
-#include <stdint.h>
 
 /// Represents char* slice (string view) + may not be null-term at len!
 typedef struct

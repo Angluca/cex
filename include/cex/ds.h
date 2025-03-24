@@ -1,7 +1,5 @@
 #pragma once
 #include "all.h"
-#include <stddef.h>
-#include <string.h>
 
 // this is a simple string arena allocator, initialize with e.g. 'cexds_string_arena my_arena={0}'.
 typedef struct cexds_string_arena cexds_string_arena;

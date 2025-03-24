@@ -1,7 +1,5 @@
 #pragma once
-#include <cex/all.h>
-#include <cex/os/subprocess.h>
-
+#include "all.h"
 
 typedef struct os_cmd_flags_s
 {

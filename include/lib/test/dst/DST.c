@@ -189,7 +189,7 @@ DST_simulate(DSTSimulationFunc_f simfunc)
         exit(0);
     } else if (childPid < 0) {
         // WE ARE IN PARENT PROCESS HERE
-        log$error("fork() failed");
+        log$error("fork() failed\n");
         goto end;
     } else {
         // WE ARE IN PARENT PROCESS HERE

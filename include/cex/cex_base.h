@@ -3,16 +3,7 @@
  * @brief CEX core file
  */
 #pragma once
-#include <errno.h>
-#include <stdalign.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-
+#include "cex_header.h"
 
 /*
  *                 CORE TYPES
@@ -49,7 +40,7 @@ typedef ssize_t isize;
  */
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
 #define likely(expr) __builtin_expect(!!(expr), 1)
-#define fallthrough() __attribute__ ((fallthrough));
+#define fallthrough() __attribute__((fallthrough));
 
 /*
  *                 ERRORS
@@ -119,60 +110,28 @@ __cex__fprintf_dummy(void)
 
 #if CEX_LOG_LVL > 0
 #define log$error(format, ...)                                                                     \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[ERROR]  ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        format "\n",                                                                               \
-        ##__VA_ARGS__                                                                              \
-    ))
+    (__cex__fprintf(stdout, "[ERROR]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$error(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 1
 #define log$warn(format, ...)                                                                      \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[WARN]   ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        format "\n",                                                                               \
-        ##__VA_ARGS__                                                                              \
-    ))
+    (__cex__fprintf(stdout, "[WARN]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$warn(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 2
 #define log$info(format, ...)                                                                      \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[INFO]   ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        format "\n",                                                                               \
-        ##__VA_ARGS__                                                                              \
-    ))
+    (__cex__fprintf(stdout, "[INFO]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$info(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 3
 #define log$debug(format, ...)                                                                     \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[DEBUG]  ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        format "\n",                                                                               \
-        ##__VA_ARGS__                                                                              \
-    ))
+    (__cex__fprintf(stdout, "[DEBUG]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$debug(format, ...) __cex__fprintf_dummy()
 #endif
@@ -357,7 +316,7 @@ int __cex_test_uassert_enabled = 1;
 #define cex$tmpname(base) cex$varname(base, __LINE__)
 
 #define e$raise(return_uerr, error_msg, ...)                                                       \
-    (log$error("[%s] " error_msg, return_uerr, ##__VA_ARGS__), (return_uerr))
+    (log$error("[%s] " error_msg "\n", return_uerr, ##__VA_ARGS__), (return_uerr))
 
 // WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
 #define e$except(_var_name, _func)                                                                 \
@@ -371,11 +330,11 @@ int __cex_test_uassert_enabled = 1;
 #define e$except_errno(_expression)                                                                \
     if (unlikely(                                                                                  \
             ((_expression) == -1) &&                                                               \
-            log$error("`%s` failed errno: %d, msg: %s", #_expression, errno, strerror(errno))      \
+            log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno))      \
         ))
 
 #define e$except_null(_expression)                                                                 \
-    if (unlikely(((_expression) == NULL) && log$error("`%s` returned NULL", #_expression)))
+    if (unlikely(((_expression) == NULL) && log$error("`%s` returned NULL\n", #_expression)))
 
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
@@ -423,7 +382,7 @@ struct _cex_arr_slice
             _slice.end += _len;                                                                    \
         _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
         _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
-        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld", start, end, _start, _end); */  \
+        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */  \
         if (_slice.start < _slice.end && array != NULL) {                                          \
             slice.arr = &((array)[_slice.start]);                                                  \
             slice.len = (usize)(_slice.end - _slice.start);                                        \

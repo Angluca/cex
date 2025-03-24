@@ -56,7 +56,7 @@ test$case(test_sysfunc)
     u32 nit = 0;
     e$except_errno(ret = sys_func(-1))
     {
-        log$error("Except: ret=%d errno=%d", ret, errno);
+        log$error("Except: ret=%d errno=%d\n", ret, errno);
         tassert_eqi(errno, 999);
         tassert_eqi(ret, -1);
         nit++;
@@ -224,10 +224,10 @@ fail:
 
 test$case(test_log)
 {
-    log$error("log error test");
-    log$warn("log warn test");
-    log$info("log info test");
-    log$debug("log debug test");
+    log$error("log error test\n");
+    log$warn("log warn test\n");
+    log$info("log info test\n");
+    log$debug("log debug test\n");
 
     return EOK;
 }

@@ -11,7 +11,7 @@
 #include "str.c"
 #include "io.c"
 #include "ds.c"
-#include "os/os.c"
+#include "os.c"
 #include "argparse.c"
 #endif // CEX_HEADER_H
 

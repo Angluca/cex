@@ -1,10 +1,5 @@
 #pragma once
-#include "_sprintf.h"
-#include <ctype.h>
 #include "all.h"
-#include <ctype.h>
-#include <float.h>
-#include <math.h>
 
 static inline bool
 str__isvalid(const str_s* s)

@@ -1,9 +1,5 @@
 #pragma once
 #include "all.h"
-#include "_sprintf.h"
-#include <errno.h>
-#include <unistd.h>
-
 
 Exception
 io_fopen(FILE** file, const char* filename, const char* mode)

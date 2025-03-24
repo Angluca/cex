@@ -225,10 +225,10 @@ fail:
 
 test$case(test_log)
 {
-    log$error("log error test");
-    log$warn("log warn test");
-    log$info("log info test");
-    log$debug("log debug test");
+    log$error("log error test\n");
+    log$warn("log warn test\n");
+    log$info("log info test\n");
+    log$debug("log debug test\n");
 
     return EOK;
 }

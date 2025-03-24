@@ -13,7 +13,7 @@ main(int argc, char* argv[])
   e$except_silent(err, App.create(&app, argc, argv, allocator))
   {
     if (err != Error.argsparse){
-      log$error("App.create(&app, argc, argv, allocator)) %s", err);
+      log$error("App.create(&app, argc, argv, allocator)) %s\n", err);
     }
     ret_code = EXIT_FAILURE;
     goto shutdown;

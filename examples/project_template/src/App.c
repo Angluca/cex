@@ -50,19 +50,19 @@ App_main(App_c* app, IAllocator allocator)
 {
     (void)allocator;
 
-    log$debug("Hello, CEX!");
-    log$info("Flag Arg: %d", app->is_flag);
-    log$info("Num Arg: %ld", app->num_arg);
-    log$info("Str Arg: %s", app->name_arg);
+    log$debug("Hello, CEX!\n");
+    log$info("Flag Arg: %d\n", app->is_flag);
+    log$info("Num Arg: %ld\n", app->num_arg);
+    log$info("Str Arg: %s\n", app->name_arg);
 
-    log$info("You passed %d args", app->args_count);
+    log$info("You passed %d args\n", app->args_count);
 
     // NOTE: something weird with mylib.mul() results
     // try to run tests `cex test run all` and see if it's correct
-    log$info("Num Arg * 3 = %u", mylib.mul(app->num_arg, 3));
+    log$info("Num Arg * 3 = %u\n", mylib.mul(app->num_arg, 3));
 
     for$each(it, app->args, app->args_count) {
-        log$debug("Arg #%ld: %s", it.idx, *it.val);
+        log$debug("Arg #%ld: %s\n", it.idx, *it.val);
     }
 
     return EOK;

@@ -1,7 +1,5 @@
 #pragma once
-#include "cex_base.h"
-#include <stddef.h>
-#include <threads.h>
+#include "all.h"
 
 #define CEX_ALLOCATOR_HEAP_MAGIC 0xF00dBa01
 #define CEX_ALLOCATOR_TEMP_MAGIC 0xF00dBeef

@@ -85,6 +85,7 @@ class Bundler:
     def bundle_headers(self):
         # NOTE: adding manually in order to preserve interdependencies
         headers = [
+            "cex_base.h",
             "mem.h",
             "AllocatorHeap.h",
             "AllocatorArena.h",
@@ -94,8 +95,8 @@ class Bundler:
             "sbuf.h",
             "io.h",
             "argparse.h",
-            "os/subprocess.h",
-            "os/os.h",
+            "_subprocess.h",
+            "os.h",
             "test.h",
         ]
         print(f"Bundling: {headers}")
@@ -103,7 +104,7 @@ class Bundler:
         hbuf.write("#ifndef CEX_HEADER_H\n")
         hbuf.write("#define CEX_HEADER_H\n")
 
-        with open(os.path.join(self.cex_lib_path, "cex_base.h")) as fh:
+        with open(os.path.join(self.cex_lib_path, "cex_header.h")) as fh:
             hbuf.write(fh.read())
 
         for h in headers:

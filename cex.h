@@ -1,20 +1,41 @@
 #ifndef CEX_HEADER_H
 #define CEX_HEADER_H
-/**
- * @file cex/cex.h
- * @brief CEX core file
- */
-#pragma once
+#include "_subprocess.h"
+#include <ctype.h>
 #include <errno.h>
+#include <float.h>
+#include <math.h>
+#include <signal.h>
 #include <stdalign.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
+#include <threads.h>
+#include <unistd.h>
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <dirent.h>
+#include <linux/limits.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
+
+/*
+*                   cex_base.h
+*/
+/**
+ * @file cex/cex.h
+ * @brief CEX core file
+ */
 
 /*
  *                 CORE TYPES
@@ -51,7 +72,7 @@ typedef ssize_t isize;
  */
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
 #define likely(expr) __builtin_expect(!!(expr), 1)
-#define fallthrough() __attribute__ ((fallthrough));
+#define fallthrough() __attribute__((fallthrough));
 
 /*
  *                 ERRORS
@@ -121,60 +142,28 @@ __cex__fprintf_dummy(void)
 
 #if CEX_LOG_LVL > 0
 #define log$error(format, ...)                                                                     \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[ERROR]  ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        format "\n",                                                                               \
-        ##__VA_ARGS__                                                                              \
-    ))
+    (__cex__fprintf(stdout, "[ERROR]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$error(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 1
 #define log$warn(format, ...)                                                                      \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[WARN]   ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        format "\n",                                                                               \
-        ##__VA_ARGS__                                                                              \
-    ))
+    (__cex__fprintf(stdout, "[WARN]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$warn(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 2
 #define log$info(format, ...)                                                                      \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[INFO]   ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        format "\n",                                                                               \
-        ##__VA_ARGS__                                                                              \
-    ))
+    (__cex__fprintf(stdout, "[INFO]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$info(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 3
 #define log$debug(format, ...)                                                                     \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[DEBUG]  ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        format "\n",                                                                               \
-        ##__VA_ARGS__                                                                              \
-    ))
+    (__cex__fprintf(stdout, "[DEBUG]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$debug(format, ...) __cex__fprintf_dummy()
 #endif
@@ -359,7 +348,7 @@ int __cex_test_uassert_enabled = 1;
 #define cex$tmpname(base) cex$varname(base, __LINE__)
 
 #define e$raise(return_uerr, error_msg, ...)                                                       \
-    (log$error("[%s] " error_msg, return_uerr, ##__VA_ARGS__), (return_uerr))
+    (log$error("[%s] " error_msg "\n", return_uerr, ##__VA_ARGS__), (return_uerr))
 
 // WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
 #define e$except(_var_name, _func)                                                                 \
@@ -373,11 +362,11 @@ int __cex_test_uassert_enabled = 1;
 #define e$except_errno(_expression)                                                                \
     if (unlikely(                                                                                  \
             ((_expression) == -1) &&                                                               \
-            log$error("`%s` failed errno: %d, msg: %s", #_expression, errno, strerror(errno))      \
+            log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno))      \
         ))
 
 #define e$except_null(_expression)                                                                 \
-    if (unlikely(((_expression) == NULL) && log$error("`%s` returned NULL", #_expression)))
+    if (unlikely(((_expression) == NULL) && log$error("`%s` returned NULL\n", #_expression)))
 
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
@@ -425,7 +414,7 @@ struct _cex_arr_slice
             _slice.end += _len;                                                                    \
         _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
         _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
-        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld", start, end, _start, _end); */  \
+        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */  \
         if (_slice.start < _slice.end && array != NULL) {                                          \
             slice.arr = &((array)[_slice.start]);                                                  \
             slice.len = (usize)(_slice.end - _slice.start);                                        \
@@ -533,12 +522,9 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 #endif
 #endif
 
-
 /*
 *                   mem.h
 */
-#include <stddef.h>
-#include <threads.h>
 
 #define CEX_ALLOCATOR_HEAP_MAGIC 0xF00dBa01
 #define CEX_ALLOCATOR_TEMP_MAGIC 0xF00dBeef
@@ -816,8 +802,6 @@ __attribute__ ((visibility("hidden"))) extern const struct __class__AllocatorAre
 /*
 *                   ds.h
 */
-#include <stddef.h>
-#include <string.h>
 
 // this is a simple string arena allocator, initialize with e.g. 'cexds_string_arena my_arena={0}'.
 typedef struct cexds_string_arena cexds_string_arena;
@@ -1308,7 +1292,7 @@ integers in binary: "%b" for 256 would print 100.
 #define CEX_SPRINTF_MIN 512 // size of stack based buffer for small strings
 #endif
 
-// #define CEXSP_STATIC   // makes all functions static
+#define CEXSP_STATIC   // makes all functions static
 
 #ifdef CEXSP_STATIC
 #define CEXSP__PUBLICDEC static
@@ -1350,8 +1334,6 @@ CEXSP__PUBLICDEC void cexsp__set_separators(char comma, char period);
  * @brief
  */
 
-#include <stdalign.h>
-#include <stdint.h>
 
 /// Represents char* slice (string view) + may not be null-term at len!
 typedef struct
@@ -1492,7 +1474,6 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__sbuf sbuf; 
 /*
 *                   io.h
 */
-#include <stdio.h>
 
 struct __module__io
 {
@@ -1535,10 +1516,6 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__io io; // C
  * Use of this source code is governed by a MIT-style license that can be found
  * in the LICENSE file.
  */
-#ifndef ARGPARSE_H
-#define ARGPARSE_H
-
-#include <stdint.h>
 
 struct argparse_c;
 struct argparse_opt_s;
@@ -1658,10 +1635,9 @@ void            (*usage)(argparse_c* self);
     // clang-format on
 };
 __attribute__ ((visibility("hidden"))) extern const struct __module__argparse argparse; // CEX Autogen
-#endif
 
 /*
-*                   os/subprocess.h
+*                   _subprocess.h
 */
 /*
    The latest version of this library is available on GitHub;
@@ -2868,9 +2844,8 @@ int subprocess_alive(struct subprocess_s *const process) {
 #endif /* SHEREDOM_SUBPROCESS_H_INCLUDED */
 
 /*
-*                   os/os.h
+*                   os.h
 */
-
 
 typedef struct os_cmd_flags_s
 {
@@ -2970,10 +2945,6 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__os os; // C
 /*
 *                   test.h
 */
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
 
 #ifndef NAN
 #error "NAN is undefined on this platform"
@@ -3016,8 +2987,8 @@ struct __CexTestContext_s
 };
 
 
-// void* __cex_test_postmortem_ctx = NULL;
-// void (*__cex_test_postmortem_f)(void* ctx) = NULL;
+void* __cex_test_postmortem_ctx = NULL;
+void (*__cex_test_postmortem_f)(void* ctx) = NULL;
 
 
 void
@@ -3415,6 +3386,29 @@ __cex_test_run_postmortem()
 
 
 #ifdef CEX_IMPLEMENTATION
+
+const struct _CEX_Error_struct Error = {
+    .ok = EOK,                       // Success
+    .memory = "MemoryError",         // memory allocation error
+    .io = "IOError",                 // IO error
+    .overflow = "OverflowError",     // buffer overflow
+    .argument = "ArgumentError",     // function argument error
+    .integrity = "IntegrityError",   // data integrity error
+    .exists = "ExistsError",         // entity or key already exists
+    .not_found = "NotFoundError",    // entity or key already exists
+    .skip = "ShouldBeSkipped",       // NOT an error, function result must be skipped
+    .empty = "EmptyError",           // resource is empty
+    .eof = "EOF",                    // end of file reached
+    .argsparse = "ProgramArgsError", // program arguments empty or incorrect
+    .runtime = "RuntimeError",       // generic runtime error
+    .assert = "AssertError",         // generic runtime check
+    .os = "OSError",                 // generic OS check
+    .timeout = "TimeoutError",       // await interval timeout
+};
+
+/*
+*                   cex_base.c
+*/
 
 const struct _CEX_Error_struct Error = {
     .ok = EOK,                       // Success
@@ -4354,10 +4348,6 @@ const struct __class__AllocatorArena AllocatorArena = {
 /*
 *                   ds.c
 */
-
-#include <assert.h>
-#include <stddef.h>
-#include <string.h>
 
 
 #ifdef CEXDS_STATISTICS
@@ -7169,10 +7159,6 @@ cexsp__real_to_str(
 /*
 *                   str.c
 */
-#include <ctype.h>
-#include <ctype.h>
-#include <float.h>
-#include <math.h>
 
 static inline bool
 str__isvalid(const str_s* s)
@@ -8956,9 +8942,6 @@ const struct __module__sbuf sbuf = {
 /*
 *                   io.c
 */
-#include <errno.h>
-#include <unistd.h>
-
 
 Exception
 io_fopen(FILE** file, const char* filename, const char* mode)
@@ -9542,11 +9525,6 @@ const struct __module__io io = {
  * Use of this source code is governed by a MIT-style license that can be found
  * in the LICENSE file.
  */
-#include <assert.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 const u32 ARGPARSE_OPT_UNSET = 1;
 const u32 ARGPARSE_OPT_LONG = (1 << 1);
@@ -10043,29 +10021,18 @@ const struct __module__argparse argparse = {
 };
 
 /*
-*                   os/subprocess.c
+*                   _subprocess.c
 */
 
 
 /*
-*                   os/os.c
+*                   os.c
 */
 
 #ifdef _WIN32
 #define os$PATH_SEP '\\'
 #else
 #define os$PATH_SEP '/'
-#endif
-
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <dirent.h>
-#include <linux/limits.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 #endif
 
 static void
@@ -10800,7 +10767,7 @@ os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 
     if (cpid == 0) {
         if (execvp(args[0], (char* const*)args) < 0) {
-            log$error("Could not exec child process: %s", strerror(errno));
+            log$error("Could not exec child process: %s\n", strerror(errno));
             exit(1);
         }
         uassert(false && "unreachable");

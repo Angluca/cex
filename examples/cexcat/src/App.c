@@ -185,7 +185,7 @@ App_destroy(App_c* app, IAllocator allocator)
 {
     (void)app;
     (void)allocator;
-    log$debug("App is shutting down\n");
+    log$debug("App is shutting down\n\n");
 }
 
 const struct __class__App App = {

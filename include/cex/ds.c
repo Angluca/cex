@@ -1,8 +1,4 @@
-#include "ds.h"
-
-#include <assert.h>
-#include <stddef.h>
-#include <string.h>
+#include "all.h"
 
 
 #ifdef CEXDS_STATISTICS
