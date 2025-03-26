@@ -83,12 +83,12 @@ __cex_test_run_postmortem()
 #define tassertf(A, M, ...)                                                                        \
     ({                                                                                             \
         if (!(A)) {                                                                                \
-            snprintf(                                                                              \
+            if(str.sprintf(                                                                              \
                 __CexTestContext._str_buf,                                                         \
                 CEXTEST_AMSG_MAX_LEN - 1,                                                          \
                 __CEXTEST_LOG_ERR(M),                                                              \
                 ##__VA_ARGS__                                                                      \
-            );                                                                                     \
+            )){}                                                                                     \
             __cex_test_run_postmortem();                                                           \
             return __CexTestContext._str_buf;                                                      \
         }                                                                                          \
