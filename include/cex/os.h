@@ -17,37 +17,62 @@ typedef struct os_cmd_c
     bool _is_subprocess;
 } os_cmd_c;
 
-typedef struct os_fs_filetype_s {
+typedef struct os_fs_filetype_s
+{
     Exc result;
-    usize is_valid: 1;
-    usize is_directory: 1;
-    usize is_symlink: 1;
-    usize is_file: 1;
-    usize is_other: 1;
+    usize is_valid : 1;
+    usize is_directory : 1;
+    usize is_symlink : 1;
+    usize is_file : 1;
+    usize is_other : 1;
 } os_fs_filetype_s;
-_Static_assert(sizeof(os_fs_filetype_s) == sizeof(usize)*2, "size?");
+_Static_assert(sizeof(os_fs_filetype_s) == sizeof(usize) * 2, "size?");
 
 typedef Exception os_fs_dir_walk_f(const char* path, os_fs_filetype_s ftype, void* user_ctx);
+
+
+#ifdef CEX_BUILD
+#define _os$args_print(msg, args, args_len)                                                        \
+    log$debug(msg "");                                                                             \
+    for (u32 i = 0; i < args_len - 1; i++) {                                                       \
+        const char* a = args[i];                                                                   \
+        io.printf(" ");                                                                            \
+        if (str.find(a, " ")) {                                                                    \
+            io.printf("%c", '\'');                                                                 \
+            io.printf("%s", a);                                                                    \
+            io.printf("%c", '\'');                                                                 \
+        } else {                                                                                   \
+            io.printf("%s", a);                                                                    \
+        }                                                                                          \
+    }                                                                                              \
+    io.printf("\n");
+#else
+#define _os$args_print(msg, args, args_len)
+#endif
+
+#define os$cmda(args, args_len...)                                                                 \
+    ({                                                                                             \
+        /* NOLINTBEGIN */                                                                          \
+        _Static_assert(sizeof(args) > 0, "You must pass at least one item");                      \
+        usize _args_len_va[] = { args_len };                                                       \
+        (void)_args_len_va;                                                                         \
+        usize _args_len = (sizeof(_args_len_va) > 0) ? _args_len_va[0] : arr$len(args);                \
+        uassert(_args_len < PTRDIFF_MAX && "negative length or overflow");                           \
+        _os$args_print("CMD:", args, _args_len);                                                   \
+        os_cmd_c _cmd = { 0 };                                                                     \
+        e$ret(os.cmd.run(args, _args_len, &_cmd));                                                  \
+        e$ret(os.cmd.join(&_cmd, 0, NULL));                                                        \
+        /* NOLINTEND */                                                                            \
+    })
 
 #define os$cmd(args...)                                                                            \
     ({                                                                                             \
         const char* _args[] = { args, NULL };                                                      \
         usize _args_len = arr$len(_args);                                                          \
-        os_cmd_c _cmd = { 0 };                                                                     \
-        Exc result = EOK;                                                                          \
-        e$except(err, os.cmd.run(_args, _args_len, &_cmd))                                         \
-        {                                                                                          \
-            result = err;                                                                          \
-        }                                                                                          \
-        if (result == EOK) {                                                                       \
-            e$except(err, os.cmd.join(&_cmd, 0, NULL))                                             \
-            {                                                                                      \
-                result = err;                                                                      \
-            }                                                                                      \
-        }                                                                                          \
-        result;                                                                                    \
+        os$cmda(_args, _args_len);                                                                 \
     })
 
+__attribute__((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
 struct __module__os
 {
     // Autogenerated by CEX
@@ -86,7 +111,7 @@ struct {  // sub-module .cmd >>>
     Exception       (*kill)(os_cmd_c* self);
     char*           (*read_all)(os_cmd_c* self, IAllocator allc);
     char*           (*read_line)(os_cmd_c* self, IAllocator allc);
-    Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
+    Exception       (*run)(char** args, usize args_len, os_cmd_c* out_cmd);
     FILE*           (*stderr)(os_cmd_c* self);
     FILE*           (*stdin)(os_cmd_c* self);
     FILE*           (*stdout)(os_cmd_c* self);

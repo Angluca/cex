@@ -312,6 +312,8 @@ int __cex_test_uassert_enabled = 1;
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
 #define cex$concat3(c, a, b) c##a##b
 #define cex$concat(a, b) a##b
+#define _cex$stringize(...) #__VA_ARGS__
+#define cex$stringize(...) _cex$stringize(__VA_ARGS__)
 #define cex$varname(a, b) cex$concat3(__cex__, a, b)
 #define cex$tmpname(base) cex$varname(base, __LINE__)
 
