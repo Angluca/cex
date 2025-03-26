@@ -8,7 +8,7 @@
         }                                                                                          \
         *(lx->cur++);                                                                              \
     })
-#define lx$peek(lx) *lx->cur
+#define lx$peek(lx) (lx->cur < lx->content_end ) ? *lx->cur : '\0'
 
 static CexLexer_c
 CexLexer_create(char* content, u32 content_len)
@@ -17,7 +17,7 @@ CexLexer_create(char* content, u32 content_len)
     if (content_len == 0) {
         content_len = strlen(content);
     }
-    CexLexer_c lx = { .content = content, .content_len = content_len, .cur = content };
+    CexLexer_c lx = { .content = content, .content_end = content + content_len, .cur = content };
     return lx;
 }
 
@@ -41,27 +41,60 @@ CexLexer_scan_number(CexLexer_c* lx)
     cex_token_s t = { .type = CexTkn__number, .value = { .buf = lx->cur, .len = 0 } };
     char c;
     while ((c = lx$next(lx))) {
-        if (c == '0') {
-            char nc = lx$peek(lx);
-            if (nc == 'X' || nc == 'x' || nc == 'b') {
-                t.value.len++;
+        if (isspace(c)) {
+            break;
+        }
+        t.value.len++;
+    }
+    return t;
+}
+
+static cex_token_s
+CexLexer_scan_string(CexLexer_c* lx)
+{
+    cex_token_s t = { .type = CexTkn__string, .value = { .buf = lx->cur + 1, .len = 0 } };
+    lx$next(lx);
+    char c;
+    while ((c = lx$next(lx))) {
+        switch (c) {
+            case '\\': // escape char, unconditionally skip next
                 lx$next(lx);
-                while ((nc = lx$next(lx))) {
-                    if (isxdigit(nc)) {
-                        t.value.len++;
-                    } else {
+                t.value.len++;
+                break;
+            case '"':
+                return t;
+        }
+        t.value.len++;
+    }
+    return t;
+}
+
+static cex_token_s
+CexLexer_scan_comment(CexLexer_c* lx)
+{
+    cex_token_s t = { .type = lx->cur[1] == '/' ? CexTkn__comment_single : CexTkn__comment_multi,
+                      .value = { .buf = lx->cur, .len = 2 } };
+    lx$next(lx);
+    lx$next(lx);
+    char c;
+    while ((c = lx$next(lx))) {
+        switch (c) {
+            case '\n':
+                if (t.type == CexTkn__comment_single) {
+                    return t;
+                }
+                break;
+            case '*':
+                if (t.type == CexTkn__comment_multi) {
+                    if (lx->cur[0] == '/'){
+                        lx$next(lx);
+                        t.value.len += 2;
                         return t;
                     }
                 }
-                continue;
-            }
-            t.value.len++;
-            break;
-        } else if (isdigit(c)) {
-            t.value.len++;
-        } else {
-            return t;
+                break;
         }
+        t.value.len++;
     }
     return t;
 }
@@ -81,6 +114,19 @@ CexLexer_next_token(CexLexer_c* lx)
         }
         if (isdigit(c)) {
             return CexLexer_scan_number(lx);
+        }
+
+        switch (c) {
+            case '"':
+                return CexLexer_scan_string(lx);
+            case '/':
+                if (lx->cur[1] == '/' || lx->cur[1] == '*') {
+                    return CexLexer_scan_comment(lx);
+                } else {
+                    uassert(false && "TODO: division");
+                }
+            default:
+                break;
         }
 
         cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
