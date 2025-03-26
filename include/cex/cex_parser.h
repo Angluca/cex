@@ -7,6 +7,7 @@ typedef enum CexTkn_e {
     CexTkn__string,
     CexTkn__comment_single,
     CexTkn__comment_multi,
+    CexTkn__preproc,
     CexTkn__unk,
 } CexTkn_e;
 

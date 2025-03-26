@@ -42,6 +42,7 @@ test$case(test_token_ident)
     return EOK;
 }
 
+
 test$case(test_token_new_line_skip)
 {
     char* code = " \nfoo ";
@@ -201,7 +202,37 @@ test$case(test_token_comment_and_ident)
     return EOK;
 }
 
+test$case(test_token_preproc)
+{
+    // <code>, <token txt>, <token_type>
+    token_cmp_s tokens[] = {
+        { "#include <foo.h>", "include <foo.h>", CexTkn__preproc },
+        { "#   include <foo.h>", "include <foo.h>", CexTkn__preproc },
+        { "   #   include <foo.h>", "include <foo.h>", CexTkn__preproc },
+        { "#", "", CexTkn__preproc },
+        { "   #   include <foo.h> \n bar", "include <foo.h> ", CexTkn__preproc },
+        { "   #   include \"foo.h\"", "include \"foo.h\"", CexTkn__preproc },
+        { "   #   define my$foo(baz, bar) bar", "define my$foo(baz, bar) bar", CexTkn__preproc },
+        { "   #   define my$foo(baz, bar) bar\\another\nstop", "define my$foo(baz, bar) bar\\another", CexTkn__preproc },
+    };
+    for$each(it, tokens)
+    {
+        CexLexer_c lx = CexLexer_create(it.code, 0);
+        tassert(*lx.cur);
+        cex_token_s t = CexLexer_next_token(&lx);
+        tassertf(t.type == it.type, "code='%s', type_exp=%d, type_act=%d", it.code, it.type, t.type);
+        tassertf(
+            str.slice.eq(t.value, str.sstr(it.exp_token)),
+            "code='%s', val_exp='%s' val_value='%S'",
+            it.code,
+            it.exp_token,
+            t.value
+        );
+        tassert(t.value.buf >= it.code && t.value.buf <= it.code + strlen(it.code));
+    }
 
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -211,8 +242,8 @@ int
 main(int argc, char* argv[])
 {
     test$args_parse(argc, argv);
-    test$print_header(); // >>> all tests below
-
+    test$print_header();  // >>> all tests below
+    
     test$run(test_token_ident);
     test$run(test_token_new_line_skip);
     test$run(test_token_new_empty);
@@ -221,7 +252,8 @@ main(int argc, char* argv[])
     test$run(test_token_string);
     test$run(test_token_comment);
     test$run(test_token_comment_and_ident);
-
-    test$print_footer(); // ^^^^^ all tests runs are above
+    test$run(test_token_preproc);
+    
+    test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
 }

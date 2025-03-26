@@ -9,6 +9,7 @@
         *(lx->cur++);                                                                              \
     })
 #define lx$peek(lx) (lx->cur < lx->content_end ) ? *lx->cur : '\0'
+#define lx$skip_space(lx, c) while(c && isspace((c))){ lx$next(lx); (c) = *lx->cur; }
 
 static CexLexer_c
 CexLexer_create(char* content, u32 content_len)
@@ -100,14 +101,35 @@ CexLexer_scan_comment(CexLexer_c* lx)
 }
 
 static cex_token_s
+CexLexer_scan_preproc(CexLexer_c* lx)
+{
+    lx$next(lx);
+    char c = *lx->cur;
+    lx$skip_space(lx, c);
+    cex_token_s t = { .type = CexTkn__preproc,
+                      .value = { .buf = lx->cur, .len = 0 } };
+
+    while ((c = lx$next(lx))) {
+        switch (c) {
+            case '\n':
+                return t;
+            case '\\':
+                // next line concat for #define
+                lx$next(lx);
+                t.value.len++;
+                break;
+        }
+        t.value.len++;
+    }
+    return t;
+}
+
+static cex_token_s
 CexLexer_next_token(CexLexer_c* lx)
 {
     char c;
     while ((c = lx$peek(lx))) {
-        if (isspace(c)) {
-            lx$next(lx);
-            continue;
-        }
+        lx$skip_space(lx, c);
 
         if (isalpha(c) || c == '_') {
             return CexLexer_scan_ident(lx);
@@ -125,6 +147,9 @@ CexLexer_next_token(CexLexer_c* lx)
                 } else {
                     uassert(false && "TODO: division");
                 }
+                break;
+            case '#':
+                return CexLexer_scan_preproc(lx);
             default:
                 break;
         }
@@ -138,3 +163,4 @@ CexLexer_next_token(CexLexer_c* lx)
 
 #undef lx$next
 #undef lx$peek
+#undef lx$skip_space
