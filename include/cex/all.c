@@ -1,5 +1,7 @@
+// clang-format off
 #ifndef CEX_HEADER_H
 #define CEX_HEADER_H
+#define CEX_IMPLEMENTATION
 #pragma once
 #include "all.h"
 #include "cex_base.c"
@@ -13,6 +15,8 @@
 #include "ds.c"
 #include "os.c"
 #include "argparse.c"
+#include "cex_code_gen.c"
 #endif // CEX_HEADER_H
+// clang-format on
 
 

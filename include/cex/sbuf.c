@@ -174,6 +174,17 @@ sbuf_clear(sbuf_c* self)
     (*self)[head->length] = '\0';
 }
 
+static void
+sbuf_shrink(sbuf_c* self, u32 new_length)
+{
+    uassert(self != NULL);
+    sbuf_head_s* head = sbuf__head(*self);
+    uassert(new_length <= head->length);
+    uassert(new_length <= head->capacity);
+    head->length = new_length;
+    (*self)[head->length] = '\0';
+}
+
 static u32
 sbuf_len(const sbuf_c* self)
 {
@@ -263,9 +274,11 @@ sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 }
 
 static Exception
-sbuf__appendfva(sbuf_c* self, const char* format, va_list va)
+sbuf_appendfva(sbuf_c* self, const char* format, va_list va)
 {
-    uassert(self != NULL);
+    if (unlikely(self == NULL)) {
+        return Error.argument;
+    }
     sbuf_head_s* head = sbuf__head(*self);
 
     struct _sbuf__sprintf_ctx ctx = {
@@ -300,7 +313,7 @@ sbuf_appendf(sbuf_c* self, const char* format, ...)
 
     va_list va;
     va_start(va, format);
-    Exc result = sbuf__appendfva(self, format, va);
+    Exc result = sbuf_appendfva(self, format, va);
     va_end(va);
     return result;
 }
@@ -311,7 +324,7 @@ sbuf_append(sbuf_c* self, const char* s)
     uassert(self != NULL);
     sbuf_head_s* head = sbuf__head(*self);
 
-    if (s == NULL) {
+    if (unlikely(s == NULL)) {
         return Error.argument;
     }
 
@@ -398,9 +411,11 @@ const struct __module__sbuf sbuf = {
     .grow = sbuf_grow,
     .update_len = sbuf_update_len,
     .clear = sbuf_clear,
+    .shrink = sbuf_shrink,
     .len = sbuf_len,
     .capacity = sbuf_capacity,
     .destroy = sbuf_destroy,
+    .appendfva = sbuf_appendfva,
     .appendf = sbuf_appendf,
     .append = sbuf_append,
     .isvalid = sbuf_isvalid,

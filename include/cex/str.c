@@ -87,8 +87,7 @@ static bool
 str__slice__eq(str_s a, str_s b)
 {
     if (unlikely(a.buf == NULL || b.buf == NULL)) {
-        // NOTE: if both are NULL - this function intentionally return false
-        return false;
+        return (a.buf == NULL && b.buf == NULL);
     }
     if (a.len != b.len) {
         return false;

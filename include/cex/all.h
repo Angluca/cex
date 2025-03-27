@@ -14,4 +14,5 @@
 #include <cex/argparse.h>
 #include <cex/_subprocess.h>
 #include <cex/os.h>
+#include "cex_code_gen.h"
 // clang-format on

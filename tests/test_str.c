@@ -2099,6 +2099,20 @@ test$case(test_str_toupper)
     tassert(s == NULL);
     return EOK;
 }
+
+test$case(test_str_slice_eq)
+{
+    tassert(str.slice.eq(str.sstr("hello"), str$s("hello")));
+    tassert(!str.slice.eq(str.sstr("hello"), str$s("hello ")));
+    tassert(!str.slice.eq(str.sstr("hello "), str$s("hello")));
+    tassert(str.slice.eq(str.sstr(""), str$s("")));
+    tassert(!str.slice.eq(str.sstr(""), str$s(" ")));
+    tassert(!str.slice.eq(str.sstr(NULL), str$s(" ")));
+    tassert(!str.slice.eq(str.sstr(NULL), str$s(" ")));
+    tassert(str.slice.eq(str.sstr(NULL), str.sstr(NULL)));
+
+    return EOK;
+}
 /*
  *
 
@@ -2156,6 +2170,7 @@ main(int argc, char* argv[])
     test$run(test_str_chaining);
     test$run(test_str_tolower);
     test$run(test_str_toupper);
+    test$run(test_str_slice_eq);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();

@@ -133,31 +133,103 @@ CexLexer_scan_preproc(CexLexer_c* lx)
 static cex_token_s
 CexLexer_scan_scope(CexLexer_c* lx)
 {
-    char c = lx$next(lx);
+    cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
+
     if (!lx->fold_scopes) {
+        char c = lx$next(lx);
         switch (c) {
             case '(':
                 return (cex_token_s){ .type = CexTkn__lparen,
-                                      .value = { .buf = lx->cur-1, .len = 1 } };
+                                      .value = { .buf = lx->cur - 1, .len = 1 } };
             case '[':
                 return (cex_token_s){ .type = CexTkn__lbracket,
-                                      .value = { .buf = lx->cur-1, .len = 1 } };
+                                      .value = { .buf = lx->cur - 1, .len = 1 } };
             case '{':
                 return (cex_token_s){ .type = CexTkn__lbrace,
-                                      .value = { .buf = lx->cur-1, .len = 1 } };
+                                      .value = { .buf = lx->cur - 1, .len = 1 } };
             default:
                 unreachable();
         }
+        return t;
     } else {
-        unreachable("TODO");
+        char scope_stack[128] = { 0 };
+        u32 scope_depth = 0;
+
+#define scope$push(c) /* temp macro! */                                                            \
+    if (++scope_depth < sizeof(scope_stack)) {                                                     \
+        scope_stack[scope_depth - 1] = c;                                                          \
     }
-    cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
-    return t;
+#define scope$pop_if(c) /* temp macro! */                                                          \
+    if (scope_depth > 0 && scope_depth <= sizeof(scope_stack) &&                                   \
+        scope_stack[scope_depth - 1] == c) {                                                       \
+        scope_stack[--scope_depth] = '\0';                                                         \
+    }
+
+        char c = lx$peek(lx);
+        switch (c) {
+            case '(':
+                t.type = CexTkn__paren_block;
+                break;
+            case '[':
+                t.type = CexTkn__bracket_block;
+                break;
+            case '{':
+                t.type = CexTkn__brace_block;
+                break;
+            default:
+                unreachable();
+        }
+
+        while ((c = lx$next(lx))) {
+            t.value.len++;
+            switch (c) {
+                case '{':
+                    scope$push(c);
+                    break;
+                case '[':
+                    scope$push(c);
+                    break;
+                case '(':
+                    scope$push(c);
+                    break;
+                case '}':
+                    scope$pop_if('{');
+                    break;
+                case ']':
+                    scope$pop_if('[');
+                    break;
+                case ')':
+                    scope$pop_if('(');
+                    break;
+            }
+
+            if (scope_depth == 0) {
+                return t;
+            }
+        }
+
+#undef scope$push
+#undef scope$pop_if
+
+        if (scope_depth != 0) {
+            t.type = CexTkn__error;
+            t.value.buf = NULL;
+            t.value.len = 0;
+        }
+        return t;
+    }
 }
 
 static cex_token_s
 CexLexer_next_token(CexLexer_c* lx)
 {
+
+#define tok$new(tok_type)                                                                          \
+    ({                                                                                             \
+        lx$next(lx);                                                                               \
+        (cex_token_s){ .type = tok_type, .value = { .buf = lx->cur - 1, .len = 1 } };              \
+    })
+
     char c;
     while ((c = lx$peek(lx))) {
         lx$skip_space(lx, c);
@@ -176,35 +248,41 @@ CexLexer_next_token(CexLexer_c* lx)
                 if (lx->cur[1] == '/' || lx->cur[1] == '*') {
                     return CexLexer_scan_comment(lx);
                 } else {
-                    uassert(false && "TODO: division");
+                    break;
                 }
                 break;
+            case '*':
+                return tok$new(CexTkn__star);
+            case '.':
+                return tok$new(CexTkn__dot);
+            case ',':
+                return tok$new(CexTkn__comma);
+            case ';':
+                return tok$new(CexTkn__eos);
+            case ':':
+                return tok$new(CexTkn__colon);
+            case '?':
+                return tok$new(CexTkn__question);
             case '{':
             case '(':
             case '[':
                 return CexLexer_scan_scope(lx);
             case '}':
-                lx$next(lx);
-                return (cex_token_s){ .type = CexTkn__rbrace,
-                                      .value = { .buf = lx->cur-1, .len = 1 } };
+                return tok$new(CexTkn__rbrace);
             case ')':
-                lx$next(lx);
-                return (cex_token_s){ .type = CexTkn__rparen,
-                                      .value = { .buf = lx->cur-1, .len = 1 } };
+                return tok$new(CexTkn__rparen);
             case ']':
-                lx$next(lx);
-                return (cex_token_s){ .type = CexTkn__rbracket,
-                                      .value = { .buf = lx->cur-1, .len = 1 } };
+                return tok$new(CexTkn__rbracket);
             case '#':
                 return CexLexer_scan_preproc(lx);
             default:
                 break;
         }
 
-        cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
-        lx$next(lx);
-        return t;
+        return tok$new(CexTkn__unk);
     }
+
+#undef tok$new
     return (cex_token_s){ 0 }; // EOF
 }
 
