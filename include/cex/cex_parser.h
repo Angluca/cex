@@ -3,6 +3,7 @@
 typedef enum CexTkn_e {
     CexTkn__eof = 0,
     CexTkn__unk,
+    CexTkn__error,
     CexTkn__ident,
     CexTkn__number,
     CexTkn__string,
@@ -24,7 +25,6 @@ typedef enum CexTkn_e {
     CexTkn__colon,
     CexTkn__question,
     CexTkn__eos, // semicolon - ;
-    CexTkn__error,
     CexTkn__count,  // last!
 } CexTkn_e;
 
