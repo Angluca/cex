@@ -31,7 +31,7 @@ test$case(test_codegen_test)
         $pf("printf(\"hello world: %d\");", 2);
     }
 
-    $scope("void my_func(int arg_%d)", 2)
+    $func("void my_func(int arg_%d)", 2)
     {
         $scope("var my_var = (mytype)", "")
         {
@@ -52,10 +52,12 @@ test$case(test_codegen_test)
         {
             $pn("// else scope");
         }
+
         $while("foo == %d", 312)
         {
             $pn("printf(\"Hello: %d\", foo);");
         }
+
         $for("u32 i = 0; i < %d; i++", 312)
         {
             $pn("printf(\"Hello: %d\", foo);");
@@ -64,6 +66,7 @@ test$case(test_codegen_test)
                 $pn("printf(\"Hello: %d\", foo);");
             }
         }
+
         $scope("do ", "")
         {
             $pf("// do while", 1);

@@ -1,4 +1,5 @@
 #include "cex_code_gen.h"
+#include "all.h"
 #ifdef CEX_BUILD
 #ifdef CEX_IMPLEMENTATION
 

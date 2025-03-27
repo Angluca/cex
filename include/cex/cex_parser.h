@@ -2,6 +2,7 @@
 
 typedef enum CexTkn_e {
     CexTkn__eof = 0,
+    CexTkn__unk,
     CexTkn__ident,
     CexTkn__number,
     CexTkn__string,
@@ -17,7 +18,6 @@ typedef enum CexTkn_e {
     CexTkn__bracket_block,
     CexTkn__brace_block,
     CexTkn__paren_block,
-    CexTkn__unk,
     CexTkn__star,
     CexTkn__dot,
     CexTkn__comma,

@@ -73,7 +73,7 @@ test$case(test_token_new_empty)
 
 test$case(test_token_two_indents)
 {
-    char* code = " \nfoo _Bar$s!";
+    char* code = " \nfoo _Bar$s(";
     CexLexer_c lx = CexLexer_create(code, 0, false);
 
     cex_token_s t = CexLexer_next_token(&lx);
@@ -85,6 +85,14 @@ test$case(test_token_two_indents)
     tassert_eqi(lx.line, 1);
     tassert_eqi(t.type, CexTkn__ident);
     tassertf(str.slice.eq(t.value, str$s("_Bar$s")), "t.value=%S", t.value);
+    tassert_eqi(*lx.cur, '(');
+    tassert(lx.cur == lx.content_end-1);
+
+    t = CexLexer_next_token(&lx);
+    tassert_eqi(t.type, CexTkn__lparen);
+    tassertf(str.slice.eq(t.value, str$s("(")), "t.value='%S'", t.value);
+    tassert_eqi(*lx.cur, '\0');
+    tassert(lx.cur == lx.content_end);
 
     t = CexLexer_next_token(&lx);
     tassert_eqi(t.type, CexTkn__eof);
@@ -360,21 +368,82 @@ test$case(test_token_misc)
     return EOK;
 }
 
+test$case(test_token_secondary_token)
+{
+    // <code>, <token txt>, <token_type>
+    token_cmp_s tokens[] = {
+        { "main.", ".", CexTkn__dot },
+        { "234*", "*", CexTkn__star },
+        { "main*", "*", CexTkn__star },
+        { "main(", "(", CexTkn__lparen },
+        { "main[", "[", CexTkn__lbracket },
+    };
+    for$each(it, tokens)
+    {
+        CexLexer_c lx = CexLexer_create(it.code, 0, false);
+        tassert(*lx.cur);
+        cex_token_s t = CexLexer_next_token(&lx);
+        tassert(t.type);
+        // fetch second
+        t = CexLexer_next_token(&lx);
+        tassertf(t.type == it.type, "code='%s', type_exp=%d, type_act=%d", it.code, it.type, t.type);
+        tassertf(
+            str.slice.eq(t.value, str.sstr(it.exp_token)),
+            "code='%s', val_exp='%s' val_value='%S'",
+            it.code,
+            it.exp_token,
+            t.value
+        );
+        tassert(t.value.buf >= it.code && t.value.buf <= it.code + strlen(it.code));
+    }
+
+    return EOK;
+}
+
 test$case(test_token_code)
 {
     // clang-format off
     char* code = 
         "#include <gfoo>\n"
-        "int main(int argc, char** argv) {\n"
-        "        printf(\"hello\"); \n"
+        "int main(char** argv) {\n"
+        "    printf(\"hello\"); \n"
         "}";
     // clang-format on
-    printf("code:\n%s\n", code);
+    token_cmp_s tokens[] = {
+        { NULL, "include <gfoo>", CexTkn__preproc },
+        { NULL, "int", CexTkn__ident },
+        { NULL, "main", CexTkn__ident },
+        { NULL, "(char** argv)", CexTkn__paren_block },
+        { NULL, "{\n    printf(\"hello\"); \n}", CexTkn__brace_block },
+    };
     CexLexer_c lx = CexLexer_create(code, 0, true);
     cex_token_s t;
-    while ((t = CexLexer_next_token(&lx)).type) {
-        io.printf("token: %d code: '%S'\n", t.type, t.value);
+    u32 nit = 0;
+    for$each(it, tokens)
+    {
+        t = CexLexer_next_token(&lx);
+        io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
+        tassert(t.type);
+        tassertf(t.type == it.type, "step: %d type_exp=%d, type_act=%d", nit, it.type, t.type);
+        tassertf(
+            str.slice.eq(t.value, str.sstr(it.exp_token)),
+            "step: %d val_exp='%s' val_value='%S'",
+            nit,
+            it.exp_token,
+            t.value
+        );
+        tassert(t.value.buf >= code && t.value.buf <= code + strlen(code));
+        nit++;
     }
+    t = CexLexer_next_token(&lx);
+    tassertf(
+        t.type == CexTkn__eof,
+        "step: %d type_exp=%d, t.type=%d t.value='%S'\n",
+        nit,
+        CexTkn__eof,
+        t.type,
+        t.value
+    );
     return EOK;
 }
 /*
@@ -401,6 +470,7 @@ main(int argc, char* argv[])
     test$run(test_token_paren_block);
     test$run(test_token_paren_block_overflow_test);
     test$run(test_token_misc);
+    test$run(test_token_secondary_token);
     test$run(test_token_code);
     
     test$print_footer();  // ^^^^^ all tests runs are above

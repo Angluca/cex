@@ -8,6 +8,15 @@
         }                                                                                          \
         *(lx->cur++);                                                                              \
     })
+#define lx$rewind(lx)                                                                              \
+    ({                                                                                             \
+        if (lx->cur > lx->content) {                                                               \
+            lx->cur--;                                                                             \
+            if (*lx->cur == '\n') {                                                                \
+                lx->line++;                                                                        \
+            }                                                                                      \
+        }                                                                                          \
+    })
 #define lx$peek(lx) (lx->cur < lx->content_end) ? *lx->cur : '\0'
 #define lx$skip_space(lx, c)                                                                       \
     while (c && isspace((c))) {                                                                    \
@@ -36,6 +45,7 @@ CexLexer_scan_ident(CexLexer_c* lx)
     char c;
     while ((c = lx$next(lx))) {
         if (!(isalpha(c) || c == '_' || c == '$')) {
+            lx$rewind(lx);
             break;
         }
         t.value.len++;
@@ -49,8 +59,17 @@ CexLexer_scan_number(CexLexer_c* lx)
     cex_token_s t = { .type = CexTkn__number, .value = { .buf = lx->cur, .len = 0 } };
     char c;
     while ((c = lx$next(lx))) {
-        if (isspace(c)) {
-            break;
+        switch (c) {
+            case ' ':
+            case '\t':
+            case '\n':
+            case '\r':
+            case '/':
+            case '*':
+            case '+':
+            case '-':
+                lx$rewind(lx);
+                return t;
         }
         t.value.len++;
     }
@@ -136,20 +155,22 @@ CexLexer_scan_scope(CexLexer_c* lx)
     cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
 
     if (!lx->fold_scopes) {
-        char c = lx$next(lx);
+        char c = lx$peek(lx);
         switch (c) {
             case '(':
-                return (cex_token_s){ .type = CexTkn__lparen,
-                                      .value = { .buf = lx->cur - 1, .len = 1 } };
+                t.type = CexTkn__lparen;
+                break;
             case '[':
-                return (cex_token_s){ .type = CexTkn__lbracket,
-                                      .value = { .buf = lx->cur - 1, .len = 1 } };
+                t.type = CexTkn__lbracket;
+                break;
             case '{':
-                return (cex_token_s){ .type = CexTkn__lbrace,
-                                      .value = { .buf = lx->cur - 1, .len = 1 } };
+                t.type = CexTkn__lbrace;
+                break;
             default:
                 unreachable();
         }
+        t.value.len = 1;
+        lx$next(lx);
         return t;
     } else {
         char scope_stack[128] = { 0 };
@@ -233,6 +254,9 @@ CexLexer_next_token(CexLexer_c* lx)
     char c;
     while ((c = lx$peek(lx))) {
         lx$skip_space(lx, c);
+        if (!c) {
+            break;
+        }
 
         if (isalpha(c) || c == '_') {
             return CexLexer_scan_ident(lx);
