@@ -8,6 +8,12 @@ typedef enum CexTkn_e {
     CexTkn__comment_single,
     CexTkn__comment_multi,
     CexTkn__preproc,
+    CexTkn__lparen,
+    CexTkn__rparen,
+    CexTkn__lbrace,
+    CexTkn__rbrace,
+    CexTkn__lbracket,
+    CexTkn__rbracket,
     CexTkn__unk,
 } CexTkn_e;
 
@@ -21,4 +27,5 @@ typedef struct CexLexer_c {
     char* cur;
     char* content_end;
     u32 line;
+    bool fold_scopes;
 } CexLexer_c;

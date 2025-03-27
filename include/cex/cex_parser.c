@@ -8,17 +8,24 @@
         }                                                                                          \
         *(lx->cur++);                                                                              \
     })
-#define lx$peek(lx) (lx->cur < lx->content_end ) ? *lx->cur : '\0'
-#define lx$skip_space(lx, c) while(c && isspace((c))){ lx$next(lx); (c) = *lx->cur; }
+#define lx$peek(lx) (lx->cur < lx->content_end) ? *lx->cur : '\0'
+#define lx$skip_space(lx, c)                                                                       \
+    while (c && isspace((c))) {                                                                    \
+        lx$next(lx);                                                                               \
+        (c) = *lx->cur;                                                                            \
+    }
 
 static CexLexer_c
-CexLexer_create(char* content, u32 content_len)
+CexLexer_create(char* content, u32 content_len, bool fold_scopes)
 {
     uassert(content != NULL);
     if (content_len == 0) {
         content_len = strlen(content);
     }
-    CexLexer_c lx = { .content = content, .content_end = content + content_len, .cur = content };
+    CexLexer_c lx = { .content = content,
+                      .content_end = content + content_len,
+                      .cur = content,
+                      .fold_scopes = fold_scopes };
     return lx;
 }
 
@@ -87,7 +94,7 @@ CexLexer_scan_comment(CexLexer_c* lx)
                 break;
             case '*':
                 if (t.type == CexTkn__comment_multi) {
-                    if (lx->cur[0] == '/'){
+                    if (lx->cur[0] == '/') {
                         lx$next(lx);
                         t.value.len += 2;
                         return t;
@@ -106,8 +113,7 @@ CexLexer_scan_preproc(CexLexer_c* lx)
     lx$next(lx);
     char c = *lx->cur;
     lx$skip_space(lx, c);
-    cex_token_s t = { .type = CexTkn__preproc,
-                      .value = { .buf = lx->cur, .len = 0 } };
+    cex_token_s t = { .type = CexTkn__preproc, .value = { .buf = lx->cur, .len = 0 } };
 
     while ((c = lx$next(lx))) {
         switch (c) {
@@ -121,6 +127,31 @@ CexLexer_scan_preproc(CexLexer_c* lx)
         }
         t.value.len++;
     }
+    return t;
+}
+
+static cex_token_s
+CexLexer_scan_scope(CexLexer_c* lx)
+{
+    char c = lx$next(lx);
+    if (!lx->fold_scopes) {
+        switch (c) {
+            case '(':
+                return (cex_token_s){ .type = CexTkn__lparen,
+                                      .value = { .buf = lx->cur-1, .len = 1 } };
+            case '[':
+                return (cex_token_s){ .type = CexTkn__lbracket,
+                                      .value = { .buf = lx->cur-1, .len = 1 } };
+            case '{':
+                return (cex_token_s){ .type = CexTkn__lbrace,
+                                      .value = { .buf = lx->cur-1, .len = 1 } };
+            default:
+                unreachable();
+        }
+    } else {
+        unreachable("TODO");
+    }
+    cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
     return t;
 }
 
@@ -148,6 +179,22 @@ CexLexer_next_token(CexLexer_c* lx)
                     uassert(false && "TODO: division");
                 }
                 break;
+            case '{':
+            case '(':
+            case '[':
+                return CexLexer_scan_scope(lx);
+            case '}':
+                lx$next(lx);
+                return (cex_token_s){ .type = CexTkn__rbrace,
+                                      .value = { .buf = lx->cur-1, .len = 1 } };
+            case ')':
+                lx$next(lx);
+                return (cex_token_s){ .type = CexTkn__rparen,
+                                      .value = { .buf = lx->cur-1, .len = 1 } };
+            case ']':
+                lx$next(lx);
+                return (cex_token_s){ .type = CexTkn__rbracket,
+                                      .value = { .buf = lx->cur-1, .len = 1 } };
             case '#':
                 return CexLexer_scan_preproc(lx);
             default:

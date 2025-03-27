@@ -308,6 +308,20 @@ int __cex_test_uassert_enabled = 1;
     })
 #endif
 
+#define unreachable(format, ...)                                                                   \
+    ({                                                                                             \
+        __cex__fprintf(                                                                            \
+            __CEX_OUT_STREAM,                                                                      \
+            "[UNREACHABLE] ",                                                                      \
+            __FILE_NAME__,                                                                         \
+            __LINE__,                                                                              \
+            __func__,                                                                              \
+            format "\n",                                                                           \
+            ##__VA_ARGS__                                                                          \
+        );                                                                                         \
+        sanitizer_stack_trace();                                                                   \
+        __cex__abort();                                                                            \
+    })
 
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
 #define cex$concat3(c, a, b) c##a##b
@@ -332,7 +346,7 @@ int __cex_test_uassert_enabled = 1;
 #define e$except_errno(_expression)                                                                \
     if (unlikely(                                                                                  \
             ((_expression) == -1) &&                                                               \
-            log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno))      \
+            log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno))    \
         ))
 
 #define e$except_null(_expression)                                                                 \
@@ -384,7 +398,7 @@ struct _cex_arr_slice
             _slice.end += _len;                                                                    \
         _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
         _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
-        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */  \
+        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */                                                                                                \
         if (_slice.start < _slice.end && array != NULL) {                                          \
             slice.arr = &((array)[_slice.start]);                                                  \
             slice.len = (usize)(_slice.end - _slice.start);                                        \

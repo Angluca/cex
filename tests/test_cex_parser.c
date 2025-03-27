@@ -25,7 +25,7 @@ typedef struct token_cmp_s
 test$case(test_token_ident)
 {
     char* code = " \t foo ";
-    CexLexer_c lx = CexLexer_create(code, 0);
+    CexLexer_c lx = CexLexer_create(code, 0, false);
     tassert(lx.content == code);
     tassert(lx.cur == code);
     tassert(lx.content_end == code + strlen(code));
@@ -46,7 +46,7 @@ test$case(test_token_ident)
 test$case(test_token_new_line_skip)
 {
     char* code = " \nfoo ";
-    CexLexer_c lx = CexLexer_create(code, 0);
+    CexLexer_c lx = CexLexer_create(code, 0, false);
 
     cex_token_s t = CexLexer_next_token(&lx);
     tassert_eqi(lx.line, 1);
@@ -62,7 +62,7 @@ test$case(test_token_new_line_skip)
 test$case(test_token_new_empty)
 {
     char* code = "";
-    CexLexer_c lx = CexLexer_create(code, 0);
+    CexLexer_c lx = CexLexer_create(code, 0, false);
 
     cex_token_s t = CexLexer_next_token(&lx);
     t = CexLexer_next_token(&lx);
@@ -74,7 +74,7 @@ test$case(test_token_new_empty)
 test$case(test_token_two_indents)
 {
     char* code = " \nfoo _Bar$s!";
-    CexLexer_c lx = CexLexer_create(code, 0);
+    CexLexer_c lx = CexLexer_create(code, 0, false);
 
     cex_token_s t = CexLexer_next_token(&lx);
     tassert_eqi(lx.line, 1);
@@ -108,7 +108,7 @@ test$case(test_token_numbers)
     };
     for$each(it, tokens)
     {
-        CexLexer_c lx = CexLexer_create(it.code, 0);
+        CexLexer_c lx = CexLexer_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexLexer_next_token(&lx);
         tassertf(t.type == it.type, "code='%s', type_exp=%d, type_act=%d", it.code, it.type, t.type);
@@ -135,7 +135,7 @@ test$case(test_token_string)
     };
     for$each(it, tokens)
     {
-        CexLexer_c lx = CexLexer_create(it.code, 0);
+        CexLexer_c lx = CexLexer_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexLexer_next_token(&lx);
         tassertf(t.type == it.type, "code='%s', type_exp=%d, type_act=%d", it.code, it.type, t.type);
@@ -164,7 +164,7 @@ test$case(test_token_comment)
     };
     for$each(it, tokens)
     {
-        CexLexer_c lx = CexLexer_create(it.code, 0);
+        CexLexer_c lx = CexLexer_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexLexer_next_token(&lx);
         tassertf(t.type == it.type, "code='%s', type_exp=%d, type_act=%d", it.code, it.type, t.type);
@@ -184,7 +184,7 @@ test$case(test_token_comment)
 test$case(test_token_comment_and_ident)
 {
     char* code = " \n /* comm */foo";
-    CexLexer_c lx = CexLexer_create(code, 0);
+    CexLexer_c lx = CexLexer_create(code, 0, false);
 
     cex_token_s t = CexLexer_next_token(&lx);
     tassert_eqi(lx.line, 1);
@@ -217,7 +217,37 @@ test$case(test_token_preproc)
     };
     for$each(it, tokens)
     {
-        CexLexer_c lx = CexLexer_create(it.code, 0);
+        CexLexer_c lx = CexLexer_create(it.code, 0, false);
+        tassert(*lx.cur);
+        cex_token_s t = CexLexer_next_token(&lx);
+        tassertf(t.type == it.type, "code='%s', type_exp=%d, type_act=%d", it.code, it.type, t.type);
+        tassertf(
+            str.slice.eq(t.value, str.sstr(it.exp_token)),
+            "code='%s', val_exp='%s' val_value='%S'",
+            it.code,
+            it.exp_token,
+            t.value
+        );
+        tassert(t.value.buf >= it.code && t.value.buf <= it.code + strlen(it.code));
+    }
+
+    return EOK;
+}
+
+test$case(test_token_brace_parens_brackets)
+{
+    // <code>, <token txt>, <token_type>
+    token_cmp_s tokens[] = {
+        { "{", "{", CexTkn__lbrace },
+        { "}", "}", CexTkn__rbrace },
+        { "[", "[", CexTkn__lbracket },
+        { "]", "]", CexTkn__rbracket },
+        { "(", "(", CexTkn__lparen },
+        { ")", ")", CexTkn__rparen },
+    };
+    for$each(it, tokens)
+    {
+        CexLexer_c lx = CexLexer_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexLexer_next_token(&lx);
         tassertf(t.type == it.type, "code='%s', type_exp=%d, type_act=%d", it.code, it.type, t.type);
@@ -253,6 +283,7 @@ main(int argc, char* argv[])
     test$run(test_token_comment);
     test$run(test_token_comment_and_ident);
     test$run(test_token_preproc);
+    test$run(test_token_brace_parens_brackets);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
