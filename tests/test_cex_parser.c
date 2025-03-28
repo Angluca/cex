@@ -30,16 +30,16 @@ test$case(test_token_ident)
     tassert(lx.cur == code);
     tassert(lx.content_end == code + strlen(code));
     tassert_eqi(lx.line, 0);
-    #          define end_brace }
+#define end_brace }
 
     char* some_brace = "}";
     (void)some_brace;
-    // some stuff }      
+    // some stuff }
     cex_token_s t = CexLexer_next_token(&lx);
     tassert_eqi(lx.line, 0);
-    tassert_eqi(t.type, CexTkn__ident); /* multiline }        */   
+    tassert_eqi(t.type, CexTkn__ident); /* multiline }        */
     tassertf(str.slice.eq(t.value, str$s("foo")), "t.value=%S", t.value);
-    #    undef end_brace
+#undef end_brace
 
     t = CexLexer_next_token(&lx);
     tassert_eqi(t.type, CexTkn__eof);
@@ -453,17 +453,33 @@ test$case(test_token_code)
     return EOK;
 }
 
-test$case(test_token_self_file)
+test$case(test_token_this_file)
 {
-    // clang-format off
     char* code = io.file.load(__FILE__, mem$);
     CexLexer_c lx = CexLexer_create(code, 0, true);
     cex_token_s t;
-    u32 nit=0;
-    while((t = CexLexer_next_token(&lx)).type)
-    {
-        io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
+    u32 nit = 0;
+    char* prev_tok = lx.cur;
+    while ((t = CexLexer_next_token(&lx)).type) {
+        /* NOTE:
+         * Tokenize this file, and make sure that all test functions are parsed correctly
+        */
+        tassertf(t.type != CexTkn__unk, "step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
+        tassertf(t.type != CexTkn__error, "step: %d token error starts at: ...\n%s\n", prev_tok);
+        if (t.type == CexTkn__brace_block) {
+            tassert(str.slice.starts_with(t.value, str$s("{")));
+            tassert(str.slice.ends_with(t.value, str$s("}")));
+        } 
+        if (t.type == CexTkn__paren_block) {
+            tassert(str.slice.starts_with(t.value, str$s("(")));
+            tassert(str.slice.ends_with(t.value, str$s(")")));
+        } 
+        if (t.type == CexTkn__bracket_block) {
+            tassert(str.slice.starts_with(t.value, str$s("[")));
+            tassert(str.slice.ends_with(t.value, str$s("]")));
+        } 
         nit++;
+        prev_tok = lx.cur;
     }
     mem$free(mem$, code);
     return EOK;
@@ -494,7 +510,7 @@ main(int argc, char* argv[])
     test$run(test_token_misc);
     test$run(test_token_secondary_token);
     test$run(test_token_code);
-    test$run(test_token_self_file);
+    test$run(test_token_this_file);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
