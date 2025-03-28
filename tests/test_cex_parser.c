@@ -464,6 +464,8 @@ test$case(test_token_this_file)
         /* NOTE:
          * Tokenize this file, and make sure that all test functions are parsed correctly
         */
+        // io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
+
         tassertf(t.type != CexTkn__unk, "step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
         tassertf(t.type != CexTkn__error, "step: %d token error starts at: ...\n%s\n", prev_tok);
         if (t.type == CexTkn__brace_block) {
