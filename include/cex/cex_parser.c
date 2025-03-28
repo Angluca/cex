@@ -108,6 +108,7 @@ CexLexer_scan_comment(CexLexer_c* lx)
         switch (c) {
             case '\n':
                 if (t.type == CexTkn__comment_single) {
+                    lx$rewind(lx);
                     return t;
                 }
                 break;
@@ -201,8 +202,7 @@ CexLexer_scan_scope(CexLexer_c* lx)
                 unreachable();
         }
 
-        while ((c = lx$next(lx))) {
-            t.value.len++;
+        while ((c = lx$peek(lx))) {
             switch (c) {
                 case '{':
                     scope$push(c);
@@ -222,7 +222,31 @@ CexLexer_scan_scope(CexLexer_c* lx)
                 case ')':
                     scope$pop_if('(');
                     break;
+                case '"': 
+                case '\'': {
+                    var s = CexLexer_scan_string(lx);
+                    t.value.len += s.value.len + 2;
+                    continue;
+                }
+                case '/': {
+                    if (lx->cur[1] == '/' || lx->cur[1] == '*') {
+                        var s = CexLexer_scan_comment(lx);
+                        t.value.len += s.value.len;
+                        continue;
+                    }
+                    break;
+                }
+                case '#': {
+                    char* ppstart = lx->cur;
+                    var s = CexLexer_scan_preproc(lx);
+                    if (s.value.buf){
+                        t.value.len += s.value.len + (s.value.buf-ppstart) + 1;
+                    }
+                    continue;
+                }
             }
+            t.value.len++;
+            lx$next(lx);
 
             if (scope_depth == 0) {
                 return t;
@@ -266,6 +290,7 @@ CexLexer_next_token(CexLexer_c* lx)
         }
 
         switch (c) {
+            case '\'':
             case '"':
                 return CexLexer_scan_string(lx);
             case '/':

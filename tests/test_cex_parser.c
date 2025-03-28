@@ -30,11 +30,16 @@ test$case(test_token_ident)
     tassert(lx.cur == code);
     tassert(lx.content_end == code + strlen(code));
     tassert_eqi(lx.line, 0);
+    #          define end_brace }
 
+    char* some_brace = "}";
+    (void)some_brace;
+    // some stuff }      
     cex_token_s t = CexLexer_next_token(&lx);
     tassert_eqi(lx.line, 0);
-    tassert_eqi(t.type, CexTkn__ident);
+    tassert_eqi(t.type, CexTkn__ident); /* multiline }        */   
     tassertf(str.slice.eq(t.value, str$s("foo")), "t.value=%S", t.value);
+    #    undef end_brace
 
     t = CexLexer_next_token(&lx);
     tassert_eqi(t.type, CexTkn__eof);
@@ -52,6 +57,7 @@ test$case(test_token_new_line_skip)
     tassert_eqi(lx.line, 1);
     tassert_eqi(t.type, CexTkn__ident);
     tassertf(str.slice.eq(t.value, str$s("foo")), "t.value=%S", t.value);
+    /* multiline */
 
     t = CexLexer_next_token(&lx);
     tassert_eqi(t.type, CexTkn__eof);
@@ -86,7 +92,7 @@ test$case(test_token_two_indents)
     tassert_eqi(t.type, CexTkn__ident);
     tassertf(str.slice.eq(t.value, str$s("_Bar$s")), "t.value=%S", t.value);
     tassert_eqi(*lx.cur, '(');
-    tassert(lx.cur == lx.content_end-1);
+    tassert(lx.cur == lx.content_end - 1);
 
     t = CexLexer_next_token(&lx);
     tassert_eqi(t.type, CexTkn__lparen);
@@ -169,6 +175,7 @@ test$case(test_token_comment)
         { " /* hello */ foo", "/* hello */", CexTkn__comment_multi },
         { " /* hello\n bar */ foo", "/* hello\n bar */", CexTkn__comment_multi },
         { " /** hello */ foo", "/** hello */", CexTkn__comment_multi },
+        { " /* hello */\n foo", "/* hello */", CexTkn__comment_multi },
     };
     for$each(it, tokens)
     {
@@ -372,10 +379,8 @@ test$case(test_token_secondary_token)
 {
     // <code>, <token txt>, <token_type>
     token_cmp_s tokens[] = {
-        { "main.", ".", CexTkn__dot },
-        { "234*", "*", CexTkn__star },
-        { "main*", "*", CexTkn__star },
-        { "main(", "(", CexTkn__lparen },
+        { "main.", ".", CexTkn__dot },      { "234*", "*", CexTkn__star },
+        { "main*", "*", CexTkn__star },     { "main(", "(", CexTkn__lparen },
         { "main[", "[", CexTkn__lbracket },
     };
     for$each(it, tokens)
@@ -446,6 +451,22 @@ test$case(test_token_code)
     );
     return EOK;
 }
+
+test$case(test_token_self_file)
+{
+    // clang-format off
+    char* code = io.file.load(__FILE__, mem$);
+    CexLexer_c lx = CexLexer_create(code, 0, true);
+    cex_token_s t;
+    u32 nit=0;
+    while((t = CexLexer_next_token(&lx)).type)
+    {
+        io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
+        nit++;
+    }
+    mem$free(mem$, code);
+    return EOK;
+}
 /*
  *
  * MAIN (AUTO GENERATED)
@@ -472,6 +493,7 @@ main(int argc, char* argv[])
     test$run(test_token_misc);
     test$run(test_token_secondary_token);
     test$run(test_token_code);
+    test$run(test_token_self_file);
     
     test$print_footer();  // ^^^^^ all tests runs are above
     return test$exit_code();
