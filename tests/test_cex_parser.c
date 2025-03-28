@@ -146,6 +146,7 @@ test$case(test_token_string)
         { " \"hello world\" ", "hello world", CexTkn__string },
         { " \"hello \\\"world\" ", "hello \\\"world", CexTkn__string },
         { " \"hello \\world\" ", "hello \\world", CexTkn__string },
+        { " 'h' ", "h", CexTkn__char },
     };
     for$each(it, tokens)
     {

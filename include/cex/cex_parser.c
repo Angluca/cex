@@ -79,7 +79,8 @@ CexLexer_scan_number(CexLexer_c* lx)
 static cex_token_s
 CexLexer_scan_string(CexLexer_c* lx)
 {
-    cex_token_s t = { .type = CexTkn__string, .value = { .buf = lx->cur + 1, .len = 0 } };
+    cex_token_s t = { .type = (*lx->cur == '"' ? CexTkn__string : CexTkn__char),
+                      .value = { .buf = lx->cur + 1, .len = 0 } };
     lx$next(lx);
     char c;
     while ((c = lx$next(lx))) {
@@ -89,6 +90,7 @@ CexLexer_scan_string(CexLexer_c* lx)
                 t.value.len++;
                 break;
             case '"':
+            case '\'':
                 return t;
         }
         t.value.len++;
@@ -222,7 +224,7 @@ CexLexer_scan_scope(CexLexer_c* lx)
                 case ')':
                     scope$pop_if('(');
                     break;
-                case '"': 
+                case '"':
                 case '\'': {
                     var s = CexLexer_scan_string(lx);
                     t.value.len += s.value.len + 2;
@@ -239,8 +241,8 @@ CexLexer_scan_scope(CexLexer_c* lx)
                 case '#': {
                     char* ppstart = lx->cur;
                     var s = CexLexer_scan_preproc(lx);
-                    if (s.value.buf){
-                        t.value.len += s.value.len + (s.value.buf-ppstart) + 1;
+                    if (s.value.buf) {
+                        t.value.len += s.value.len + (s.value.buf - ppstart) + 1;
                     }
                     continue;
                 }
