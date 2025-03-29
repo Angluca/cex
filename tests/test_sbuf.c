@@ -3,7 +3,7 @@
 Exception
 append_to_cap(sbuf_c* s)
 {
-    tassert(s != NULL);
+    e$assert(s != NULL);
     char c[2] = { 'A', '\0' };
 
     for (usize i = sbuf.len(s); i < sbuf.capacity(s); i++) {
@@ -17,7 +17,7 @@ append_to_cap(sbuf_c* s)
 Exception
 sprintf_to_cap(sbuf_c* s)
 {
-    tassert(s != NULL);
+    e$assert(s != NULL);
     char c = 'A';
     for (usize i = sbuf.len(s); i < sbuf.capacity(s); i++) {
         c = 'A' + i;

@@ -411,7 +411,7 @@ class CEXTestBuilder:
             ]
 
             if self.src_path == "all":
-                args.extend(["q"])  # run cex test in quiet mode
+                args.extend(["-q"])  # run cex test in quiet mode
             else:
                 print(f"Test executable: {fn}")
 

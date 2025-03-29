@@ -15,6 +15,7 @@ test$case(foo){
 test$case(bar)
 {
     fprintf(stdout, "stdout suppressed\n");
+    mem$malloc(mem$, 123);
     return EOK;
 }
 

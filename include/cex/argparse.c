@@ -172,9 +172,9 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, int flags)
     switch (opt->type) {
         case 2 /*ARGPARSE_OPT_BOOLEAN*/:
             if (flags & ARGPARSE_OPT_UNSET) {
-                *(int*)opt->value = 0;
+                *(bool*)opt->value = false;
             } else {
-                *(int*)opt->value = 1;
+                *(bool*)opt->value = true;
             }
             opt->is_present = true;
             break;

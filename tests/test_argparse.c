@@ -1,32 +1,22 @@
 #include <cex/all.h>
 #include <cex/all.c>
 
-#define PERM_READ (1 << 0)
-#define PERM_WRITE (1 << 1)
-#define PERM_EXEC (1 << 2)
-
-
 test$case(test_argparse_init_short)
 {
-    int force = 0;
-    int test = 0;
+    bool force = 0;
+    bool test = 0;
     int int_num = 0;
     float flt_num = 0.f;
     const char* path = NULL;
-    int perms = 0;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do", false, NULL, 0, 0),
-        argparse$opt_bool('t', "test", &test, "test only", false, NULL, 0, 0),
-        argparse$opt_str('p', "path", &path, "path to read", .required = true, NULL, 0, 0),
-        argparse$opt_i64('i', "int", &int_num, "selected integer", false, NULL, 0, 0),
-        argparse$opt_f32('s', "float", &flt_num, "selected float", false, NULL, 0, 0),
-        argparse$opt_group("Bits options"),
-        argparse$opt_bit(0, "read", &perms, "read perm", false, NULL, PERM_READ, ARGPARSE_OPT_NONEG),
-        argparse$opt_bit(0, "write", &perms, "write perm", false, NULL, PERM_WRITE, 0),
-        argparse$opt_bit(0, "exec", &perms, "exec perm", false, NULL, PERM_EXEC, 0),
+        argparse$opt(&force,'f', "force",  "force to do", false, NULL, 0, 0),
+        argparse$opt(&test,'t', "test",  "test only", false, NULL, 0, 0),
+        argparse$opt(&path,'p', "path",  "path to read", .required = true, NULL, 0, 0),
+        argparse$opt(&int_num,'i', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&flt_num,'s', "float",  "selected float", false, NULL, 0, 0),
     };
 
     const char* usage = "basic [options] [[--] args]\n"
@@ -57,25 +47,20 @@ test$case(test_argparse_init_short)
 
 test$case(test_argparse_init_long)
 {
-    int force = 0;
-    int test = 0;
+    bool force = 0;
+    bool test = 0;
     int int_num = 0;
     float flt_num = 0.f;
     const char* path = NULL;
-    int perms = 0;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
-        argparse$opt_bool('t', "test", &test, "test only", NULL, 0, 0),
-        argparse$opt_str('p', "path", &path, "path to read", .callback = NULL, 0, 0),
-        argparse$opt_i64('i', "int", &int_num, .help = "selected integer", NULL, 0, 0),
-        argparse$opt_f32('s', "float", .value = &flt_num, "selected float", NULL, 0, 0),
-        argparse$opt_group("Bits options"),
-        argparse$opt_bit(0, "read", &perms, "read perm", false, NULL, PERM_READ, ARGPARSE_OPT_NONEG),
-        argparse$opt_bit(0, "write", &perms, "write perm", false, NULL, PERM_WRITE, 0),
-        argparse$opt_bit(0, "exec", &perms, "exec perm", false, NULL, .data = PERM_EXEC, 0),
+        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&test,'t', "test",  "test only", NULL, 0, 0),
+        argparse$opt(&path,'p', "path",  "path to read", .callback = NULL, 0, 0),
+        argparse$opt(&int_num,'i', "int",  .help = "selected integer", NULL, 0, 0),
+        argparse$opt(&flt_num,'s', "float", .help =  "selected float", NULL, 0, 0),
     };
 
     const char* usage = "basic [options] [[--] args]\n"
@@ -115,7 +100,7 @@ test$case(test_argparse_required)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do", .required = true),
+        argparse$opt(&force,'f', "force",  "force to do", .required = true),
     };
 
     argparse_c args = {
@@ -143,7 +128,7 @@ test$case(test_argparse_bad_opts_help)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force),
+        argparse$opt(&force,'f', "force"), 
     };
 
     argparse_c args = {
@@ -170,7 +155,7 @@ test$case(test_argparse_bad_opts_long)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', NULL, &force),
+        argparse$opt(&force,'f', NULL), 
     };
 
     argparse_c args = {
@@ -196,7 +181,7 @@ test$case(test_argparse_bad_opts_short)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('\0', "foo", &force),
+        argparse$opt(&force,'\0', "foo"), 
     };
 
     argparse_c args = {
@@ -215,31 +200,6 @@ test$case(test_argparse_bad_opts_short)
     return EOK;
 }
 
-test$case(test_argparse_bad_opts_arg_value_null)
-{
-    argparse_opt_s options[] = {
-        argparse$opt_help(),
-        argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', NULL),
-    };
-
-    argparse_c args = {
-        .options = options,
-        .options_len = arr$len(options),
-    };
-
-    char* argv[] = { "program_name", "-f" };
-
-    int argc = arr$len(argv);
-
-    uassert_disable();
-    argparse.usage(&args);
-
-    tassert_eqs(Error.argument, argparse.parse(&args, argc, argv));
-
-    return EOK;
-}
-
 test$case(test_argparse_bad_opts_both_no_long_short)
 {
     int force = 100;
@@ -247,7 +207,7 @@ test$case(test_argparse_bad_opts_both_no_long_short)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('\0', NULL, &force),
+        argparse$opt(&force,'\0', NULL), 
     };
 
     argparse_c args = {
@@ -317,7 +277,7 @@ test$case(test_argparse_arguments)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
+        argparse$opt(&force,'f', "force",  "force to do"),
     };
 
     argparse_c args = {
@@ -345,14 +305,14 @@ test$case(test_argparse_arguments)
 
 test$case(test_argparse_arguments_after_options)
 {
-    int force = 100;
+    bool force = 0;
     int int_num = 2000;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
-        argparse$opt_i64('i', "int", &int_num, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&int_num,'i', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_c args = {
@@ -383,16 +343,16 @@ test$case(test_argparse_arguments_after_options)
 
 test$case(test_argparse_arguments_stacked_short_opt)
 {
-    int force = 100;
-    int int_num = -100;
+    bool force = 100;
+    bool int_num = -100;
     int int_num2 = -100;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
-        argparse$opt_bool('i', "int_flag", &int_num, "selected integer", false, NULL, 0, 0),
-        argparse$opt_i64('z', "int", &int_num2, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_c args = {
@@ -424,16 +384,16 @@ test$case(test_argparse_arguments_stacked_short_opt)
 
 test$case(test_argparse_arguments_double_dash)
 {
-    int force = 100;
-    int int_num = -100;
+    bool force = 1;
+    bool int_num = -100;
     int int_num2 = -100;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
-        argparse$opt_bool('i', "int_flag", &int_num, "selected integer", false, NULL, 0, 0),
-        argparse$opt_i64('z', "int", &int_num2, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_c args = {
@@ -475,9 +435,9 @@ test$case(test_argparse_arguments__option_follows_argument_not_allowed)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
-        argparse$opt_bool('i', "int_flag", &int_num, "selected integer", false, NULL, 0, 0),
-        argparse$opt_i64('z', "int", &int_num2, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_c args = {
@@ -514,7 +474,7 @@ test$case(test_argparse_arguments__parsing_error)
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
-        argparse$opt_i64('z', "int", &int_num2, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_c args = {
@@ -540,9 +500,9 @@ test$case(test_argparse_arguments__option_follows_argument__allowed)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
-        argparse$opt_bool('i', "int_flag", &int_num, "selected integer", false, NULL, 0, 0),
-        argparse$opt_i64('z', "int", &int_num2, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_c
@@ -567,16 +527,16 @@ test$case(test_argparse_arguments__option_follows_argument__allowed)
 
 test$case(test_argparse_arguments__command_mode)
 {
-    int force = 100;
-    int int_num = -100;
+    bool force = 0;
+    bool int_num = 1;
     int int_num2 = -100;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
-        argparse$opt_bool('i', "int_flag", &int_num, "selected integer", false, NULL, 0, 0),
-        argparse$opt_i64('z', "int", &int_num2, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_c
@@ -592,8 +552,8 @@ test$case(test_argparse_arguments__command_mode)
     tassert_eqs(args.program_name, NULL);
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv));
     // params are untouched
-    tassert_eqi(force, 100);
-    tassert_eqi(int_num, -100);
+    tassert_eqi(force, 0);
+    tassert_eqi(int_num, 1);
     tassert_eqi(int_num2, -100);
     tassert_eqs(args.program_name, "program_name");
     tassert_eqi(argparse.argc(&args), 4);
@@ -628,15 +588,15 @@ test$case(test_argparse_arguments__command__help)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_bool('f', "force", &force, "force to do"),
-        argparse$opt_bool('i', "int_flag", &int_num, "selected integer", false, NULL, 0, 0),
-        argparse$opt_i64('z', "int", &int_num2, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_opt_s cmd_options[] = {
         argparse$opt_help(),
         argparse$opt_group("Command  options"),
-        argparse$opt_i64('z', "int", &int_num2, "some cmd int", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'z', "int",  "some cmd int", false, NULL, 0, 0),
     };
 
     argparse_c
@@ -669,7 +629,7 @@ test$case(test_argparse_arguments__int_parsing)
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
-        argparse$opt_i64('i', "int", &int_num2, "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2,'i', "int",  "selected integer", false, NULL, 0, 0),
     };
 
     argparse_c args = {
@@ -725,7 +685,7 @@ test$case(test_argparse_arguments__float_parsing)
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
-        argparse$opt_f32('f', "flt", &fnum, "selected float", false, NULL, 0, 0),
+        argparse$opt(&fnum,'f', "flt",  "selected float", false, NULL, 0, 0),
     };
 
     argparse_c args = {
@@ -781,7 +741,7 @@ test$case(test_argparse_int_short_arg__argc_remainder)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_i64('f', "force", &force, "force to do"),
+        argparse$opt(&force,'f', "force",  "force to do"),
     };
 
     argparse_c args = {
@@ -811,7 +771,7 @@ test$case(test_argparse_str_short_arg__argc_remainder)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_str('f', "force", &force, "force to do"),
+        argparse$opt(&force,'f', "force",  "force to do"),
     };
 
     argparse_c args = {
@@ -841,7 +801,7 @@ test$case(test_argparse_float_short_arg__argc_remainder)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt_f32('f', "force", &force, "force to do"),
+        argparse$opt(&force,'f', "force",  "force to do"),
     };
 
     argparse_c args = {

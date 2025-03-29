@@ -187,6 +187,7 @@ os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_
 
     struct dirent* ep;
     while ((ep = readdir(dp)) != NULL) {
+        errno = 0;
         if (str.eq(ep->d_name, ".")) {
             continue;
         }
