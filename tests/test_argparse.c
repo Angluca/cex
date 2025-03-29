@@ -1,5 +1,5 @@
-#include <cex/all.h>
 #include <cex/all.c>
+#include <cex/all.h>
 
 test$case(test_argparse_init_short)
 {
@@ -9,22 +9,21 @@ test$case(test_argparse_init_short)
     float flt_num = 0.f;
     const char* path = NULL;
 
-    argparse_opt_s options[] = {
-        argparse$opt_help(),
-        argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do", false, NULL, 0, 0),
-        argparse$opt(&test,'t', "test",  "test only", false, NULL, 0, 0),
-        argparse$opt(&path,'p', "path",  "path to read", .required = true, NULL, 0, 0),
-        argparse$opt(&int_num,'i', "int",  "selected integer", false, NULL, 0, 0),
-        argparse$opt(&flt_num,'s', "float",  "selected float", false, NULL, 0, 0),
-    };
-
     const char* usage = "basic [options] [[--] args]\n"
                         "basic [options]\n";
 
     argparse_c argparse = {
-        .options = options,
-        .options_len = arr$len(options),
+        .options =
+            (argparse_opt_s[]){
+                argparse$opt_help(),
+                argparse$opt_group("Basic options"),
+                argparse$opt(&force, 'f', "force", "force to do"),
+                argparse$opt(&test, 't', "test", "test only"),
+                argparse$opt(&path, 'p', "path", "path to read", .required = true),
+                argparse$opt(&int_num, 'i', "int", "selected integer"),
+                argparse$opt(&flt_num, 's', "float", "selected float"),
+                { 0 }, // array opt term
+            },
         .usage = usage,
         .description = "\nA brief description of what the program does and how it works.",
         "\nAdditional description of the program after the description of the arguments.",
@@ -36,6 +35,7 @@ test$case(test_argparse_init_short)
     int argc = arr$len(argv);
 
     tassert_eqs(EOK, argparse_parse(&argparse, argc, argv));
+    tassert_eqi(argparse.options_len, 7);
     tassert_eqi(force, 1);
     tassert_eqi(test, 1);
     tassert_eqs(path, "mypath/ok");
@@ -56,11 +56,11 @@ test$case(test_argparse_init_long)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
-        argparse$opt(&test,'t', "test",  "test only", NULL, 0, 0),
-        argparse$opt(&path,'p', "path",  "path to read", .callback = NULL, 0, 0),
-        argparse$opt(&int_num,'i', "int",  .help = "selected integer", NULL, 0, 0),
-        argparse$opt(&flt_num,'s', "float", .help =  "selected float", NULL, 0, 0),
+        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&test, 't', "test", "test only", NULL, 0, 0),
+        argparse$opt(&path, 'p', "path", "path to read", .callback = NULL, 0),
+        argparse$opt(&int_num, 'i', "int", .help = "selected integer", 0),
+        argparse$opt(&flt_num, 's', "float", .help = "selected float", 0),
     };
 
     const char* usage = "basic [options] [[--] args]\n"
@@ -100,7 +100,7 @@ test$case(test_argparse_required)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do", .required = true),
+        argparse$opt(&force, 'f', "force", "force to do", .required = true),
     };
 
     argparse_c args = {
@@ -128,7 +128,7 @@ test$case(test_argparse_bad_opts_help)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force"), 
+        argparse$opt(&force, 'f', "force"),
     };
 
     argparse_c args = {
@@ -155,7 +155,7 @@ test$case(test_argparse_bad_opts_long)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', NULL), 
+        argparse$opt(&force, 'f', NULL),
     };
 
     argparse_c args = {
@@ -181,7 +181,7 @@ test$case(test_argparse_bad_opts_short)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'\0', "foo"), 
+        argparse$opt(&force, '\0', "foo"),
     };
 
     argparse_c args = {
@@ -207,7 +207,7 @@ test$case(test_argparse_bad_opts_both_no_long_short)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'\0', NULL), 
+        argparse$opt(&force, '\0', NULL),
     };
 
     argparse_c args = {
@@ -277,7 +277,7 @@ test$case(test_argparse_arguments)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&force, 'f', "force", "force to do"),
     };
 
     argparse_c args = {
@@ -311,8 +311,8 @@ test$case(test_argparse_arguments_after_options)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
-        argparse$opt(&int_num,'i', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&int_num, 'i', "int", "selected integer"),
     };
 
     argparse_c args = {
@@ -343,16 +343,16 @@ test$case(test_argparse_arguments_after_options)
 
 test$case(test_argparse_arguments_stacked_short_opt)
 {
-    bool force = 100;
-    bool int_num = -100;
+    bool force = 0;
+    bool int_num = 1;
     int int_num2 = -100;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
-        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
-        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+        argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
     argparse_c args = {
@@ -366,7 +366,7 @@ test$case(test_argparse_arguments_stacked_short_opt)
 
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eqi(force, 1);
-    tassert_eqi(int_num, 1);
+    tassert_eqi(int_num, 0);
     tassert_eqi(int_num2, 100);
     tassert_eqi(argc, 5);                 // unchanged
     tassert_eqs(argv[0], "program_name"); // unchanged
@@ -385,15 +385,15 @@ test$case(test_argparse_arguments_stacked_short_opt)
 test$case(test_argparse_arguments_double_dash)
 {
     bool force = 1;
-    bool int_num = -100;
+    bool int_num = 0;
     int int_num2 = -100;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
-        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
-        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+        argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
     argparse_c args = {
@@ -406,7 +406,7 @@ test$case(test_argparse_arguments_double_dash)
 
 
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv));
-    tassert_eqi(force, 1);
+    tassert_eqi(force, 0);
     tassert_eqi(int_num, 1);
     // NOTE: this must be untouched because we have -- prior
     tassert_eqi(int_num2, -100);
@@ -435,9 +435,9 @@ test$case(test_argparse_arguments__option_follows_argument_not_allowed)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
-        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
-        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+        argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
     argparse_c args = {
@@ -474,7 +474,7 @@ test$case(test_argparse_arguments__parsing_error)
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
-        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
     argparse_c args = {
@@ -500,9 +500,9 @@ test$case(test_argparse_arguments__option_follows_argument__allowed)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
-        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
-        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+        argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
     argparse_c
@@ -534,9 +534,9 @@ test$case(test_argparse_arguments__command_mode)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
-        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
-        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+        argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
     argparse_c
@@ -569,7 +569,7 @@ test$case(test_argparse_arguments__command_mode)
     tassert_eqe(Error.ok, argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args)));
     tassert_eqs(args.program_name, "program_name");
     tassert_eqi(force, 1);
-    tassert_eqi(int_num, 1);
+    tassert_eqi(int_num, 0);
     tassert_eqi(int_num2, 100);
     tassert_eqs(cmd_args.program_name, "cmd_name");
 
@@ -588,15 +588,15 @@ test$case(test_argparse_arguments__command__help)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
-        argparse$opt(&int_num,'i', "int_flag",  "selected integer", false, NULL, 0, 0),
-        argparse$opt(&int_num2,'z', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+        argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
     argparse_opt_s cmd_options[] = {
         argparse$opt_help(),
         argparse$opt_group("Command  options"),
-        argparse$opt(&int_num2,'z', "int",  "some cmd int", false, NULL, 0, 0),
+        argparse$opt(&int_num2, 'z', "int", "some cmd int"),
     };
 
     argparse_c
@@ -606,7 +606,7 @@ test$case(test_argparse_arguments__command__help)
                      .stop_at_non_option = true, // NOTE: this allows options after args (commands!)
                  } };
 
-    char* argv[] = { "program_name", "cmd_name", "-h"};
+    char* argv[] = { "program_name", "cmd_name", "-h" };
     int argc = arr$len(argv);
 
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv));
@@ -618,7 +618,10 @@ test$case(test_argparse_arguments__command__help)
         .usage = "some command usage",
         .epilog = "command epilog",
     };
-    tassert_eqe(Error.argsparse, argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args)));
+    tassert_eqe(
+        Error.argsparse,
+        argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args))
+    );
 
     return EOK;
 }
@@ -629,7 +632,7 @@ test$case(test_argparse_arguments__int_parsing)
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
-        argparse$opt(&int_num2,'i', "int",  "selected integer", false, NULL, 0, 0),
+        argparse$opt(&int_num2, 'i', "int", "selected integer"),
     };
 
     argparse_c args = {
@@ -637,7 +640,7 @@ test$case(test_argparse_arguments__int_parsing)
         .options_len = arr$len(options),
     };
 
-    char* argv0[] = { "program_name", "--int=99"};
+    char* argv0[] = { "program_name", "--int=99" };
     int argc = arr$len(argv0);
 
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv0));
@@ -650,31 +653,32 @@ test$case(test_argparse_arguments__int_parsing)
     int_num2 = -100;
     char* argv2[] = { "program_name", "--int=1foo" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv2));
-    tassert_eqi(int_num2, 1); // still set, but its strtol() issue
+    tassert_eqi(int_num2, 0); // still set, but its strtol() issue
 
     int_num2 = -100;
-    char* argv3[] = { "program_name", "--int=9999999999999999999999999999999999999999999999999999" };
+    char* argv3[] = { "program_name",
+                      "--int=9999999999999999999999999999999999999999999999999999" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv3));
 
     int_num2 = -100;
-    char* argv4[] = { "program_name", "-i"};
+    char* argv4[] = { "program_name", "-i" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv4));
-    tassert_eqi(int_num2, -100); 
+    tassert_eqi(int_num2, -100);
 
     int_num2 = -100;
-    char* argv5[] = { "program_name", "--int="};
+    char* argv5[] = { "program_name", "--int=" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv5));
-    tassert_eqi(int_num2, -100); 
+    tassert_eqi(int_num2, -100);
 
     int_num2 = -100;
-    char* argv6[] = { "program_name", "--int", "-6"};
+    char* argv6[] = { "program_name", "--int", "-6" };
     tassert_eqe(Error.ok, argparse.parse(&args, 3, argv6));
-    tassert_eqi(int_num2, -6); 
+    tassert_eqi(int_num2, -6);
 
     int_num2 = -100;
-    char* argv7[] = { "program_name", "--int=9.8"};
+    char* argv7[] = { "program_name", "--int=9.8" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv7));
-    tassert_eqi(int_num2, 9); 
+    tassert_eqi(int_num2, 0);
 
     return EOK;
 }
@@ -685,7 +689,7 @@ test$case(test_argparse_arguments__float_parsing)
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
-        argparse$opt(&fnum,'f', "flt",  "selected float", false, NULL, 0, 0),
+        argparse$opt(&fnum, 'f', "flt", "selected float"),
     };
 
     argparse_c args = {
@@ -693,7 +697,7 @@ test$case(test_argparse_arguments__float_parsing)
         .options_len = arr$len(options),
     };
 
-    char* argv0[] = { "program_name", "--flt=99"};
+    char* argv0[] = { "program_name", "--flt=99" };
     int argc = arr$len(argv0);
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv0));
 
@@ -705,31 +709,123 @@ test$case(test_argparse_arguments__float_parsing)
     fnum = -100;
     char* argv2[] = { "program_name", "--flt=1foo" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv2));
-    tassert_eqi(fnum, 1); // still set, but its strtol() issue
+    tassert_eqi(fnum, 0);
 
     fnum = -100;
-    char* argv3[] = { "program_name", "--flt=9999999999999999999999999999999999999999999999999999" };
+    char* argv3[] = { "program_name",
+                      "--flt=9999999999999999999999999999999999999999999999999999" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv3));
 
+
     fnum = -100;
-    char* argv4[] = { "program_name", "-f"};
+    char* argv4[] = { "program_name", "-f" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv4));
-    tassert_eqi(fnum, -100); 
+    tassert_eqi(fnum, -100);
 
     fnum = -100;
-    char* argv5[] = { "program_name", "--flt="};
+    char* argv5[] = { "program_name", "--flt=" };
     tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv5));
-    tassert_eqi(fnum, -100); 
+    tassert_eqi(fnum, -100);
 
     fnum = -100;
-    char* argv6[] = { "program_name", "--flt", "6"};
+    char* argv6[] = { "program_name", "--flt", "6" };
     tassert_eqe(Error.ok, argparse.parse(&args, 3, argv6));
-    tassert_eqi(fnum, 6); 
+    tassert_eqi(fnum, 6);
 
     fnum = -100;
-    char* argv7[] = { "program_name", "--flt=-9.8"};
+    char* argv7[] = { "program_name", "--flt=-9.8" };
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv7));
-    tassert_eqi(fnum*100, -9.8*100); 
+    tassert_eqi(fnum * 100, -9.8 * 100);
+
+    fnum = -100;
+    char* argv8[] = { "program_name",
+                      "--flt=-9999999999999999999999999999999999999999999999999999" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv8));
+
+    fnum = -100;
+    char* argv9[] = { "program_name", "--flt=NaN" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv9));
+
+    fnum = -100;
+    char* argv10[] = { "program_name", "--flt=inf" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv10));
+
+    fnum = -100;
+    char* argv11[] = { "program_name", "--flt=-inf" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv11));
+    return EOK;
+}
+
+test$case(test_argparse_arguments__double_parsing)
+{
+    f64 fnum = -100;
+
+    argparse_opt_s options[] = {
+        argparse$opt_help(),
+        argparse$opt(&fnum, 'f', "flt", "selected float"),
+    };
+
+    argparse_c args = {
+        .options = options,
+        .options_len = arr$len(options),
+    };
+
+    char* argv0[] = { "program_name", "--flt=99" };
+    int argc = arr$len(argv0);
+    tassert_eqe(Error.ok, argparse.parse(&args, argc, argv0));
+
+    char* argv[] = { "program_name", "--flt=foo1" };
+
+    fnum = 0;
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv));
+    tassert_eqi(fnum, 0);
+
+    fnum = -100;
+    char* argv2[] = { "program_name", "--flt=1foo" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv2));
+
+    fnum = -100;
+    char* argv3[] = { "program_name",
+                      "--flt=99999999999999999999999999999999999999999999999999999999999" };
+    tassert_eqe(Error.ok, argparse.parse(&args, argc, argv3));
+
+
+    fnum = -100;
+    char* argv4[] = { "program_name", "-f" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv4));
+    tassert_eqi(fnum, -100);
+
+    fnum = -100;
+    char* argv5[] = { "program_name", "--flt=" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv5));
+    tassert_eqi(fnum, -100);
+
+    fnum = -100;
+    char* argv6[] = { "program_name", "--flt", "6" };
+    tassert_eqe(Error.ok, argparse.parse(&args, 3, argv6));
+    tassert_eqi(fnum, 6);
+
+    fnum = -100;
+    char* argv7[] = { "program_name", "--flt=-9.8" };
+    tassert_eqe(Error.ok, argparse.parse(&args, argc, argv7));
+    tassert_eqi(fnum * 100, -9.8 * 100);
+
+    fnum = -100;
+    char* argv8[] = { "program_name",
+                      "--flt=-9999999999999999999999999999999999999999999999999999" };
+    tassert_eqe(Error.ok, argparse.parse(&args, argc, argv8));
+
+    fnum = -100;
+    char* argv9[] = { "program_name", "--flt=NaN" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv9));
+
+    fnum = -100;
+    char* argv10[] = { "program_name", "--flt=inf" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv10));
+
+    fnum = -100;
+    char* argv11[] = { "program_name", "--flt=-inf" };
+    tassert_eqe(Error.argsparse, argparse.parse(&args, argc, argv11));
 
     return EOK;
 }
@@ -741,7 +837,7 @@ test$case(test_argparse_int_short_arg__argc_remainder)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&force, 'f', "force", "force to do"),
     };
 
     argparse_c args = {
@@ -755,7 +851,7 @@ test$case(test_argparse_int_short_arg__argc_remainder)
 
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eqi(force, 10);
-    tassert_eqi(argc, 5);                 // unchanged
+    tassert_eqi(argc, 5); // unchanged
 
     tassert_eqi(argparse.argc(&args), 2);
     tassert_eqs(argparse.argv(&args)[0], "arg1");
@@ -771,7 +867,7 @@ test$case(test_argparse_str_short_arg__argc_remainder)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&force, 'f', "force", "force to do"),
     };
 
     argparse_c args = {
@@ -785,7 +881,7 @@ test$case(test_argparse_str_short_arg__argc_remainder)
 
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eqs(force, "10");
-    tassert_eqi(argc, 5);                 // unchanged
+    tassert_eqi(argc, 5); // unchanged
 
     tassert_eqi(argparse.argc(&args), 2);
     tassert_eqs(argparse.argv(&args)[0], "arg1");
@@ -801,7 +897,7 @@ test$case(test_argparse_float_short_arg__argc_remainder)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force,'f', "force",  "force to do"),
+        argparse$opt(&force, 'f', "force", "force to do"),
     };
 
     argparse_c args = {
@@ -815,7 +911,7 @@ test$case(test_argparse_float_short_arg__argc_remainder)
 
     tassert_eqe(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eqf(force, 10.0f);
-    tassert_eqi(argc, 5);                 // unchanged
+    tassert_eqi(argc, 5); // unchanged
 
     tassert_eqi(argparse.argc(&args), 2);
     tassert_eqs(argparse.argv(&args)[0], "arg1");

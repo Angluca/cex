@@ -11,7 +11,12 @@
 struct argparse_c;
 struct argparse_opt_s;
 
-typedef Exception argparse_callback_f(struct argparse_c* self, const struct argparse_opt_s* option);
+typedef Exception (*argparse_callback_f)(
+    struct argparse_c* self,
+    const struct argparse_opt_s* option,
+    void* ctx
+);
+typedef Exception (*argparse_convert_f)(const char* s, void* out_val);
 
 
 enum argparse_option_flags
@@ -61,11 +66,30 @@ typedef struct argparse_opt_s
     const char* long_name;
     const char* help;
     bool required;
-    argparse_callback_f* callback;
-    intptr_t data;
-    int flags;
+    argparse_callback_f callback;
+    void* callback_data;
+    argparse_convert_f convert;
     bool is_present; // also setting in in argparse$opt* macro, allows optional parameter sugar
 } argparse_opt_s;
+
+enum CexArgParseType_e
+{
+    CexArgParseType__na,
+    CexArgParseType__group,
+    CexArgParseType__boolean,
+    CexArgParseType__string,
+    CexArgParseType__i8,
+    CexArgParseType__u8,
+    CexArgParseType__i16,
+    CexArgParseType__u16,
+    CexArgParseType__i32,
+    CexArgParseType__u32,
+    CexArgParseType__i64,
+    CexArgParseType__u64,
+    CexArgParseType__f32,
+    CexArgParseType__f64,
+    CexArgParseType__generic,
+};
 
 /**
  * argpparse
@@ -104,14 +128,51 @@ typedef struct argparse_c
 // built-in option macros
 #define argparse$opt(value, ...)                                                                   \
     ({                                                                                             \
-        u32 val_type = _Generic((value), bool*: 2, i32*: 4, f32*: 5, const char**: 6, char**: 6);  \
-        (argparse_opt_s){ val_type, (value), __VA_ARGS__, .is_present = 0 };                       \
+        u32 val_type = _Generic(                                                                   \
+            (value),                                                                               \
+            bool*: CexArgParseType__boolean,                                                       \
+            i8*: CexArgParseType__i8,                                                              \
+            u8*: CexArgParseType__u8,                                                              \
+            i16*: CexArgParseType__i16,                                                            \
+            u16*: CexArgParseType__u16,                                                            \
+            i32*: CexArgParseType__i32,                                                            \
+            u32*: CexArgParseType__u32,                                                            \
+            i64*: CexArgParseType__i64,                                                            \
+            u64*: CexArgParseType__u64,                                                            \
+            f32*: CexArgParseType__f32,                                                            \
+            f64*: CexArgParseType__f64,                                                            \
+            const char**: CexArgParseType__string,                                                 \
+            char**: CexArgParseType__string,                                                       \
+            default: CexArgParseType__generic                                                      \
+        );                                                                                         \
+        argparse_convert_f conv_f = _Generic(                                                      \
+            (value),                                                                               \
+            bool*: NULL,                                                                           \
+            const char**: NULL,                                                                    \
+            char**: NULL,                                                                          \
+            i8*: (argparse_convert_f)str.convert.to_i8,                                            \
+            u8*: (argparse_convert_f)str.convert.to_u8,                                            \
+            i16*: (argparse_convert_f)str.convert.to_i16,                                          \
+            u16*: (argparse_convert_f)str.convert.to_u16,                                          \
+            i32*: (argparse_convert_f)str.convert.to_i32,                                          \
+            u32*: (argparse_convert_f)str.convert.to_u32,                                          \
+            i64*: (argparse_convert_f)str.convert.to_i64,                                          \
+            u64*: (argparse_convert_f)str.convert.to_u64,                                          \
+            f32*: (argparse_convert_f)str.convert.to_f32,                                          \
+            f64*: (argparse_convert_f)str.convert.to_f64,                                          \
+            default: NULL                                                                          \
+        );                                                                                         \
+        (argparse_opt_s){ val_type,                                                                \
+                          (value),                                                                 \
+                          __VA_ARGS__,                                                             \
+                          .convert = (argparse_convert_f)conv_f,                                   \
+                          .is_present = 0 };                                                       \
     })
 // clang-format off
-#define argparse$opt_group(h)     { 1 /*ARGPARSE_OPT_GROUP*/, NULL, '\0', NULL, h, false, NULL, 0, 0, .is_present=0 }
-#define argparse$opt_help()       {2, NULL, 'h', "help",                           \
+#define argparse$opt_group(h)     { CexArgParseType__group, NULL, '\0', NULL, h, false, NULL, 0, 0, .is_present=0 }
+#define argparse$opt_help()       {CexArgParseType__boolean, NULL, 'h', "help",                           \
                                         "show this help message and exit", false,    \
-                                        NULL, 0, ARGPARSE_OPT_NONEG, .is_present = 0}
+                                        NULL, 0, .is_present = 0}
 // clang-format on
 
 __attribute__((visibility("hidden"))

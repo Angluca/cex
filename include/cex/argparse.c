@@ -1,22 +1,5 @@
-/**
- * Copyright (C) 2012-2015 Yecheng Fu <cofyc.jackson at gmail dot com>
- * All rights reserved.
- *
- * Use of this source code is governed by a MIT-style license that can be found
- * in the LICENSE file.
- */
 #pragma once
 #include "argparse.h"
-
-const u32 ARGPARSE_OPT_UNSET = 1;
-const u32 ARGPARSE_OPT_LONG = (1 << 1);
-
-// static const u8 1 /*ARGPARSE_OPT_GROUP*/  = 1;
-// static const u8 2 /*ARGPARSE_OPT_BOOLEAN*/ = 2;
-// static const u8 3 /*ARGPARSE_OPT_BIT*/ = 3;
-// static const u8 4 /*ARGPARSE_OPT_INTEGER*/ = 4;
-// static const u8 5 /*ARGPARSE_OPT_FLOAT*/ = 5;
-// static const u8 6 /*ARGPARSE_OPT_STRING*/ = 6;
 
 static const char*
 argparse__prefix_skip(const char* str, const char* prefix)
@@ -25,23 +8,11 @@ argparse__prefix_skip(const char* str, const char* prefix)
     return strncmp(str, prefix, len) ? NULL : str + len;
 }
 
-static int
-argparse__prefix_cmp(const char* str, const char* prefix)
-{
-    for (;; str++, prefix++) {
-        if (!*prefix) {
-            return 0;
-        } else if (*str != *prefix) {
-            return (unsigned char)*prefix - (unsigned char)*str;
-        }
-    }
-}
-
 static Exception
-argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason, int flags)
+argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason, bool is_long)
 {
     (void)self;
-    if (flags & ARGPARSE_OPT_LONG) {
+    if (is_long) {
         fprintf(stdout, "error: option `--%s` %s\n", opt->long_name, reason);
     } else {
         fprintf(stdout, "error: option `-%c` %s\n", opt->short_name, reason);
@@ -88,30 +59,41 @@ argparse_usage(argparse_c* self)
 
     fputc('\n', stdout);
 
-    const argparse_opt_s* options;
 
     // figure out best width
     usize usage_opts_width = 0;
-    usize len;
-    options = self->options;
-    for (u32 i = 0; i < self->options_len; i++, options++) {
+    usize len = 0;
+    for$eachp(opt, self->options, self->options_len){
         len = 0;
-        if ((options)->short_name) {
+        if (opt->short_name) {
             len += 2;
         }
-        if ((options)->short_name && (options)->long_name) {
+        if (opt->short_name && opt->long_name) {
             len += 2; // separator ", "
         }
-        if ((options)->long_name) {
-            len += strlen((options)->long_name) + 2;
+        if (opt->long_name) {
+            len += strlen(opt->long_name) + 2;
         }
-        if (options->type == 4 /*ARGPARSE_OPT_INTEGER*/) {
-            len += strlen("=<int>");
-        }
-        if (options->type == 5 /*ARGPARSE_OPT_FLOAT*/) {
-            len += strlen("=<flt>");
-        } else if (options->type == 6 /*ARGPARSE_OPT_STRING*/) {
-            len += strlen("=<str>");
+        switch (opt->type) {
+            case CexArgParseType__boolean:
+                break;
+            case CexArgParseType__string:
+                break;
+            case CexArgParseType__i8:
+            case CexArgParseType__u8:
+            case CexArgParseType__i16:
+            case CexArgParseType__u16:
+            case CexArgParseType__i32:
+            case CexArgParseType__u32:
+            case CexArgParseType__i64:
+            case CexArgParseType__u64:
+            case CexArgParseType__f32:
+            case CexArgParseType__f64:
+                len += strlen("=<xxx>");
+                break;
+
+            default: 
+                break;
         }
         len = (len + 3) - ((len + 3) & 3);
         if (usage_opts_width < len) {
@@ -120,40 +102,33 @@ argparse_usage(argparse_c* self)
     }
     usage_opts_width += 4; // 4 spaces prefix
 
-    options = self->options;
-    for (u32 i = 0; i < self->options_len; i++, options++) {
+    for$eachp(opt, self->options, self->options_len){
         usize pos = 0;
         usize pad = 0;
-        if (options->type == 1 /*ARGPARSE_OPT_GROUP*/) {
+        if (opt->type == CexArgParseType__group) {
             fputc('\n', stdout);
-            fprintf(stdout, "%s", options->help);
+            fprintf(stdout, "%s", opt->help);
             fputc('\n', stdout);
             continue;
         }
         pos = fprintf(stdout, "    ");
-        if (options->short_name) {
-            pos += fprintf(stdout, "-%c", options->short_name);
+        if (opt->short_name) {
+            pos += fprintf(stdout, "-%c", opt->short_name);
         }
-        if (options->long_name && options->short_name) {
+        if (opt->long_name && opt->short_name) {
             pos += fprintf(stdout, ", ");
         }
-        if (options->long_name) {
-            pos += fprintf(stdout, "--%s", options->long_name);
+        if (opt->long_name) {
+            pos += fprintf(stdout, "--%s", opt->long_name);
         }
-        if (options->type == 4 /*ARGPARSE_OPT_INTEGER*/) {
-            pos += fprintf(stdout, "=<int>");
-        } else if (options->type == 5 /*ARGPARSE_OPT_FLOAT*/) {
-            pos += fprintf(stdout, "=<flt>");
-        } else if (options->type == 6 /*ARGPARSE_OPT_STRING*/) {
-            pos += fprintf(stdout, "=<str>");
-        }
+
         if (pos <= usage_opts_width) {
             pad = usage_opts_width - pos;
         } else {
             fputc('\n', stdout);
             pad = usage_opts_width;
         }
-        fprintf(stdout, "%*s%s\n", (int)pad + 2, "", options->help);
+        fprintf(stdout, "%*s%s\n", (int)pad + 2, "", opt->help);
     }
 
     // print epilog
@@ -162,31 +137,18 @@ argparse_usage(argparse_c* self)
     }
 }
 static Exception
-argparse__getvalue(argparse_c* self, argparse_opt_s* opt, int flags)
+argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
 {
-    const char* s = NULL;
     if (!opt->value) {
         goto skipped;
     }
 
     switch (opt->type) {
-        case 2 /*ARGPARSE_OPT_BOOLEAN*/:
-            if (flags & ARGPARSE_OPT_UNSET) {
-                *(bool*)opt->value = false;
-            } else {
-                *(bool*)opt->value = true;
-            }
+        case CexArgParseType__boolean:
+            *(bool*)opt->value = !(*(bool*)opt->value);
             opt->is_present = true;
             break;
-        case 3 /*ARGPARSE_OPT_BIT*/:
-            if (flags & ARGPARSE_OPT_UNSET) {
-                *(int*)opt->value &= ~opt->data;
-            } else {
-                *(int*)opt->value |= opt->data;
-            }
-            opt->is_present = true;
-            break;
-        case 6 /*ARGPARSE_OPT_STRING*/:
+        case CexArgParseType__string:
             if (self->_ctx.optvalue) {
                 *(const char**)opt->value = self->_ctx.optvalue;
                 self->_ctx.optvalue = NULL;
@@ -195,55 +157,61 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, int flags)
                 self->_ctx.cpidx++;
                 *(const char**)opt->value = *++self->_ctx.argv;
             } else {
-                return argparse__error(self, opt, "requires a value", flags);
+                return argparse__error(self, opt, "requires a value", is_long);
             }
             opt->is_present = true;
             break;
-        case 4 /*ARGPARSE_OPT_INTEGER*/:
-            errno = 0;
+        case CexArgParseType__i8:
+        case CexArgParseType__u8:
+        case CexArgParseType__i16:
+        case CexArgParseType__u16:
+        case CexArgParseType__i32:
+        case CexArgParseType__u32:
+        case CexArgParseType__i64:
+        case CexArgParseType__u64:
+        case CexArgParseType__f32:
+        case CexArgParseType__f64:
             if (self->_ctx.optvalue) {
                 if (self->_ctx.optvalue[0] == '\0') {
-                    return argparse__error(self, opt, "requires a value", flags);
+                    return argparse__error(self, opt, "requires a value", is_long);
                 }
-
-                *(int*)opt->value = strtol(self->_ctx.optvalue, (char**)&s, 0);
+                uassert(opt->convert != NULL);
+                e$except_silent(err, opt->convert(self->_ctx.optvalue, opt->value))
+                {
+                    return argparse__error(self, opt, "argument parsing error", is_long);
+                }
                 self->_ctx.optvalue = NULL;
             } else if (self->_ctx.argc > 1) {
                 self->_ctx.argc--;
                 self->_ctx.cpidx++;
-                *(int*)opt->value = strtol(*++self->_ctx.argv, (char**)&s, 0);
-            } else {
-                return argparse__error(self, opt, "requires a value", flags);
-            }
-            if (errno == ERANGE) {
-                return argparse__error(self, opt, "numerical result out of range", flags);
-            }
-            if (s[0] != '\0') { // no digits or contains invalid characters
-                return argparse__error(self, opt, "expects an integer value", flags);
-            }
-            opt->is_present = true;
-            break;
-        case 5 /*ARGPARSE_OPT_FLOAT*/:
-            errno = 0;
-
-            if (self->_ctx.optvalue) {
-                if (self->_ctx.optvalue[0] == '\0') {
-                    return argparse__error(self, opt, "requires a value", flags);
+                self->_ctx.argv++;
+                e$except_silent(err, opt->convert(*self->_ctx.argv, opt->value))
+                {
+                    return argparse__error(self, opt, "argument parsing error", is_long);
                 }
-                *(float*)opt->value = strtof(self->_ctx.optvalue, (char**)&s);
-                self->_ctx.optvalue = NULL;
-            } else if (self->_ctx.argc > 1) {
-                self->_ctx.argc--;
-                self->_ctx.cpidx++;
-                *(float*)opt->value = strtof(*++self->_ctx.argv, (char**)&s);
             } else {
-                return argparse__error(self, opt, "requires a value", flags);
+                return argparse__error(self, opt, "requires a value", is_long);
             }
-            if (errno == ERANGE) {
-                return argparse__error(self, opt, "numerical result out of range", flags);
-            }
-            if (s[0] != '\0') { // no digits or contains invalid characters
-                return argparse__error(self, opt, "expects a numerical value", flags);
+            if (opt->type == CexArgParseType__f32) {
+                f32 res = *(f32*)opt->value;
+                if (isnanf(res) || res == INFINITY || res == -INFINITY) {
+                    return argparse__error(
+                        self,
+                        opt,
+                        "argument parsing error (float out of range)",
+                        is_long
+                    );
+                }
+            } else if (opt->type == CexArgParseType__f64) {
+                f64 res = *(f64*)opt->value;
+                if (isnanf(res) || res == INFINITY || res == -INFINITY) {
+                    return argparse__error(
+                        self,
+                        opt,
+                        "argument parsing error (float out of range)",
+                        is_long
+                    );
+                }
             }
             opt->is_present = true;
             break;
@@ -255,7 +223,7 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, int flags)
 skipped:
     if (opt->callback) {
         opt->is_present = true;
-        return opt->callback(self, opt);
+        return opt->callback(self, opt, opt->callback_data);
     } else {
         if (opt->short_name == 'h') {
             argparse_usage(self);
@@ -269,49 +237,67 @@ skipped:
 static Exception
 argparse__options_check(argparse_c* self, bool reset)
 {
-    var options = self->options;
-
-    for (u32 i = 0; i < self->options_len; i++, options++) {
-        switch (options->type) {
-            case 1 /*ARGPARSE_OPT_GROUP*/:
-                continue;
-            case 2 /*ARGPARSE_OPT_BOOLEAN*/:
-            case 3 /*ARGPARSE_OPT_BIT*/:
-            case 4 /*ARGPARSE_OPT_INTEGER*/:
-            case 5 /*ARGPARSE_OPT_FLOAT*/:
-            case 6 /*ARGPARSE_OPT_STRING*/:
-                if (reset) {
-                    options->is_present = 0;
-                    if (!(options->short_name || options->long_name)) {
-                        uassert(
-                            (options->short_name || options->long_name) &&
-                            "options both long/short_name NULL"
-                        );
-                        return Error.argument;
-                    }
-                    if (options->value == NULL && options->short_name != 'h') {
-                        uassertf(
-                            options->value != NULL,
-                            "option value [%c/%s] is null\n",
-                            options->short_name,
-                            options->long_name
-                        );
-                        return Error.argument;
-                    }
-                } else {
-                    if (options->required && !options->is_present) {
-                        fprintf(
-                            stdout,
-                            "Error: missing required option: -%c/--%s\n",
-                            options->short_name,
-                            options->long_name
-                        );
-                        return Error.argsparse;
-                    }
+    for$eachp(opt, self->options, self->options_len)
+    {
+        if (opt->type != CexArgParseType__group) {
+            if (reset) {
+                opt->is_present = 0;
+                if (!(opt->short_name || opt->long_name)) {
+                    uassert(
+                        (opt->short_name || opt->long_name) && "options both long/short_name NULL"
+                    );
+                    return Error.argument;
                 }
+                if (opt->value == NULL && opt->short_name != 'h') {
+                    uassertf(
+                        opt->value != NULL,
+                        "option value [%c/%s] is null\n",
+                        opt->short_name,
+                        opt->long_name
+                    );
+                    return Error.argument;
+                }
+            } else {
+                if (opt->required && !opt->is_present) {
+                    fprintf(
+                        stdout,
+                        "Error: missing required option: -%c/--%s\n",
+                        opt->short_name,
+                        opt->long_name
+                    );
+                    return Error.argsparse;
+                }
+            }
+        }
+
+        switch (opt->type) {
+            case CexArgParseType__group:
+                continue;
+            case CexArgParseType__boolean:
+            case CexArgParseType__string: {
+                uassert(opt->convert == NULL && "unexpected to be set for strings/bools");
+                uassert(opt->callback == NULL && "unexpected to be set for strings/bools");
+                break;
+            }
+            case CexArgParseType__i8:
+            case CexArgParseType__u8:
+            case CexArgParseType__i16:
+            case CexArgParseType__u16:
+            case CexArgParseType__i32:
+            case CexArgParseType__u32:
+            case CexArgParseType__i64:
+            case CexArgParseType__u64:
+            case CexArgParseType__f32:
+            case CexArgParseType__f64:
+                uassert(opt->convert != NULL && "expected to be set for standard args");
+                uassert(opt->callback == NULL && "unexpected to be set for standard args");
+                continue;
+            case CexArgParseType__generic:
+                uassert(opt->convert == NULL && "unexpected to be set for generic args");
+                uassert(opt->callback != NULL && "expected to be set for generic args");
                 continue;
             default:
-                uassertf(false, "wrong option type: %d", options->type);
+                uassertf(false, "wrong option type: %d", opt->type);
         }
     }
 
@@ -324,7 +310,7 @@ argparse__short_opt(argparse_c* self, argparse_opt_s* options)
     for (u32 i = 0; i < self->options_len; i++, options++) {
         if (options->short_name == *self->_ctx.optvalue) {
             self->_ctx.optvalue = self->_ctx.optvalue[1] ? self->_ctx.optvalue + 1 : NULL;
-            return argparse__getvalue(self, options, 0);
+            return argparse__getvalue(self, options, false);
         }
     }
     return Error.not_found;
@@ -335,31 +321,18 @@ argparse__long_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         const char* rest;
-        int opt_flags = 0;
         if (!options->long_name) {
             continue;
         }
-
         rest = argparse__prefix_skip(self->_ctx.argv[0] + 2, options->long_name);
         if (!rest) {
-            // negation disabled?
-            if (options->flags & ARGPARSE_OPT_NONEG) {
-                continue;
-            }
-            // only OPT_BOOLEAN/OPT_BIT supports negation
-            if (options->type != 2 /*ARGPARSE_OPT_BOOLEAN*/ &&
-                options->type != 3 /*ARGPARSE_OPT_BIT*/) {
-                continue;
-            }
-
-            if (argparse__prefix_cmp(self->_ctx.argv[0] + 2, "no-")) {
+            if (options->type != CexArgParseType__boolean) {
                 continue;
             }
             rest = argparse__prefix_skip(self->_ctx.argv[0] + 2 + 3, options->long_name);
             if (!rest) {
                 continue;
             }
-            opt_flags |= ARGPARSE_OPT_UNSET;
         }
         if (*rest) {
             if (*rest != '=') {
@@ -367,7 +340,7 @@ argparse__long_opt(argparse_c* self, argparse_opt_s* options)
             }
             self->_ctx.optvalue = rest + 1;
         }
-        return argparse__getvalue(self, options, opt_flags | ARGPARSE_OPT_LONG);
+        return argparse__getvalue(self, options, true);
     }
     return Error.not_found;
 }
@@ -391,7 +364,14 @@ static Exception
 argparse_parse(argparse_c* self, int argc, char** argv)
 {
     if (self->options_len == 0) {
-        return "zero options provided or self.options_len field not set";
+        argparse_opt_s* _opt = self->options;
+        while(_opt != NULL) {
+            if (_opt->type == CexArgParseType__na) {
+                break;
+            }
+            self->options_len++;
+            _opt++;
+        }
     }
     uassert(argc > 0);
     uassert(argv != NULL);
