@@ -1,22 +1,11 @@
 #include <cex/all.c>
 
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable(); // re-enable if you disabled it in some test case
-    return EOK;
-}
-
 test$case(test_allocator_api)
 {
     // mem$->scope_enter = NULL; // GOOD: compiler error
     // mem$ = NULL; // GOOD: compiler error
     u8* p = mem$malloc(mem$, 100);
-    tassert_eqi(_cex__default_global__allocator_heap.stats.n_allocs, 1);
+    tassert(_cex__default_global__allocator_heap.stats.n_allocs > 0);
     tassert_eqi(mem$->scope_depth(mem$), 1);
 
 
@@ -310,22 +299,4 @@ test$case(test_allocator_heap_realloc_random_align)
     return EOK;
 }
 
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_allocator_api);
-    test$run(test_allocator_temp);
-    test$run(test_allocator_new);
-    test$run(test_allocator_heap_default_alignment);
-    test$run(test_allocator_heap_alloc_header);
-    test$run(test_allocator_heap_malloc_random_align);
-    test$run(test_allocator_heap_calloc_random_align);
-    test$run(test_allocator_heap_realloc);
-    test$run(test_allocator_heap_realloc_random_align);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

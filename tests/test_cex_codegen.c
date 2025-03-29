@@ -1,20 +1,5 @@
 #include <cex/all.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
-
 test$case(test_codegen_test)
 {
     sbuf_c b = sbuf.create(1024, mem$);
@@ -113,19 +98,4 @@ test$case(test_codegen_test)
     return EOK;
 }
 
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_codegen_test);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

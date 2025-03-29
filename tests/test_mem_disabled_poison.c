@@ -1,20 +1,6 @@
 #define CEX_DISABLE_POISON 1
 #include <cex/all.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
 test$case(test_poison_totally_disabled)
 {
     u8 buf[16] = {0};
@@ -34,19 +20,4 @@ test$case(test_poison_totally_disabled)
     return EOK;
 }
 
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_poison_totally_disabled);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

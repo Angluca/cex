@@ -220,12 +220,6 @@ void __sanitizer_print_stack_trace();
 #ifdef CEXTEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
 #define __CEX_OUT_STREAM stdout
-// NOTE: __cex_test_postmortem_f - function pointer, defined at cex/test/test.h
-// used for program state logging
-extern void* __cex_test_postmortem_ctx;
-extern void (*__cex_test_postmortem_f)(void* ctx);
-#define __cex_test_postmortem_exists() (__cex_test_postmortem_f != NULL)
-
 int __cex_test_uassert_enabled = 1;
 #define uassert_disable() __cex_test_uassert_enabled = 0
 #define uassert_enable() __cex_test_uassert_enabled = 1
@@ -255,13 +249,6 @@ int __cex_test_uassert_enabled = 1;
         fflush(stdout);                                                                            \
         fflush(stderr);                                                                            \
         sanitizer_stack_trace();                                                                   \
-        if (__cex_test_postmortem_exists()) {                                                      \
-            fprintf(stderr, "=========== POSTMORTEM ===========\n");                               \
-            __cex_test_postmortem_f(__cex_test_postmortem_ctx);                                    \
-            fflush(stdout);                                                                        \
-            fflush(stderr);                                                                        \
-            fprintf(stderr, "=========== POSTMORTEM END ===========\n");                           \
-        }                                                                                          \
         __cex__abort();                                                                            \
     })
 #endif

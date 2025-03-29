@@ -1,20 +1,6 @@
 #include <cex/all.c>
 #include <cex/cex_parser.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
 typedef struct token_cmp_s
 {
     char* code;
@@ -486,34 +472,5 @@ test$case(test_token_this_file)
     mem$free(mem$, code);
     return EOK;
 }
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_token_ident);
-    test$run(test_token_new_line_skip);
-    test$run(test_token_new_empty);
-    test$run(test_token_two_indents);
-    test$run(test_token_numbers);
-    test$run(test_token_string);
-    test$run(test_token_comment);
-    test$run(test_token_comment_and_ident);
-    test$run(test_token_preproc);
-    test$run(test_token_brace_parens_brackets);
-    test$run(test_token_paren_block);
-    test$run(test_token_paren_block_overflow_test);
-    test$run(test_token_misc);
-    test$run(test_token_secondary_token);
-    test$run(test_token_code);
-    test$run(test_token_this_file);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+
+test$main();

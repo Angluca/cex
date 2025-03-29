@@ -1,25 +1,5 @@
 #include <cex/all.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
-/*
- *
- *   TEST SUITE
- *
- */
-
 Exception
 append_to_cap(sbuf_c* s)
 {
@@ -28,7 +8,7 @@ append_to_cap(sbuf_c* s)
 
     for (usize i = sbuf.len(s); i < sbuf.capacity(s); i++) {
         c[0] = 'A' + i;
-        tassert_eqs(EOK, sbuf.append(s, c));
+        e$ret(sbuf.append(s, c));
     }
 
     return EOK;
@@ -466,34 +446,5 @@ test$case(test_sbuf__is_valid__null_pointer)
 
     return EOK;
 }
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_sbuf_new);
-    test$run(test_sbuf_static);
-    test$run(test_sbuf_append_char_grow);
-    test$run(test_sbuf_append_char_grow_temp);
-    test$run(test_sbuf_append_str_grow);
-    test$run(test_sbuf_clear);
-    test$run(test_sbuf_destroy);
-    test$run(test_sbuf_sprintf);
-    test$run(test_sbuf_appendf_long_growth);
-    test$run(test_sbuf_appendf_long_growth_prebuild_buffer);
-    test$run(test_sbuf_appendf_static);
-    test$run(test_sbuf__is_valid__no_null_term);
-    test$run(test_sbuf__is_valid__len_gt_cap);
-    test$run(test_sbuf__is_valid__zero_cap);
-    test$run(test_sbuf__is_valid__bad_magic);
-    test$run(test_sbuf__is_valid__null_pointer);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+
+test$main();

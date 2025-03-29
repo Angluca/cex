@@ -1,19 +1,6 @@
 #define NDEBUG
 #include <cex/all.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    return EOK;
-}
-
 test$case(test_poison_by_cex)
 {
     u8 buf[16] = {0};
@@ -43,20 +30,4 @@ test$case(test_poison_by_cex)
     return EOK;
 }
 
-
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_poison_by_cex);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

@@ -7,17 +7,6 @@ struct foo {
     .arr = {1, 2, 3},
 };
 
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable(); // re-enable if you disabled it in some test case
-    return EOK;
-}
-
 test$case(random_seed)
 {
     Random_c rnd = { 0 };
@@ -224,19 +213,4 @@ test$case(random_buf)
     return EOK;
 }
 
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(random_seed);
-    test$run(random_f32);
-    test$run(random_i32);
-    test$run(random_range);
-    test$run(random_prob);
-    test$run(random_buf);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

@@ -2,48 +2,6 @@
 #include <cex/all.c>
 
 
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable(); // re-enable if you disabled it in some test case
-    return EOK;
-}
-
-test$case(my_run)
-{
-    // FIX:  Add WIN32 versions of this test
-
-    const char* command_line[] = { "echo", "\"Hello, world!\"", NULL };
-    (void)command_line;
-    // char* command_line[] = { "sleep", "5", NULL };
-    // char* command_line[] = { "dd", "if=/dev/zero", "bs=1000k", "count=3000", NULL };
-    // char *command_line[] = {"dd", "if=/dev/random", "bs=100k", "count=65", NULL};
-    tassert_eqe(Error.argument, os$cmd(NULL));
-    tassert_eqe(Error.argument, os$cmd("ls", "soo", NULL, "foo"));
-    tassert_eqe(Error.runtime, os$cmd("sleepasdlkajdlja", "2"));
-    os_cmd_c c = { 0 };
-    e$ret(os.cmd.run(command_line, arr$len(command_line), &c));
-
-    tassert_eqe(Error.runtime, os$cmd("tests/build/os_test/cat", "/asdljqlw/asdlkjasdlji"));
-
-    mem$scope(tmem$, _)
-    {
-        tassert_eqe(EOK, os$cmd("echo", "hi there", str.fmt(_, "foo: %d", 1)));
-
-        arr$(const char*) args = arr$new(args, _);
-        arr$pusha(args, command_line);
-        e$ret(os.cmd.run(args, arr$len(args), &c));
-    }
-
-    // Manual testing stdin works!
-    // os$cmd("tests/build/os_test/echo_server");
-    return EOK;
-}
-
 test$case(os_cmd_create)
 {
     os_cmd_c c = { 0 };
@@ -317,26 +275,5 @@ test$case(os_cmd_read_all_small_wdelay)
     }
     return EOK;
 }
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(my_run);
-    test$run(os_cmd_create);
-    test$run(os_cmd_file_handles);
-    test$run(os_cmd_read_all_small);
-    test$run(os_cmd_read_all_huge);
-    test$run(os_cmd_read_line_huge);
-    test$run(os_cmd_read_all_only_stdout);
-    test$run(os_cmd_read_all_combined_stderr);
-    test$run(os_cmd_join_timeout);
-    test$run(os_cmd_huge_join);
-    test$run(os_cmd_huge_join_stderr);
-    test$run(os_cmd_stdin_communucation);
-    test$run(os_cmd_read_all_small_wdelay);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+
+test$main();

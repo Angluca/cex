@@ -1,16 +1,5 @@
 #include <cex/all.c>
 
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable(); // re-enable if you disabled it in some test case
-    return EOK;
-}
-
 #define alloc_cmp(alloc_size, align, expected_struct...)                                           \
     ({                                                                                             \
         allocator_arena_rec_s res = _cex_alloc_estimate_alloc_size((alloc_size), (align));         \
@@ -561,25 +550,4 @@ test$case(test_allocator_arena_realloc_last_pointer)
     return EOK;
 }
 
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_allocator_arena_alloc_size);
-    test$run(test_allocator_arena_create_destroy);
-    test$run(test_allocator_arena_malloc);
-    test$run(test_allocator_arena_malloc_pointer_alignment);
-    test$run(test_allocator_arena_scope_sanitization);
-    test$run(test_allocator_arena_realloc);
-    test$run(test_allocator_arena_page_size);
-    test$run(test_allocator_arena_multiple_pages);
-    test$run(test_allocator_arena_realloc_shrink);
-    test$run(test_allocator_arena_malloc_mem_pattern);
-    test$run(test_allocator_arena_pointer_lifetime);
-    test$run(test_allocator_arena_realloc_last_pointer);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

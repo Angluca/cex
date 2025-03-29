@@ -1,19 +1,5 @@
 #include <cex/all.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
 test$case(test_is_power_of2)
 {
     _Static_assert(!mem$is_power_of2(0), "fail");
@@ -40,20 +26,4 @@ test$case(test_aligned_size)
     return EOK;
 }
 
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_is_power_of2);
-    test$run(test_aligned_size);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

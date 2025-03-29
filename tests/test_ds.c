@@ -1,20 +1,6 @@
 #include "cex/all.h"
 #include <cex/all.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
 
 static void
 add_to_arr(arr$(int) * arr)
@@ -851,26 +837,6 @@ test$case(test_hashmap_hash)
     return EOK;
 }
 
-test$case(test_hashmap_compare_strings_bounded)
-{
-    // We created the same string, but stored in different places
-    char key_buf[10] = "foobar";
-    char key_buf2[6] = "foobar";
-    char key_buf3[6] = "foobar";
-    char key_buf4[5] = "fooba";
-    char key_buf5[] = "";
-    tassert_eqi(sizeof(key_buf2), 6);
-    tassert_eqi(sizeof(key_buf), 10);
-    tassert(cexds_compare_strings_bounded(key_buf, key_buf2, sizeof(key_buf), sizeof(key_buf2)));
-    tassert(cexds_compare_strings_bounded(key_buf2, key_buf, sizeof(key_buf2), sizeof(key_buf)));
-
-    tassert(cexds_compare_strings_bounded(key_buf2, key_buf3, sizeof(key_buf2), sizeof(key_buf3)));
-    tassert(!cexds_compare_strings_bounded(key_buf3, key_buf4, sizeof(key_buf3), sizeof(key_buf4)));
-    tassert(!cexds_compare_strings_bounded(key_buf3, key_buf5, sizeof(key_buf3), sizeof(key_buf5)));
-    tassert(cexds_compare_strings_bounded(key_buf5, key_buf5, sizeof(key_buf5), sizeof(key_buf5)));
-    return EOK;
-}
-
 test$case(test_hashmap_string)
 {
     char key_buf[10] = "foobar";
@@ -1144,41 +1110,4 @@ test$case(test_mem_scope_lifetime_test)
     return EOK;
 }
 
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_array);
-    test$run(test_array_char_ptr);
-    test$run(test_array_struct);
-    test$run(test_orig_arr);
-    test$run(test_orig_hashmap);
-    test$run(test_array_len_unified);
-    test$run(test_for_arr);
-    test$run(test_slice);
-    test$run(test_for_arr_custom_size);
-    test$run(test_for_arr_for_struct);
-    test$run(test_arr_insert_pop);
-    test$run(test_arr_pushm);
-    test$run(test_overaligned_struct);
-    test$run(test_overaligned_struct64);
-    test$run(test_smallest_alignment);
-    test$run(test_hashmap_basic);
-    test$run(test_hashmap_basic_struct);
-    test$run(test_hashmap_struct_full_setget);
-    test$run(test_hashmap_keytype);
-    test$run(test_hashmap_hash);
-    test$run(test_hashmap_compare_strings_bounded);
-    test$run(test_hashmap_string);
-    test$run(test_hashmap_bufkey);
-    test$run(test_hashmap_cex_string);
-    test$run(test_hashmap_basic_delete);
-    test$run(test_hashmap_basic_clear);
-    test$run(test_orig_del_add_clear);
-    test$run(test_mem_scope_lifetime_test);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

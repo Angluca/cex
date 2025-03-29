@@ -262,21 +262,6 @@ class CEXCompiler:
 class CEXTestBuilder:
     TEMPLATE = r"""
     #include <cex/all.c>
-    #include <cex/test/fff.h>
-    #include <cex/test/test.h>
-
-    IAllocator allocator;
-
-    test$teardown(){
-        allocator = AllocatorGeneric.destroy(); // this also nullifies allocator
-        return EOK;
-    }
-
-    test$setup(){
-        uassert_enable(); // re-enable if you disabled it in some test case
-        allocator = mem$;
-        return EOK;
-    }
 
     test$case(my_test)
     {
@@ -300,17 +285,8 @@ class CEXTestBuilder:
         return EOK;
     }
 
-    int
-    main(int argc, char* argv[])
-    {
-        test$args_parse(argc, argv);
-        test$print_header();  // >>> all tests below
+    test$main();
 
-        test$run(my_test);
-
-        test$print_footer();  // ^^^^^ all tests runs are above
-        return test$exit_code();
-    }
     """
 
     def __init__(
@@ -374,156 +350,6 @@ class CEXTestBuilder:
     def make_test_exe(self, test_src: str):
         return os.path.join(self.test_dir, "build", test_src + ".test")
 
-    def action_build_test(self, test_src: str):
-        test_exe = self.make_test_exe(test_src)
-        os.makedirs(os.path.dirname(test_exe), exist_ok=True)
-
-        build_mtime = None
-        if os.path.exists(test_exe):
-            build_mtime = int(os.path.getmtime(test_exe))
-
-        fh = open(test_src, "r")
-
-        test_mtime = int(os.path.getmtime(test_src))
-
-        lines = fh.readlines()
-
-        all_tests = []
-
-        re_test_definition = re.compile(
-            r"^test\$case\((?P<test_name>\w+)\)", re.MULTILINE
-        )
-        re_test_setup_f_definition = re.compile(r"^test\$setup\(\w*\)", re.MULTILINE)
-        re_parse_main_args = re.compile(r"^\s*test\$args_parse\(.*\);.*", re.MULTILINE)
-        re_print_head = re.compile(r"^\s*test\$print_header\(.*\);.*", re.MULTILINE)
-        re_print_footer = re.compile(r"^\s*test\$print_footer\(.*\);.*", re.MULTILINE)
-        re_exit_code = re.compile(
-            r"^\s*return\s+test\$exit_code\(.*\);.*", re.MULTILINE
-        )
-        re_in_main = re.compile(
-            r".*\s*main\(int\s+argc,\s+char\*\s+argv\[\s*\]\)", re.MULTILINE
-        )
-        re_includes_c = re.compile(
-            r"^#include\s+[<\"]{1}([.\/\\\w-]+\.[h|c])[>\"]{1}", re.MULTILINE
-        )
-
-        has_setup = False
-        has_insert_here = False
-        has_c_changes = build_mtime is None
-        has_print_head = False
-        has_parse_args = False
-        has_print_footer = False
-        has_exit_code = False
-        is_in_main = False
-        is_in_test_case = False
-        n_tests = 0
-
-        buf = io.StringIO()
-
-        for line in lines:
-            # print(l)
-            if re_test_definition.match(line):
-                all_tests.append(re_test_definition.match(line)["test_name"])
-                is_in_test_case = True
-            elif re_test_setup_f_definition.match(line):
-                has_setup = True
-            elif re_includes_c.search(line) and not has_c_changes:
-                m = re_includes_c.search(line)
-                fn = m[1]
-                incl_fn = self.search_include_fn(fn)
-
-                if (
-                    build_mtime
-                    and incl_fn
-                    and not os.path.basename(incl_fn).startswith("fake_")
-                ):
-                    mtime = int(os.path.getmtime(incl_fn))
-                    if mtime > build_mtime:
-                        print(f"{test_src} changes in {incl_fn}")
-                        has_c_changes = True
-                    else:
-                        if incl_fn.endswith(".c"):
-                            alt_h_file = incl_fn[:-2] + ".h"
-                        elif incl_fn.endswith(".h"):
-                            alt_h_file = incl_fn[:-2] + ".c"
-                        else:
-                            assert False, f"not implemented extension: {incl_fn}"
-
-                        alt_h_file = self.search_include_fn(alt_h_file)
-                        if alt_h_file:
-                            mtime = int(os.path.getmtime(alt_h_file))
-                            if mtime > build_mtime:
-                                # print(f"{test_src} changes in {alt_h_file}")
-                                has_c_changes = True
-
-            elif re_print_head.match(line):
-                has_insert_here = True
-                has_print_head = True
-                buf.write("    test$print_header();  // >>> all tests below\n")
-                buf.write("    \n")
-
-                if len(all_tests) == 0:
-                    print(f"No tests found in {test_src}")
-                    return
-
-                for t in all_tests:
-                    n_tests += 1
-                    buf.write(f"    test$run({t});\n")
-            elif re_print_footer.match(line):
-                buf.write("    \n")
-                line = "    test$print_footer();  // ^^^^^ all tests runs are above\n"
-                has_print_footer = True
-                has_insert_here = False
-            elif re_exit_code.match(line):
-                has_exit_code = True
-                has_insert_here = False
-            elif re_in_main.match(line):
-                is_in_main = True
-            elif re_parse_main_args.match(line):
-                has_parse_args = True
-            elif is_in_main:
-                if line.strip().startswith("//"):
-                    continue
-                if not line.strip():
-                    continue
-            elif is_in_test_case and " return " in line:
-                is_in_test_case = False
-                line = "    return EOK;\n"
-                has_insert_here = False
-
-            if not has_insert_here:
-                buf.write(line)
-
-        if not has_parse_args:
-            print(f"No test$args_parse(...) in main: {test_src}")
-            sys.exit(1)
-        if not has_exit_code:
-            print(f"No return test$exit_code(); in main: {test_src}")
-            sys.exit(1)
-        if not has_print_footer:
-            print(f"No test$print_footer() found: {test_src}")
-            sys.exit(1)
-        if not has_print_head:
-            print(f"No test$print_header() found: {test_src}")
-            sys.exit(1)
-        if not has_setup:
-            print(f"No test$setup() found: {test_src}")
-            sys.exit(1)
-        fh.close()
-
-        if not self.force_rebuild and not has_c_changes and test_mtime <= build_mtime:
-            # No new tests added or changed, prevent touching the source code then
-            # print(f"No changes: {all_tests=} {test_calls=} ")
-            return False
-
-        if n_tests == 0:
-            print(f"No tests found in: {test_src}")
-            return False
-        else:
-            with open(test_src, "w") as fh:
-                fh.write(buf.getvalue())
-            return True
-
     def action_build(self):
         test_files_list = []
 
@@ -557,12 +383,11 @@ class CEXTestBuilder:
             compiler_args += self.ccargs
 
         for fn in test_files_list:
-            if self.action_build_test(fn):
-                print(f"Building: {fn}")
-                test_exe = self.make_test_exe(fn)
-                self.compiler.compile_app(
-                    fn, test_exe, compiler_args=compiler_args, linker_args=self.ldargs
-                )
+            print(f"Building: {fn}")
+            test_exe = self.make_test_exe(fn)
+            self.compiler.compile_app(
+                fn, test_exe, compiler_args=compiler_args, linker_args=self.ldargs
+            )
 
     def action_run(self):
         test_exe_list = []

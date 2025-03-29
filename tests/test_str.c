@@ -1,20 +1,6 @@
 #include <cex/all.c>
 
 /*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
-/*
  *
  *   TEST SUITE
  *
@@ -2113,65 +2099,5 @@ test$case(test_str_slice_eq)
 
     return EOK;
 }
-/*
- *
 
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_cstr);
-    test$run(test_cstr_sdollar);
-    test$run(test_str_len);
-    test$run(test_copy);
-    test$run(test_slice_copy);
-    test$run(test_sub_positive_start);
-    test$run(test_sub_negative_start);
-    test$run(test_eq);
-    test$run(test_eqi);
-    test$run(test_iter_split);
-    test$run(test_find);
-    test$run(test_rfind);
-    test$run(test_contains_starts_ends);
-    test$run(test_contains_sclice_starts_ends);
-    test$run(test_remove_prefix);
-    test$run(test_remove_suffix);
-    test$run(test_strip);
-    test$run(test_cmp);
-    test$run(test_cmpi);
-    test$run(str_to__signed_num);
-    test$run(test_str_to_i8);
-    test$run(test_str_to_i16);
-    test$run(test_str_to_i32);
-    test$run(test_str_to_i64);
-    test$run(str_to__unsigned_num);
-    test$run(test_str_to_u8);
-    test$run(test_str_to_u16);
-    test$run(test_str_to_u32);
-    test$run(test_str_to_u64);
-    test$run(str_to__double);
-    test$run(test_str_to_f32);
-    test$run(test_str_to_f64);
-    test$run(test_str_sprintf);
-    test$run(test_s_macros);
-    test$run(test_fmt);
-    test$run(test_fmt_edge);
-    test$run(test_slice_clone);
-    test$run(test_clone);
-    test$run(test_tsplit);
-    test$run(test_split_lines);
-    test$run(test_str_replace);
-    test$run(test_tjoin);
-    test$run(test_str_chaining);
-    test$run(test_str_tolower);
-    test$run(test_str_toupper);
-    test$run(test_str_slice_eq);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

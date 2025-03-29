@@ -1,25 +1,5 @@
 #include <cex/all.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
-/*
- *
- *   TEST SUITE
- *
- */
-
 test$case(test_io)
 {
     FILE* file = (void*)221;
@@ -581,44 +561,4 @@ test$case(test_fload)
     return EOK;
 }
 
-
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_io);
-    test$run(test_readall);
-    test$run(test_read_all_empty);
-    test$run(test_read_all_stdin);
-    test$run(test_read_line);
-    test$run(test_read_line_stream);
-    test$run(test_read_line_empty_file);
-    test$run(test_read_line_binary_file_with_zero_char);
-    test$run(test_fread_line_binary_file_with_zero_char);
-    test$run(test_read_line_win_new_line);
-    test$run(test_fread_line_win_new_line);
-    test$run(test_read_line_only_new_lines);
-    test$run(test_read_all_then_read_line);
-    test$run(test_read_long_line);
-    test$run(test_fread_long_line);
-    test$run(test_read_all_realloc);
-    test$run(test_read);
-    test$run(test_read_empty);
-    test$run(test_read_not_all);
-    test$run(test_fprintf_to_file);
-    test$run(test_write);
-    test$run(test_fload_save);
-    test$run(test_fload_not_found);
-    test$run(test_write_line);
-    test$run(test_fload);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

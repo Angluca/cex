@@ -53,12 +53,8 @@ state_2_sideeff(fsm_c* self, const fsm_event_s* e)
     }
 }
 
-test$teardown()
-{
-    return EOK;
-}
 
-test$setup()
+Exception mocks_reset()
 {
     uassert_enable(); // re-enable if you disabled it in some test case
     RESET_FAKE(state_1);
@@ -71,6 +67,7 @@ test$setup()
 
 test$case(test_fsm_create)
 {
+    e$ret(mocks_reset());
     fsm_c f = { ._fsm_type = 33 };
     tassert_eqe(EOK, fsm.create(&f, 9, state_1, NULL));
     tassert(f._fsm_type == 9);
@@ -88,6 +85,7 @@ test$case(test_fsm_create)
 
 test$case(test_fsm_trans)
 {
+    e$ret(mocks_reset());
     fsm_c f = { ._fsm_type = 33 };
     tassert_eqe(EOK, fsm.create(&f, 9, state_1, NULL));
     tassert_eqe(EOK, fsm.trans(&f, state_2));
@@ -105,6 +103,7 @@ test$case(test_fsm_trans)
 
 test$case(test_fsm_dispatch)
 {
+    e$ret(mocks_reset());
     fsm_c f = { ._fsm_type = 33 };
 
     state_1_fake.custom_fake = state_1_sideeff;
@@ -134,6 +133,7 @@ test$case(test_fsm_dispatch)
 
 test$case(test_fsm_dispatch_entry_transition)
 {
+    e$ret(mocks_reset());
     fsm_c f = { ._fsm_type = 33 };
 
     state_1_fake.custom_fake = state_1_sideeff;
@@ -171,6 +171,7 @@ test$case(test_fsm_dispatch_entry_transition)
 
 test$case(test_fsm_super_non_user_sign_ignored)
 {
+    e$ret(mocks_reset());
     fsm_c f = { ._fsm_type = 33 };
 
 
@@ -192,6 +193,7 @@ test$case(test_fsm_super_non_user_sign_ignored)
 
 test$case(test_fsm_dispatch_super_call)
 {
+    e$ret(mocks_reset());
     fsm_c f = { ._fsm_type = 33 };
 
     state_super_fake.custom_fake = state_super_sideeff;
@@ -220,6 +222,7 @@ test$case(test_fsm_dispatch_super_call)
 
 test$case(test_fsm_dispatch_super_call_from_super_forbidden)
 {
+    e$ret(mocks_reset());
     fsm_c f = { ._fsm_type = 33 };
 
     state_super_fake.custom_fake = state_super_sideeff;
@@ -235,6 +238,7 @@ test$case(test_fsm_dispatch_super_call_from_super_forbidden)
 
 test$case(test_fsm_dispatch_super_call_transition)
 {
+    e$ret(mocks_reset());
     fsm_c f = { ._fsm_type = 33 };
 
     state_super_fake.custom_fake = state_super_sideeff;
@@ -248,23 +252,4 @@ test$case(test_fsm_dispatch_super_call_transition)
     return EOK;
 }
 
-
-
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_fsm_create);
-    test$run(test_fsm_trans);
-    test$run(test_fsm_dispatch);
-    test$run(test_fsm_dispatch_entry_transition);
-    test$run(test_fsm_super_non_user_sign_ignored);
-    test$run(test_fsm_dispatch_super_call);
-    test$run(test_fsm_dispatch_super_call_from_super_forbidden);
-    test$run(test_fsm_dispatch_super_call_transition);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

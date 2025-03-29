@@ -1,25 +1,33 @@
 #pragma once
 #include "all.h"
-#ifdef CEXTEST
 
-#ifndef NAN
-#error "NAN is undefined on this platform"
-#endif
-
-#ifndef FLT_EPSILON
-#error "FLT_EPSILON is undefined on this platform"
-#endif
+typedef Exception (*_cex_test_case_f)(void);
 
 #define CEXTEST_AMSG_MAX_LEN 512
-#define CEXTEST_CRED "\033[0;31m"
-#define CEXTEST_CGREEN "\033[0;32m"
-#define CEXTEST_CNONE "\033[0m"
+struct _cex_test_case_s
+{
+    _cex_test_case_f test_fn;
+    const char* test_name;
+};
 
-#ifdef _WIN32
-#define CEXTEST_NULL_DEVICE "NUL:"
-#else
-#define CEXTEST_NULL_DEVICE "/dev/null"
-#endif
+struct _cex_test_context_s
+{
+    arr$(struct _cex_test_case_s) test_cases;
+    int orig_stderr_fd;    // initial stdout
+    int orig_stdout_fd;    // initial stderr
+    FILE* out_stream;      // test case captured output
+    int tests_run;         // number of tests run
+    int tests_failed;      // number of tests failed
+    int verbosity;         // verbosity level: 0 - only stats, 1 - short test results (. or F) +
+                           // stats, 2 - all tests results, 3 - include logs
+    const char* case_name; // current running case name
+    _cex_test_case_f setup_case_fn;
+    _cex_test_case_f teardown_case_fn;
+    _cex_test_case_f setup_suite_fn;
+    _cex_test_case_f teardown_suite_fn;
+    bool has_ansi;
+    char str_buf[CEXTEST_AMSG_MAX_LEN];
+};
 
 #if defined(__clang__)
 #define test$NOOPT __attribute__((optnone))
@@ -29,187 +37,132 @@
 #error "MSVC deprecated"
 #endif
 
-struct __CexTestContext_s
-{
-    FILE* out_stream; // by default uses stdout, however you can replace it by any FILE*
-                      // stream
-    int tests_run;    // number of tests run
-    int tests_failed; // number of tests failed
-    int verbosity;    // verbosity level: 0 - only stats, 1 - short test results (. or F) +
-                      // stats, 2 - all tests results, 3 - include logs
-    const char* in_test;
-    // Internal buffer for aassertf() string formatting
-    char _str_buf[CEXTEST_AMSG_MAX_LEN];
-};
+#define _test$log_err(msg) __FILE__ ":" cex$stringize(__LINE__) " -> " msg
 
-
-void* __cex_test_postmortem_ctx = NULL;
-void (*__cex_test_postmortem_f)(void* ctx) = NULL;
-
-
-void
-__cex_test_run_postmortem()
-{
-    if (__cex_test_postmortem_exists()) {
-        fprintf(stdout, "=========== POSTMORTEM ===========\n");
-        fflush(stdout);
-        fflush(stderr);
-        __cex_test_postmortem_f(__cex_test_postmortem_ctx);
-        fflush(stdout);
-        fflush(stderr);
-        fprintf(stdout, "=========== POSTMORTEM END =======\n");
-    }
-}
-/*
- *
- *  ASSERTS
- *
- */
-//
-// tassert( condition ) - simple test assert, fails when condition false
-//
 #define tassert(A)                                                                                 \
-    ({                                                                                             \
-        if (!(A)) {                                                                                \
-            __cex_test_run_postmortem();                                                           \
-            return __CEXTEST_LOG_ERR(#A);                                                          \
-        }                                                                                          \
+    ({ /* ONLY for test$case USE */                                                                \
+       if (!(A)) {                                                                                 \
+           return _test$log_err(#A);                                                               \
+       }                                                                                           \
     })
 
-//
-// tassertf( condition, format_string, ...) - test only assert with printf() style formatting
-// error message
-//
 #define tassertf(A, M, ...)                                                                        \
-    ({                                                                                             \
-        if (!(A)) {                                                                                \
-            if(str.sprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR(M),                                                              \
-                ##__VA_ARGS__                                                                      \
-            )){}                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
+    ({ /* ONLY for test$case USE */                                                                \
+       if (!(A)) {                                                                                 \
+           if (str.sprintf(                                                                        \
+                   _cex_test__mainfn_state.str_buf,                                                \
+                   CEXTEST_AMSG_MAX_LEN - 1,                                                       \
+                   _test$log_err(M),                                                               \
+                   ##__VA_ARGS__                                                                   \
+               )) {                                                                                \
+           }                                                                                       \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       }                                                                                           \
     })
 
-//
-// tassert_eqs(char * actual, char * expected) - compares strings via strcmp() (NULL tolerant)
-//
 #define tassert_eqs(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        const char* ac = (_ac);                                                                    \
-        const char* ex = (_ex);                                                                    \
-        if ((ac) == NULL && (ex) != NULL) {                                                        \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("NULL != '%s'"),                                                 \
-                (char*)(ex)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        } else if ((ac) != NULL && (ex) == NULL) {                                                 \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("'%s' != NULL"),                                                 \
-                (char*)(ac)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        } else if (((ac) != NULL && (ex) != NULL) &&                                               \
-                   (strcmp(__CEXTEST_NON_NULL((ac)), __CEXTEST_NON_NULL((ex))) != 0)) {            \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("'%s' != '%s'"),                                                 \
-                (char*)(ac),                                                                       \
-                (char*)(ex)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
+    ({ /* ONLY for test$case USE */                                                                \
+       const char* ac = (_ac);                                                                     \
+       const char* ex = (_ex);                                                                     \
+       if ((ac) == NULL && (ex) != NULL) {                                                         \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("NULL != '%s'"),                                                      \
+               (char*)(ex)                                                                         \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       } else if ((ac) != NULL && (ex) == NULL) {                                                  \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("'%s' != NULL"),                                                      \
+               (char*)(ac)                                                                         \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       } else if (((ac) != NULL && (ex) != NULL) && (!str.eq((ac), (ex)))) {                       \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("'%s' != '%s'"),                                                      \
+               (char*)(ac),                                                                        \
+               (char*)(ex)                                                                         \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       }                                                                                           \
     })
 
 //
 // tassert_eqs(Exception actual, Exception expected) - compares Exceptions (Error.ok = NULL = EOK)
 //
 #define tassert_eqe(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        const char* ac = (_ac);                                                                    \
-        const char* ex = (_ex);                                                                    \
-        if ((ac) == NULL && (ex) != NULL) {                                                        \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("Error.ok != '%s'"),                                             \
-                (char*)(ex)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        } else if ((ac) != NULL && (ex) == NULL) {                                                 \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("'%s' != Error.ok"),                                             \
-                (char*)(ac)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        } else if (((ac) != NULL && (ex) != NULL) &&                                               \
-                   (strcmp(__CEXTEST_NON_NULL((ac)), __CEXTEST_NON_NULL((ex))) != 0)) {            \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("'%s' != '%s'"),                                                 \
-                (char*)(ac),                                                                       \
-                (char*)(ex)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
+    ({ /* ONLY for test$case USE */                                                                \
+       const char* ac = (_ac);                                                                     \
+       const char* ex = (_ex);                                                                     \
+       if ((ac) == NULL && (ex) != NULL) {                                                         \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("Error.ok != '%s'"),                                                  \
+               (char*)(ex)                                                                         \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       } else if ((ac) != NULL && (ex) == NULL) {                                                  \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("'%s' != Error.ok"),                                                  \
+               (char*)(ac)                                                                         \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       } else if (((ac) != NULL && (ex) != NULL) && (!str.eq((ac), (ex)))) {                       \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("'%s' != '%s'"),                                                      \
+               (char*)(ac),                                                                        \
+               (char*)(ex)                                                                         \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       }                                                                                           \
     })
 
 //
 // tassert_eqi(int actual, int expected) - compares equality of signed integers
 //
 #define tassert_eqi(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        long int ac = (_ac);                                                                       \
-        long int ex = (_ex);                                                                       \
-        if ((ac) != (ex)) {                                                                        \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("%ld != %ld"),                                                   \
-                (ac),                                                                              \
-                (ex)                                                                               \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
+    ({ /* ONLY for test$case USE */                                                                \
+       long int ac = (_ac);                                                                        \
+       long int ex = (_ex);                                                                        \
+       if ((ac) != (ex)) {                                                                         \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("%ld != %ld"),                                                        \
+               (ac),                                                                               \
+               (ex)                                                                                \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       }                                                                                           \
     })
 
 //
 // tassert_eql(int actual, int expected) - compares equality of long signed integers
 //
 #define tassert_eql(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        long long ac = (_ac);                                                                      \
-        long long ex = (_ex);                                                                      \
-        if ((ac) != (ex)) {                                                                        \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("%lld != %lld"),                                                 \
-                (ac),                                                                              \
-                (ex)                                                                               \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
+    ({ /* ONLY for test$case USE */                                                                \
+       long long ac = (_ac);                                                                       \
+       long long ex = (_ex);                                                                       \
+       if ((ac) != (ex)) {                                                                         \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("%lld != %lld"),                                                      \
+               (ac),                                                                               \
+               (ex)                                                                                \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       }                                                                                           \
     })
 
 //
@@ -217,223 +170,293 @@ __cex_test_run_postmortem()
 // NAN friendly, i.e. tassert_eqf(NAN, NAN) -- passes
 //
 #define tassert_eqf(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        f64 ac = (_ac);                                                                            \
-        f64 ex = (_ex);                                                                            \
-        int __at_assert_passed = 1;                                                                \
-        if (isnan(ac) && !isnan(ex))                                                               \
-            __at_assert_passed = 0;                                                                \
-        else if (!isnan(ac) && isnan(ex))                                                          \
-            __at_assert_passed = 0;                                                                \
-        else if (isnan(ac) && isnan(ex))                                                           \
-            __at_assert_passed = 1;                                                                \
-        else if (fabs((ac) - (ex)) > (f64)FLT_EPSILON)                                             \
-            __at_assert_passed = 0;                                                                \
-        if (__at_assert_passed == 0) {                                                             \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("%.10e != %.10e (diff: %0.10e epsilon: %0.10e)"),                \
-                (ac),                                                                              \
-                (ex),                                                                              \
-                ((ac) - (ex)),                                                                     \
-                (f64)FLT_EPSILON                                                                   \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
+    ({ /* ONLY for test$case USE */                                                                \
+       f64 ac = (_ac);                                                                             \
+       f64 ex = (_ex);                                                                             \
+       int __at_assert_passed = 1;                                                                 \
+       if (isnan(ac) && !isnan(ex))                                                                \
+           __at_assert_passed = 0;                                                                 \
+       else if (!isnan(ac) && isnan(ex))                                                           \
+           __at_assert_passed = 0;                                                                 \
+       else if (isnan(ac) && isnan(ex))                                                            \
+           __at_assert_passed = 1;                                                                 \
+       else if (fabs((ac) - (ex)) > (f64)FLT_EPSILON)                                              \
+           __at_assert_passed = 0;                                                                 \
+       if (__at_assert_passed == 0) {                                                              \
+           snprintf(                                                                               \
+               _cex_test__mainfn_state.str_buf,                                                    \
+               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
+               _test$log_err("%.10e != %.10e (diff: %0.10e epsilon: %0.10e)"),                     \
+               (ac),                                                                               \
+               (ex),                                                                               \
+               ((ac) - (ex)),                                                                      \
+               (f64)FLT_EPSILON                                                                    \
+           );                                                                                      \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       }                                                                                           \
     })
 
+#define test$case(NAME)                                                                             \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                      \
+    static Exception cext_test_##NAME();                                                            \
+    static void cext_test_register_##NAME(void) __attribute__((constructor));                       \
+    static void cext_test_register_##NAME(void)                                                     \
+    {                                                                                               \
+        if (_cex_test__mainfn_state.test_cases == NULL) {                                           \
+            _cex_test__mainfn_state.test_cases = arr$new(_cex_test__mainfn_state.test_cases, mem$); \
+            uassert(_cex_test__mainfn_state.test_cases != NULL && "memory error");                  \
+        };                                                                                          \
+        arr$push(                                                                                   \
+            _cex_test__mainfn_state.test_cases,                                                     \
+            (struct _cex_test_case_s){ .test_fn = &cext_test_##NAME, .test_name = #NAME }           \
+        );                                                                                          \
+    }                                                                                               \
+    Exception test$NOOPT cext_test_##NAME(void)
 
-/*
- *
- *  TEST FUNCTIONS
- *
- */
+static void
+cex_test_mute()
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->out_stream) {
+        fflush(stdout);
+        io.rewind(ctx->out_stream);
+        fflush(ctx->out_stream);
+        dup2(fileno(ctx->out_stream), STDOUT_FILENO);
+    }
+}
+static void
+cex_test_unmute(Exc test_result)
+{
+    (void)test_result;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->out_stream) {
+        fflush(stdout);
+        putc('\0', stdout);
+        fflush(stdout);
+        isize flen = ftell(ctx->out_stream);
+        io.rewind(ctx->out_stream);
+        dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
+
+        if (test_result != EOK && flen > 1) {
+            fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
+            int c;
+            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') {
+                putc(c, stderr);
+            }
+            fprintf(stderr, "\n============== <<<<<< TEST OUTPUT =============\n");
+        }
+    }
+}
+
+
+static int
+cex_test_main_fn(int argc, char** argv)
+{
+    (void)argc;
+    (void)argv;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->test_cases == NULL) {
+        fprintf(stderr, "No test$case() in the test file: %s\n", __FILE__);
+        return 1;
+    }
+    u32 max_name = 0;
+    for$each(t, ctx->test_cases)
+    {
+        if (max_name < strlen(t.test_name) + 2) {
+            max_name = strlen(t.test_name) + 2;
+        }
+    }
+    max_name = (max_name < 70) ? 70 : max_name;
+
+    // TODO: implement arg parse
+    ctx->verbosity = 1;
+    ctx->out_stream = tmpfile();
+    ctx->has_ansi = io.has_ansi_support();
+    if (ctx->out_stream == NULL) {
+        fprintf(stderr, "Failed opening temp output for capturing tests\n");
+        uassert(false && "TODO: test this");
+    }
+    // TODO: win32
+    // ctx->orig_stdout_fd = _dup(_fileno(stdout));
+    // ctx->orig_stderr_fd = _dup(_fileno(stderr));
+
+    ctx->orig_stdout_fd = dup(fileno(stdout));
+    ctx->orig_stderr_fd = dup(fileno(stderr));
+
+
+    if (ctx->verbosity > 0) {
+        fprintf(stderr, "-------------------------------------\n");
+        fprintf(stderr, "Running Tests: %s\n", argv[0]);
+        fprintf(stderr, "-------------------------------------\n\n");
+    }
+    if (ctx->setup_suite_fn) {
+        e$except(err, ctx->setup_suite_fn())
+        {
+            fprintf(
+                stderr,
+                "[%s] test$setup_suite() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+    }
+
+
+    for$each(t, ctx->test_cases)
+    {
+        ctx->case_name = t.test_name;
+        ctx->tests_run++;
+
+        fprintf(stderr, "%s", t.test_name);
+        for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
+            putc('.', stderr);
+        }
+
+#ifndef NDEBUG
+        uassert_enable(); // unconditionally enable previously disabled asserts
+#endif
+        cex_test_mute();
+        Exc err = EOK;
+        if (ctx->setup_case_fn && (ctx->setup_case_fn() != EOK)) {
+            fprintf(
+                stderr,
+                "[%s] test$setup() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+        }
+        err = t.test_fn();
+        cex_test_unmute(err);
+
+        if (err == EOK) {
+            fprintf(stderr, "[%s]\n", ctx->has_ansi ? io$ansi("PASS", "32") : "PASS");
+        } else {
+            ctx->tests_failed++;
+            fprintf(
+                stderr,
+                "[%s] %s (%s)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                t.test_name
+            );
+        }
+        if (ctx->teardown_case_fn && (ctx->teardown_case_fn() != EOK)) {
+            fprintf(
+                stderr,
+                "[%s] test$teardown() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+        }
+    }
+    if (ctx->out_stream) {
+        fclose(ctx->out_stream);
+        ctx->out_stream = NULL;
+    }
+
+    if (ctx->teardown_suite_fn) {
+        e$except(err, ctx->teardown_suite_fn())
+        {
+            fprintf(
+                stderr,
+                "[%s] test$teardown_suite() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+    }
+
+    if (ctx->verbosity > 0) {
+        fprintf(stderr, "\n-------------------------------------\n");
+        fprintf(
+            stderr,
+            "Total: %d Passed: %d Failed: %d\n",
+            ctx->tests_run,
+            ctx->tests_run - ctx->tests_failed,
+            ctx->tests_failed
+        );
+        fprintf(stderr, "-------------------------------------\n");
+    } else {
+        fprintf(
+            stderr,
+            "[%s] %-70s [%2d/%2d]\n",
+            ctx->tests_failed == 0 ? (ctx->has_ansi ? io$ansi("PASS", "32") : "PASS")
+                                   : (ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL"),
+            __FILE__,
+            ctx->tests_run - ctx->tests_failed,
+            ctx->tests_run
+        );
+    } // Return code, logic is inversed
+    return ctx->tests_run == 0 || ctx->tests_failed > 0;
+}
+
 #ifndef CEXTEST
 #define test$env_check()                                                                           \
-    uassert(false && "CEXTEST was not defined, pass -DCEXTEST or #define CEXTEST")
+    fprintf(stderr, "CEXTEST was not defined, pass -DCEXTEST or #define CEXTEST");                 \
+    exit(1);
 #else
 #define test$env_check() (void)0
 #endif
 
-#define test$setup()                                                                               \
-    struct __CexTestContext_s __CexTestContext = {                                                 \
-        .out_stream = NULL,                                                                        \
-        .tests_run = 0,                                                                            \
-        .tests_failed = 0,                                                                         \
-        .verbosity = 3,                                                                            \
-        .in_test = NULL,                                                                           \
-    };                                                                                             \
-    static test$NOOPT Exc cextest_setup_func()
-
-#define test$teardown() static test$NOOPT Exc cextest_teardown_func()
-
-//
-// Typical test function template
-//  MUST return Error.ok / EOK on test success, or char* with error message when failed!
-//
-#define test$case(test_case_name) static test$NOOPT Exc test_case_name()
-
-#define test$set_postmortem(postmortem_func, func_ctx)                                             \
+#define test$main()                                                                                \
+    struct _cex_test_context_s _cex_test__mainfn_state = { 0 };                                    \
+    int main(int argc, char** argv)                                                                \
     {                                                                                              \
-        __cex_test_postmortem_f = (postmortem_func);                                               \
-        __cex_test_postmortem_ctx = (func_ctx);                                                    \
-    }                                                                                              \
-    while (0)
-
-#define test$run(test_case_name)                                                                   \
-    do {                                                                                           \
-        if (argc >= 3 && strcmp(argv[2], #test_case_name) != 0) {                                  \
-            break;                                                                                 \
-        }                                                                                          \
-        __CexTestContext.in_test = #test_case_name;                                                \
-        Exc err = cextest_setup_func();                                                            \
-        if (err != EOK) {                                                                          \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "[%s] %s in test$setup() before %s (suite %s stopped)\n",                          \
-                CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
-                err,                                                                               \
-                #test_case_name,                                                                   \
-                __FILE__                                                                           \
-            );                                                                                     \
-            return 1;                                                                              \
-        } else {                                                                                   \
-            err = (test_case_name());                                                              \
-        }                                                                                          \
-                                                                                                   \
-        __CexTestContext.tests_run++;                                                              \
-        if (err == EOK) {                                                                          \
-            if (__CexTestContext.verbosity > 0) {                                                  \
-                if (__CexTestContext.verbosity == 1) {                                             \
-                    fprintf(__CEX_TEST_STREAM, ".");                                               \
-                } else {                                                                           \
-                    fprintf(                                                                       \
-                        __CEX_TEST_STREAM,                                                         \
-                        "[%s] %s\n",                                                               \
-                        CEXTEST_CGREEN "PASS" CEXTEST_CNONE,                                       \
-                        #test_case_name                                                            \
-                    );                                                                             \
-                }                                                                                  \
-            }                                                                                      \
-        } else {                                                                                   \
-            __CexTestContext.tests_failed++;                                                       \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "[%s] %s %s\n",                                                                    \
-                CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
-                err,                                                                               \
-                #test_case_name                                                                    \
-            );                                                                                     \
-        }                                                                                          \
-        err = cextest_teardown_func();                                                             \
-        if (err != EOK) {                                                                          \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "[%s] %s in test$teardown() after %s\n",                                           \
-                CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
-                err,                                                                               \
-                #test_case_name                                                                    \
-            );                                                                                     \
-        }                                                                                          \
-        __CexTestContext.in_test = NULL;                                                           \
-        fflush(__CEX_TEST_STREAM);                                                                 \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-    } while (0)
-
-//
-//  Prints current test header
-//
-#define test$print_header()                                                                        \
-    ({                                                                                             \
-        setbuf(__CEX_TEST_STREAM, NULL);                                                           \
-        if (__CexTestContext.verbosity > 0) {                                                      \
-            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n");                 \
-            fprintf(__CEX_TEST_STREAM, "Running Tests: %s\n", __FILE__);                           \
-            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n\n");               \
-        }                                                                                          \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-    })
-
-//
-// Prints current tests stats total / passed / failed
-//
-#define test$print_footer()                                                                        \
-    ({                                                                                             \
-        if (__CexTestContext.verbosity > 0) {                                                      \
-            fprintf(__CEX_TEST_STREAM, "\n-------------------------------------\n");               \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "Total: %d Passed: %d Failed: %d\n",                                               \
-                __CexTestContext.tests_run,                                                        \
-                __CexTestContext.tests_run - __CexTestContext.tests_failed,                        \
-                __CexTestContext.tests_failed                                                      \
-            );                                                                                     \
-            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n");                 \
-        } else {                                                                                   \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "[%s] %-70s [%2d/%2d]\n",                                                          \
-                __CexTestContext.tests_failed == 0 ? CEXTEST_CGREEN "PASS" CEXTEST_CNONE           \
-                                                   : CEXTEST_CRED "FAIL" CEXTEST_CNONE,            \
-                __FILE__,                                                                          \
-                __CexTestContext.tests_run - __CexTestContext.tests_failed,                        \
-                __CexTestContext.tests_run                                                         \
-            );                                                                                     \
-        }                                                                                          \
-        fflush(__CEX_TEST_STREAM);                                                                 \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-    })
-
-//
-//  Utility macro for returning main() exit code based on test failed/run, if no tests
-//  run it's an error too
-//
-#define test$args_parse(argc, argv)                                                                \
-    do {                                                                                           \
         test$env_check();                                                                          \
-        if (argc == 1)                                                                             \
-            break;                                                                                 \
-        if (argc > 3) {                                                                            \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "Too many arguments: use test_name_exec vvv|q test_case_name\n"                    \
-            );                                                                                     \
-            return 1;                                                                              \
-        }                                                                                          \
-        char a;                                                                                    \
-        int i = 0;                                                                                 \
-        int _has_quiet = 0;                                                                        \
-        int _verb = 0;                                                                             \
-        while ((a = argv[1][i]) != '\0') {                                                         \
-            if (a == 'q')                                                                          \
-                _has_quiet = 1;                                                                    \
-            if (a == 'v')                                                                          \
-                _verb++;                                                                           \
-            i++;                                                                                   \
-        }                                                                                          \
-        __CexTestContext.verbosity = _has_quiet ? 0 : _verb;                                       \
-        if (__CexTestContext.verbosity == 0) {                                                     \
-            freopen(CEXTEST_NULL_DEVICE, "w", stdout);                                             \
-        }                                                                                          \
-    } while (0)
+        argv[0] = __FILE__;                                                                        \
+        return cex_test_main_fn(argc, argv);                                                       \
+    }
 
-#define test$exit_code() (-1 ? __CexTestContext.tests_run == 0 : __CexTestContext.tests_failed)
+#define test$setup_suite()                                                                         \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
+    static Exception cext_test__setup_suite_fn();                                                  \
+    static void cext_test__register_setup_suite_fn(void) __attribute__((constructor));             \
+    static void cext_test__register_setup_suite_fn(void)                                           \
+    {                                                                                              \
+        uassert(_cex_test__mainfn_state.setup_suite_fn == NULL);                                   \
+        _cex_test__mainfn_state.setup_suite_fn = &cext_test__setup_suite_fn;                       \
+    }                                                                                              \
+    Exception test$NOOPT cext_test__setup_suite_fn(void)
 
-/*
- *
- * Utility non public macros
- *
- */
-#define __CEX_TEST_STREAM                                                                          \
-    (__CexTestContext.out_stream == NULL ? stderr : __CexTestContext.out_stream)
-#define __STRINGIZE_DETAIL(x) #x
-#define __STRINGIZE(x) __STRINGIZE_DETAIL(x)
-#define __CEXTEST_LOG_ERR(msg) (__FILE__ ":" __STRINGIZE(__LINE__) " -> " msg)
-#define __CEXTEST_NON_NULL(x) ((x != NULL) ? (x) : "")
+#define test$teardown_suite()                                                                      \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
+    static Exception cext_test__teardown_suite_fn();                                               \
+    static void cext_test__register_teardown_suite_fn(void) __attribute__((constructor));          \
+    static void cext_test__register_teardown_suite_fn(void)                                        \
+    {                                                                                              \
+        uassert(_cex_test__mainfn_state.teardown_suite_fn == NULL);                                \
+        _cex_test__mainfn_state.teardown_suite_fn = &cext_test__teardown_suite_fn;                 \
+    }                                                                                              \
+    Exception test$NOOPT cext_test__teardown_suite_fn(void)
 
-#endif //ifdef CEXTEST
+#define test$setup_case()                                                                          \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
+    static Exception cext_test__setup_case_fn();                                                   \
+    static void cext_test__register_setup_case_fn(void) __attribute__((constructor));              \
+    static void cext_test__register_setup_case_fn(void)                                            \
+    {                                                                                              \
+        uassert(_cex_test__mainfn_state.setup_case_fn == NULL);                                    \
+        _cex_test__mainfn_state.setup_case_fn = &cext_test__setup_case_fn;                         \
+    }                                                                                              \
+    Exception test$NOOPT cext_test__setup_case_fn(void)
+
+#define test$teardown_case()                                                                       \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
+    static Exception cext_test__teardown_case_fn();                                                \
+    static void cext_test__register_teardown_case_fn(void) __attribute__((constructor));           \
+    static void cext_test__register_teardown_case_fn(void)                                         \
+    {                                                                                              \
+        uassert(_cex_test__mainfn_state.teardown_case_fn == NULL);                                 \
+        _cex_test__mainfn_state.teardown_case_fn = &cext_test__teardown_case_fn;                   \
+    }                                                                                              \
+    Exception test$NOOPT cext_test__teardown_case_fn(void)

@@ -6,26 +6,6 @@
 deque$typedef(deque_int, int, false);
 deque$impl(deque_int);
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
-/*
- *
- *   TEST SUITE
- *
- */
-
 test$case(testlist_alloc_capacity)
 {
     // 16 is minimum
@@ -965,45 +945,4 @@ test$case(test_deque_generic_new_append_pop)
     return EOK;
 }
 
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(testlist_alloc_capacity);
-    test$run(test_deque_new);
-    test$run(test_element_alignment_16);
-    test$run(test_element_alignment_64);
-    test$run(test_deque_new_append_pop);
-    test$run(test_deque_new_append_roll_over);
-    test$run(test_deque_new_append_grow);
-    test$run(test_deque_new_append_max_cap_wrap);
-    test$run(test_deque_new_append_max_cap__rewrite_overflow);
-    test$run(test_deque_new_append_max_cap__rewrite_overflow_with_rollover);
-    test$run(test_deque_new_append_max_cap__rewrite_overflow__multiloop);
-    test$run(test_deque_new_append_multi_resize);
-    test$run(test_deque_iter_get);
-    test$run(test_deque_iter_fetch);
-    test$run(test_deque_iter_fetch_reversed);
-    test$run(test_deque_static);
-    test$run(test_deque_static_append_grow);
-    test$run(test_deque_static_append_grow_overwrite);
-    test$run(test_deque_validate);
-    test$run(test_deque_validate__head_gt_tail);
-    test$run(test_deque_validate__eloffset_weird);
-    test$run(test_deque_validate__eloffset_elalign);
-    test$run(test_deque_validate__capacity_gt_max_capacity);
-    test$run(test_deque_validate__zero_capacity);
-    test$run(test_deque_validate__bad_magic);
-    test$run(test_deque_validate__bad_pointer_alignment);
-    test$run(test_deque_generic_new_append_pop);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

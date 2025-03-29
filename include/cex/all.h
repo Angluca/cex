@@ -15,4 +15,5 @@
 #include <cex/_subprocess.h>
 #include <cex/os.h>
 #include "cex_code_gen.h"
+#include "test.h"
 // clang-format on

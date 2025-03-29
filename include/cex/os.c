@@ -659,7 +659,7 @@ os__cmd__write_line(os_cmd_c* self, char* line)
 
 
 static Exception
-os__cmd__run(char** args, usize args_len, os_cmd_c* out_cmd)
+os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 {
     uassert(out_cmd != NULL);
     memset(out_cmd, 0, sizeof(os_cmd_c));

@@ -33,18 +33,6 @@
 static char* ret_null_char(){
     return NULL;
 }
-/*
-* SUITE INIT / SHUTDOWN
-*/
-test$teardown(){
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
 
 /*
  *
@@ -246,20 +234,4 @@ test$case(stb_sprintf_orig)
     return EOK;
 }
 
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(stb_sprintf_str);
-    test$run(stb_sprintf_orig);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

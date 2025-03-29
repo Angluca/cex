@@ -2,17 +2,6 @@
 
 #define TBUILDDIR "tests/build/"
 
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable(); // re-enable if you disabled it in some test case
-    return EOK;
-}
-
 Exception
 test_dir_walk(const char* path, os_fs_filetype_s ftype, void* user_ctx)
 {
@@ -327,25 +316,4 @@ test$case(test_os_path_basename_dirname)
     return EOK;
 }
 
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_os_dir_walk_print);
-    test$run(test_os_listdir);
-    test$run(test_os_getcwd);
-    test$run(test_os_path_exists);
-    test$run(test_os_mkdir);
-    test$run(test_os_fs_file_type);
-    test$run(test_os_rename_dir);
-    test$run(test_os_rename_file);
-    test$run(test_os_path_join);
-    test$run(test_os_setenv);
-    test$run(test_os_path_split);
-    test$run(test_os_path_basename_dirname);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();

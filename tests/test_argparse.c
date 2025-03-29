@@ -5,19 +5,6 @@
 #define PERM_WRITE (1 << 1)
 #define PERM_EXEC (1 << 2)
 
-/*
-* SUITE INIT / SHUTDOWN
-*/
-test$teardown(){
-    return EOK;
-}
-
-test$setup()
-{
-    return EOK;
-}
-
-
 
 test$case(test_argparse_init_short)
 {
@@ -876,42 +863,5 @@ test$case(test_argparse_float_short_arg__argc_remainder)
 
     return EOK;
 }
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_argparse_init_short);
-    test$run(test_argparse_init_long);
-    test$run(test_argparse_required);
-    test$run(test_argparse_bad_opts_help);
-    test$run(test_argparse_bad_opts_long);
-    test$run(test_argparse_bad_opts_short);
-    test$run(test_argparse_bad_opts_arg_value_null);
-    test$run(test_argparse_bad_opts_both_no_long_short);
-    test$run(test_argparse_help_print);
-    test$run(test_argparse_help_print_long);
-    test$run(test_argparse_arguments);
-    test$run(test_argparse_arguments_after_options);
-    test$run(test_argparse_arguments_stacked_short_opt);
-    test$run(test_argparse_arguments_double_dash);
-    test$run(test_argparse_arguments__option_follows_argument_not_allowed);
-    test$run(test_argparse_arguments__parsing_error);
-    test$run(test_argparse_arguments__option_follows_argument__allowed);
-    test$run(test_argparse_arguments__command_mode);
-    test$run(test_argparse_arguments__command__help);
-    test$run(test_argparse_arguments__int_parsing);
-    test$run(test_argparse_arguments__float_parsing);
-    test$run(test_argparse_int_short_arg__argc_remainder);
-    test$run(test_argparse_str_short_arg__argc_remainder);
-    test$run(test_argparse_float_short_arg__argc_remainder);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+
+test$main();

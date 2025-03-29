@@ -1,20 +1,6 @@
 #define CEX_LOG_LVL 0
 #include <cex/all.c>
 
-/*
- * SUITE INIT / SHUTDOWN
- */
-test$teardown()
-{
-    return EOK;
-}
-
-test$setup()
-{
-    uassert_enable();
-    return EOK;
-}
-
 
 test$NOOPT Exception
 foo(int condition)
@@ -233,26 +219,4 @@ test$case(test_log)
     return EOK;
 }
 
-/*
- *
- * MAIN (AUTO GENERATED)
- *
- */
-int
-main(int argc, char* argv[])
-{
-    test$args_parse(argc, argv);
-    test$print_header();  // >>> all tests below
-    
-    test$run(test_sysfunc);
-    test$run(test_e_dollar_macro);
-    test$run(test_e_dollar_macro_goto);
-    test$run(test_null_ptr);
-    test$run(test_nested_excepts);
-    test$run(test_all_errors_set);
-    test$run(test_eassert);
-    test$run(test_log);
-    
-    test$print_footer();  // ^^^^^ all tests runs are above
-    return test$exit_code();
-}
+test$main();
