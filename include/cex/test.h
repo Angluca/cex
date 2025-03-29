@@ -27,6 +27,7 @@ struct _cex_test_context_s
     _cex_test_case_f setup_suite_fn;
     _cex_test_case_f teardown_suite_fn;
     bool has_ansi;
+    bool no_stdout_capture;
     bool breakpoint;
     const char* const suite_file;
     char* case_filter;
@@ -296,19 +297,19 @@ cex_test_main_fn(int argc, char** argv)
     max_name = (max_name < 70) ? 70 : max_name;
 
     ctx->quiet_mode = false;
-    ctx->out_stream = tmpfile();
     // FIX: after migrating to CEX c build system
-    ctx->has_ansi = true; //io.has_ansi_support();
+    ctx->has_ansi = true; // io.has_ansi_support();
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
         argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
+        argparse$opt(&ctx->breakpoint, 'b', "breakpoint", .help = "breakpoint on tassert failure"),
         argparse$opt(
-            &ctx->breakpoint,
-            'b',
-            "breakpoint",
-            .help = "breakpoint on tassert failure"
+            &ctx->no_stdout_capture,
+            'o',
+            "no-capture",
+            .help = "prints all stdout as test goes"
         ),
     };
 
@@ -324,9 +325,12 @@ cex_test_main_fn(int argc, char** argv)
         return 1;
     }
 
-    if (ctx->out_stream == NULL) {
-        fprintf(stderr, "Failed opening temp output for capturing tests\n");
-        uassert(false && "TODO: test this");
+    if (!ctx->no_stdout_capture) {
+        ctx->out_stream = tmpfile();
+        if (ctx->out_stream == NULL) {
+            fprintf(stderr, "Failed opening temp output for capturing tests\n");
+            uassert(false && "TODO: test this");
+        }
     }
     // TODO: win32
     // ctx->orig_stdout_fd = _dup(_fileno(stdout));
@@ -377,6 +381,9 @@ cex_test_main_fn(int argc, char** argv)
             fprintf(stderr, "%s", t.test_name);
             for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
                 putc('.', stderr);
+            }
+            if (ctx->no_stdout_capture) {
+                putc('\n', stderr);
             }
         }
 
