@@ -49,7 +49,22 @@ argparse_usage(argparse_c* self)
             fputc('\n', stdout);
         }
     } else {
-        fprintf(stdout, "%s [options] [--] [arg1 argN]\n", self->program_name);
+        if (self->commands) {
+            fprintf(stdout, "%s {", self->program_name);
+            for$eachp(c, self->commands, self->commands_len){
+                isize i = c - self->commands;
+                if(i == 0){
+                    fprintf(stdout, "%s", c->name);
+                } else {
+                    fprintf(stdout, ",%s", c->name);
+                }
+
+            }
+            fprintf(stdout, "} [cmd_options] [cmd_args]\n");
+
+        } else {
+            fprintf(stdout, "%s [options] [--] [arg1 argN]\n", self->program_name);
+        }
     }
 
     // print description
@@ -63,7 +78,8 @@ argparse_usage(argparse_c* self)
     // figure out best width
     usize usage_opts_width = 0;
     usize len = 0;
-    for$eachp(opt, self->options, self->options_len){
+    for$eachp(opt, self->options, self->options_len)
+    {
         len = 0;
         if (opt->short_name) {
             len += 2;
@@ -92,7 +108,7 @@ argparse_usage(argparse_c* self)
                 len += strlen("=<xxx>");
                 break;
 
-            default: 
+            default:
                 break;
         }
         len = (len + 3) - ((len + 3) & 3);
@@ -102,7 +118,8 @@ argparse_usage(argparse_c* self)
     }
     usage_opts_width += 4; // 4 spaces prefix
 
-    for$eachp(opt, self->options, self->options_len){
+    for$eachp(opt, self->options, self->options_len)
+    {
         usize pos = 0;
         usize pad = 0;
         if (opt->type == CexArgParseType__group) {
@@ -129,6 +146,11 @@ argparse_usage(argparse_c* self)
             pad = usage_opts_width;
         }
         fprintf(stdout, "%*s%s\n", (int)pad + 2, "", opt->help);
+    }
+
+    for$eachp(cmd, self->commands, self->commands_len)
+    {
+        fprintf(stdout, "%-20s%s%s\n", cmd->name,  cmd->help, cmd->is_default ? " (default)": "");
     }
 
     // print epilog
@@ -353,7 +375,15 @@ argparse__report_error(argparse_c* self, Exc err)
     self->_ctx.argc = 0;
 
     if (err == Error.not_found) {
-        fprintf(stdout, "error: unknown option `%s`\n", self->_ctx.argv[0]);
+        if (self->options != NULL) {
+            fprintf(stdout, "error: unknown option `%s`\n", self->_ctx.argv[0]);
+        } else {
+            fprintf(
+                stdout,
+                "error: command name expected, got option `%s`, try --help\n",
+                self->_ctx.argv[0]
+            );
+        }
     } else if (err == Error.integrity) {
         fprintf(stdout, "error: option `%s` follows argument\n", self->_ctx.argv[0]);
     }
@@ -361,11 +391,63 @@ argparse__report_error(argparse_c* self, Exc err)
 }
 
 static Exception
-argparse_parse(argparse_c* self, int argc, char** argv)
+argparse__parse_commands(argparse_c* self)
+{
+    uassert(self->_ctx.current_command == NULL);
+    if (self->commands_len == 0) {
+        argparse_cmd_s* _cmd = self->commands;
+        while (_cmd != NULL) {
+            if (_cmd->name == NULL) {
+                break;
+            }
+            self->commands_len++;
+            _cmd++;
+        }
+    }
+
+    argparse_cmd_s* cmd = NULL;
+    const char* cmd_arg = (self->_ctx.argc > 0) ? self->_ctx.argv[0] : NULL;
+
+    if (str.eq(cmd_arg, "-h") || str.eq(cmd_arg, "--help")) {
+        argparse_usage(self);
+        return Error.argsparse;
+    }
+
+    for$eachp(c, self->commands, self->commands_len)
+    {
+        uassert(c->func != NULL && "missing command funcion");
+        uassert(c->help != NULL && "missing command help message");
+        if (cmd_arg != NULL) {
+            if (str.eq(cmd_arg, c->name)) {
+                cmd = c;
+                break;
+            }
+        } else {
+            if (c->is_default) {
+                uassert(cmd == NULL && "multiple default commands in argparse_c");
+                cmd = c;
+            }
+        }
+    }
+    if (cmd == NULL) {
+        fprintf(
+            stdout,
+            "error: unknown command name '%s', try --help\n",
+            (cmd_arg) ? cmd_arg : ""
+        );
+        return Error.argsparse;
+    }
+    self->_ctx.current_command = cmd;
+
+    return EOK;
+}
+
+static Exception
+argparse__parse_options(argparse_c* self)
 {
     if (self->options_len == 0) {
         argparse_opt_s* _opt = self->options;
-        while(_opt != NULL) {
+        while (_opt != NULL) {
             if (_opt->type == CexArgParseType__na) {
                 break;
             }
@@ -373,21 +455,7 @@ argparse_parse(argparse_c* self, int argc, char** argv)
             _opt++;
         }
     }
-    uassert(argc > 0);
-    uassert(argv != NULL);
-    uassert(argv[0] != NULL);
-
-    if (self->program_name == NULL) {
-        self->program_name = argv[0];
-    }
-
-    // reset if we have several runs
-    memset(&self->_ctx, 0, sizeof(self->_ctx));
-
-    self->_ctx.argc = argc - 1;
-    self->_ctx.argv = argv + 1;
-    self->_ctx.out = argv;
-
+    int initial_argc = self->_ctx.argc + 1;
     e$except_silent(err, argparse__options_check(self, true))
     {
         return err;
@@ -398,7 +466,7 @@ argparse_parse(argparse_c* self, int argc, char** argv)
         if (arg[0] != '-' || !arg[1]) {
             self->_ctx.has_argument = true;
 
-            if (self->flags.stop_at_non_option) {
+            if (self->commands != 0) {
                 self->_ctx.argc--;
                 self->_ctx.argv++;
                 break;
@@ -452,9 +520,50 @@ argparse_parse(argparse_c* self, int argc, char** argv)
     }
 
     self->_ctx.out += self->_ctx.cpidx + 1; // excludes 1st argv[0], program_name
-    self->_ctx.argc = argc - self->_ctx.cpidx - 1;
+    self->_ctx.argc = initial_argc - self->_ctx.cpidx - 1;
+    return EOK;
+}
 
+static Exception
+argparse_parse(argparse_c* self, int argc, char** argv)
+{
+    if (self->options != NULL && self->commands != NULL) {
+        uassert(false && "options and commands are mutually exclusive");
+        return Error.integrity;
+    }
+    uassert(argc > 0);
+    uassert(argv != NULL);
+    uassert(argv[0] != NULL);
+
+    if (self->program_name == NULL) {
+        self->program_name = argv[0];
+    }
+
+    // reset if we have several runs
+    memset(&self->_ctx, 0, sizeof(self->_ctx));
+
+    self->_ctx.argc = argc - 1;
+    self->_ctx.argv = argv + 1;
+    self->_ctx.out = argv;
+
+    if (self->commands) {
+        return argparse__parse_commands(self);
+    } else {
+        return argparse__parse_options(self);
+    }
     return Error.ok;
+}
+static Exception
+argparse_run_command(argparse_c* self, void* user_ctx)
+{
+    uassert(self->_ctx.current_command != NULL && "not parsed/parse error?");
+    if (self->_ctx.argc == 0) {
+        // seems default command (with no args)
+        const char* dummy_args[] = {self->_ctx.current_command->name};
+        return self->_ctx.current_command->func(1, dummy_args, user_ctx);
+    } else {
+        return self->_ctx.current_command->func(self->_ctx.argc, (const char**)self->_ctx.argv, user_ctx);
+    }
 }
 
 static u32
@@ -477,6 +586,7 @@ const struct __module__argparse argparse = {
     // clang-format off
     .usage = argparse_usage,
     .parse = argparse_parse,
+    .run_command = argparse_run_command,
     .argc = argparse_argc,
     .argv = argparse_argv,
     // clang-format on

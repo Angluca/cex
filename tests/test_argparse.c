@@ -491,140 +491,134 @@ test$case(test_argparse_arguments__parsing_error)
     return EOK;
 }
 
-test$case(test_argparse_arguments__option_follows_argument__allowed)
-{
-    int force = 100;
-    int int_num = -100;
-    int int_num2 = -100;
+// test$case(test_argparse_arguments__option_follows_argument__allowed)
+// {
+//     int force = 100;
+//     int int_num = -100;
+//     int int_num2 = -100;
+//
+//     argparse_opt_s options[] = {
+//         argparse$opt_help(),
+//         argparse$opt_group("Basic options"),
+//         argparse$opt(&force, 'f', "force", "force to do"),
+//         argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+//         argparse$opt(&int_num2, 'z', "int", "selected integer"),
+//     };
+//
+//     argparse_c
+//         args = { .options = options,
+//                  .options_len = arr$len(options),
+//                  };
+//
+//     char* argv[] = { "program_name", "arg1", "-fi", "arg2", "--int=100" };
+//     int argc = arr$len(argv);
+//
+//     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+//     tassert_eq(argparse.argc(&args), 4);
+//     tassert_eq(argparse.argv(&args)[0], "arg1");
+//     tassert_eq(argparse.argv(&args)[1], "-fi");
+//     tassert_eq(argparse.argv(&args)[2], "arg2");
+//     tassert_eq(argparse.argv(&args)[3], "--int=100");
+//
+//     return EOK;
+// }
 
-    argparse_opt_s options[] = {
-        argparse$opt_help(),
-        argparse$opt_group("Basic options"),
-        argparse$opt(&force, 'f', "force", "force to do"),
-        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
-        argparse$opt(&int_num2, 'z', "int", "selected integer"),
-    };
+// test$case(test_argparse_arguments__command_mode)
+// {
+//     bool force = 0;
+//     bool int_num = 1;
+//     int int_num2 = -100;
+//
+//     argparse_opt_s options[] = {
+//         argparse$opt_help(),
+//         argparse$opt_group("Basic options"),
+//         argparse$opt(&force, 'f', "force", "force to do"),
+//         argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+//         argparse$opt(&int_num2, 'z', "int", "selected integer"),
+//     };
+//
+//     argparse_c
+//         args = { .options = options,
+//                  .options_len = arr$len(options),
+//                  };
+//
+//     char* argv[] = { "program_name", "cmd_name", "-fi", "--int=100", "cmd_arg_something" };
+//     int argc = arr$len(argv);
+//
+//     tassert_eq(args.program_name, NULL);
+//     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+//     // params are untouched
+//     tassert_eq(force, 0);
+//     tassert_eq(int_num, 1);
+//     tassert_eq(int_num2, -100);
+//     tassert_eq(args.program_name, "program_name");
+//     tassert_eq(argparse.argc(&args), 4);
+//     tassert_eq(argparse.argv(&args)[0], "cmd_name");
+//     tassert_eq(argparse.argv(&args)[1], "-fi");
+//     tassert_eq(argparse.argv(&args)[2], "--int=100");
+//     tassert_eq(argparse.argv(&args)[3], "cmd_arg_something");
+//
+//     argparse_c cmd_args = {
+//         .options = options,
+//         .options_len = arr$len(options),
+//     };
+//     tassert_er(Error.ok, argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args)));
+//     tassert_eq(args.program_name, "program_name");
+//     tassert_eq(force, 1);
+//     tassert_eq(int_num, 0);
+//     tassert_eq(int_num2, 100);
+//     tassert_eq(cmd_args.program_name, "cmd_name");
+//
+//     tassert_eq(argparse.argc(&cmd_args), 1);
+//     tassert_eq(argparse.argv(&cmd_args)[0], "cmd_arg_something");
+//
+//     return EOK;
+// }
 
-    argparse_c
-        args = { .options = options,
-                 .options_len = arr$len(options),
-                 .flags = {
-                     .stop_at_non_option = true, // NOTE: this allows options after args (commands!)
-                 } };
-
-    char* argv[] = { "program_name", "arg1", "-fi", "arg2", "--int=100" };
-    int argc = arr$len(argv);
-
-    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
-    tassert_eq(argparse.argc(&args), 4);
-    tassert_eq(argparse.argv(&args)[0], "arg1");
-    tassert_eq(argparse.argv(&args)[1], "-fi");
-    tassert_eq(argparse.argv(&args)[2], "arg2");
-    tassert_eq(argparse.argv(&args)[3], "--int=100");
-
-    return EOK;
-}
-
-test$case(test_argparse_arguments__command_mode)
-{
-    bool force = 0;
-    bool int_num = 1;
-    int int_num2 = -100;
-
-    argparse_opt_s options[] = {
-        argparse$opt_help(),
-        argparse$opt_group("Basic options"),
-        argparse$opt(&force, 'f', "force", "force to do"),
-        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
-        argparse$opt(&int_num2, 'z', "int", "selected integer"),
-    };
-
-    argparse_c
-        args = { .options = options,
-                 .options_len = arr$len(options),
-                 .flags = {
-                     .stop_at_non_option = true, // NOTE: this allows options after args (commands!)
-                 } };
-
-    char* argv[] = { "program_name", "cmd_name", "-fi", "--int=100", "cmd_arg_something" };
-    int argc = arr$len(argv);
-
-    tassert_eq(args.program_name, NULL);
-    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
-    // params are untouched
-    tassert_eq(force, 0);
-    tassert_eq(int_num, 1);
-    tassert_eq(int_num2, -100);
-    tassert_eq(args.program_name, "program_name");
-    tassert_eq(argparse.argc(&args), 4);
-    tassert_eq(argparse.argv(&args)[0], "cmd_name");
-    tassert_eq(argparse.argv(&args)[1], "-fi");
-    tassert_eq(argparse.argv(&args)[2], "--int=100");
-    tassert_eq(argparse.argv(&args)[3], "cmd_arg_something");
-
-    argparse_c cmd_args = {
-        .options = options,
-        .options_len = arr$len(options),
-    };
-    tassert_er(Error.ok, argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args)));
-    tassert_eq(args.program_name, "program_name");
-    tassert_eq(force, 1);
-    tassert_eq(int_num, 0);
-    tassert_eq(int_num2, 100);
-    tassert_eq(cmd_args.program_name, "cmd_name");
-
-    tassert_eq(argparse.argc(&cmd_args), 1);
-    tassert_eq(argparse.argv(&cmd_args)[0], "cmd_arg_something");
-
-    return EOK;
-}
-
-test$case(test_argparse_arguments__command__help)
-{
-    int force = 100;
-    int int_num = -100;
-    int int_num2 = -100;
-
-    argparse_opt_s options[] = {
-        argparse$opt_help(),
-        argparse$opt_group("Basic options"),
-        argparse$opt(&force, 'f', "force", "force to do"),
-        argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
-        argparse$opt(&int_num2, 'z', "int", "selected integer"),
-    };
-
-    argparse_opt_s cmd_options[] = {
-        argparse$opt_help(),
-        argparse$opt_group("Command  options"),
-        argparse$opt(&int_num2, 'z', "int", "some cmd int"),
-    };
-
-    argparse_c
-        args = { .options = options,
-                 .options_len = arr$len(options),
-                 .flags = {
-                     .stop_at_non_option = true, // NOTE: this allows options after args (commands!)
-                 } };
-
-    char* argv[] = { "program_name", "cmd_name", "-h" };
-    int argc = arr$len(argv);
-
-    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
-
-    argparse_c cmd_args = {
-        .options = cmd_options,
-        .options_len = arr$len(cmd_options),
-        .description = "this is a command description",
-        .usage = "some command usage",
-        .epilog = "command epilog",
-    };
-    tassert_er(
-        Error.argsparse,
-        argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args))
-    );
-
-    return EOK;
-}
+// test$case(test_argparse_arguments__command__help)
+// {
+//     int force = 100;
+//     int int_num = -100;
+//     int int_num2 = -100;
+//
+//     argparse_opt_s options[] = {
+//         argparse$opt_help(),
+//         argparse$opt_group("Basic options"),
+//         argparse$opt(&force, 'f', "force", "force to do"),
+//         argparse$opt(&int_num, 'i', "int_flag", "selected integer"),
+//         argparse$opt(&int_num2, 'z', "int", "selected integer"),
+//     };
+//
+//     argparse_opt_s cmd_options[] = {
+//         argparse$opt_help(),
+//         argparse$opt_group("Command  options"),
+//         argparse$opt(&int_num2, 'z', "int", "some cmd int"),
+//     };
+//
+//     argparse_c
+//         args = { .options = options,
+//                  .options_len = arr$len(options),
+//                  };
+//
+//     char* argv[] = { "program_name", "cmd_name", "-h" };
+//     int argc = arr$len(argv);
+//
+//     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+//
+//     argparse_c cmd_args = {
+//         .options = cmd_options,
+//         .options_len = arr$len(cmd_options),
+//         .description = "this is a command description",
+//         .usage = "some command usage",
+//         .epilog = "command epilog",
+//     };
+//     tassert_er(
+//         Error.argsparse,
+//         argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args))
+//     );
+//
+//     return EOK;
+// }
 
 test$case(test_argparse_arguments__int_parsing)
 {
@@ -916,6 +910,175 @@ test$case(test_argparse_float_short_arg__argc_remainder)
     tassert_eq(argparse.argc(&args), 2);
     tassert_eq(argparse.argv(&args)[0], "arg1");
     tassert_eq(argparse.argv(&args)[1], "arg2");
+
+    return EOK;
+}
+
+
+Exception argparse_command_test(int argc, const char** argv, void* user_ctx) {
+    e$assert(argc > 0);
+    e$assert(argv != NULL);
+    printf("argparse_command_test: %d, %p, %s\n", argc, argv, (char*)user_ctx);
+    return EOK;
+}
+Exception argparse_command_test2(int argc, const char** argv, void* user_ctx) {
+    e$assert(argc > 0);
+    e$assert(argv != NULL);
+    printf("argparse_command_test2: %d, %p, %s\n", argc, argv, (char*)user_ctx);
+    return EOK;
+}
+Exception argparse_command_test3(int argc, const char** argv, void* user_ctx) {
+    e$assert(argc > 0);
+    e$assert(argv != NULL);
+    printf("argparse_command_test3: %d, %p, %s\n", argc, argv, (char*)user_ctx);
+    return EOK;
+}
+
+test$case(test_argparse_commands_bad)
+{
+    argparse_c args = {
+        .commands = (argparse_cmd_s[]) {
+            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
+            {0}, // null term
+        },
+    };
+
+    char* argv[] = { "program_name", "-f", "10", "arg1", "arg2" };
+    int argc = arr$len(argv);
+
+    tassert_er(Error.argsparse, argparse.parse(&args, argc, argv));
+
+    return EOK;
+}
+
+test$case(test_argparse_commands_and_option_mutually_exclusive)
+{
+    argparse_c args = {
+        .options = (argparse_opt_s[]) {
+            argparse$opt_help(),
+            {0}, // null term
+        },
+        .commands = (argparse_cmd_s[]) {
+            {.name = "foo", .func = argparse_command_test, .help = "foo command", .is_default = 1},
+            {0}, // null term
+        },
+    };
+
+    char* argv[] = { "program_name", "-f", "10", "arg1", "arg2" };
+    int argc = arr$len(argv);
+
+    uassert_disable();
+    tassert_er(Error.integrity, argparse.parse(&args, argc, argv));
+
+    return EOK;
+}
+
+test$case(test_argparse_commands_usage)
+{
+    argparse_c args = {
+        .commands = (argparse_cmd_s[]) {
+            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
+            {.name = "bar", .func = argparse_command_test, .help = "bar command", .is_default=1},
+            {.name = "baz", .func = argparse_command_test, .help = "baz command"},
+            {0}, // null term
+        },
+    };
+
+    char* argv[] = { "program_name", "--help"};
+    int argc = arr$len(argv);
+
+    tassert_er(Error.argsparse, argparse.parse(&args, argc, argv));
+
+    return EOK;
+}
+
+test$case(test_argparse_commands_usage_short_h)
+{
+    argparse_c args = {
+        .commands = (argparse_cmd_s[]) {
+            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
+            {.name = "bar", .func = argparse_command_test, .help = "bar command", .is_default=1},
+            {.name = "baz", .func = argparse_command_test, .help = "baz command"},
+            {0}, // null term
+        },
+    };
+
+    char* argv[] = { "program_name", "-h"};
+    int argc = arr$len(argv);
+
+    tassert_er(Error.argsparse, argparse.parse(&args, argc, argv));
+    tassert_eq_ptr(args._ctx.current_command, NULL);
+
+    return EOK;
+}
+
+test$case(test_argparse_commands_default)
+{
+    argparse_c args = {
+        .commands = (argparse_cmd_s[]) {
+            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
+            {.name = "bar", .func = argparse_command_test2, .help = "bar command", .is_default=1},
+            {.name = "baz", .func = argparse_command_test3, .help = "baz command"},
+            {0}, // null term
+        },
+    };
+
+    char* argv[] = { "program_name"};
+    int argc = arr$len(argv);
+
+    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+    tassert_eq_ptr(args._ctx.current_command->func, argparse_command_test2);
+    tassert_er(EOK, argparse.run_command(&args, "cool"));
+
+    return EOK;
+}
+
+test$case(test_argparse_commands_name)
+{
+    argparse_c args = {
+        .commands = (argparse_cmd_s[]) {
+            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
+            {.name = "bar", .func = argparse_command_test2, .help = "bar command", .is_default=1},
+            {.name = "baz", .func = argparse_command_test3, .help = "baz command"},
+            {0}, // null term
+        },
+    };
+
+    char* argv[] = { "program_name", "foo"};
+    int argc = arr$len(argv);
+
+    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+    tassert_eq_ptr(args._ctx.current_command->func, argparse_command_test);
+    tassert_eq(args._ctx.argc, 1);
+    tassert_eq(args._ctx.argv[0], "foo");
+
+    tassert_er(EOK, argparse.run_command(&args, "cool"));
+
+    return EOK;
+}
+
+test$case(test_argparse_commands_name_with_args)
+{
+    argparse_c args = {
+        .commands = (argparse_cmd_s[]) {
+            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
+            {.name = "bar", .func = argparse_command_test2, .help = "bar command", .is_default=1},
+            {.name = "baz", .func = argparse_command_test3, .help = "baz command"},
+            {0}, // null term
+        },
+    };
+
+    char* argv[] = { "program_name", "foo", "-h", "--cool"};
+    int argc = arr$len(argv);
+
+    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+    tassert_eq_ptr(args._ctx.current_command->func, argparse_command_test);
+    tassert_eq(args._ctx.argc, 3);
+    tassert_eq(args._ctx.argv[0], "foo");
+    tassert_eq(args._ctx.argv[1], "-h");
+    tassert_eq(args._ctx.argv[2], "--cool");
+    tassert_er(EOK, argparse.run_command(&args, "cool2"));
+
 
     return EOK;
 }
