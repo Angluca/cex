@@ -283,12 +283,8 @@ test$case(test_array_len_unified)
     tassert_eq(0, arr$len(buf_zero));
     u32* p = NULL;
     (void)p;
-    // tassert_eq(3, arr$len(NULL));
-    // tassert_eq(3, arr$len(p));
-
-    // u32* p2 = malloc(100);
-    // tassert(p2 != NULL);
-    // tassert_eq(3, arr$len(p2 + 10));
+    tassert_eq(0, arr$len(NULL));
+    tassert_eq(0, arr$len(p));
 
     arr$free(array);
     return EOK;

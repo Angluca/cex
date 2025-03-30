@@ -234,16 +234,30 @@ _check_eq_ptr(const void* a, const void* b, int line)
 static Exc
 _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
 {
-    (void)op;
+    bool passed = false;
+    char* ops = "";
+    switch (op) {
+        case _cex_test_eq_op__eq:
+            passed = str.slice.eq(a, b);
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = !str.slice.eq(a, b);
+            ops = "==";
+            break;
+        default:
+            unreachable("bad op or unsupported for strings");
+    }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
-    if (!str.slice.eq(a, b)) {
+    if (!passed) {
         if (str.sprintf(
                 _cex_test__mainfn_state.str_buf,
                 CEXTEST_AMSG_MAX_LEN - 1,
-                "%s:%d -> '%S' != '%S'",
+                "%s:%d -> '%S' %s '%S'",
                 _cex_test__mainfn_state.suite_file,
                 line,
                 a,
+                ops,
                 b
             )) {
         }

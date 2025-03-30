@@ -48,6 +48,12 @@ cexds_arr_integrity(const void* arr, size_t magic_num)
     return true;
 }
 
+inline usize
+cexds_arr_len(const void* arr)
+{
+    return (arr) ? cexds_header(arr)->length : 0;
+}
+
 void*
 cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocator allc)
 {
