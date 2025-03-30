@@ -62,16 +62,14 @@ static bool
 str_eq(const char* a, const char* b)
 {
     if (unlikely(a == NULL || b == NULL)) {
-        // NOTE: if both are NULL - this function intentionally return false
-        return false;
+        return a == b;
     }
     return strcmp(a, b) == 0;
 }
 
 bool str_eqi(const char *a, const char *b) {
     if (unlikely(a == NULL || b == NULL)) {
-        // NOTE: if both are NULL - this function intentionally return false
-        return false;
+        return a == b;
     }
     while (*a && *b) {
         if (tolower((u8)*a) != tolower((u8)*b)) {
