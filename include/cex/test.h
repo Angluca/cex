@@ -568,3 +568,99 @@ cex_test_main_fn(int argc, char** argv)
         _cex_test__mainfn_state.teardown_case_fn = &cext_test__teardown_case_fn;                   \
     }                                                                                              \
     Exception test$NOOPT cext_test__teardown_case_fn(void)
+
+#define _test$tassert_fn(a, b)                                                                     \
+    ({                                                                                             \
+        _Static_assert(                                                                            \
+            _Generic(                                                                              \
+                (a),                                                                               \
+                char*: 1,                                                                          \
+                default: __builtin_types_compatible_p(__typeof__(a), __typeof__(b))                \
+            ),                                                                                     \
+            "not comparable"                                                                       \
+        );                                                                                         \
+        _Generic(                                                                                  \
+            (a),                                                                                   \
+            i32: _check_eq_int,                                                                    \
+            u32: _check_eq_int,                                                                    \
+            i64: _check_eq_int,                                                                    \
+            u64: _check_eq_int,                                                                    \
+            i16: _check_eq_int,                                                                    \
+            u16: _check_eq_int,                                                                    \
+            i8: _check_eq_int,                                                                     \
+            u8: _check_eq_int,                                                                     \
+            char*: _check_eq_str,                                                                  \
+            const char*: _check_eq_str,                                                            \
+            str_s: _check_eqs_slice,                                                               \
+            f32: _check_eq_f32,                                                                    \
+            f64: _check_eq_f32                                                                     \
+        );                                                                                         \
+    })
+
+#define tassert_eq(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__eq)))                                 \
+            return err;                                                                            \
+    })
+
+#define tassert_er(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        if ((err = _check_eq_err((a), (b), __LINE__)))                                             \
+            return err;                                                                            \
+    })
+
+#define tassert_eq_almost(a, b, delta)                                                             \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        if ((err = _check_eq_almost((a), (b), (delta), __LINE__)))                                 \
+            return err;                                                                            \
+    })
+#define tassert_eq_ptr(a, b)                                                                       \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        if ((err = _check_eq_ptr((a), (b), __LINE__)))                                             \
+            return err;                                                                            \
+    })
+
+#define tassert_ne(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ne)))                                 \
+            return err;                                                                            \
+    })
+
+#define tassert_le(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__le)))                                 \
+            return err;                                                                            \
+    })
+
+#define tassert_lt(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__lt)))                                 \
+            return err;                                                                            \
+    })
+
+#define tassert_ge(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ge)))                                 \
+            return err;                                                                            \
+    })
+
+#define tassert_gt(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err;                                                                                   \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__gt)))                                 \
+            return err;                                                                            \
+    })

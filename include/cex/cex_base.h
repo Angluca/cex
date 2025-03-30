@@ -298,7 +298,7 @@ int __cex_test_uassert_enabled = 1;
 #define unreachable(format, ...)                                                                   \
     ({                                                                                             \
         __cex__fprintf(                                                                            \
-            __CEX_OUT_STREAM,                                                                      \
+            stderr,                                                                      \
             "[UNREACHABLE] ",                                                                      \
             __FILE_NAME__,                                                                         \
             __LINE__,                                                                              \
