@@ -260,14 +260,6 @@ __cex__fprintf_dummy(void)
  *                 ASSERTIONS MACROS
  */
 
-
-#ifdef NDEBUG
-#define uassertf(cond, format, ...) ((void)(0))
-#define uassert(cond) ((void)(0))
-#define __cex_test_postmortem_exists() 0
-#else
-
-
 #ifdef __SANITIZE_ADDRESS__
 // This should be linked when gcc sanitizer enabled
 void __sanitizer_print_stack_trace();
@@ -276,15 +268,14 @@ void __sanitizer_print_stack_trace();
 #define sanitizer_stack_trace() ((void)(0))
 #endif
 
+#ifdef NDEBUG
+#define uassertf(cond, format, ...) ((void)(0))
+#define uassert(cond) ((void)(0))
+#define __cex_test_postmortem_exists() 0
+#else
+
 #ifdef CEXTEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
-#define __CEX_OUT_STREAM stdout
-// NOTE: __cex_test_postmortem_f - function pointer, defined at cex/test/test.h
-// used for program state logging
-extern void* __cex_test_postmortem_ctx;
-extern void (*__cex_test_postmortem_f)(void* ctx);
-#define __cex_test_postmortem_exists() (__cex_test_postmortem_f != NULL)
-
 int __cex_test_uassert_enabled = 1;
 #define uassert_disable() __cex_test_uassert_enabled = 0
 #define uassert_enable() __cex_test_uassert_enabled = 1
@@ -294,36 +285,12 @@ int __cex_test_uassert_enabled = 1;
     _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEXTEST")
 #define uassert_enable() (void)0
 #define uassert_is_enabled() true
-#define __CEX_OUT_STREAM stderr
 #define __cex_test_postmortem_ctx NULL
 #define __cex_test_postmortem_exists() 0
 #define __cex_test_postmortem_f(ctx)
-#endif
+#endif // #ifdef CEXTEST
 
-#ifndef __cex__abort
-#ifdef CEXTEST
-#define __cex__abort() raise(SIGTRAP)
-#else
-#define __cex__abort() abort()
-#endif
-#endif
 
-#ifndef __cex__assert
-#define __cex__assert()                                                                            \
-    ({                                                                                             \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-        sanitizer_stack_trace();                                                                   \
-        if (__cex_test_postmortem_exists()) {                                                      \
-            fprintf(stderr, "=========== POSTMORTEM ===========\n");                               \
-            __cex_test_postmortem_f(__cex_test_postmortem_ctx);                                    \
-            fflush(stdout);                                                                        \
-            fflush(stderr);                                                                        \
-            fprintf(stderr, "=========== POSTMORTEM END ===========\n");                           \
-        }                                                                                          \
-        __cex__abort();                                                                            \
-    })
-#endif
 
 
 /**
@@ -334,7 +301,7 @@ int __cex_test_uassert_enabled = 1;
     ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
-                __CEX_OUT_STREAM,                                                                  \
+                (uassert_is_enabled() ? stderr : stdout),                                                                  \
                 "[ASSERT] ",                                                                       \
                 __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
@@ -352,7 +319,7 @@ int __cex_test_uassert_enabled = 1;
     ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
-                __CEX_OUT_STREAM,                                                                  \
+                (uassert_is_enabled() ? stderr : stdout),                                                                  \
                 "[ASSERT] ",                                                                       \
                 __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
@@ -367,6 +334,38 @@ int __cex_test_uassert_enabled = 1;
     })
 #endif
 
+#ifndef __cex__abort
+#ifdef CEXTEST
+#define __cex__abort() raise(SIGTRAP)
+#else
+#define __cex__abort() abort()
+#endif
+#endif
+
+#ifndef __cex__assert
+#define __cex__assert()                                                                            \
+    ({                                                                                             \
+        fflush(stdout);                                                                            \
+        fflush(stderr);                                                                            \
+        sanitizer_stack_trace();                                                                   \
+        __cex__abort();                                                                            \
+    })
+#endif
+
+#define unreachable(format, ...)                                                                   \
+    ({                                                                                             \
+        __cex__fprintf(                                                                            \
+            stderr,                                                                      \
+            "[UNREACHABLE] ",                                                                      \
+            __FILE_NAME__,                                                                         \
+            __LINE__,                                                                              \
+            __func__,                                                                              \
+            format "\n",                                                                           \
+            ##__VA_ARGS__                                                                          \
+        );                                                                                         \
+        sanitizer_stack_trace();                                                                   \
+        __cex__abort();                                                                            \
+    })
 
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
 #define cex$concat3(c, a, b) c##a##b
@@ -391,7 +390,7 @@ int __cex_test_uassert_enabled = 1;
 #define e$except_errno(_expression)                                                                \
     if (unlikely(                                                                                  \
             ((_expression) == -1) &&                                                               \
-            log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno))      \
+            log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno))    \
         ))
 
 #define e$except_null(_expression)                                                                 \
@@ -443,7 +442,7 @@ struct _cex_arr_slice
             _slice.end += _len;                                                                    \
         _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
         _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
-        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */  \
+        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */                                                                                                \
         if (_slice.start < _slice.end && array != NULL) {                                          \
             slice.arr = &((array)[_slice.start]);                                                  \
             slice.len = (usize)(_slice.end - _slice.start);                                        \
@@ -857,6 +856,7 @@ enum _CexDsKeyType_e
 extern void* cexds_arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocator allc);
 extern void cexds_arrfreef(void* a);
 extern bool cexds_arr_integrity(const void* arr, size_t magic_num);
+extern usize cexds_arr_len(const void* arr);
 extern void cexds_hmfree_func(void* p, size_t elemsize);
 extern void cexds_hmclear_func(struct cexds_hash_index* t, struct cexds_hash_index* old_table, size_t cexds_hash_seed);
 extern void* cexds_hminit(size_t elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, struct cexds_hm_new_kwargs_s* kwargs);
@@ -962,7 +962,7 @@ struct cexds_arr_new_kwargs_s
 
 #define arr$pushm(a, items...)                                                                     \
     ({                                                                                             \
-        /* NOLINTBEGIN */                                                                            \
+        /* NOLINTBEGIN */                                                                          \
         typeof(*a) _args[] = { items };                                                            \
         _Static_assert(sizeof(_args) > 0, "You must pass at least one item");                      \
         arr$pusha(a, _args, arr$len(_args));                                                       \
@@ -1018,17 +1018,17 @@ struct cexds_arr_new_kwargs_s
         /* NOTE: temporary disable syntax error to support both static array length and arr$(T) */ \
         _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\"");                                \
         /* NOLINTBEGIN */                                                                          \
-        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0]))   /* check if array or ptr */ \
-            ? (cexds_arr_integrity(arr, 0), cexds_header(arr)->length) /* some pointer or arr$ */  \
-            : (sizeof(arr) / sizeof((arr)[0])                          /* static array[] */        \
+        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0])) /* check if array or ptr */   \
+            ? cexds_arr_len(arr)                                     /* some pointer or arr$ */    \
+            : (sizeof(arr) / sizeof((arr)[0])                        /* static array[] */          \
               );                                                                                   \
         /* NOLINTEND */                                                                            \
         _Pragma("GCC diagnostic pop");                                                             \
     })
 // NOLINT
 
-#define for$each(v, array, array_len...)                                                            \
-        /* NOLINTBEGIN*/\
+#define for$each(v, array, array_len...)                                                           \
+    /* NOLINTBEGIN*/                                                                               \
     usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
@@ -1036,14 +1036,14 @@ struct cexds_arr_new_kwargs_s
     typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
     usize cex$tmpname(arr_index) = 0;                                                              \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
-        /* NOLINTEND */                                                                            \
+    /* NOLINTEND */                                                                                \
     for (typeof((array)[0]) v = { 0 };                                                             \
          (cex$tmpname(arr_index) < cex$tmpname(arr_length) &&                                      \
           ((v) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1));                               \
          cex$tmpname(arr_index)++)
 
-#define for$eachp(v, array, array_len...)                                                           \
-        /* NOLINTBEGIN*/\
+#define for$eachp(v, array, array_len...)                                                          \
+    /* NOLINTBEGIN*/                                                                               \
     usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
@@ -1051,7 +1051,7 @@ struct cexds_arr_new_kwargs_s
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
     typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
     usize cex$tmpname(arr_index) = 0;                                                              \
-        /* NOLINTEND */                                                                            \
+    /* NOLINTEND */                                                                                \
     for (typeof((array)[0])* v = cex$tmpname(arr_arrp);                                            \
          cex$tmpname(arr_index) < cex$tmpname(arr_length);                                         \
          cex$tmpname(arr_index)++, v++)
@@ -1479,8 +1479,6 @@ typedef struct
 _Static_assert(alignof(sbuf_head_s) == 1, "align");
 _Static_assert(alignof(sbuf_head_s) == alignof(char), "align");
 
-
-__attribute__ ((visibility("hidden"))) extern const struct __module__sbuf sbuf; // CEX Autogen
 struct __module__sbuf
 {
     // Autogenerated by CEX
@@ -1488,6 +1486,7 @@ struct __module__sbuf
 
 Exception       (*append)(sbuf_c* self, const char* s);
 Exception       (*appendf)(sbuf_c* self, const char* format, ...);
+Exception       (*appendfva)(sbuf_c* self, const char* format, va_list va);
 u32             (*capacity)(const sbuf_c* self);
 void            (*clear)(sbuf_c* self);
 sbuf_c          (*create)(u32 capacity, IAllocator allocator);
@@ -1497,6 +1496,7 @@ sbuf_c          (*destroy)(sbuf_c* self);
 Exception       (*grow)(sbuf_c* self, u32 new_capacity);
 bool            (*isvalid)(sbuf_c* self);
 u32             (*len)(const sbuf_c* self);
+void            (*shrink)(sbuf_c* self, u32 new_length);
 void            (*update_len)(sbuf_c* self);
     // clang-format on
 };
@@ -1506,6 +1506,10 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__sbuf sbuf; 
 *                   io.h
 */
 
+#define io$ansi(text, ansi_col) "\033[" ansi_col "m" text "\033[0m"
+
+__attribute__((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
+__attribute__((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
 __attribute__ ((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
 struct __module__io
 {
@@ -1516,13 +1520,14 @@ void            (*fclose)(FILE** file);
 Exception       (*fflush)(FILE* file);
 int             (*fileno)(FILE* file);
 Exception       (*fopen)(FILE** file, const char* filename, const char* mode);
-Exception       (*fprintf)(FILE* stream, const char* format, ...);
+Exc             (*fprintf)(FILE* stream, const char* format, ...);
 Exception       (*fread)(FILE* file, void* obj_buffer, usize obj_el_size, usize* obj_count);
 Exception       (*fread_all)(FILE* file, str_s* s, IAllocator allc);
 Exception       (*fread_line)(FILE* file, str_s* s, IAllocator allc);
 Exception       (*fseek)(FILE* file, long offset, int whence);
 Exception       (*ftell)(FILE* file, usize* size);
 Exception       (*fwrite)(FILE* file, const void* obj_buffer, usize obj_el_size, usize obj_count);
+bool            (*has_ansi_support)();
 bool            (*isatty)(FILE* file);
 void            (*printf)(const char* format, ...);
 void            (*rewind)(FILE* file);
@@ -1552,61 +1557,54 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__io io; // C
 struct argparse_c;
 struct argparse_opt_s;
 
-typedef Exception argparse_callback_f(struct argparse_c* self, const struct argparse_opt_s* option);
+typedef Exception (*argparse_callback_f)(
+    struct argparse_c* self,
+    const struct argparse_opt_s* option,
+    void* ctx
+);
+typedef Exception (*argparse_convert_f)(const char* s, void* out_val);
+typedef Exception (*argparse_command_f)(int argc, const char** argv, void* user_ctx);
 
-
-enum argparse_option_flags
-{
-    ARGPARSE_OPT_NONEG = 1, /* disable negation */
-};
-/**
- *  argparse option
- *
- *  `type`:
- *    holds the type of the option
- *
- *  `short_name`:
- *    the character to use as a short option name, '\0' if none.
- *
- *  `long_name`:
- *    the long option name, without the leading dash, NULL if none.
- *
- *  `value`:
- *    stores pointer to the value to be filled.
- *
- *  `help`:
- *    the short help message associated to what the option does.
- *    Must never be NULL (except for ARGPARSE_OPT_END).
- *
- *  `required`:
- *    if 'true' option presence is mandatory (default: false)
- *
- *
- *  `callback`:
- *    function is called when corresponding argument is parsed.
- *
- *  `data`:
- *    associated data. Callbacks can use it like they want.
- *
- *  `flags`:
- *    option flags.
- *
- *  `is_present`:
- *    true if option present in args
- */
 typedef struct argparse_opt_s
 {
     u8 type;
+    void* value;
     const char short_name;
     const char* long_name;
-    void* value;
     const char* help;
     bool required;
-    argparse_callback_f* callback;
-    intptr_t data;
-    int flags;
+    argparse_callback_f callback;
+    void* callback_data;
+    argparse_convert_f convert;
     bool is_present; // also setting in in argparse$opt* macro, allows optional parameter sugar
 } argparse_opt_s;
+
+typedef struct argparse_cmd_s
+{
+    const char* name;
+    argparse_command_f func;
+    const char* help;
+    bool is_default;
+} argparse_cmd_s;
+
+enum CexArgParseType_e
+{
+    CexArgParseType__na,
+    CexArgParseType__group,
+    CexArgParseType__boolean,
+    CexArgParseType__string,
+    CexArgParseType__i8,
+    CexArgParseType__u8,
+    CexArgParseType__i16,
+    CexArgParseType__u16,
+    CexArgParseType__i32,
+    CexArgParseType__u32,
+    CexArgParseType__i64,
+    CexArgParseType__u64,
+    CexArgParseType__f32,
+    CexArgParseType__f64,
+    CexArgParseType__generic,
+};
 
 /**
  * argpparse
@@ -1617,18 +1615,14 @@ typedef struct argparse_c
     argparse_opt_s* options;
     u32 options_len;
 
+    argparse_cmd_s* commands;
+    u32 commands_len;
+
     const char* usage;        // usage text (can be multiline), each line prepended by program_name
     const char* description;  // a description after usage
     const char* epilog;       // a description at the end
     const char* program_name; // program name in usage (by default: argv[0])
 
-    struct
-    {
-        u32 stop_at_non_option : 1;
-        u32 ignore_unknown_args : 1;
-    } flags;
-    //
-    //
     // internal context
     struct
     {
@@ -1638,24 +1632,61 @@ typedef struct argparse_c
         int cpidx;
         const char* optvalue; // current option value
         bool has_argument;
+        argparse_cmd_s* current_command;
     } _ctx;
 } argparse_c;
 
 
 // built-in option macros
+#define argparse$opt(value, ...)                                                                   \
+    ({                                                                                             \
+        u32 val_type = _Generic(                                                                   \
+            (value),                                                                               \
+            bool*: CexArgParseType__boolean,                                                       \
+            i8*: CexArgParseType__i8,                                                              \
+            u8*: CexArgParseType__u8,                                                              \
+            i16*: CexArgParseType__i16,                                                            \
+            u16*: CexArgParseType__u16,                                                            \
+            i32*: CexArgParseType__i32,                                                            \
+            u32*: CexArgParseType__u32,                                                            \
+            i64*: CexArgParseType__i64,                                                            \
+            u64*: CexArgParseType__u64,                                                            \
+            f32*: CexArgParseType__f32,                                                            \
+            f64*: CexArgParseType__f64,                                                            \
+            const char**: CexArgParseType__string,                                                 \
+            char**: CexArgParseType__string,                                                       \
+            default: CexArgParseType__generic                                                      \
+        );                                                                                         \
+        argparse_convert_f conv_f = _Generic(                                                      \
+            (value),                                                                               \
+            bool*: NULL,                                                                           \
+            const char**: NULL,                                                                    \
+            char**: NULL,                                                                          \
+            i8*: (argparse_convert_f)str.convert.to_i8,                                            \
+            u8*: (argparse_convert_f)str.convert.to_u8,                                            \
+            i16*: (argparse_convert_f)str.convert.to_i16,                                          \
+            u16*: (argparse_convert_f)str.convert.to_u16,                                          \
+            i32*: (argparse_convert_f)str.convert.to_i32,                                          \
+            u32*: (argparse_convert_f)str.convert.to_u32,                                          \
+            i64*: (argparse_convert_f)str.convert.to_i64,                                          \
+            u64*: (argparse_convert_f)str.convert.to_u64,                                          \
+            f32*: (argparse_convert_f)str.convert.to_f32,                                          \
+            f64*: (argparse_convert_f)str.convert.to_f64,                                          \
+            default: NULL                                                                          \
+        );                                                                                         \
+        (argparse_opt_s){ val_type,                                                                \
+                          (value),                                                                 \
+                          __VA_ARGS__,                                                             \
+                          .convert = (argparse_convert_f)conv_f,                                   \
+                          .is_present = 0 };                                                       \
+    })
 // clang-format off
-#define argparse$opt_bool(...)    { 2 /*ARGPARSE_OPT_BOOLEAN*/, __VA_ARGS__, .is_present=0}
-#define argparse$opt_bit(...)     { 3 /*ARGPARSE_OPT_BIT*/, __VA_ARGS__, .is_present=0 }
-#define argparse$opt_i64(...)     { 4 /*ARGPARSE_OPT_INTEGER*/, __VA_ARGS__, .is_present=0 }
-#define argparse$opt_f32(...)     { 5 /*ARGPARSE_OPT_FLOAT*/, __VA_ARGS__, .is_present=0 }
-#define argparse$opt_str(...)     { 6 /*ARGPARSE_OPT_STRING*/, __VA_ARGS__, .is_present=0 }
-#define argparse$opt_group(h)     { 1 /*ARGPARSE_OPT_GROUP*/, 0, NULL, NULL, h, false, NULL, 0, 0, .is_present=0 }
-#define argparse$opt_help()       argparse$opt_bool('h', "help", NULL,                           \
-                                                    "show this help message and exit", false,    \
-                                                    NULL, 0, ARGPARSE_OPT_NONEG)
+#define argparse$opt_group(h)     { CexArgParseType__group, NULL, '\0', NULL, h, false, NULL, 0, 0, .is_present=0 }
+#define argparse$opt_help()       {CexArgParseType__boolean, NULL, 'h', "help",                           \
+                                        "show this help message and exit", false,    \
+                                        NULL, 0, .is_present = 0}
 // clang-format on
 
-__attribute__ ((visibility("hidden"))) extern const struct __module__argparse argparse; // CEX Autogen
 struct __module__argparse
 {
     // Autogenerated by CEX
@@ -1664,6 +1695,7 @@ struct __module__argparse
 u32             (*argc)(argparse_c* self);
 char**          (*argv)(argparse_c* self);
 Exception       (*parse)(argparse_c* self, int argc, char** argv);
+Exception       (*run_command)(argparse_c* self, void* user_ctx);
 void            (*usage)(argparse_c* self);
     // clang-format on
 };
@@ -2939,7 +2971,7 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_filetype_s ftype, voi
         uassert(_args_len < PTRDIFF_MAX && "negative length or overflow");                           \
         _os$args_print("CMD:", args, _args_len);                                                   \
         os_cmd_c _cmd = { 0 };                                                                     \
-        e$ret(os.cmd.run(args, _args_len, &_cmd));                                                  \
+        e$ret(os.cmd.run((const char**)args, _args_len, &_cmd));                                                  \
         e$ret(os.cmd.join(&_cmd, 0, NULL));                                                        \
         /* NOLINTEND */                                                                            \
     })
@@ -2952,6 +2984,8 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_filetype_s ftype, voi
     })
 
 __attribute__((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
 struct __module__os
 {
     // Autogenerated by CEX
@@ -2990,7 +3024,7 @@ struct {  // sub-module .cmd >>>
     Exception       (*kill)(os_cmd_c* self);
     char*           (*read_all)(os_cmd_c* self, IAllocator allc);
     char*           (*read_line)(os_cmd_c* self, IAllocator allc);
-    Exception       (*run)(char** args, usize args_len, os_cmd_c* out_cmd);
+    Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
     FILE*           (*stderr)(os_cmd_c* self);
     FILE*           (*stdin)(os_cmd_c* self);
     FILE*           (*stdout)(os_cmd_c* self);
@@ -3003,26 +3037,38 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__os os; // C
 /*
 *                   test.h
 */
-#ifdef CEXTEST
 
-#ifndef NAN
-#error "NAN is undefined on this platform"
-#endif
-
-#ifndef FLT_EPSILON
-#error "FLT_EPSILON is undefined on this platform"
-#endif
+typedef Exception (*_cex_test_case_f)(void);
 
 #define CEXTEST_AMSG_MAX_LEN 512
-#define CEXTEST_CRED "\033[0;31m"
-#define CEXTEST_CGREEN "\033[0;32m"
-#define CEXTEST_CNONE "\033[0m"
+struct _cex_test_case_s
+{
+    _cex_test_case_f test_fn;
+    const char* test_name;
+    u32 test_line;
+};
 
-#ifdef _WIN32
-#define CEXTEST_NULL_DEVICE "NUL:"
-#else
-#define CEXTEST_NULL_DEVICE "/dev/null"
-#endif
+struct _cex_test_context_s
+{
+    arr$(struct _cex_test_case_s) test_cases;
+    int orig_stderr_fd;    // initial stdout
+    int orig_stdout_fd;    // initial stderr
+    FILE* out_stream;      // test case captured output
+    int tests_run;         // number of tests run
+    int tests_failed;      // number of tests failed
+    bool quiet_mode;       // quiet mode (for run all)
+    const char* case_name; // current running case name
+    _cex_test_case_f setup_case_fn;
+    _cex_test_case_f teardown_case_fn;
+    _cex_test_case_f setup_suite_fn;
+    _cex_test_case_f teardown_suite_fn;
+    bool has_ansi;
+    bool no_stdout_capture;
+    bool breakpoint;
+    const char* const suite_file;
+    char* case_filter;
+    char str_buf[CEXTEST_AMSG_MAX_LEN];
+};
 
 #if defined(__clang__)
 #define test$NOOPT __attribute__((optnone))
@@ -3032,435 +3078,304 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__os os; // C
 #error "MSVC deprecated"
 #endif
 
-struct __CexTestContext_s
-{
-    FILE* out_stream; // by default uses stdout, however you can replace it by any FILE*
-                      // stream
-    int tests_run;    // number of tests run
-    int tests_failed; // number of tests failed
-    int verbosity;    // verbosity level: 0 - only stats, 1 - short test results (. or F) +
-                      // stats, 2 - all tests results, 3 - include logs
-    const char* in_test;
-    // Internal buffer for aassertf() string formatting
-    char _str_buf[CEXTEST_AMSG_MAX_LEN];
-};
-
-
-void* __cex_test_postmortem_ctx = NULL;
-void (*__cex_test_postmortem_f)(void* ctx) = NULL;
-
-
-void
-__cex_test_run_postmortem()
-{
-    if (__cex_test_postmortem_exists()) {
-        fprintf(stdout, "=========== POSTMORTEM ===========\n");
-        fflush(stdout);
-        fflush(stderr);
-        __cex_test_postmortem_f(__cex_test_postmortem_ctx);
-        fflush(stdout);
-        fflush(stderr);
-        fprintf(stdout, "=========== POSTMORTEM END =======\n");
-    }
-}
-/*
- *
- *  ASSERTS
- *
- */
-//
-// tassert( condition ) - simple test assert, fails when condition false
-//
-#define tassert(A)                                                                                 \
+#define _test$log_err(msg) __FILE__ ":" cex$stringize(__LINE__) " -> " msg
+#define _test$tassert_breakpoint()                                                                 \
     ({                                                                                             \
-        if (!(A)) {                                                                                \
-            __cex_test_run_postmortem();                                                           \
-            return __CEXTEST_LOG_ERR(#A);                                                          \
-        }                                                                                          \
-    })
-
-//
-// tassertf( condition, format_string, ...) - test only assert with printf() style formatting
-// error message
-//
-#define tassertf(A, M, ...)                                                                        \
-    ({                                                                                             \
-        if (!(A)) {                                                                                \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR(M),                                                              \
-                ##__VA_ARGS__                                                                      \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
-    })
-
-//
-// tassert_eq(char * actual, char * expected) - compares strings via strcmp() (NULL tolerant)
-//
-#define tassert_eq(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        const char* ac = (_ac);                                                                    \
-        const char* ex = (_ex);                                                                    \
-        if ((ac) == NULL && (ex) != NULL) {                                                        \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("NULL != '%s'"),                                                 \
-                (char*)(ex)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        } else if ((ac) != NULL && (ex) == NULL) {                                                 \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("'%s' != NULL"),                                                 \
-                (char*)(ac)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        } else if (((ac) != NULL && (ex) != NULL) &&                                               \
-                   (strcmp(__CEXTEST_NON_NULL((ac)), __CEXTEST_NON_NULL((ex))) != 0)) {            \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("'%s' != '%s'"),                                                 \
-                (char*)(ac),                                                                       \
-                (char*)(ex)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
-    })
-
-//
-// tassert_eq(Exception actual, Exception expected) - compares Exceptions (Error.ok = NULL = EOK)
-//
-#define tassert_er(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        const char* ac = (_ac);                                                                    \
-        const char* ex = (_ex);                                                                    \
-        if ((ac) == NULL && (ex) != NULL) {                                                        \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("Error.ok != '%s'"),                                             \
-                (char*)(ex)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        } else if ((ac) != NULL && (ex) == NULL) {                                                 \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("'%s' != Error.ok"),                                             \
-                (char*)(ac)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        } else if (((ac) != NULL && (ex) != NULL) &&                                               \
-                   (strcmp(__CEXTEST_NON_NULL((ac)), __CEXTEST_NON_NULL((ex))) != 0)) {            \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("'%s' != '%s'"),                                                 \
-                (char*)(ac),                                                                       \
-                (char*)(ex)                                                                        \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
-    })
-
-//
-// tassert_eq(int actual, int expected) - compares equality of signed integers
-//
-#define tassert_eq(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        long int ac = (_ac);                                                                       \
-        long int ex = (_ex);                                                                       \
-        if ((ac) != (ex)) {                                                                        \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("%ld != %ld"),                                                   \
-                (ac),                                                                              \
-                (ex)                                                                               \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
-    })
-
-//
-// tassert_eq(int actual, int expected) - compares equality of long signed integers
-//
-#define tassert_eq(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        long long ac = (_ac);                                                                      \
-        long long ex = (_ex);                                                                      \
-        if ((ac) != (ex)) {                                                                        \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("%lld != %lld"),                                                 \
-                (ac),                                                                              \
-                (ex)                                                                               \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
-        }                                                                                          \
-    })
-
-//
-// tassert_eq(f64 actual, f64 expected) - compares equality of f64 / double numbers
-// NAN friendly, i.e. tassert_eq(NAN, NAN) -- passes
-//
-#define tassert_eq(_ac, _ex)                                                                      \
-    ({                                                                                             \
-        f64 ac = (_ac);                                                                            \
-        f64 ex = (_ex);                                                                            \
-        int __at_assert_passed = 1;                                                                \
-        if (isnan(ac) && !isnan(ex))                                                               \
-            __at_assert_passed = 0;                                                                \
-        else if (!isnan(ac) && isnan(ex))                                                          \
-            __at_assert_passed = 0;                                                                \
-        else if (isnan(ac) && isnan(ex))                                                           \
-            __at_assert_passed = 1;                                                                \
-        else if (fabs((ac) - (ex)) > (f64)FLT_EPSILON)                                             \
-            __at_assert_passed = 0;                                                                \
-        if (__at_assert_passed == 0) {                                                             \
-            snprintf(                                                                              \
-                __CexTestContext._str_buf,                                                         \
-                CEXTEST_AMSG_MAX_LEN - 1,                                                          \
-                __CEXTEST_LOG_ERR("%.10e != %.10e (diff: %0.10e epsilon: %0.10e)"),                \
-                (ac),                                                                              \
-                (ex),                                                                              \
-                ((ac) - (ex)),                                                                     \
-                (f64)FLT_EPSILON                                                                   \
-            );                                                                                     \
-            __cex_test_run_postmortem();                                                           \
-            return __CexTestContext._str_buf;                                                      \
+        if (_cex_test__mainfn_state.breakpoint) {                                                  \
+            fprintf(stderr, "[BREAK] %s\n", _test$log_err("breakpoint hit"));                      \
+            raise(SIGTRAP);                                                                        \
         }                                                                                          \
     })
 
 
-/*
- *
- *  TEST FUNCTIONS
- *
- */
+#define test$case(NAME)                                                                             \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                      \
+    static Exception cext_test_##NAME();                                                            \
+    static void cext_test_register_##NAME(void) __attribute__((constructor));                       \
+    static void cext_test_register_##NAME(void)                                                     \
+    {                                                                                               \
+        if (_cex_test__mainfn_state.test_cases == NULL) {                                           \
+            _cex_test__mainfn_state.test_cases = arr$new(_cex_test__mainfn_state.test_cases, mem$); \
+            uassert(_cex_test__mainfn_state.test_cases != NULL && "memory error");                  \
+        };                                                                                          \
+        arr$push(                                                                                   \
+            _cex_test__mainfn_state.test_cases,                                                     \
+            (struct _cex_test_case_s                                                                \
+            ){ .test_fn = &cext_test_##NAME, .test_name = #NAME, .test_line = __LINE__ }            \
+        );                                                                                          \
+    }                                                                                               \
+    Exception test$NOOPT cext_test_##NAME(void)
+
+
 #ifndef CEXTEST
 #define test$env_check()                                                                           \
-    uassert(false && "CEXTEST was not defined, pass -DCEXTEST or #define CEXTEST")
+    fprintf(stderr, "CEXTEST was not defined, pass -DCEXTEST or #define CEXTEST");                 \
+    exit(1);
 #else
 #define test$env_check() (void)0
 #endif
 
-#define test$setup()                                                                               \
-    struct __CexTestContext_s __CexTestContext = {                                                 \
-        .out_stream = NULL,                                                                        \
-        .tests_run = 0,                                                                            \
-        .tests_failed = 0,                                                                         \
-        .verbosity = 3,                                                                            \
-        .in_test = NULL,                                                                           \
-    };                                                                                             \
-    static test$NOOPT Exc cextest_setup_func()
-
-#define test$teardown() static test$NOOPT Exc cextest_teardown_func()
-
-//
-// Typical test function template
-//  MUST return Error.ok / EOK on test success, or char* with error message when failed!
-//
-#define test$case(test_case_name) static test$NOOPT Exc test_case_name()
-
-#define test$set_postmortem(postmortem_func, func_ctx)                                             \
+#define test$main()                                                                                \
+    struct _cex_test_context_s _cex_test__mainfn_state = { .suite_file = __FILE__ };               \
+    int main(int argc, char** argv)                                                                \
     {                                                                                              \
-        __cex_test_postmortem_f = (postmortem_func);                                               \
-        __cex_test_postmortem_ctx = (func_ctx);                                                    \
-    }                                                                                              \
-    while (0)
+        test$env_check();                                                                          \
+        argv[0] = __FILE__;                                                                        \
+        return cex_test_main_fn(argc, argv);                                                       \
+    }
 
-#define test$run(test_case_name)                                                                   \
-    do {                                                                                           \
-        if (argc >= 3 && strcmp(argv[2], #test_case_name) != 0) {                                  \
-            break;                                                                                 \
+#define test$setup_suite()                                                                         \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
+    static Exception cext_test__setup_suite_fn();                                                  \
+    static void cext_test__register_setup_suite_fn(void) __attribute__((constructor));             \
+    static void cext_test__register_setup_suite_fn(void)                                           \
+    {                                                                                              \
+        uassert(_cex_test__mainfn_state.setup_suite_fn == NULL);                                   \
+        _cex_test__mainfn_state.setup_suite_fn = &cext_test__setup_suite_fn;                       \
+    }                                                                                              \
+    Exception test$NOOPT cext_test__setup_suite_fn(void)
+
+#define test$teardown_suite()                                                                      \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
+    static Exception cext_test__teardown_suite_fn();                                               \
+    static void cext_test__register_teardown_suite_fn(void) __attribute__((constructor));          \
+    static void cext_test__register_teardown_suite_fn(void)                                        \
+    {                                                                                              \
+        uassert(_cex_test__mainfn_state.teardown_suite_fn == NULL);                                \
+        _cex_test__mainfn_state.teardown_suite_fn = &cext_test__teardown_suite_fn;                 \
+    }                                                                                              \
+    Exception test$NOOPT cext_test__teardown_suite_fn(void)
+
+#define test$setup_case()                                                                          \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
+    static Exception cext_test__setup_case_fn();                                                   \
+    static void cext_test__register_setup_case_fn(void) __attribute__((constructor));              \
+    static void cext_test__register_setup_case_fn(void)                                            \
+    {                                                                                              \
+        uassert(_cex_test__mainfn_state.setup_case_fn == NULL);                                    \
+        _cex_test__mainfn_state.setup_case_fn = &cext_test__setup_case_fn;                         \
+    }                                                                                              \
+    Exception test$NOOPT cext_test__setup_case_fn(void)
+
+#define test$teardown_case()                                                                       \
+    extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
+    static Exception cext_test__teardown_case_fn();                                                \
+    static void cext_test__register_teardown_case_fn(void) __attribute__((constructor));           \
+    static void cext_test__register_teardown_case_fn(void)                                         \
+    {                                                                                              \
+        uassert(_cex_test__mainfn_state.teardown_case_fn == NULL);                                 \
+        _cex_test__mainfn_state.teardown_case_fn = &cext_test__teardown_case_fn;                   \
+    }                                                                                              \
+    Exception test$NOOPT cext_test__teardown_case_fn(void)
+
+#define _test$tassert_fn(a, b)                                                                     \
+    ({                                                                                             \
+        _Generic(                                                                                  \
+            (a),                                                                                   \
+            i32: _check_eq_int,                                                                    \
+            u32: _check_eq_int,                                                                    \
+            i64: _check_eq_int,                                                                    \
+            u64: _check_eq_int,                                                                    \
+            i16: _check_eq_int,                                                                    \
+            u16: _check_eq_int,                                                                    \
+            i8: _check_eq_int,                                                                     \
+            u8: _check_eq_int,                                                                     \
+            char: _check_eq_int,                                                                   \
+            bool: _check_eq_int,                                                                   \
+            char*: _check_eq_str,                                                                  \
+            const char*: _check_eq_str,                                                            \
+            str_s: _check_eqs_slice,                                                               \
+            f32: _check_eq_f32,                                                                    \
+            f64: _check_eq_f32,                                                                    \
+            default: _check_eq_int                                                                 \
+        );                                                                                         \
+    })
+
+#define tassert(A)                                                                                 \
+    ({ /* ONLY for test$case USE */                                                                \
+       if (!(A)) {                                                                                 \
+           _test$tassert_breakpoint();                                                             \
+           return _test$log_err(#A);                                                               \
+       }                                                                                           \
+    })
+
+#define tassertf(A, M, ...)                                                                        \
+    ({ /* ONLY for test$case USE */                                                                \
+       if (!(A)) {                                                                                 \
+           _test$tassert_breakpoint();                                                             \
+           if (str.sprintf(                                                                        \
+                   _cex_test__mainfn_state.str_buf,                                                \
+                   CEXTEST_AMSG_MAX_LEN - 1,                                                       \
+                   _test$log_err(M),                                                               \
+                   ##__VA_ARGS__                                                                   \
+               )) {                                                                                \
+           }                                                                                       \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       }                                                                                           \
+    })
+#define tassert_eq(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err = NULL;                                                                            \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                               \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
         }                                                                                          \
-        __CexTestContext.in_test = #test_case_name;                                                \
-        Exc err = cextest_setup_func();                                                            \
-        if (err != EOK) {                                                                          \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "[%s] %s in test$setup() before %s (suite %s stopped)\n",                          \
-                CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
-                err,                                                                               \
-                #test_case_name,                                                                   \
-                __FILE__                                                                           \
-            );                                                                                     \
-            return 1;                                                                              \
+    })
+
+#define tassert_er(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err = NULL;                                                                            \
+        if ((err = _check_eq_err((a), (b), __LINE__))) {                                           \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
+        }                                                                                          \
+    })
+
+#define tassert_eq_almost(a, b, delta)                                                             \
+    ({                                                                                             \
+        Exc err = NULL;                                                                            \
+        if ((err = _check_eq_almost((a), (b), (delta), __LINE__))) {                               \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
+        }                                                                                          \
+    })
+#define tassert_eq_ptr(a, b)                                                                       \
+    ({                                                                                             \
+        Exc err = NULL;                                                                            \
+        if ((err = _check_eq_ptr((a), (b), __LINE__))) {                                           \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
+        }                                                                                          \
+    })
+#define tassert_eq_mem(a, b...)                                                                        \
+    ({                                                                                              \
+        var _a = (a);                                                                              \
+        var _b = (b);                                                                              \
+        _Static_assert(__builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)), "incompatible"); \
+        _Static_assert(sizeof(_a) == sizeof(_b), "different size");                                   \
+        if (memcmp(&_a, &_b, sizeof(_a)) != 0) {                                                \
+            _test$tassert_breakpoint();                                                             \
+            if (str.sprintf(                                                                        \
+                    _cex_test__mainfn_state.str_buf,                                                \
+                    CEXTEST_AMSG_MAX_LEN - 1,                                                       \
+                    _test$log_err("a and b are not binary equal")                                  \
+                )) {                                                                                \
+            }                                                                                       \
+            return _cex_test__mainfn_state.str_buf;                                                 \
+        }                                                                                           \
+    })
+
+#define tassert_eq_arr(a, b...)                                                                       \
+    ({                                                                                             \
+        var _a = (a);                                                                              \
+        var _b = (b);                                                                              \
+        _Static_assert(                                                                            \
+            __builtin_types_compatible_p(__typeof__(*a), __typeof__(*b)),                          \
+            "incompatible"                                                                         \
+        );                                                                                         \
+        _Static_assert(sizeof(*_a) == sizeof(*_b), "different size");                              \
+        usize _alen = arr$len(a);                                                                  \
+        usize _blen = arr$len(b);                                                                  \
+        usize _itsize = sizeof(*_a);                                                               \
+        if (_alen != _blen) {                                                                      \
+            _test$tassert_breakpoint();                                                            \
+            if (str.sprintf(                                                                       \
+                    _cex_test__mainfn_state.str_buf,                                               \
+                    CEXTEST_AMSG_MAX_LEN - 1,                                                      \
+                    _test$log_err("array length is different %ld != %ld"),                         \
+                    _alen,                                                                         \
+                    _blen                                                                          \
+                )) {                                                                               \
+            }                                                                                      \
+            return _cex_test__mainfn_state.str_buf;                                                \
         } else {                                                                                   \
-            err = (test_case_name());                                                              \
-        }                                                                                          \
-                                                                                                   \
-        __CexTestContext.tests_run++;                                                              \
-        if (err == EOK) {                                                                          \
-            if (__CexTestContext.verbosity > 0) {                                                  \
-                if (__CexTestContext.verbosity == 1) {                                             \
-                    fprintf(__CEX_TEST_STREAM, ".");                                               \
-                } else {                                                                           \
-                    fprintf(                                                                       \
-                        __CEX_TEST_STREAM,                                                         \
-                        "[%s] %s\n",                                                               \
-                        CEXTEST_CGREEN "PASS" CEXTEST_CNONE,                                       \
-                        #test_case_name                                                            \
-                    );                                                                             \
+            for (usize i = 0; i < _alen; i++) {                                                    \
+                if (memcmp(&(_a[i]), &(_b[i]), _itsize) != 0) {                                    \
+                    _test$tassert_breakpoint();                                                    \
+                    if (str.sprintf(                                                               \
+                            _cex_test__mainfn_state.str_buf,                                       \
+                            CEXTEST_AMSG_MAX_LEN - 1,                                              \
+                            _test$log_err("array element at index [%d] is different"),             \
+                            i                                                                      \
+                        )) {                                                                       \
+                    }                                                                              \
+                    return _cex_test__mainfn_state.str_buf;                                        \
                 }                                                                                  \
             }                                                                                      \
-        } else {                                                                                   \
-            __CexTestContext.tests_failed++;                                                       \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "[%s] %s %s\n",                                                                    \
-                CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
-                err,                                                                               \
-                #test_case_name                                                                    \
-            );                                                                                     \
         }                                                                                          \
-        err = cextest_teardown_func();                                                             \
-        if (err != EOK) {                                                                          \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "[%s] %s in test$teardown() after %s\n",                                           \
-                CEXTEST_CRED "FAIL" CEXTEST_CNONE,                                                 \
-                err,                                                                               \
-                #test_case_name                                                                    \
-            );                                                                                     \
-        }                                                                                          \
-        __CexTestContext.in_test = NULL;                                                           \
-        fflush(__CEX_TEST_STREAM);                                                                 \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-    } while (0)
-
-//
-//  Prints current test header
-//
-#define test$print_header()                                                                        \
-    ({                                                                                             \
-        setbuf(__CEX_TEST_STREAM, NULL);                                                           \
-        if (__CexTestContext.verbosity > 0) {                                                      \
-            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n");                 \
-            fprintf(__CEX_TEST_STREAM, "Running Tests: %s\n", __FILE__);                           \
-            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n\n");               \
-        }                                                                                          \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
     })
 
-//
-// Prints current tests stats total / passed / failed
-//
-#define test$print_footer()                                                                        \
+#define tassert_ne(a, b)                                                                           \
     ({                                                                                             \
-        if (__CexTestContext.verbosity > 0) {                                                      \
-            fprintf(__CEX_TEST_STREAM, "\n-------------------------------------\n");               \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "Total: %d Passed: %d Failed: %d\n",                                               \
-                __CexTestContext.tests_run,                                                        \
-                __CexTestContext.tests_run - __CexTestContext.tests_failed,                        \
-                __CexTestContext.tests_failed                                                      \
-            );                                                                                     \
-            fprintf(__CEX_TEST_STREAM, "-------------------------------------\n");                 \
-        } else {                                                                                   \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "[%s] %-70s [%2d/%2d]\n",                                                          \
-                __CexTestContext.tests_failed == 0 ? CEXTEST_CGREEN "PASS" CEXTEST_CNONE           \
-                                                   : CEXTEST_CRED "FAIL" CEXTEST_CNONE,            \
-                __FILE__,                                                                          \
-                __CexTestContext.tests_run - __CexTestContext.tests_failed,                        \
-                __CexTestContext.tests_run                                                         \
-            );                                                                                     \
+        Exc err = NULL;                                                                            \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                               \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
         }                                                                                          \
-        fflush(__CEX_TEST_STREAM);                                                                 \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
     })
 
-//
-//  Utility macro for returning main() exit code based on test failed/run, if no tests
-//  run it's an error too
-//
-#define test$args_parse(argc, argv)                                                                \
-    do {                                                                                           \
-        test$env_check();                                                                          \
-        if (argc == 1)                                                                             \
-            break;                                                                                 \
-        if (argc > 3) {                                                                            \
-            fprintf(                                                                               \
-                __CEX_TEST_STREAM,                                                                 \
-                "Too many arguments: use test_name_exec vvv|q test_case_name\n"                    \
-            );                                                                                     \
-            return 1;                                                                              \
+#define tassert_le(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err = NULL;                                                                            \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                               \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
         }                                                                                          \
-        char a;                                                                                    \
-        int i = 0;                                                                                 \
-        int _has_quiet = 0;                                                                        \
-        int _verb = 0;                                                                             \
-        while ((a = argv[1][i]) != '\0') {                                                         \
-            if (a == 'q')                                                                          \
-                _has_quiet = 1;                                                                    \
-            if (a == 'v')                                                                          \
-                _verb++;                                                                           \
-            i++;                                                                                   \
-        }                                                                                          \
-        __CexTestContext.verbosity = _has_quiet ? 0 : _verb;                                       \
-        if (__CexTestContext.verbosity == 0) {                                                     \
-            freopen(CEXTEST_NULL_DEVICE, "w", stdout);                                             \
-        }                                                                                          \
-    } while (0)
+    })
 
-#define test$exit_code() (-1 ? __CexTestContext.tests_run == 0 : __CexTestContext.tests_failed)
+#define tassert_lt(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err = NULL;                                                                            \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                               \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
+        }                                                                                          \
+    })
+
+#define tassert_ge(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err = NULL;                                                                            \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                               \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
+        }                                                                                          \
+    })
+
+#define tassert_gt(a, b)                                                                           \
+    ({                                                                                             \
+        Exc err = NULL;                                                                            \
+        var genf = _test$tassert_fn((a), (b));                                                     \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                               \
+            _test$tassert_breakpoint();                                                            \
+            return err;                                                                            \
+        }                                                                                          \
+    })
 
 /*
- *
- * Utility non public macros
- *
- */
-#define __CEX_TEST_STREAM                                                                          \
-    (__CexTestContext.out_stream == NULL ? stderr : __CexTestContext.out_stream)
-#define __STRINGIZE_DETAIL(x) #x
-#define __STRINGIZE(x) __STRINGIZE_DETAIL(x)
-#define __CEXTEST_LOG_ERR(msg) (__FILE__ ":" __STRINGIZE(__LINE__) " -> " msg)
-#define __CEXTEST_NON_NULL(x) ((x != NULL) ? (x) : "")
-
-#endif //ifdef CEXTEST
-
-/*
-*                   cex_build.h
+*                   cexy.h
 */
 
 #if defined(CEX_BUILD)
 
-#ifndef cex$cc
+#ifndef cexy$cc
 #if defined(__clang__)
-#define cex$cc "clang"
+#define cexy$cc "clang"
 #elif defined(__GNUC__)
-#define cex$cc "gcc"
+#define cexy$cc "gcc"
 #else
 # #error "Compiler type is not supported"
 #endif
-#endif // #ifndef cex$cc
+#endif // #ifndef cexy$cc
 
 
-#define cex$run
-#define cex$needs_rebuild
-#define cex$initialize
+#define cexy$run
+#define cexy$needs_rebuild
+#define cexy$initialize
 
 #endif // #if defined(CEX_BUILD)
 
@@ -4464,6 +4379,12 @@ cexds_arr_integrity(const void* arr, size_t magic_num)
 
 
     return true;
+}
+
+inline usize
+cexds_arr_len(const void* arr)
+{
+    return (arr) ? cexds_header(arr)->length : 0;
 }
 
 void*
@@ -7241,16 +7162,14 @@ static bool
 str_eq(const char* a, const char* b)
 {
     if (unlikely(a == NULL || b == NULL)) {
-        // NOTE: if both are NULL - this function intentionally return false
-        return false;
+        return a == b;
     }
     return strcmp(a, b) == 0;
 }
 
 bool str_eqi(const char *a, const char *b) {
     if (unlikely(a == NULL || b == NULL)) {
-        // NOTE: if both are NULL - this function intentionally return false
-        return false;
+        return a == b;
     }
     while (*a && *b) {
         if (tolower((u8)*a) != tolower((u8)*b)) {
@@ -7266,8 +7185,7 @@ static bool
 str__slice__eq(str_s a, str_s b)
 {
     if (unlikely(a.buf == NULL || b.buf == NULL)) {
-        // NOTE: if both are NULL - this function intentionally return false
-        return false;
+        return (a.buf == NULL && b.buf == NULL);
     }
     if (a.len != b.len) {
         return false;
@@ -8726,6 +8644,17 @@ sbuf_clear(sbuf_c* self)
     (*self)[head->length] = '\0';
 }
 
+static void
+sbuf_shrink(sbuf_c* self, u32 new_length)
+{
+    uassert(self != NULL);
+    sbuf_head_s* head = sbuf__head(*self);
+    uassert(new_length <= head->length);
+    uassert(new_length <= head->capacity);
+    head->length = new_length;
+    (*self)[head->length] = '\0';
+}
+
 static u32
 sbuf_len(const sbuf_c* self)
 {
@@ -8815,9 +8744,11 @@ sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 }
 
 static Exception
-sbuf__appendfva(sbuf_c* self, const char* format, va_list va)
+sbuf_appendfva(sbuf_c* self, const char* format, va_list va)
 {
-    uassert(self != NULL);
+    if (unlikely(self == NULL)) {
+        return Error.argument;
+    }
     sbuf_head_s* head = sbuf__head(*self);
 
     struct _sbuf__sprintf_ctx ctx = {
@@ -8852,7 +8783,7 @@ sbuf_appendf(sbuf_c* self, const char* format, ...)
 
     va_list va;
     va_start(va, format);
-    Exc result = sbuf__appendfva(self, format, va);
+    Exc result = sbuf_appendfva(self, format, va);
     va_end(va);
     return result;
 }
@@ -8863,7 +8794,7 @@ sbuf_append(sbuf_c* self, const char* s)
     uassert(self != NULL);
     sbuf_head_s* head = sbuf__head(*self);
 
-    if (s == NULL) {
+    if (unlikely(s == NULL)) {
         return Error.argument;
     }
 
@@ -8950,9 +8881,11 @@ const struct __module__sbuf sbuf = {
     .grow = sbuf_grow,
     .update_len = sbuf_update_len,
     .clear = sbuf_clear,
+    .shrink = sbuf_shrink,
     .len = sbuf_len,
     .capacity = sbuf_capacity,
     .destroy = sbuf_destroy,
+    .appendfva = sbuf_appendfva,
     .appendf = sbuf_appendf,
     .append = sbuf_append,
     .isvalid = sbuf_isvalid,
@@ -9005,6 +8938,16 @@ io_isatty(FILE* file)
 {
     uassert(file != NULL);
     return isatty(fileno(file)) == 1;
+}
+
+bool
+io_has_ansi_support()
+{
+    // TODO: add windows version
+    if (!isatty(fileno(stdout))) {
+        return false;
+    }
+    return true;
 }
 
 Exception
@@ -9329,7 +9272,7 @@ fail:
     return result;
 }
 
-Exception
+Exc
 io_fprintf(FILE* stream, const char* format, ...)
 {
     uassert(stream != NULL);
@@ -9513,6 +9456,7 @@ const struct __module__io io = {
     .fopen = io_fopen,
     .fileno = io_fileno,
     .isatty = io_isatty,
+    .has_ansi_support = io_has_ansi_support,
     .fflush = io_fflush,
     .fseek = io_fseek,
     .rewind = io_rewind,
@@ -9538,23 +9482,6 @@ const struct __module__io io = {
 /*
 *                   argparse.c
 */
-/**
- * Copyright (C) 2012-2015 Yecheng Fu <cofyc.jackson at gmail dot com>
- * All rights reserved.
- *
- * Use of this source code is governed by a MIT-style license that can be found
- * in the LICENSE file.
- */
-
-const u32 ARGPARSE_OPT_UNSET = 1;
-const u32 ARGPARSE_OPT_LONG = (1 << 1);
-
-// static const u8 1 /*ARGPARSE_OPT_GROUP*/  = 1;
-// static const u8 2 /*ARGPARSE_OPT_BOOLEAN*/ = 2;
-// static const u8 3 /*ARGPARSE_OPT_BIT*/ = 3;
-// static const u8 4 /*ARGPARSE_OPT_INTEGER*/ = 4;
-// static const u8 5 /*ARGPARSE_OPT_FLOAT*/ = 5;
-// static const u8 6 /*ARGPARSE_OPT_STRING*/ = 6;
 
 static const char*
 argparse__prefix_skip(const char* str, const char* prefix)
@@ -9563,23 +9490,11 @@ argparse__prefix_skip(const char* str, const char* prefix)
     return strncmp(str, prefix, len) ? NULL : str + len;
 }
 
-static int
-argparse__prefix_cmp(const char* str, const char* prefix)
-{
-    for (;; str++, prefix++) {
-        if (!*prefix) {
-            return 0;
-        } else if (*str != *prefix) {
-            return (unsigned char)*prefix - (unsigned char)*str;
-        }
-    }
-}
-
 static Exception
-argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason, int flags)
+argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason, bool is_long)
 {
     (void)self;
-    if (flags & ARGPARSE_OPT_LONG) {
+    if (is_long) {
         fprintf(stdout, "error: option `--%s` %s\n", opt->long_name, reason);
     } else {
         fprintf(stdout, "error: option `-%c` %s\n", opt->short_name, reason);
@@ -9616,7 +9531,22 @@ argparse_usage(argparse_c* self)
             fputc('\n', stdout);
         }
     } else {
-        fprintf(stdout, "%s [options] [--] [arg1 argN]\n", self->program_name);
+        if (self->commands) {
+            fprintf(stdout, "%s {", self->program_name);
+            for$eachp(c, self->commands, self->commands_len){
+                isize i = c - self->commands;
+                if(i == 0){
+                    fprintf(stdout, "%s", c->name);
+                } else {
+                    fprintf(stdout, ",%s", c->name);
+                }
+
+            }
+            fprintf(stdout, "} [cmd_options] [cmd_args]\n");
+
+        } else {
+            fprintf(stdout, "%s [options] [--] [arg1 argN]\n", self->program_name);
+        }
     }
 
     // print description
@@ -9626,30 +9556,42 @@ argparse_usage(argparse_c* self)
 
     fputc('\n', stdout);
 
-    const argparse_opt_s* options;
 
     // figure out best width
     usize usage_opts_width = 0;
-    usize len;
-    options = self->options;
-    for (u32 i = 0; i < self->options_len; i++, options++) {
+    usize len = 0;
+    for$eachp(opt, self->options, self->options_len)
+    {
         len = 0;
-        if ((options)->short_name) {
+        if (opt->short_name) {
             len += 2;
         }
-        if ((options)->short_name && (options)->long_name) {
+        if (opt->short_name && opt->long_name) {
             len += 2; // separator ", "
         }
-        if ((options)->long_name) {
-            len += strlen((options)->long_name) + 2;
+        if (opt->long_name) {
+            len += strlen(opt->long_name) + 2;
         }
-        if (options->type == 4 /*ARGPARSE_OPT_INTEGER*/) {
-            len += strlen("=<int>");
-        }
-        if (options->type == 5 /*ARGPARSE_OPT_FLOAT*/) {
-            len += strlen("=<flt>");
-        } else if (options->type == 6 /*ARGPARSE_OPT_STRING*/) {
-            len += strlen("=<str>");
+        switch (opt->type) {
+            case CexArgParseType__boolean:
+                break;
+            case CexArgParseType__string:
+                break;
+            case CexArgParseType__i8:
+            case CexArgParseType__u8:
+            case CexArgParseType__i16:
+            case CexArgParseType__u16:
+            case CexArgParseType__i32:
+            case CexArgParseType__u32:
+            case CexArgParseType__i64:
+            case CexArgParseType__u64:
+            case CexArgParseType__f32:
+            case CexArgParseType__f64:
+                len += strlen("=<xxx>");
+                break;
+
+            default:
+                break;
         }
         len = (len + 3) - ((len + 3) & 3);
         if (usage_opts_width < len) {
@@ -9658,40 +9600,39 @@ argparse_usage(argparse_c* self)
     }
     usage_opts_width += 4; // 4 spaces prefix
 
-    options = self->options;
-    for (u32 i = 0; i < self->options_len; i++, options++) {
+    for$eachp(opt, self->options, self->options_len)
+    {
         usize pos = 0;
         usize pad = 0;
-        if (options->type == 1 /*ARGPARSE_OPT_GROUP*/) {
+        if (opt->type == CexArgParseType__group) {
             fputc('\n', stdout);
-            fprintf(stdout, "%s", options->help);
+            fprintf(stdout, "%s", opt->help);
             fputc('\n', stdout);
             continue;
         }
         pos = fprintf(stdout, "    ");
-        if (options->short_name) {
-            pos += fprintf(stdout, "-%c", options->short_name);
+        if (opt->short_name) {
+            pos += fprintf(stdout, "-%c", opt->short_name);
         }
-        if (options->long_name && options->short_name) {
+        if (opt->long_name && opt->short_name) {
             pos += fprintf(stdout, ", ");
         }
-        if (options->long_name) {
-            pos += fprintf(stdout, "--%s", options->long_name);
+        if (opt->long_name) {
+            pos += fprintf(stdout, "--%s", opt->long_name);
         }
-        if (options->type == 4 /*ARGPARSE_OPT_INTEGER*/) {
-            pos += fprintf(stdout, "=<int>");
-        } else if (options->type == 5 /*ARGPARSE_OPT_FLOAT*/) {
-            pos += fprintf(stdout, "=<flt>");
-        } else if (options->type == 6 /*ARGPARSE_OPT_STRING*/) {
-            pos += fprintf(stdout, "=<str>");
-        }
+
         if (pos <= usage_opts_width) {
             pad = usage_opts_width - pos;
         } else {
             fputc('\n', stdout);
             pad = usage_opts_width;
         }
-        fprintf(stdout, "%*s%s\n", (int)pad + 2, "", options->help);
+        fprintf(stdout, "%*s%s\n", (int)pad + 2, "", opt->help);
+    }
+
+    for$eachp(cmd, self->commands, self->commands_len)
+    {
+        fprintf(stdout, "%-20s%s%s\n", cmd->name,  cmd->help, cmd->is_default ? " (default)": "");
     }
 
     // print epilog
@@ -9700,31 +9641,18 @@ argparse_usage(argparse_c* self)
     }
 }
 static Exception
-argparse__getvalue(argparse_c* self, argparse_opt_s* opt, int flags)
+argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
 {
-    const char* s = NULL;
     if (!opt->value) {
         goto skipped;
     }
 
     switch (opt->type) {
-        case 2 /*ARGPARSE_OPT_BOOLEAN*/:
-            if (flags & ARGPARSE_OPT_UNSET) {
-                *(int*)opt->value = 0;
-            } else {
-                *(int*)opt->value = 1;
-            }
+        case CexArgParseType__boolean:
+            *(bool*)opt->value = !(*(bool*)opt->value);
             opt->is_present = true;
             break;
-        case 3 /*ARGPARSE_OPT_BIT*/:
-            if (flags & ARGPARSE_OPT_UNSET) {
-                *(int*)opt->value &= ~opt->data;
-            } else {
-                *(int*)opt->value |= opt->data;
-            }
-            opt->is_present = true;
-            break;
-        case 6 /*ARGPARSE_OPT_STRING*/:
+        case CexArgParseType__string:
             if (self->_ctx.optvalue) {
                 *(const char**)opt->value = self->_ctx.optvalue;
                 self->_ctx.optvalue = NULL;
@@ -9733,55 +9661,61 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, int flags)
                 self->_ctx.cpidx++;
                 *(const char**)opt->value = *++self->_ctx.argv;
             } else {
-                return argparse__error(self, opt, "requires a value", flags);
+                return argparse__error(self, opt, "requires a value", is_long);
             }
             opt->is_present = true;
             break;
-        case 4 /*ARGPARSE_OPT_INTEGER*/:
-            errno = 0;
+        case CexArgParseType__i8:
+        case CexArgParseType__u8:
+        case CexArgParseType__i16:
+        case CexArgParseType__u16:
+        case CexArgParseType__i32:
+        case CexArgParseType__u32:
+        case CexArgParseType__i64:
+        case CexArgParseType__u64:
+        case CexArgParseType__f32:
+        case CexArgParseType__f64:
             if (self->_ctx.optvalue) {
                 if (self->_ctx.optvalue[0] == '\0') {
-                    return argparse__error(self, opt, "requires a value", flags);
+                    return argparse__error(self, opt, "requires a value", is_long);
                 }
-
-                *(int*)opt->value = strtol(self->_ctx.optvalue, (char**)&s, 0);
+                uassert(opt->convert != NULL);
+                e$except_silent(err, opt->convert(self->_ctx.optvalue, opt->value))
+                {
+                    return argparse__error(self, opt, "argument parsing error", is_long);
+                }
                 self->_ctx.optvalue = NULL;
             } else if (self->_ctx.argc > 1) {
                 self->_ctx.argc--;
                 self->_ctx.cpidx++;
-                *(int*)opt->value = strtol(*++self->_ctx.argv, (char**)&s, 0);
-            } else {
-                return argparse__error(self, opt, "requires a value", flags);
-            }
-            if (errno == ERANGE) {
-                return argparse__error(self, opt, "numerical result out of range", flags);
-            }
-            if (s[0] != '\0') { // no digits or contains invalid characters
-                return argparse__error(self, opt, "expects an integer value", flags);
-            }
-            opt->is_present = true;
-            break;
-        case 5 /*ARGPARSE_OPT_FLOAT*/:
-            errno = 0;
-
-            if (self->_ctx.optvalue) {
-                if (self->_ctx.optvalue[0] == '\0') {
-                    return argparse__error(self, opt, "requires a value", flags);
+                self->_ctx.argv++;
+                e$except_silent(err, opt->convert(*self->_ctx.argv, opt->value))
+                {
+                    return argparse__error(self, opt, "argument parsing error", is_long);
                 }
-                *(float*)opt->value = strtof(self->_ctx.optvalue, (char**)&s);
-                self->_ctx.optvalue = NULL;
-            } else if (self->_ctx.argc > 1) {
-                self->_ctx.argc--;
-                self->_ctx.cpidx++;
-                *(float*)opt->value = strtof(*++self->_ctx.argv, (char**)&s);
             } else {
-                return argparse__error(self, opt, "requires a value", flags);
+                return argparse__error(self, opt, "requires a value", is_long);
             }
-            if (errno == ERANGE) {
-                return argparse__error(self, opt, "numerical result out of range", flags);
-            }
-            if (s[0] != '\0') { // no digits or contains invalid characters
-                return argparse__error(self, opt, "expects a numerical value", flags);
+            if (opt->type == CexArgParseType__f32) {
+                f32 res = *(f32*)opt->value;
+                if (isnanf(res) || res == INFINITY || res == -INFINITY) {
+                    return argparse__error(
+                        self,
+                        opt,
+                        "argument parsing error (float out of range)",
+                        is_long
+                    );
+                }
+            } else if (opt->type == CexArgParseType__f64) {
+                f64 res = *(f64*)opt->value;
+                if (isnanf(res) || res == INFINITY || res == -INFINITY) {
+                    return argparse__error(
+                        self,
+                        opt,
+                        "argument parsing error (float out of range)",
+                        is_long
+                    );
+                }
             }
             opt->is_present = true;
             break;
@@ -9793,7 +9727,7 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, int flags)
 skipped:
     if (opt->callback) {
         opt->is_present = true;
-        return opt->callback(self, opt);
+        return opt->callback(self, opt, opt->callback_data);
     } else {
         if (opt->short_name == 'h') {
             argparse_usage(self);
@@ -9807,49 +9741,67 @@ skipped:
 static Exception
 argparse__options_check(argparse_c* self, bool reset)
 {
-    var options = self->options;
-
-    for (u32 i = 0; i < self->options_len; i++, options++) {
-        switch (options->type) {
-            case 1 /*ARGPARSE_OPT_GROUP*/:
-                continue;
-            case 2 /*ARGPARSE_OPT_BOOLEAN*/:
-            case 3 /*ARGPARSE_OPT_BIT*/:
-            case 4 /*ARGPARSE_OPT_INTEGER*/:
-            case 5 /*ARGPARSE_OPT_FLOAT*/:
-            case 6 /*ARGPARSE_OPT_STRING*/:
-                if (reset) {
-                    options->is_present = 0;
-                    if (!(options->short_name || options->long_name)) {
-                        uassert(
-                            (options->short_name || options->long_name) &&
-                            "options both long/short_name NULL"
-                        );
-                        return Error.argument;
-                    }
-                    if (options->value == NULL && options->short_name != 'h') {
-                        uassertf(
-                            options->value != NULL,
-                            "option value [%c/%s] is null\n",
-                            options->short_name,
-                            options->long_name
-                        );
-                        return Error.argument;
-                    }
-                } else {
-                    if (options->required && !options->is_present) {
-                        fprintf(
-                            stdout,
-                            "Error: missing required option: -%c/--%s\n",
-                            options->short_name,
-                            options->long_name
-                        );
-                        return Error.argsparse;
-                    }
+    for$eachp(opt, self->options, self->options_len)
+    {
+        if (opt->type != CexArgParseType__group) {
+            if (reset) {
+                opt->is_present = 0;
+                if (!(opt->short_name || opt->long_name)) {
+                    uassert(
+                        (opt->short_name || opt->long_name) && "options both long/short_name NULL"
+                    );
+                    return Error.argument;
                 }
+                if (opt->value == NULL && opt->short_name != 'h') {
+                    uassertf(
+                        opt->value != NULL,
+                        "option value [%c/%s] is null\n",
+                        opt->short_name,
+                        opt->long_name
+                    );
+                    return Error.argument;
+                }
+            } else {
+                if (opt->required && !opt->is_present) {
+                    fprintf(
+                        stdout,
+                        "Error: missing required option: -%c/--%s\n",
+                        opt->short_name,
+                        opt->long_name
+                    );
+                    return Error.argsparse;
+                }
+            }
+        }
+
+        switch (opt->type) {
+            case CexArgParseType__group:
+                continue;
+            case CexArgParseType__boolean:
+            case CexArgParseType__string: {
+                uassert(opt->convert == NULL && "unexpected to be set for strings/bools");
+                uassert(opt->callback == NULL && "unexpected to be set for strings/bools");
+                break;
+            }
+            case CexArgParseType__i8:
+            case CexArgParseType__u8:
+            case CexArgParseType__i16:
+            case CexArgParseType__u16:
+            case CexArgParseType__i32:
+            case CexArgParseType__u32:
+            case CexArgParseType__i64:
+            case CexArgParseType__u64:
+            case CexArgParseType__f32:
+            case CexArgParseType__f64:
+                uassert(opt->convert != NULL && "expected to be set for standard args");
+                uassert(opt->callback == NULL && "unexpected to be set for standard args");
+                continue;
+            case CexArgParseType__generic:
+                uassert(opt->convert == NULL && "unexpected to be set for generic args");
+                uassert(opt->callback != NULL && "expected to be set for generic args");
                 continue;
             default:
-                uassertf(false, "wrong option type: %d", options->type);
+                uassertf(false, "wrong option type: %d", opt->type);
         }
     }
 
@@ -9862,7 +9814,7 @@ argparse__short_opt(argparse_c* self, argparse_opt_s* options)
     for (u32 i = 0; i < self->options_len; i++, options++) {
         if (options->short_name == *self->_ctx.optvalue) {
             self->_ctx.optvalue = self->_ctx.optvalue[1] ? self->_ctx.optvalue + 1 : NULL;
-            return argparse__getvalue(self, options, 0);
+            return argparse__getvalue(self, options, false);
         }
     }
     return Error.not_found;
@@ -9873,31 +9825,18 @@ argparse__long_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         const char* rest;
-        int opt_flags = 0;
         if (!options->long_name) {
             continue;
         }
-
         rest = argparse__prefix_skip(self->_ctx.argv[0] + 2, options->long_name);
         if (!rest) {
-            // negation disabled?
-            if (options->flags & ARGPARSE_OPT_NONEG) {
-                continue;
-            }
-            // only OPT_BOOLEAN/OPT_BIT supports negation
-            if (options->type != 2 /*ARGPARSE_OPT_BOOLEAN*/ &&
-                options->type != 3 /*ARGPARSE_OPT_BIT*/) {
-                continue;
-            }
-
-            if (argparse__prefix_cmp(self->_ctx.argv[0] + 2, "no-")) {
+            if (options->type != CexArgParseType__boolean) {
                 continue;
             }
             rest = argparse__prefix_skip(self->_ctx.argv[0] + 2 + 3, options->long_name);
             if (!rest) {
                 continue;
             }
-            opt_flags |= ARGPARSE_OPT_UNSET;
         }
         if (*rest) {
             if (*rest != '=') {
@@ -9905,7 +9844,7 @@ argparse__long_opt(argparse_c* self, argparse_opt_s* options)
             }
             self->_ctx.optvalue = rest + 1;
         }
-        return argparse__getvalue(self, options, opt_flags | ARGPARSE_OPT_LONG);
+        return argparse__getvalue(self, options, true);
     }
     return Error.not_found;
 }
@@ -9918,7 +9857,15 @@ argparse__report_error(argparse_c* self, Exc err)
     self->_ctx.argc = 0;
 
     if (err == Error.not_found) {
-        fprintf(stdout, "error: unknown option `%s`\n", self->_ctx.argv[0]);
+        if (self->options != NULL) {
+            fprintf(stdout, "error: unknown option `%s`\n", self->_ctx.argv[0]);
+        } else {
+            fprintf(
+                stdout,
+                "error: command name expected, got option `%s`, try --help\n",
+                self->_ctx.argv[0]
+            );
+        }
     } else if (err == Error.integrity) {
         fprintf(stdout, "error: option `%s` follows argument\n", self->_ctx.argv[0]);
     }
@@ -9926,26 +9873,71 @@ argparse__report_error(argparse_c* self, Exc err)
 }
 
 static Exception
-argparse_parse(argparse_c* self, int argc, char** argv)
+argparse__parse_commands(argparse_c* self)
+{
+    uassert(self->_ctx.current_command == NULL);
+    if (self->commands_len == 0) {
+        argparse_cmd_s* _cmd = self->commands;
+        while (_cmd != NULL) {
+            if (_cmd->name == NULL) {
+                break;
+            }
+            self->commands_len++;
+            _cmd++;
+        }
+    }
+
+    argparse_cmd_s* cmd = NULL;
+    const char* cmd_arg = (self->_ctx.argc > 0) ? self->_ctx.argv[0] : NULL;
+
+    if (str.eq(cmd_arg, "-h") || str.eq(cmd_arg, "--help")) {
+        argparse_usage(self);
+        return Error.argsparse;
+    }
+
+    for$eachp(c, self->commands, self->commands_len)
+    {
+        uassert(c->func != NULL && "missing command funcion");
+        uassert(c->help != NULL && "missing command help message");
+        if (cmd_arg != NULL) {
+            if (str.eq(cmd_arg, c->name)) {
+                cmd = c;
+                break;
+            }
+        } else {
+            if (c->is_default) {
+                uassert(cmd == NULL && "multiple default commands in argparse_c");
+                cmd = c;
+            }
+        }
+    }
+    if (cmd == NULL) {
+        fprintf(
+            stdout,
+            "error: unknown command name '%s', try --help\n",
+            (cmd_arg) ? cmd_arg : ""
+        );
+        return Error.argsparse;
+    }
+    self->_ctx.current_command = cmd;
+
+    return EOK;
+}
+
+static Exception
+argparse__parse_options(argparse_c* self)
 {
     if (self->options_len == 0) {
-        return "zero options provided or self.options_len field not set";
+        argparse_opt_s* _opt = self->options;
+        while (_opt != NULL) {
+            if (_opt->type == CexArgParseType__na) {
+                break;
+            }
+            self->options_len++;
+            _opt++;
+        }
     }
-    uassert(argc > 0);
-    uassert(argv != NULL);
-    uassert(argv[0] != NULL);
-
-    if (self->program_name == NULL) {
-        self->program_name = argv[0];
-    }
-
-    // reset if we have several runs
-    memset(&self->_ctx, 0, sizeof(self->_ctx));
-
-    self->_ctx.argc = argc - 1;
-    self->_ctx.argv = argv + 1;
-    self->_ctx.out = argv;
-
+    int initial_argc = self->_ctx.argc + 1;
     e$except_silent(err, argparse__options_check(self, true))
     {
         return err;
@@ -9956,7 +9948,7 @@ argparse_parse(argparse_c* self, int argc, char** argv)
         if (arg[0] != '-' || !arg[1]) {
             self->_ctx.has_argument = true;
 
-            if (self->flags.stop_at_non_option) {
+            if (self->commands != 0) {
                 self->_ctx.argc--;
                 self->_ctx.argv++;
                 break;
@@ -10010,9 +10002,50 @@ argparse_parse(argparse_c* self, int argc, char** argv)
     }
 
     self->_ctx.out += self->_ctx.cpidx + 1; // excludes 1st argv[0], program_name
-    self->_ctx.argc = argc - self->_ctx.cpidx - 1;
+    self->_ctx.argc = initial_argc - self->_ctx.cpidx - 1;
+    return EOK;
+}
 
+static Exception
+argparse_parse(argparse_c* self, int argc, char** argv)
+{
+    if (self->options != NULL && self->commands != NULL) {
+        uassert(false && "options and commands are mutually exclusive");
+        return Error.integrity;
+    }
+    uassert(argc > 0);
+    uassert(argv != NULL);
+    uassert(argv[0] != NULL);
+
+    if (self->program_name == NULL) {
+        self->program_name = argv[0];
+    }
+
+    // reset if we have several runs
+    memset(&self->_ctx, 0, sizeof(self->_ctx));
+
+    self->_ctx.argc = argc - 1;
+    self->_ctx.argv = argv + 1;
+    self->_ctx.out = argv;
+
+    if (self->commands) {
+        return argparse__parse_commands(self);
+    } else {
+        return argparse__parse_options(self);
+    }
     return Error.ok;
+}
+static Exception
+argparse_run_command(argparse_c* self, void* user_ctx)
+{
+    uassert(self->_ctx.current_command != NULL && "not parsed/parse error?");
+    if (self->_ctx.argc == 0) {
+        // seems default command (with no args)
+        const char* dummy_args[] = {self->_ctx.current_command->name};
+        return self->_ctx.current_command->func(1, dummy_args, user_ctx);
+    } else {
+        return self->_ctx.current_command->func(self->_ctx.argc, (const char**)self->_ctx.argv, user_ctx);
+    }
 }
 
 static u32
@@ -10035,6 +10068,7 @@ const struct __module__argparse argparse = {
     // clang-format off
     .usage = argparse_usage,
     .parse = argparse_parse,
+    .run_command = argparse_run_command,
     .argc = argparse_argc,
     .argv = argparse_argv,
     // clang-format on
@@ -10235,6 +10269,7 @@ os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_
 
     struct dirent* ep;
     while ((ep = readdir(dp)) != NULL) {
+        errno = 0;
         if (str.eq(ep->d_name, ".")) {
             continue;
         }
@@ -10707,7 +10742,7 @@ os__cmd__write_line(os_cmd_c* self, char* line)
 
 
 static Exception
-os__cmd__run(char** args, usize args_len, os_cmd_c* out_cmd)
+os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 {
     uassert(out_cmd != NULL);
     memset(out_cmd, 0, sizeof(os_cmd_c));
@@ -10852,10 +10887,548 @@ const struct __module__os os = {
 /*
 *                   test.c
 */
+#ifdef CEXTEST
 
+enum _cex_test_eq_op_e
+{
+    _cex_test_eq_op__na,
+    _cex_test_eq_op__eq,
+    _cex_test_eq_op__ne,
+    _cex_test_eq_op__lt,
+    _cex_test_eq_op__le,
+    _cex_test_eq_op__gt,
+    _cex_test_eq_op__ge,
+};
+
+static Exc
+_check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    bool passed = false;
+    char* ops = "?";
+    switch (op) {
+        case _cex_test_eq_op__na:
+            unreachable("bad op");
+            break;
+        case _cex_test_eq_op__eq:
+            passed = a == b;
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = a != b;
+            ops = "==";
+            break;
+        case _cex_test_eq_op__lt:
+            passed = a < b;
+            ops = ">=";
+            break;
+        case _cex_test_eq_op__le:
+            passed = a <= b;
+            ops = ">";
+            break;
+        case _cex_test_eq_op__gt:
+            passed = a > b;
+            ops = "<=";
+            break;
+        case _cex_test_eq_op__ge:
+            passed = a >= b;
+            ops = "<";
+            break;
+    }
+    if (!passed) {
+        snprintf(
+            _cex_test__mainfn_state.str_buf,
+            sizeof(_cex_test__mainfn_state.str_buf),
+            "%s:%d -> %ld %s %ld",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            a,
+            ops,
+            b
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc
+_check_eq_almost(f64 a, f64 b, f64 delta, int line)
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    bool passed = false;
+    f64 abdelta = a - b;
+    if (isnan(a) && isnan(b)) {
+        passed = true;
+    } else if (isinf(a) && isinf(b)) {
+        passed = (signbit(a) == signbit(b));
+    } else {
+        passed = fabs(abdelta) <= ((delta != 0) ? delta : (f64)FLT_EPSILON);
+    }
+    if (!passed) {
+        snprintf(
+            _cex_test__mainfn_state.str_buf,
+            sizeof(_cex_test__mainfn_state.str_buf),
+            "%s:%d -> %f != %f (delta: %f, diff: %f)",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            (a),
+            (b),
+            delta,
+            abdelta
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc
+_check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
+{
+    (void)op;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    bool passed = false;
+    char* ops = "?";
+    f64 delta = a - b;
+    bool is_equal = false;
+
+    if (isnan(a) && isnan(b)) {
+        is_equal = true;
+    } else if (isinf(a) && isinf(b)) {
+        is_equal = (signbit(a) == signbit(b));
+    } else {
+        is_equal = fabs(delta) <= (f64)FLT_EPSILON;
+    }
+    switch (op) {
+        case _cex_test_eq_op__na:
+            unreachable("bad op");
+            break;
+        case _cex_test_eq_op__eq:
+            passed = is_equal;
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = !is_equal;
+            ops = "==";
+            break;
+        case _cex_test_eq_op__lt:
+            passed = a < b;
+            ops = ">=";
+            break;
+        case _cex_test_eq_op__le:
+            passed = a < b || is_equal;
+            ops = ">";
+            break;
+        case _cex_test_eq_op__gt:
+            passed = a > b;
+            ops = "<=";
+            break;
+        case _cex_test_eq_op__ge:
+            passed = a >= b || is_equal;
+            ops = "<";
+            break;
+    }
+    if (!passed) {
+        snprintf(
+            _cex_test__mainfn_state.str_buf,
+            sizeof(_cex_test__mainfn_state.str_buf),
+            "%s:%d -> %f %s %f (delta: %f)",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            a,
+            ops,
+            b,
+            delta
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc
+_check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
+{
+    bool passed = false;
+    char* ops = "";
+    switch (op) {
+        case _cex_test_eq_op__eq:
+            passed = str.eq(a, b);
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = !str.eq(a, b);
+            ops = "==";
+            break;
+        default:
+            unreachable("bad op or unsupported for strings");
+    }
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    if (!passed) {
+        snprintf(
+            _cex_test__mainfn_state.str_buf,
+            CEXTEST_AMSG_MAX_LEN - 1,
+            "%s:%d -> '%s' %s '%s'",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            a,
+            ops,
+            b
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc
+_check_eq_err(const char* a, const char* b, int line)
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    if (!str.eq(a, b)) {
+        const char* ea = (a == EOK) ? "Error.ok" : a;
+        const char* eb = (b == EOK) ? "Error.ok" : b;
+        snprintf(
+            _cex_test__mainfn_state.str_buf,
+            CEXTEST_AMSG_MAX_LEN - 1,
+            "%s:%d -> Exc mismatch '%s' != '%s'",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            ea,
+            eb
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+
+static Exc
+_check_eq_ptr(const void* a, const void* b, int line)
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    if (a != b) {
+        snprintf(
+            _cex_test__mainfn_state.str_buf,
+            CEXTEST_AMSG_MAX_LEN - 1,
+            "%s:%d -> %p != %p (ptr_diff: %ld)",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            a,
+            b,
+            (a - b)
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc
+_check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
+{
+    bool passed = false;
+    char* ops = "";
+    switch (op) {
+        case _cex_test_eq_op__eq:
+            passed = str.slice.eq(a, b);
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = !str.slice.eq(a, b);
+            ops = "==";
+            break;
+        default:
+            unreachable("bad op or unsupported for strings");
+    }
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    if (!passed) {
+        if (str.sprintf(
+                _cex_test__mainfn_state.str_buf,
+                CEXTEST_AMSG_MAX_LEN - 1,
+                "%s:%d -> '%S' %s '%S'",
+                _cex_test__mainfn_state.suite_file,
+                line,
+                a,
+                ops,
+                b
+            )) {
+        }
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static void
+cex_test_mute()
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->out_stream) {
+        fflush(stdout);
+        io.rewind(ctx->out_stream);
+        fflush(ctx->out_stream);
+        dup2(fileno(ctx->out_stream), STDOUT_FILENO);
+    }
+}
+static void
+cex_test_unmute(Exc test_result)
+{
+    (void)test_result;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->out_stream) {
+        fflush(stdout);
+        putc('\0', stdout);
+        fflush(stdout);
+        isize flen = ftell(ctx->out_stream);
+        io.rewind(ctx->out_stream);
+        dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
+
+        if (test_result != EOK && flen > 1) {
+            fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
+            int c;
+            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') {
+                putc(c, stderr);
+            }
+            fprintf(stderr, "\n============== <<<<<< TEST OUTPUT =============\n");
+        }
+    }
+}
+
+
+static int
+cex_test_main_fn(int argc, char** argv)
+{
+    (void)argc;
+    (void)argv;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->test_cases == NULL) {
+        fprintf(stderr, "No test$case() in the test file: %s\n", __FILE__);
+        return 1;
+    }
+    u32 max_name = 0;
+    for$each(t, ctx->test_cases)
+    {
+        if (max_name < strlen(t.test_name) + 2) {
+            max_name = strlen(t.test_name) + 2;
+        }
+    }
+    max_name = (max_name < 70) ? 70 : max_name;
+
+    ctx->quiet_mode = false;
+    // FIX: after migrating to CEX c build system
+    ctx->has_ansi = true; // io.has_ansi_support();
+
+    argparse_opt_s options[] = {
+        argparse$opt_help(),
+        argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
+        argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
+        argparse$opt(&ctx->breakpoint, 'b', "breakpoint", .help = "breakpoint on tassert failure"),
+        argparse$opt(
+            &ctx->no_stdout_capture,
+            'o',
+            "no-capture",
+            .help = "prints all stdout as test goes"
+        ),
+    };
+
+    argparse_c args = {
+        .options = options,
+        .options_len = arr$len(options),
+        .description = "Test runner program",
+    };
+
+    e$except_silent(err, argparse.parse(&args, argc, argv))
+    {
+        argparse.usage(&args);
+        return 1;
+    }
+
+    if (!ctx->no_stdout_capture) {
+        ctx->out_stream = tmpfile();
+        if (ctx->out_stream == NULL) {
+            fprintf(stderr, "Failed opening temp output for capturing tests\n");
+            uassert(false && "TODO: test this");
+        }
+    }
+    // TODO: win32
+    // ctx->orig_stdout_fd = _dup(_fileno(stdout));
+    // ctx->orig_stderr_fd = _dup(_fileno(stderr));
+
+    ctx->orig_stdout_fd = dup(fileno(stdout));
+    ctx->orig_stderr_fd = dup(fileno(stderr));
+
+    mem$scope(tmem$, _)
+    {
+        void* data = mem$malloc(_, 120);
+        (void)data;
+        uassert(data != NULL && "priming temp allocator failed");
+    }
+
+    if (!ctx->quiet_mode) {
+        fprintf(stderr, "-------------------------------------\n");
+        fprintf(stderr, "Running Tests: %s\n", argv[0]);
+        fprintf(stderr, "-------------------------------------\n\n");
+    }
+    if (ctx->setup_suite_fn) {
+        e$except(err, ctx->setup_suite_fn())
+        {
+            fprintf(
+                stderr,
+                "[%s] test$setup_suite() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+    }
+
+    if (ctx->quiet_mode) {
+        fprintf(stderr, "%s ", ctx->suite_file);
+    }
+
+    for$each(t, ctx->test_cases)
+    {
+        ctx->case_name = t.test_name;
+        ctx->tests_run++;
+        if (ctx->case_filter && !str.find(t.test_name, ctx->case_filter)) {
+            continue;
+        }
+
+        if (!ctx->quiet_mode) {
+            fprintf(stderr, "%s", t.test_name);
+            for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
+                putc('.', stderr);
+            }
+            if (ctx->no_stdout_capture) {
+                putc('\n', stderr);
+            }
+        }
+
+#ifndef NDEBUG
+        uassert_enable(); // unconditionally enable previously disabled asserts
+#endif
+        cex_test_mute();
+        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
+        alloc_heap->stats.n_allocs = 0;
+        alloc_heap->stats.n_free = 0;
+        Exc err = EOK;
+        if (ctx->setup_case_fn && (ctx->setup_case_fn() != EOK)) {
+            fprintf(
+                stderr,
+                "[%s] test$setup() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+        err = t.test_fn();
+        if (ctx->quiet_mode && err != EOK) {
+            fprintf(stdout, "[%s] %s\n", ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL", err);
+            fprintf(stdout, "Test suite: %s case: %s\n", ctx->suite_file, t.test_name);
+        }
+        cex_test_unmute(err);
+
+        if (err == EOK) {
+            if (ctx->quiet_mode) {
+                fprintf(stderr, ".");
+            } else {
+                fprintf(stderr, "[%s]\n", ctx->has_ansi ? io$ansi("PASS", "32") : "PASS");
+            }
+        } else {
+            ctx->tests_failed++;
+            if (!ctx->quiet_mode) {
+                fprintf(
+                    stderr,
+                    "[%s] %s (%s)\n",
+                    ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                    err,
+                    t.test_name
+                );
+            } else {
+                fprintf(stderr, "F");
+            }
+        }
+        if (ctx->teardown_case_fn && (ctx->teardown_case_fn() != EOK)) {
+            fprintf(
+                stderr,
+                "[%s] test$teardown() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+        if (err == EOK && alloc_heap->stats.n_allocs != alloc_heap->stats.n_free) {
+            if (!ctx->quiet_mode) {
+                fprintf(stderr, "%s", t.test_name);
+                for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
+                    putc('.', stderr);
+                }
+            } else {
+                putc('\n', stderr);
+            }
+            fprintf(
+                stderr,
+                "[%s] %s:%d Possible memory leak: allocated %d != free %d\n",
+                ctx->has_ansi ? io$ansi("LEAK", "33") : "LEAK",
+                ctx->suite_file,
+                t.test_line,
+                alloc_heap->stats.n_allocs,
+                alloc_heap->stats.n_free
+            );
+            ctx->tests_failed++;
+        }
+    }
+    if (ctx->out_stream) {
+        fclose(ctx->out_stream);
+        ctx->out_stream = NULL;
+    }
+
+    if (ctx->teardown_suite_fn) {
+        e$except(err, ctx->teardown_suite_fn())
+        {
+            fprintf(
+                stderr,
+                "[%s] test$teardown_suite() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+    }
+
+    if (!ctx->quiet_mode) {
+        fprintf(stderr, "\n-------------------------------------\n");
+        fprintf(
+            stderr,
+            "Total: %d Passed: %d Failed: %d\n",
+            ctx->tests_run,
+            ctx->tests_run - ctx->tests_failed,
+            ctx->tests_failed
+        );
+        fprintf(stderr, "-------------------------------------\n");
+    } else {
+        fprintf(stderr, "\n");
+
+        if (ctx->tests_failed) {
+            fprintf(
+                stderr,
+                "\n[%s] %s %d tests failed\n",
+                (ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL"),
+                ctx->suite_file,
+                ctx->tests_failed
+            );
+        }
+    } // Return code, logic is inversed
+    return ctx->tests_run == 0 || ctx->tests_failed > 0;
+}
+#endif //ifdef CEXTEST
 
 /*
-*                   cex_build.c
+*                   cexy.c
 */
 
 

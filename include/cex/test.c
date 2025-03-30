@@ -1,4 +1,5 @@
 #include "all.h"
+#ifdef CEXTEST
 
 enum _cex_test_eq_op_e
 {
@@ -265,3 +266,275 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
     }
     return EOK;
 }
+
+static void
+cex_test_mute()
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->out_stream) {
+        fflush(stdout);
+        io.rewind(ctx->out_stream);
+        fflush(ctx->out_stream);
+        dup2(fileno(ctx->out_stream), STDOUT_FILENO);
+    }
+}
+static void
+cex_test_unmute(Exc test_result)
+{
+    (void)test_result;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->out_stream) {
+        fflush(stdout);
+        putc('\0', stdout);
+        fflush(stdout);
+        isize flen = ftell(ctx->out_stream);
+        io.rewind(ctx->out_stream);
+        dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
+
+        if (test_result != EOK && flen > 1) {
+            fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
+            int c;
+            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') {
+                putc(c, stderr);
+            }
+            fprintf(stderr, "\n============== <<<<<< TEST OUTPUT =============\n");
+        }
+    }
+}
+
+
+static int
+cex_test_main_fn(int argc, char** argv)
+{
+    (void)argc;
+    (void)argv;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->test_cases == NULL) {
+        fprintf(stderr, "No test$case() in the test file: %s\n", __FILE__);
+        return 1;
+    }
+    u32 max_name = 0;
+    for$each(t, ctx->test_cases)
+    {
+        if (max_name < strlen(t.test_name) + 2) {
+            max_name = strlen(t.test_name) + 2;
+        }
+    }
+    max_name = (max_name < 70) ? 70 : max_name;
+
+    ctx->quiet_mode = false;
+    // FIX: after migrating to CEX c build system
+    ctx->has_ansi = true; // io.has_ansi_support();
+
+    argparse_opt_s options[] = {
+        argparse$opt_help(),
+        argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
+        argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
+        argparse$opt(&ctx->breakpoint, 'b', "breakpoint", .help = "breakpoint on tassert failure"),
+        argparse$opt(
+            &ctx->no_stdout_capture,
+            'o',
+            "no-capture",
+            .help = "prints all stdout as test goes"
+        ),
+    };
+
+    argparse_c args = {
+        .options = options,
+        .options_len = arr$len(options),
+        .description = "Test runner program",
+    };
+
+    e$except_silent(err, argparse.parse(&args, argc, argv))
+    {
+        argparse.usage(&args);
+        return 1;
+    }
+
+    if (!ctx->no_stdout_capture) {
+        ctx->out_stream = tmpfile();
+        if (ctx->out_stream == NULL) {
+            fprintf(stderr, "Failed opening temp output for capturing tests\n");
+            uassert(false && "TODO: test this");
+        }
+    }
+    // TODO: win32
+    // ctx->orig_stdout_fd = _dup(_fileno(stdout));
+    // ctx->orig_stderr_fd = _dup(_fileno(stderr));
+
+    ctx->orig_stdout_fd = dup(fileno(stdout));
+    ctx->orig_stderr_fd = dup(fileno(stderr));
+
+    mem$scope(tmem$, _)
+    {
+        void* data = mem$malloc(_, 120);
+        (void)data;
+        uassert(data != NULL && "priming temp allocator failed");
+    }
+
+    if (!ctx->quiet_mode) {
+        fprintf(stderr, "-------------------------------------\n");
+        fprintf(stderr, "Running Tests: %s\n", argv[0]);
+        fprintf(stderr, "-------------------------------------\n\n");
+    }
+    if (ctx->setup_suite_fn) {
+        e$except(err, ctx->setup_suite_fn())
+        {
+            fprintf(
+                stderr,
+                "[%s] test$setup_suite() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+    }
+
+    if (ctx->quiet_mode) {
+        fprintf(stderr, "%s ", ctx->suite_file);
+    }
+
+    for$each(t, ctx->test_cases)
+    {
+        ctx->case_name = t.test_name;
+        ctx->tests_run++;
+        if (ctx->case_filter && !str.find(t.test_name, ctx->case_filter)) {
+            continue;
+        }
+
+        if (!ctx->quiet_mode) {
+            fprintf(stderr, "%s", t.test_name);
+            for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
+                putc('.', stderr);
+            }
+            if (ctx->no_stdout_capture) {
+                putc('\n', stderr);
+            }
+        }
+
+#ifndef NDEBUG
+        uassert_enable(); // unconditionally enable previously disabled asserts
+#endif
+        cex_test_mute();
+        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
+        alloc_heap->stats.n_allocs = 0;
+        alloc_heap->stats.n_free = 0;
+        Exc err = EOK;
+        if (ctx->setup_case_fn && (ctx->setup_case_fn() != EOK)) {
+            fprintf(
+                stderr,
+                "[%s] test$setup() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+        err = t.test_fn();
+        if (ctx->quiet_mode && err != EOK) {
+            fprintf(stdout, "[%s] %s\n", ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL", err);
+            fprintf(stdout, "Test suite: %s case: %s\n", ctx->suite_file, t.test_name);
+        }
+        cex_test_unmute(err);
+
+        if (err == EOK) {
+            if (ctx->quiet_mode) {
+                fprintf(stderr, ".");
+            } else {
+                fprintf(stderr, "[%s]\n", ctx->has_ansi ? io$ansi("PASS", "32") : "PASS");
+            }
+        } else {
+            ctx->tests_failed++;
+            if (!ctx->quiet_mode) {
+                fprintf(
+                    stderr,
+                    "[%s] %s (%s)\n",
+                    ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                    err,
+                    t.test_name
+                );
+            } else {
+                fprintf(stderr, "F");
+            }
+        }
+        if (ctx->teardown_case_fn && (ctx->teardown_case_fn() != EOK)) {
+            fprintf(
+                stderr,
+                "[%s] test$teardown() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+        if (err == EOK && alloc_heap->stats.n_allocs != alloc_heap->stats.n_free) {
+            if (!ctx->quiet_mode) {
+                fprintf(stderr, "%s", t.test_name);
+                for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
+                    putc('.', stderr);
+                }
+            } else {
+                putc('\n', stderr);
+            }
+            fprintf(
+                stderr,
+                "[%s] %s:%d Possible memory leak: allocated %d != free %d\n",
+                ctx->has_ansi ? io$ansi("LEAK", "33") : "LEAK",
+                ctx->suite_file,
+                t.test_line,
+                alloc_heap->stats.n_allocs,
+                alloc_heap->stats.n_free
+            );
+            ctx->tests_failed++;
+        }
+    }
+    if (ctx->out_stream) {
+        fclose(ctx->out_stream);
+        ctx->out_stream = NULL;
+    }
+
+    if (ctx->teardown_suite_fn) {
+        e$except(err, ctx->teardown_suite_fn())
+        {
+            fprintf(
+                stderr,
+                "[%s] test$teardown_suite() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+    }
+
+    if (!ctx->quiet_mode) {
+        fprintf(stderr, "\n-------------------------------------\n");
+        fprintf(
+            stderr,
+            "Total: %d Passed: %d Failed: %d\n",
+            ctx->tests_run,
+            ctx->tests_run - ctx->tests_failed,
+            ctx->tests_failed
+        );
+        fprintf(stderr, "-------------------------------------\n");
+    } else {
+        fprintf(stderr, "\n");
+
+        if (ctx->tests_failed) {
+            fprintf(
+                stderr,
+                "\n[%s] %s %d tests failed\n",
+                (ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL"),
+                ctx->suite_file,
+                ctx->tests_failed
+            );
+        }
+    } // Return code, logic is inversed
+    return ctx->tests_run == 0 || ctx->tests_failed > 0;
+}
+#endif //ifdef CEXTEST

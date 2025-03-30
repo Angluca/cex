@@ -65,7 +65,7 @@ class Bundler:
             "_subprocess.h",
             "os.h",
             "test.h",
-            "cex_build.h",
+            "cexy.h",
         ]
         print(f"Bundling: {headers}")
         hbuf = io.StringIO()

@@ -2,19 +2,19 @@
 
 #if defined(CEX_BUILD)
 
-#ifndef cex$cc
+#ifndef cexy$cc
 #if defined(__clang__)
-#define cex$cc "clang"
+#define cexy$cc "clang"
 #elif defined(__GNUC__)
-#define cex$cc "gcc"
+#define cexy$cc "gcc"
 #else
 # #error "Compiler type is not supported"
 #endif
-#endif // #ifndef cex$cc
+#endif // #ifndef cexy$cc
 
 
-#define cex$run
-#define cex$needs_rebuild
-#define cex$initialize
+#define cexy$run
+#define cexy$needs_rebuild
+#define cexy$initialize
 
 #endif // #if defined(CEX_BUILD)
