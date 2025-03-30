@@ -3,11 +3,11 @@
 test$case(foo){
     tassert(true);
     tassertf(1, "hi %d", 2);
-    tassert_eqi(1, 1);
-    tassert_eqs("s", "s");
-    tassert_eqe(EOK, "ook");
-    tassert_eqf(NAN, NAN);
-    tassert_eql(2, 3);
+    tassert_eq(1, 1);
+    tassert_eq("s", "s");
+    tassert_er(EOK, "ook");
+    tassert_eq(NAN, NAN);
+    tassert_eq(2, 3);
     return EOK;
 }
 

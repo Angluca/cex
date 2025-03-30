@@ -44,11 +44,11 @@ test$case(test_sysfunc)
     e$except_errno(ret = sys_func(-1))
     {
         printf("Except: ret=%d errno=%d\n", ret, errno);
-        tassert_eqi(errno, 999);
-        tassert_eqi(ret, -1);
+        tassert_eq(errno, 999);
+        tassert_eq(ret, -1);
         nit++;
     }
-    tassert_eqi(nit, 1);
+    tassert_eq(nit, 1);
 
     errno = 777;
     nit = 0;
@@ -57,8 +57,8 @@ test$case(test_sysfunc)
         tassert(false && "not expected");
         nit++;
     }
-    tassert_eqi(nit, 0);
-    tassert_eqi(ret, 100);
+    tassert_eq(nit, 0);
+    tassert_eq(ret, 100);
     return EOK;
 }
 
@@ -108,8 +108,8 @@ check_optimized(int e)
 
 test$case(test_e_dollar_macro)
 {
-    tassert_eqs(EOK, check_with_dollar(true));
-    tassert_eqs(Error.memory, check_with_dollar(-1));
+    tassert_eq(EOK, check_with_dollar(true));
+    tassert_eq(Error.memory, check_with_dollar(-1));
     return EOK;
 }
 
@@ -122,14 +122,14 @@ test$case(test_e_dollar_macro_goto)
 
 setresult:
     // e$goto() - previous jump didn't change result
-    tassert_eqe(Error.ok, result);
+    tassert_er(Error.ok, result);
 
     // we can explicitly set result value to the error of the call
     e$goto(result = check_with_dollar(-1), fail);
     tassert(false && "unreacheble, the above must fail");
 
 fail:
-    tassert_eqe(Error.memory, result);
+    tassert_er(Error.memory, result);
 
     return EOK;
 }
@@ -163,15 +163,15 @@ test$case(test_nested_excepts)
 
     e$except_silent(err, foo(0))
     {
-        tassert_eqe(err, Error.io);
+        tassert_er(err, Error.io);
 
         e$except_silent(err, foo(2))
         {
-            tassert_eqe(err, Error.memory);
+            tassert_er(err, Error.memory);
         }
 
         // err, back after nested handling!
-        tassert_eqe(err, Error.io);
+        tassert_er(err, Error.io);
     return EOK;
     }
 
@@ -204,7 +204,7 @@ test$case(test_eassert)
     tassert(false && "unreacheble, the above must fail");
 
 fail:
-    tassert_eqe(Error.assert, result);
+    tassert_er(Error.assert, result);
 
     return EOK;
 }

@@ -201,14 +201,6 @@ __cex__fprintf_dummy(void)
  *                 ASSERTIONS MACROS
  */
 
-
-#ifdef NDEBUG
-#define uassertf(cond, format, ...) ((void)(0))
-#define uassert(cond) ((void)(0))
-#define __cex_test_postmortem_exists() 0
-#else
-
-
 #ifdef __SANITIZE_ADDRESS__
 // This should be linked when gcc sanitizer enabled
 void __sanitizer_print_stack_trace();
@@ -216,6 +208,12 @@ void __sanitizer_print_stack_trace();
 #else
 #define sanitizer_stack_trace() ((void)(0))
 #endif
+
+#ifdef NDEBUG
+#define uassertf(cond, format, ...) ((void)(0))
+#define uassert(cond) ((void)(0))
+#define __cex_test_postmortem_exists() 0
+#else
 
 #ifdef CEXTEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
@@ -233,25 +231,9 @@ int __cex_test_uassert_enabled = 1;
 #define __cex_test_postmortem_ctx NULL
 #define __cex_test_postmortem_exists() 0
 #define __cex_test_postmortem_f(ctx)
-#endif
+#endif // #ifdef CEXTEST
 
-#ifndef __cex__abort
-#ifdef CEXTEST
-#define __cex__abort() raise(SIGTRAP)
-#else
-#define __cex__abort() abort()
-#endif
-#endif
 
-#ifndef __cex__assert
-#define __cex__assert()                                                                            \
-    ({                                                                                             \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-        sanitizer_stack_trace();                                                                   \
-        __cex__abort();                                                                            \
-    })
-#endif
 
 
 /**
@@ -292,6 +274,24 @@ int __cex_test_uassert_enabled = 1;
                 __cex__assert();                                                                   \
             }                                                                                      \
         }                                                                                          \
+    })
+#endif
+
+#ifndef __cex__abort
+#ifdef CEXTEST
+#define __cex__abort() raise(SIGTRAP)
+#else
+#define __cex__abort() abort()
+#endif
+#endif
+
+#ifndef __cex__assert
+#define __cex__assert()                                                                            \
+    ({                                                                                             \
+        fflush(stdout);                                                                            \
+        fflush(stderr);                                                                            \
+        sanitizer_stack_trace();                                                                   \
+        __cex__abort();                                                                            \
     })
 #endif
 

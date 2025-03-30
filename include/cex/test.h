@@ -51,173 +51,6 @@ struct _cex_test_context_s
         }                                                                                          \
     })
 
-#define tassert(A)                                                                                 \
-    ({ /* ONLY for test$case USE */                                                                \
-       if (!(A)) {                                                                                 \
-           _test$tassert_breakpoint();                                                             \
-           return _test$log_err(#A);                                                               \
-       }                                                                                           \
-    })
-
-#define tassertf(A, M, ...)                                                                        \
-    ({ /* ONLY for test$case USE */                                                                \
-       if (!(A)) {                                                                                 \
-           _test$tassert_breakpoint();                                                             \
-           if (str.sprintf(                                                                        \
-                   _cex_test__mainfn_state.str_buf,                                                \
-                   CEXTEST_AMSG_MAX_LEN - 1,                                                       \
-                   _test$log_err(M),                                                               \
-                   ##__VA_ARGS__                                                                   \
-               )) {                                                                                \
-           }                                                                                       \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       }                                                                                           \
-    })
-
-#define tassert_eqs(_ac, _ex)                                                                      \
-    ({ /* ONLY for test$case USE */                                                                \
-       const char* ac = (_ac);                                                                     \
-       const char* ex = (_ex);                                                                     \
-       if ((ac) == NULL && (ex) != NULL) {                                                         \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("NULL != '%s'"),                                                      \
-               (char*)(ex)                                                                         \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       } else if ((ac) != NULL && (ex) == NULL) {                                                  \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("'%s' != NULL"),                                                      \
-               (char*)(ac)                                                                         \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       } else if (((ac) != NULL && (ex) != NULL) && (!str.eq((ac), (ex)))) {                       \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("'%s' != '%s'"),                                                      \
-               (char*)(ac),                                                                        \
-               (char*)(ex)                                                                         \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       }                                                                                           \
-    })
-
-//
-// tassert_eqs(Exception actual, Exception expected) - compares Exceptions (Error.ok = NULL = EOK)
-//
-#define tassert_eqe(_ac, _ex)                                                                      \
-    ({ /* ONLY for test$case USE */                                                                \
-       const char* ac = (_ac);                                                                     \
-       const char* ex = (_ex);                                                                     \
-       if ((ac) == NULL && (ex) != NULL) {                                                         \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("Error.ok != '%s'"),                                                  \
-               (char*)(ex)                                                                         \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       } else if ((ac) != NULL && (ex) == NULL) {                                                  \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("'%s' != Error.ok"),                                                  \
-               (char*)(ac)                                                                         \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       } else if (((ac) != NULL && (ex) != NULL) && (!str.eq((ac), (ex)))) {                       \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("'%s' != '%s'"),                                                      \
-               (char*)(ac),                                                                        \
-               (char*)(ex)                                                                         \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       }                                                                                           \
-    })
-
-//
-// tassert_eqi(int actual, int expected) - compares equality of signed integers
-//
-#define tassert_eqi(_ac, _ex)                                                                      \
-    ({ /* ONLY for test$case USE */                                                                \
-       long int ac = (_ac);                                                                        \
-       long int ex = (_ex);                                                                        \
-       if ((ac) != (ex)) {                                                                         \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("%ld != %ld"),                                                        \
-               (ac),                                                                               \
-               (ex)                                                                                \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       }                                                                                           \
-    })
-
-//
-// tassert_eql(int actual, int expected) - compares equality of long signed integers
-//
-#define tassert_eql(_ac, _ex)                                                                      \
-    ({ /* ONLY for test$case USE */                                                                \
-       long long ac = (_ac);                                                                       \
-       long long ex = (_ex);                                                                       \
-       if ((ac) != (ex)) {                                                                         \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("%lld != %lld"),                                                      \
-               (ac),                                                                               \
-               (ex)                                                                                \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       }                                                                                           \
-    })
-
-//
-// tassert_eqf(f64 actual, f64 expected) - compares equality of f64 / double numbers
-// NAN friendly, i.e. tassert_eqf(NAN, NAN) -- passes
-//
-#define tassert_eqf(_ac, _ex)                                                                      \
-    ({ /* ONLY for test$case USE */                                                                \
-       f64 ac = (_ac);                                                                             \
-       f64 ex = (_ex);                                                                             \
-       int __at_assert_passed = 1;                                                                 \
-       if (isnan(ac) && !isnan(ex))                                                                \
-           __at_assert_passed = 0;                                                                 \
-       else if (!isnan(ac) && isnan(ex))                                                           \
-           __at_assert_passed = 0;                                                                 \
-       else if (isnan(ac) && isnan(ex))                                                            \
-           __at_assert_passed = 1;                                                                 \
-       else if (fabs((ac) - (ex)) > (f64)FLT_EPSILON)                                              \
-           __at_assert_passed = 0;                                                                 \
-       if (__at_assert_passed == 0) {                                                              \
-           _test$tassert_breakpoint();                                                             \
-           snprintf(                                                                               \
-               _cex_test__mainfn_state.str_buf,                                                    \
-               CEXTEST_AMSG_MAX_LEN - 1,                                                           \
-               _test$log_err("%.10e != %.10e (diff: %0.10e epsilon: %0.10e)"),                     \
-               (ac),                                                                               \
-               (ex),                                                                               \
-               ((ac) - (ex)),                                                                      \
-               (f64)FLT_EPSILON                                                                    \
-           );                                                                                      \
-           return _cex_test__mainfn_state.str_buf;                                                 \
-       }                                                                                           \
-    })
 
 #define test$case(NAME)                                                                             \
     extern struct _cex_test_context_s _cex_test__mainfn_state;                                      \
@@ -571,14 +404,6 @@ cex_test_main_fn(int argc, char** argv)
 
 #define _test$tassert_fn(a, b)                                                                     \
     ({                                                                                             \
-        _Static_assert(                                                                            \
-            _Generic(                                                                              \
-                (a),                                                                               \
-                char*: 1,                                                                          \
-                default: __builtin_types_compatible_p(__typeof__(a), __typeof__(b))                \
-            ),                                                                                     \
-            "not comparable"                                                                       \
-        );                                                                                         \
         _Generic(                                                                                  \
             (a),                                                                                   \
             i32: _check_eq_int,                                                                    \
@@ -589,78 +414,121 @@ cex_test_main_fn(int argc, char** argv)
             u16: _check_eq_int,                                                                    \
             i8: _check_eq_int,                                                                     \
             u8: _check_eq_int,                                                                     \
+            char: _check_eq_int,                                                                   \
+            bool: _check_eq_int,                                                                   \
             char*: _check_eq_str,                                                                  \
             const char*: _check_eq_str,                                                            \
             str_s: _check_eqs_slice,                                                               \
             f32: _check_eq_f32,                                                                    \
-            f64: _check_eq_f32                                                                     \
+            f64: _check_eq_f32,                                                                    \
+            default: _check_eq_int                                                                 \
         );                                                                                         \
     })
 
+#define tassert(A)                                                                                 \
+    ({ /* ONLY for test$case USE */                                                                \
+       if (!(A)) {                                                                                 \
+           _test$tassert_breakpoint();                                                             \
+           return _test$log_err(#A);                                                               \
+       }                                                                                           \
+    })
+
+#define tassertf(A, M, ...)                                                                        \
+    ({ /* ONLY for test$case USE */                                                                \
+       if (!(A)) {                                                                                 \
+           _test$tassert_breakpoint();                                                             \
+           if (str.sprintf(                                                                        \
+                   _cex_test__mainfn_state.str_buf,                                                \
+                   CEXTEST_AMSG_MAX_LEN - 1,                                                       \
+                   _test$log_err(M),                                                               \
+                   ##__VA_ARGS__                                                                   \
+               )) {                                                                                \
+           }                                                                                       \
+           return _cex_test__mainfn_state.str_buf;                                                 \
+       }                                                                                           \
+    })
 #define tassert_eq(a, b)                                                                           \
     ({                                                                                             \
-        Exc err;                                                                                   \
+        Exc err = NULL;                                                                                   \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__eq)))                                 \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                               \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })
 
 #define tassert_er(a, b)                                                                           \
     ({                                                                                             \
-        Exc err;                                                                                   \
-        if ((err = _check_eq_err((a), (b), __LINE__)))                                             \
+        Exc err = NULL;                                                                                   \
+        if ((err = _check_eq_err((a), (b), __LINE__))) {                                           \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })
 
 #define tassert_eq_almost(a, b, delta)                                                             \
     ({                                                                                             \
-        Exc err;                                                                                   \
-        if ((err = _check_eq_almost((a), (b), (delta), __LINE__)))                                 \
+        Exc err = NULL;                                                                                   \
+        if ((err = _check_eq_almost((a), (b), (delta), __LINE__))) {                               \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })
 #define tassert_eq_ptr(a, b)                                                                       \
     ({                                                                                             \
-        Exc err;                                                                                   \
-        if ((err = _check_eq_ptr((a), (b), __LINE__)))                                             \
+        Exc err = NULL;                                                                                   \
+        if ((err = _check_eq_ptr((a), (b), __LINE__))) {                                           \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })
 
 #define tassert_ne(a, b)                                                                           \
     ({                                                                                             \
-        Exc err;                                                                                   \
+        Exc err = NULL;                                                                                   \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ne)))                                 \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                               \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })
 
 #define tassert_le(a, b)                                                                           \
     ({                                                                                             \
-        Exc err;                                                                                   \
+        Exc err = NULL;                                                                                   \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__le)))                                 \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                               \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })
 
 #define tassert_lt(a, b)                                                                           \
     ({                                                                                             \
-        Exc err;                                                                                   \
+        Exc err = NULL;                                                                                   \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__lt)))                                 \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                               \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })
 
 #define tassert_ge(a, b)                                                                           \
     ({                                                                                             \
-        Exc err;                                                                                   \
+        Exc err = NULL;                                                                                   \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ge)))                                 \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                               \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })
 
 #define tassert_gt(a, b)                                                                           \
     ({                                                                                             \
-        Exc err;                                                                                   \
+        Exc err = NULL;                                                                                   \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__gt)))                                 \
+        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                               \
+            _test$tassert_breakpoint();                                                            \
             return err;                                                                            \
+        }                                                                                          \
     })

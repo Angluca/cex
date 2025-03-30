@@ -27,7 +27,7 @@ test$case(app_create_test_bad_args)
     u32 argc = arr$len(argv);
 
     // If there is a problem with arguments Error.argsparse returned
-    tassert_eqe(Error.argsparse, App.create(&app, argc, argv, allocator));
+    tassert_er(Error.argsparse, App.create(&app, argc, argv, allocator));
     return EOK;
 }
 
@@ -38,14 +38,14 @@ test$case(app_create_test_valid_args)
     u32 argc = arr$len(argv);
 
     // All good!
-    tassert_eqe(Error.ok, App.create(&app, argc, argv, allocator));
+    tassert_er(Error.ok, App.create(&app, argc, argv, allocator));
 
     // Cool check if we have correctly processed argv and put them into App_c
-    tassert_eqi(app.is_csv, false);
-    tassert_eqi(app.files_count, 3);
-    tassert_eqs(app.files[0], "file1");
-    tassert_eqs(app.files[1], "file-b");
-    tassert_eqs(app.files[2], "file.c");
+    tassert_eq(app.is_csv, false);
+    tassert_eq(app.files_count, 3);
+    tassert_eq(app.files[0], "file1");
+    tassert_eq(app.files[1], "file-b");
+    tassert_eq(app.files[2], "file.c");
 
     // NOTE: EOK is a shortcut for Error.ok
     return EOK;
@@ -55,8 +55,8 @@ test$case(app_main_read_all)
 {
     char* files[] = { "file1", "file-b", "file.c" };
     App_c app = { .files_count = arr$len(files), .files = files, .is_csv = false };
-    tassert_eqi(app.is_csv, false);
-    tassert_eqi(app.files_count, 3);
+    tassert_eq(app.is_csv, false);
+    tassert_eq(app.files_count, 3);
 
     // Let's loop through all files and parse them
     // NOTE: for$each is an iterator for plain arrays, `it` is an iterator variable which has
@@ -64,10 +64,10 @@ test$case(app_main_read_all)
     for$each(it, app.files, app.files_count)
     {
         log$debug("Checking file #%ld: %s\n", it.idx, *it.val);
-        tassert_eqs(*it.val, files[it.idx]);
+        tassert_eq(*it.val, files[it.idx]);
     }
 
-    tassert_eqe(Error.io, App.main(&app, allocator));
+    tassert_er(Error.io, App.main(&app, allocator));
     // Oops, main has failed, no such file or directory!
     // But, look now you have a traceback in the console!
     // [ERROR] ( cex.c:4891 io_fopen() ) [IOError] No such file or directory, file: file1
@@ -89,7 +89,7 @@ test$case(app__process_plain_empty)
     // Errors can be standard i.e. EOK / Error.memory / Error.io, etc.
     // However sometimes it's more useful to use string literals as errors
     // if you never intended to catch them.
-    tassert_eqe("zero file size", App__process_plain(&app, &file));
+    tassert_er("zero file size", App__process_plain(&app, &file));
 
 
     // io.close(&file);  // forgetting the io.close() triggers the allocator warning
@@ -111,7 +111,7 @@ test$case(app__process_plain_one_line)
 
 
     // NOTE: when #include.c, we are able to unit test static functions!
-    tassert_eqe(EOK, App__process_plain(&app, &file));
+    tassert_er(EOK, App__process_plain(&app, &file));
 
 
     io.close(&file);  // close also frees all allocated temporary memory if any
@@ -126,7 +126,7 @@ test$case(app__process_csv)
     io_c file; 
     e$ret(io.fopen(&file, "tests/file_csv_good.csv", "r", allocator));
 
-    tassert_eqe(EOK, App__process_csv(&app, &file));
+    tassert_er(EOK, App__process_csv(&app, &file));
 
     io.close(&file);  // close also frees all allocated temporary memory if any
     return EOK;
@@ -139,7 +139,7 @@ test$case(app__process_csv_io_fail)
 
     io_c file = {._fh = stdout}; 
 
-    tassert_eqe(EOK, App__process_csv(&app, &file));
+    tassert_er(EOK, App__process_csv(&app, &file));
 
     io.close(&file);  // close also frees all allocated temporary memory if any
     return EOK;

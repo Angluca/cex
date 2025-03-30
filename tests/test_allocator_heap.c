@@ -6,7 +6,7 @@ test$case(test_allocator_api)
     // mem$ = NULL; // GOOD: compiler error
     u8* p = mem$malloc(mem$, 100);
     tassert(_cex__default_global__allocator_heap.stats.n_allocs > 0);
-    tassert_eqi(mem$->scope_depth(mem$), 1);
+    tassert_eq(mem$->scope_depth(mem$), 1);
 
 
     tassert(p != NULL);
@@ -79,8 +79,8 @@ test$case(test_allocator_heap_default_alignment)
         }
         mem$free(mem$, a);
     }
-    tassert_eqi(allc->stats.n_allocs, 999);
-    tassert_eqi(allc->stats.n_allocs, allc->stats.n_free);
+    tassert_eq(allc->stats.n_allocs, 999);
+    tassert_eq(allc->stats.n_allocs, allc->stats.n_free);
 
     return EOK;
 }
@@ -88,13 +88,13 @@ test$case(test_allocator_heap_default_alignment)
 test$case(test_allocator_heap_alloc_header)
 {
 
-    tassert_eqi(alignof(u64), 8);
-    tassert_eqi(sizeof(u64), 8);
+    tassert_eq(alignof(u64), 8);
+    tassert_eq(sizeof(u64), 8);
     u64 hdr = _cex_allocator_heap__hdr_set(0x123456789ABC, 0xCD, 0xEF);
-    tassert_eqi(hdr, 0xefcd123456789abc);
-    tassert_eqi(0x123456789ABC, _cex_allocator_heap__hdr_get_size(hdr));
-    tassert_eqi(0xCD, _cex_allocator_heap__hdr_get_offset(hdr));
-    tassert_eqi(0xEF, _cex_allocator_heap__hdr_get_alignment(hdr));
+    tassert_eq(hdr, 0xefcd123456789abc);
+    tassert_eq(0x123456789ABC, _cex_allocator_heap__hdr_get_size(hdr));
+    tassert_eq(0xCD, _cex_allocator_heap__hdr_get_offset(hdr));
+    tassert_eq(0xEF, _cex_allocator_heap__hdr_get_alignment(hdr));
 
     return EOK;
 }
@@ -211,9 +211,9 @@ test$case(test_allocator_heap_realloc)
         mem$free(mem$, a);
         mem$free(mem$, b);
     }
-    tassert_eqi(allc->stats.n_allocs, 1998);
-    tassert_eqi(allc->stats.n_reallocs, 999);
-    tassert_eqi(allc->stats.n_allocs, allc->stats.n_free);
+    tassert_eq(allc->stats.n_allocs, 1998);
+    tassert_eq(allc->stats.n_reallocs, 999);
+    tassert_eq(allc->stats.n_allocs, allc->stats.n_free);
 
     return EOK;
 }
@@ -260,7 +260,7 @@ test$case(test_allocator_heap_realloc_random_align)
 
 
         a = mem$realloc(mem$, a, new_size, al);
-        // tassert_eqi(a[-1], 1);  // ASAN poison check 
+        // tassert_eq(a[-1], 1);  // ASAN poison check 
         tassert(a != NULL);
         tassert(a[0] == 0xCD);
         if (new_size > size) {
@@ -270,7 +270,7 @@ test$case(test_allocator_heap_realloc_random_align)
             }
             for(u32 j = size; j < new_size; j++)
             {
-                tassert_eqi(a[j], 0xf7);
+                tassert_eq(a[j], 0xf7);
             }
         } else {
             for$each(v, a + 1, new_size - 1)
@@ -280,14 +280,14 @@ test$case(test_allocator_heap_realloc_random_align)
         }
 
         u64 hdr = *(u64*)(a - sizeof(u64) * 2);
-        tassert_eqi(new_size, _cex_allocator_heap__hdr_get_size(hdr));
+        tassert_eq(new_size, _cex_allocator_heap__hdr_get_size(hdr));
 
         if (al < 8) {
             tassert((usize)a % 8 == 0 && "expected aligned to 8");
-            tassert_eqi(8, _cex_allocator_heap__hdr_get_alignment(hdr));
+            tassert_eq(8, _cex_allocator_heap__hdr_get_alignment(hdr));
         } else {
             tassert((usize)a % al == 0 && "expected aligned to al");
-            tassert_eqi(al, _cex_allocator_heap__hdr_get_alignment(hdr));
+            tassert_eq(al, _cex_allocator_heap__hdr_get_alignment(hdr));
         }
 
         memset(a, 'Z', new_size);

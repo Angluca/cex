@@ -3098,9 +3098,9 @@ __cex_test_run_postmortem()
     })
 
 //
-// tassert_eqs(char * actual, char * expected) - compares strings via strcmp() (NULL tolerant)
+// tassert_eq(char * actual, char * expected) - compares strings via strcmp() (NULL tolerant)
 //
-#define tassert_eqs(_ac, _ex)                                                                      \
+#define tassert_eq(_ac, _ex)                                                                      \
     ({                                                                                             \
         const char* ac = (_ac);                                                                    \
         const char* ex = (_ex);                                                                    \
@@ -3137,9 +3137,9 @@ __cex_test_run_postmortem()
     })
 
 //
-// tassert_eqs(Exception actual, Exception expected) - compares Exceptions (Error.ok = NULL = EOK)
+// tassert_eq(Exception actual, Exception expected) - compares Exceptions (Error.ok = NULL = EOK)
 //
-#define tassert_eqe(_ac, _ex)                                                                      \
+#define tassert_er(_ac, _ex)                                                                      \
     ({                                                                                             \
         const char* ac = (_ac);                                                                    \
         const char* ex = (_ex);                                                                    \
@@ -3176,9 +3176,9 @@ __cex_test_run_postmortem()
     })
 
 //
-// tassert_eqi(int actual, int expected) - compares equality of signed integers
+// tassert_eq(int actual, int expected) - compares equality of signed integers
 //
-#define tassert_eqi(_ac, _ex)                                                                      \
+#define tassert_eq(_ac, _ex)                                                                      \
     ({                                                                                             \
         long int ac = (_ac);                                                                       \
         long int ex = (_ex);                                                                       \
@@ -3196,9 +3196,9 @@ __cex_test_run_postmortem()
     })
 
 //
-// tassert_eql(int actual, int expected) - compares equality of long signed integers
+// tassert_eq(int actual, int expected) - compares equality of long signed integers
 //
-#define tassert_eql(_ac, _ex)                                                                      \
+#define tassert_eq(_ac, _ex)                                                                      \
     ({                                                                                             \
         long long ac = (_ac);                                                                      \
         long long ex = (_ex);                                                                      \
@@ -3216,10 +3216,10 @@ __cex_test_run_postmortem()
     })
 
 //
-// tassert_eqf(f64 actual, f64 expected) - compares equality of f64 / double numbers
-// NAN friendly, i.e. tassert_eqf(NAN, NAN) -- passes
+// tassert_eq(f64 actual, f64 expected) - compares equality of f64 / double numbers
+// NAN friendly, i.e. tassert_eq(NAN, NAN) -- passes
 //
-#define tassert_eqf(_ac, _ex)                                                                      \
+#define tassert_eq(_ac, _ex)                                                                      \
     ({                                                                                             \
         f64 ac = (_ac);                                                                            \
         f64 ex = (_ex);                                                                            \

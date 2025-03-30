@@ -15,20 +15,20 @@ test$case(test_token_ident)
     tassert(lx.content == code);
     tassert(lx.cur == code);
     tassert(lx.content_end == code + strlen(code));
-    tassert_eqi(lx.line, 0);
+    tassert_eq(lx.line, 0);
 #define end_brace }
 
     char* some_brace = "}";
     (void)some_brace;
     // some stuff }
     cex_token_s t = CexLexer_next_token(&lx);
-    tassert_eqi(lx.line, 0);
-    tassert_eqi(t.type, CexTkn__ident); /* multiline }        */
+    tassert_eq(lx.line, 0);
+    tassert_eq(t.type, CexTkn__ident); /* multiline }        */
     tassertf(str.slice.eq(t.value, str$s("foo")), "t.value=%S", t.value);
 #undef end_brace
 
     t = CexLexer_next_token(&lx);
-    tassert_eqi(t.type, CexTkn__eof);
+    tassert_eq(t.type, CexTkn__eof);
 
     return EOK;
 }
@@ -40,13 +40,13 @@ test$case(test_token_new_line_skip)
     CexLexer_c lx = CexLexer_create(code, 0, false);
 
     cex_token_s t = CexLexer_next_token(&lx);
-    tassert_eqi(lx.line, 1);
-    tassert_eqi(t.type, CexTkn__ident);
+    tassert_eq(lx.line, 1);
+    tassert_eq(t.type, CexTkn__ident);
     tassertf(str.slice.eq(t.value, str$s("foo")), "t.value=%S", t.value);
     /* multiline */
 
     t = CexLexer_next_token(&lx);
-    tassert_eqi(t.type, CexTkn__eof);
+    tassert_eq(t.type, CexTkn__eof);
 
     return EOK;
 }
@@ -58,7 +58,7 @@ test$case(test_token_new_empty)
 
     cex_token_s t = CexLexer_next_token(&lx);
     t = CexLexer_next_token(&lx);
-    tassert_eqi(t.type, CexTkn__eof);
+    tassert_eq(t.type, CexTkn__eof);
 
     return EOK;
 }
@@ -69,25 +69,25 @@ test$case(test_token_two_indents)
     CexLexer_c lx = CexLexer_create(code, 0, false);
 
     cex_token_s t = CexLexer_next_token(&lx);
-    tassert_eqi(lx.line, 1);
-    tassert_eqi(t.type, CexTkn__ident);
+    tassert_eq(lx.line, 1);
+    tassert_eq(t.type, CexTkn__ident);
     tassertf(str.slice.eq(t.value, str$s("foo")), "t.value=%S", t.value);
 
     t = CexLexer_next_token(&lx);
-    tassert_eqi(lx.line, 1);
-    tassert_eqi(t.type, CexTkn__ident);
+    tassert_eq(lx.line, 1);
+    tassert_eq(t.type, CexTkn__ident);
     tassertf(str.slice.eq(t.value, str$s("_Bar$s")), "t.value=%S", t.value);
-    tassert_eqi(*lx.cur, '(');
+    tassert_eq(*lx.cur, '(');
     tassert(lx.cur == lx.content_end - 1);
 
     t = CexLexer_next_token(&lx);
-    tassert_eqi(t.type, CexTkn__lparen);
+    tassert_eq(t.type, CexTkn__lparen);
     tassertf(str.slice.eq(t.value, str$s("(")), "t.value='%S'", t.value);
-    tassert_eqi(*lx.cur, '\0');
+    tassert_eq(*lx.cur, '\0');
     tassert(lx.cur == lx.content_end);
 
     t = CexLexer_next_token(&lx);
-    tassert_eqi(t.type, CexTkn__eof);
+    tassert_eq(t.type, CexTkn__eof);
 
     return EOK;
 }
@@ -189,17 +189,17 @@ test$case(test_token_comment_and_ident)
     CexLexer_c lx = CexLexer_create(code, 0, false);
 
     cex_token_s t = CexLexer_next_token(&lx);
-    tassert_eqi(lx.line, 1);
-    tassert_eqi(t.type, CexTkn__comment_multi);
+    tassert_eq(lx.line, 1);
+    tassert_eq(t.type, CexTkn__comment_multi);
     tassertf(str.slice.eq(t.value, str$s("/* comm */")), "t.value=%S", t.value);
 
     t = CexLexer_next_token(&lx);
-    tassert_eqi(lx.line, 1);
-    tassert_eqi(t.type, CexTkn__ident);
+    tassert_eq(lx.line, 1);
+    tassert_eq(t.type, CexTkn__ident);
     tassertf(str.slice.eq(t.value, str$s("foo")), "t.value=%S", t.value);
 
     t = CexLexer_next_token(&lx);
-    tassert_eqi(t.type, CexTkn__eof);
+    tassert_eq(t.type, CexTkn__eof);
 
     return EOK;
 }
@@ -328,7 +328,7 @@ test$case(test_token_paren_block_overflow_test)
         buf[arr$len(buf) - 1] = '\0';
         CexLexer_c lx = CexLexer_create(buf, 0, true);
         cex_token_s t = CexLexer_next_token(&lx);
-        tassert_eqi(t.type, CexTkn__error);
+        tassert_eq(t.type, CexTkn__error);
         tassert(t.value.buf == NULL);
         tassert(t.value.len == 0);
     }

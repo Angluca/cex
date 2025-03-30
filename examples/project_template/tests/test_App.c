@@ -24,8 +24,8 @@ test$case(app_create_args_empty)
         "app_name", // first argv is always program name
     };
     u32 argc = arr$len(argv);
-    tassert_eqe(Error.argsparse, App.create(&app, argc, argv, allocator));
-    tassert_eqi(app.is_flag, 0);
+    tassert_er(Error.argsparse, App.create(&app, argc, argv, allocator));
+    tassert_eq(app.is_flag, 0);
 
     return EOK;
 }
@@ -41,10 +41,10 @@ test$case(app_create_args)
         "bar",
     };
     u32 argc = arr$len(argv);
-    tassert_eqe(Error.ok, App.create(&app, argc, argv, allocator));
-    tassert_eqi(app.is_flag, 1);
-    tassert_eqi(app.num_arg, 234);
-    tassert_eqs(app.name_arg, "cex");
+    tassert_er(Error.ok, App.create(&app, argc, argv, allocator));
+    tassert_eq(app.is_flag, 1);
+    tassert_eq(app.num_arg, 234);
+    tassert_eq(app.name_arg, "cex");
 
     return EOK;
 }
@@ -59,8 +59,8 @@ test$case(app_main)
         "bar",
     };
     u32 argc = arr$len(argv);
-    tassert_eqe(Error.ok, App.create(&app, argc, argv, allocator));
-    tassert_eqe(Error.ok, App.main(&app, allocator));
+    tassert_er(Error.ok, App.create(&app, argc, argv, allocator));
+    tassert_er(Error.ok, App.main(&app, allocator));
 
     return EOK;
 }

@@ -19,7 +19,7 @@
 
 test$case(test_allocator_arena_alloc_size)
 {
-    tassert_eqi(sizeof(allocator_arena_rec_s), 8);
+    tassert_eq(sizeof(allocator_arena_rec_s), 8);
 
     tassert(alloc_cmp(1, 0, .size = 1, .ptr_padding = 7, .ptr_alignment = 8));
     tassert(alloc_cmp(5, 0, .size = 5, .ptr_padding = 3, .ptr_alignment = 8));
@@ -54,31 +54,31 @@ test$case(test_allocator_arena_create_destroy)
     tassert(mem$aligned_pointer(arena, alignof(AllocatorArena_c)) == arena);
 
 
-    tassert_eqi(mem$->scope_depth(mem$), 1);
+    tassert_eq(mem$->scope_depth(mem$), 1);
     AllocatorArena_c* allc = (AllocatorArena_c*)arena;
 
     mem$scope(arena, tal)
     {
-        tassert_eqi(allc->scope_depth, 1);
-        tassert_eqi(arena->scope_depth(arena), 1);
-        tassert_eqi(mem$->scope_depth(mem$), 1);
+        tassert_eq(allc->scope_depth, 1);
+        tassert_eq(arena->scope_depth(arena), 1);
+        tassert_eq(mem$->scope_depth(mem$), 1);
 
         mem$scope(arena, tal)
         {
-            tassert_eqi(allc->scope_depth, 2);
-            tassert_eqi(arena->scope_depth(arena), 2);
-            tassert_eqi(mem$->scope_depth(mem$), 1);
+            tassert_eq(allc->scope_depth, 2);
+            tassert_eq(arena->scope_depth(arena), 2);
+            tassert_eq(mem$->scope_depth(mem$), 1);
             mem$scope(arena, tal)
             {
-                tassert_eqi(allc->scope_depth, 3);
-                tassert_eqi(mem$->scope_depth(mem$), 1);
-                tassert_eqi(arena->scope_depth(arena), 3);
+                tassert_eq(allc->scope_depth, 3);
+                tassert_eq(mem$->scope_depth(mem$), 1);
+                tassert_eq(arena->scope_depth(arena), 3);
             }
-            tassert_eqi(allc->scope_depth, 2);
+            tassert_eq(allc->scope_depth, 2);
         }
-        tassert_eqi(allc->scope_depth, 1);
+        tassert_eq(allc->scope_depth, 1);
     }
-    tassert_eqi(allc->scope_depth, 0);
+    tassert_eq(allc->scope_depth, 0);
 
     AllocatorArena_destroy(arena);
     return EOK;
@@ -98,62 +98,62 @@ test$case(test_allocator_arena_malloc)
         tassert(p != NULL);
         tassert(mem$asan_enabled());
         // p[-2] = 1;
-        // tassert_eqi(p[100], 1); //   GOOD ASAN poison!
-        // tassert_eqi(p[-3], 0xf7);   //GOOD ASAN poison!
+        // tassert_eq(p[100], 1); //   GOOD ASAN poison!
+        // tassert_eq(p[-3], 0xf7);   //GOOD ASAN poison!
 
 
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
-        tassert_eqi(allc->stats.bytes_alloc, 112);
-        tassert_eqi(allc->used, 112);
+        tassert_eq(allc->stats.bytes_alloc, 112);
+        tassert_eq(allc->used, 112);
 
-        tassert_eqi(allc->scope_depth, 1);
-        tassert_eqi(allc->scope_stack[0], 0);
-        tassert_eqi(allc->scope_stack[1], 0);
-        tassert_eqi(allc->scope_stack[2], 0);
-        tassert_eqi(allc->last_page->used_start, 0);
-        tassert_eqi(allc->last_page->cursor, 112);
+        tassert_eq(allc->scope_depth, 1);
+        tassert_eq(allc->scope_stack[0], 0);
+        tassert_eq(allc->scope_stack[1], 0);
+        tassert_eq(allc->scope_stack[2], 0);
+        tassert_eq(allc->last_page->used_start, 0);
+        tassert_eq(allc->last_page->cursor, 112);
         tassert(allc->last_page->last_alloc == p);
 
         mem$scope(arena, _)
         {
-            tassert_eqi(allc->scope_depth, 2);
-            tassert_eqi(allc->scope_stack[0], 0);
-            tassert_eqi(allc->scope_stack[1], 112);
-            tassert_eqi(allc->scope_stack[2], 0);
+            tassert_eq(allc->scope_depth, 2);
+            tassert_eq(allc->scope_stack[0], 0);
+            tassert_eq(allc->scope_stack[1], 112);
+            tassert_eq(allc->scope_stack[2], 0);
 
             char* p2 = mem$malloc(arena, 4);
             tassert(p2 != NULL);
-            tassert_eqi(allc->stats.bytes_alloc, 112 + 16);
-            tassert_eqi(allc->used, 112 + 16);
-            tassert_eqi(allc->last_page->cursor, 112 + 16);
+            tassert_eq(allc->stats.bytes_alloc, 112 + 16);
+            tassert_eq(allc->used, 112 + 16);
+            tassert_eq(allc->last_page->cursor, 112 + 16);
             tassert(allc->last_page->last_alloc == p2);
 
             mem$scope(arena, _)
             {
                 char* p3 = mem$malloc(arena, 4);
                 tassert(p3 != NULL);
-                tassert_eqi(allc->stats.bytes_alloc, 112 + 16 + 16);
-                tassert_eqi(allc->used, 112 + 16 + 16);
-                tassert_eqi(allc->last_page->cursor, 112 + 16 + 16);
+                tassert_eq(allc->stats.bytes_alloc, 112 + 16 + 16);
+                tassert_eq(allc->used, 112 + 16 + 16);
+                tassert_eq(allc->last_page->cursor, 112 + 16 + 16);
 
-                tassert_eqi(allc->scope_depth, 3);
-                tassert_eqi(allc->scope_stack[0], 0);
-                tassert_eqi(allc->scope_stack[1], 112);
-                tassert_eqi(allc->scope_stack[2], 112 + 16);
+                tassert_eq(allc->scope_depth, 3);
+                tassert_eq(allc->scope_stack[0], 0);
+                tassert_eq(allc->scope_stack[1], 112);
+                tassert_eq(allc->scope_stack[2], 112 + 16);
                 tassert(allc->last_page->last_alloc == p3);
                 AllocatorArena_sanitize(arena);
             }
             // Unwinding arena
-            tassert_eqi(allc->used, 112 + 16);
-            tassert_eqi(allc->last_page->cursor, 112 + 16);
+            tassert_eq(allc->used, 112 + 16);
+            tassert_eq(allc->last_page->cursor, 112 + 16);
         }
         // Unwinding arena
-        tassert_eqi(allc->used, 112);
-        tassert_eqi(allc->last_page->cursor, 112);
+        tassert_eq(allc->used, 112);
+        tassert_eq(allc->last_page->cursor, 112);
     }
     // Unwinding arena
-    tassert_eqi(allc->used, 0);
-    tassert_eqi(allc->last_page->cursor, 0);
+    tassert_eq(allc->used, 0);
+    tassert_eq(allc->last_page->cursor, 0);
 
     AllocatorArena_destroy(arena);
     return EOK;
@@ -197,23 +197,23 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
 
                 uassert(((usize)(ptr_algn) & ((alignment)-1)) == 0);
                 allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(ptr_algn);
-                tassert_eqi(rec->ptr_alignment, alignment);
-                tassert_eqi(rec->size, alloc_size);
-                tassert_eqi(rec->is_free, 0);
+                tassert_eq(rec->ptr_alignment, alignment);
+                tassert_eq(rec->size, alloc_size);
+                tassert_eq(rec->is_free, 0);
 
                 if (i % 2 == 0) {
                     tassert(arena->free(arena, ptr_algn) == NULL);
                     tassert(mem$asan_poison_check(ptr_algn, alloc_size));
-                    tassert_eqi(rec->is_free, 1);
+                    tassert_eq(rec->is_free, 1);
                 } else {
                     usize alloc_size2 = alignment * (i % 4 + 2);
                     tassert(alloc_size2 > alloc_size);
 
                     char* ptr_algn2 = arena->realloc(arena, ptr_algn, alloc_size2, alignment);
                     tassert(ptr_algn2);
-                    tassert_eqi(rec->ptr_alignment, alignment);
-                    tassert_eqi(rec->size, alloc_size2);
-                    tassert_eqi(rec->is_free, 0);
+                    tassert_eq(rec->ptr_alignment, alignment);
+                    tassert_eq(rec->size, alloc_size2);
+                    tassert_eq(rec->is_free, 0);
                 }
 
                 AllocatorArena_sanitize(arena);
@@ -262,13 +262,13 @@ test$case(test_allocator_arena_scope_sanitization)
 
                     uassert(((usize)(p) & ((alignment)-1)) == 0);
                     allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
-                    tassert_eqi(rec->ptr_alignment, alignment);
-                    tassert_eqi(rec->size, alloc_size);
-                    tassert_eqi(rec->is_free, 0);
+                    tassert_eq(rec->ptr_alignment, alignment);
+                    tassert_eq(rec->size, alloc_size);
+                    tassert_eq(rec->is_free, 0);
 
                     tassert(arena->free(arena, p) == NULL);
                     tassert(mem$asan_poison_check(p, alloc_size));
-                    tassert_eqi(rec->is_free, 1);
+                    tassert_eq(rec->is_free, 1);
 
                     AllocatorArena_sanitize(arena);
                 }
@@ -297,34 +297,34 @@ test$case(test_allocator_arena_realloc)
         tassert(p != NULL);
         memset(p, 0xAA, 100);
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
-        tassert_eqi(allc->stats.bytes_alloc, 112);
-        tassert_eqi(allc->used, 112);
+        tassert_eq(allc->stats.bytes_alloc, 112);
+        tassert_eq(allc->used, 112);
         AllocatorArena_sanitize(arena);
 
         char* p2 = mem$malloc(arena, 100);
         tassert(p2 != NULL);
         memset(p2, 0xAA, 100);
-        tassert_eqi(allc->stats.bytes_alloc, 112 + 112);
-        tassert_eqi(allc->used, 112 + 112);
+        tassert_eq(allc->stats.bytes_alloc, 112 + 112);
+        tassert_eq(allc->used, 112 + 112);
         AllocatorArena_sanitize(arena);
 
         char* p3 = mem$realloc(arena, p, 200);
         tassert(p3 != NULL);
         tassert(p3 != p);
         memset(p3, 0xAA, 100);
-        tassert_eqi(allc->stats.bytes_alloc, 112 + 112 + 216);
-        tassert_eqi(allc->used, 112 + 112 + 216);
+        tassert_eq(allc->stats.bytes_alloc, 112 + 112 + 216);
+        tassert_eq(allc->used, 112 + 112 + 216);
         AllocatorArena_sanitize(arena);
 
         allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
-        tassert_eqi(rec->ptr_alignment, 8);
-        tassert_eqi(rec->size, 100);
-        tassert_eqi(rec->is_free, 1);
+        tassert_eq(rec->ptr_alignment, 8);
+        tassert_eq(rec->size, 100);
+        tassert_eq(rec->is_free, 1);
 
         rec = _cex_alloc_arena__get_rec(p3);
-        tassert_eqi(rec->ptr_alignment, 8);
-        tassert_eqi(rec->size, 200);
-        tassert_eqi(rec->is_free, 0);
+        tassert_eq(rec->ptr_alignment, 8);
+        tassert_eq(rec->size, 200);
+        tassert_eq(rec->is_free, 0);
         tassert(allc->last_page->last_alloc == p3);
 
         // Extending last pointer!
@@ -380,8 +380,8 @@ test$case(test_allocator_arena_multiple_pages)
         page = allc->last_page;
         tassert(page != NULL);
         tassert(page->prev_page == NULL);
-        tassert_eqi(allc->used, 1016);
-        tassert_eqi(page->cursor, 1016);
+        tassert_eq(allc->used, 1016);
+        tassert_eq(page->cursor, 1016);
 
 
         // next allocated on next page
@@ -392,16 +392,16 @@ test$case(test_allocator_arena_multiple_pages)
         tassert(allc->last_page != page);
         tassert(page->prev_page == NULL);
         tassert(allc->last_page->prev_page == page);
-        tassert_eqi(allc->used, 2232);
+        tassert_eq(allc->used, 2232);
     }
 
     tassert(allc->last_page != NULL);
     tassert(allc->last_page == page); // replaced by first!
     tassert(allc->last_page->prev_page == NULL);
     tassert(allc->last_page->cursor == 0);
-    tassert_eqi(allc->used, 0);
-    tassert_eqi(allc->stats.pages_created, 2);
-    tassert_eqi(allc->stats.pages_free, 1); // last page should be still active
+    tassert_eq(allc->used, 0);
+    tassert_eq(allc->stats.pages_created, 2);
+    tassert_eq(allc->stats.pages_free, 1); // last page should be still active
 
     AllocatorArena_sanitize(arena);
     AllocatorArena_destroy(arena);
@@ -422,27 +422,27 @@ test$case(test_allocator_arena_realloc_shrink)
         tassert(p != NULL);
         memset(p, 0xAA, 100);
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
-        tassert_eqi(allc->stats.bytes_alloc, 112);
-        tassert_eqi(allc->used, 112);
+        tassert_eq(allc->stats.bytes_alloc, 112);
+        tassert_eq(allc->used, 112);
         AllocatorArena_sanitize(arena);
 
         allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
-        tassert_eqi(rec->ptr_alignment, 8);
-        tassert_eqi(rec->size, 100);
-        tassert_eqi(rec->ptr_padding, 4);
-        tassert_eqi(rec->is_free, 0);
+        tassert_eq(rec->ptr_alignment, 8);
+        tassert_eq(rec->size, 100);
+        tassert_eq(rec->ptr_padding, 4);
+        tassert_eq(rec->is_free, 0);
         tassert(mem$asan_poison_check(p + rec->size, rec->ptr_padding));
 
         // same size just ignored
         char* p2 = mem$realloc(arena, p, 100);
         tassert(p2 != NULL);
         tassert(p2 == p);
-        tassert_eqi(allc->stats.bytes_alloc, 112);
-        tassert_eqi(allc->used, 112);
-        tassert_eqi(rec->ptr_alignment, 8);
-        tassert_eqi(rec->size, 100);
-        tassert_eqi(rec->ptr_padding, 4);
-        tassert_eqi(rec->is_free, 0);
+        tassert_eq(allc->stats.bytes_alloc, 112);
+        tassert_eq(allc->used, 112);
+        tassert_eq(rec->ptr_alignment, 8);
+        tassert_eq(rec->size, 100);
+        tassert_eq(rec->ptr_padding, 4);
+        tassert_eq(rec->is_free, 0);
         tassert(mem$asan_poison_check(p + rec->size, rec->ptr_padding));
         AllocatorArena_sanitize(arena);
 
@@ -450,13 +450,13 @@ test$case(test_allocator_arena_realloc_shrink)
         tassert(p3 != NULL);
         tassert(p3 == p);
         tassert(p3 == p2);
-        tassert_eqi(allc->stats.bytes_alloc, 112);
-        tassert_eqi(allc->used, 112);
+        tassert_eq(allc->stats.bytes_alloc, 112);
+        tassert_eq(allc->used, 112);
         // only poisoning, other fields untouched
         tassert(mem$asan_poison_check(p + 50, rec->size - 50 + rec->ptr_padding));
-        tassert_eqi(rec->size, 100);
-        tassert_eqi(rec->ptr_padding, 4);
-        tassert_eqi(rec->is_free, 0);
+        tassert_eq(rec->size, 100);
+        tassert_eq(rec->ptr_padding, 4);
+        tassert_eq(rec->is_free, 0);
         AllocatorArena_sanitize(arena);
     }
 
@@ -536,11 +536,11 @@ test$case(test_allocator_arena_realloc_last_pointer)
                 u8* new_p = mem$realloc(arena, p, i+1);
                 tassert(new_p != NULL);
                 tassert(new_p == p);
-                tassert_eqi(p[i-1], i-1);
+                tassert_eq(p[i-1], i-1);
                 p[i] = i;
             }
             for (u32 i = 0; i < 200; i++) {
-                tassert_eqi(p[i], i);
+                tassert_eq(p[i], i);
             }
         }
         AllocatorArena_sanitize(arena);

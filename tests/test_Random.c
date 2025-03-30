@@ -29,7 +29,7 @@ test$case(random_seed)
         u32 r2 = Random.next(&rnd2);
         tassert(r1 > 0);
         tassert(r2 > 0);
-        tassert_eqi(r1, r2);
+        tassert_eq(r1, r2);
         rnd_array[i] = r1;
         if (i > 0){
             tassert(r1 != rnd_array[i-1]);
@@ -40,7 +40,7 @@ test$case(random_seed)
     for (u32 i = 0; i < arr$len(rnd_array); i++) {
         u32 r1 = Random.next(&rnd);
         tassert(r1 > 0);
-        tassert_eqi(rnd_array[i], r1);
+        tassert_eq(rnd_array[i], r1);
     }
     return EOK;
 }
@@ -115,7 +115,7 @@ test$case(random_prob)
             is_passed++;
         }
     }
-    tassert_eqi(is_passed, 100000);
+    tassert_eq(is_passed, 100000);
 
     is_passed = 0;
     for (u32 i = 0; i < 100000; i++) {
@@ -123,7 +123,7 @@ test$case(random_prob)
             is_passed++;
         }
     }
-    tassert_eqi(is_passed, 0);
+    tassert_eq(is_passed, 0);
 
     Random.seed(&rnd, 999777);
     is_passed = 0;
@@ -132,7 +132,7 @@ test$case(random_prob)
             is_passed++;
         }
     }
-    tassert_eqi(is_passed, 500165); // <-- almost equal
+    tassert_eq(is_passed, 500165); // <-- almost equal
 
 
     Random.seed(&rnd, 999777);
@@ -142,7 +142,7 @@ test$case(random_prob)
             is_passed++;
         }
     }
-    tassert_eqi(is_passed, 5039); // <-- almost equal
+    tassert_eq(is_passed, 5039); // <-- almost equal
 
     return EOK;
 }
@@ -159,7 +159,7 @@ test$case(random_buf)
     Random.seed(&rnd, 0);
     u32 r2 = Random.next(&rnd);
 
-    tassert_eqi(b1, r2);
+    tassert_eq(b1, r2);
 
     u32 b2[10] = {0};
     _Static_assert(sizeof(b2) == 10*sizeof(u32), "size");

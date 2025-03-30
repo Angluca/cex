@@ -43,12 +43,12 @@ test$case(stb_sprintf_str)
 {
 
     sbuf_c s = sbuf.create(128, mem$);
-    tassert_eqs(EOK, sbuf.appendf(&s, "%s11", "abcdefgh"));
-    tassert_eqs(s, "abcdefgh11");
+    tassert_eq(EOK, sbuf.appendf(&s, "%s11", "abcdefgh"));
+    tassert_eq(s, "abcdefgh11");
 
     str_s sv = str.sstr("45678");
     str_s sv_sub = str.slice.sub(sv, 1, 3);
-    tassert_eqi(str.slice.cmp(sv_sub, str$s("56")), 0);
+    tassert_eq(str.slice.cmp(sv_sub, str$s("56")), 0);
 
     _Static_assert(sizeof(char*) == sizeof(usize), "size");
 
@@ -56,11 +56,11 @@ test$case(stb_sprintf_str)
     // WARNING: dangerous trick, sprintf(), tries to distinguish
     // str_s by checking if sv_sub addres < 1024*1024, this may not be portable
     // especially on embedded and may require additional testing
-    tassert_eqs(EOK, sbuf.appendf(&s, "%s", sv_sub));
-    tassert_eqs(s, "abcdefgh11(str_c->%S)");
+    tassert_eq(EOK, sbuf.appendf(&s, "%s", sv_sub));
+    tassert_eq(s, "abcdefgh11(str_c->%S)");
 
-    tassert_eqs(EOK, sbuf.appendf(&s, "%S", sv_sub));
-    tassert_eqs(s, "abcdefgh11(str_c->%S)56");
+    tassert_eq(EOK, sbuf.appendf(&s, "%S", sv_sub));
+    tassert_eq(s, "abcdefgh11(str_c->%S)56");
 
     sbuf.destroy(&s);
     return EOK;
@@ -180,13 +180,13 @@ test$case(stb_sprintf_orig)
     tassert(strncmp(buf, "37778931862957161709568.000000", 17) == 0);
     n = SNPRINTF(buf, 10, "number %f", 123.456789);
     tassert(strcmp(buf, "number 12") == 0);
-    // tassert_eqi(n, 9); // written vs would-be written bytes
-    tassert_eqi(n, 10); // WARNING: cex changed this behavior to handle overflows!
+    // tassert_eq(n, 9); // written vs would-be written bytes
+    tassert_eq(n, 10); // WARNING: cex changed this behavior to handle overflows!
     //
     buf[0] = '\0';
     n = SNPRINTF(buf, 0, "7 chars");
-    tassert_eqi(n, -1);
-    tassert_eqi(strlen(buf), 0);
+    tassert_eq(n, -1);
+    tassert_eq(strlen(buf), 0);
 
     // stb_sprintf uses internal buffer of 512 chars - test longer string
     SNPRINTF(buf, 550, "%d  %600s", 3, "abc");

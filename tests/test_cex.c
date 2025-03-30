@@ -42,11 +42,11 @@ test$case(test_sysfunc)
     e$except_errno(ret = sys_func(-1))
     {
         log$error("Except: ret=%d errno=%d\n", ret, errno);
-        tassert_eqi(errno, 999);
-        tassert_eqi(ret, -1);
+        tassert_eq(errno, 999);
+        tassert_eq(ret, -1);
         nit++;
     }
-    tassert_eqi(nit, 1);
+    tassert_eq(nit, 1);
 
     errno = 777;
     nit = 0;
@@ -55,8 +55,8 @@ test$case(test_sysfunc)
         tassert(false && "not expected");
         nit++;
     }
-    tassert_eqi(nit, 0);
-    tassert_eqi(ret, 100);
+    tassert_eq(nit, 0);
+    tassert_eq(ret, 100);
     return EOK;
 }
 
@@ -106,8 +106,8 @@ check_optimized(int e)
 
 test$case(test_e_dollar_macro)
 {
-    tassert_eqs(EOK, check_with_dollar(true));
-    tassert_eqs(Error.memory, check_with_dollar(-1));
+    tassert_eq(EOK, check_with_dollar(true));
+    tassert_eq(Error.memory, check_with_dollar(-1));
     return EOK;
 }
 
@@ -120,14 +120,14 @@ test$case(test_e_dollar_macro_goto)
 
 setresult:
     // e$goto() - previous jump didn't change result
-    tassert_eqe(Error.ok, result);
+    tassert_er(Error.ok, result);
 
     // we can explicitly set result value to the error of the call
     e$goto(result = check_with_dollar(-1), fail);
     tassert(false && "unreacheble, the above must fail");
 
 fail:
-    tassert_eqe(Error.memory, result);
+    tassert_er(Error.memory, result);
 
     return EOK;
 }
@@ -161,15 +161,15 @@ test$case(test_nested_excepts)
 
     e$except_silent(err, foo(0))
     {
-        tassert_eqe(err, Error.io);
+        tassert_er(err, Error.io);
 
         e$except_silent(err, foo(2))
         {
-            tassert_eqe(err, Error.memory);
+            tassert_er(err, Error.memory);
         }
 
         // err, back after nested handling!
-        tassert_eqe(err, Error.io);
+        tassert_er(err, Error.io);
     return EOK;
     }
 
@@ -202,7 +202,7 @@ test$case(test_eassert)
     tassert(false && "unreacheble, the above must fail");
 
 fail:
-    tassert_eqe(Error.assert, result);
+    tassert_er(Error.assert, result);
 
     return EOK;
 }
@@ -220,12 +220,12 @@ test$case(test_log)
 test$case(test_arrays_and_slices)
 {
     i32 a[] = { 1, 2, 3, 4 };
-    tassert_eqi(arr$len(a), 4);
+    tassert_eq(arr$len(a), 4);
 
     // GOOD: Compiler error, when we use pointers
     i32* p = a;
     (void)p;
-    // tassert_eqi(arr$len(p), 0);
+    // tassert_eq(arr$len(p), 0);
 
     slice$define(i32) s;
     _Static_assert(sizeof(s) == sizeof(usize) * 2, "sizeof");
@@ -233,37 +233,37 @@ test$case(test_arrays_and_slices)
     // slice$define(*a) s2 = (typeof(s2)){.arr = a, .len = 3};
 
     i32 a_empty[] = {};
-    tassert_eqi(arr$len(a_empty), 0);
+    tassert_eq(arr$len(a_empty), 0);
     var s2 = arr$slice(a_empty, .start = -1);
-    tassert_eqi(s2.len, 0);
+    tassert_eq(s2.len, 0);
     tassert(s2.arr == NULL);
 
     // GOOD: _start is used in arr$slice as temp var, no conflict!
     isize _start = 2;
     (void)_start;
-    tassert_eqi(arr$slice(a, 1, 3).arr[1], 3);
+    tassert_eq(arr$slice(a, 1, 3).arr[1], 3);
 
     var s3 = arr$slice(a, 1, 3);
-    tassert_eqi(s3.len, 2);
-    tassert_eqi(s3.arr[0], 2);
-    tassert_eqi(s3.arr[1], 3);
+    tassert_eq(s3.len, 2);
+    tassert_eq(s3.arr[0], 2);
+    tassert_eq(s3.arr[1], 3);
 
-    tassert_eqi(arr$slice(a, 1, 3).len, 2);
+    tassert_eq(arr$slice(a, 1, 3).len, 2);
 
     var s4 = arr$slice(a, 1);
-    tassert_eqi(s4.len, 3);
-    tassert_eqi(s4.arr[0], 2);
-    tassert_eqi(s4.arr[1], 3);
-    tassert_eqi(s4.arr[2], 4);
+    tassert_eq(s4.len, 3);
+    tassert_eq(s4.arr[0], 2);
+    tassert_eq(s4.arr[1], 3);
+    tassert_eq(s4.arr[2], 4);
 
     var s5 = arr$slice(a, .end = -2);
-    tassert_eqi(s5.len, 2);
-    tassert_eqi(s5.arr[0], 1);
-    tassert_eqi(s5.arr[1], 2);
+    tassert_eq(s5.len, 2);
+    tassert_eq(s5.arr[0], 1);
+    tassert_eq(s5.arr[1], 2);
 
     var s6 = arr$slice(a, .start = 1, .end = -2);
-    tassert_eqi(s6.len, 1);
-    tassert_eqi(s6.arr[0], 2);
+    tassert_eq(s6.len, 1);
+    tassert_eq(s6.arr[0], 2);
 
     // NOTE: slice_py is auto-generate by python script, in order to replicate pytnon's
     //       slice behavior. If end=0, it treated as a[start:] slice operation.
@@ -716,7 +716,7 @@ test$case(test_arrays_and_slices)
         { 10, 9, 0, {} },
         { 10, 10, 0, {} },
     };
-    tassert_eqi(441, arr$len(slice_expected));
+    tassert_eq(441, arr$len(slice_expected));
 
     for$eachp(it, slice_expected, arr$len(slice_expected))
     {
@@ -731,7 +731,7 @@ test$case(test_arrays_and_slices)
         );
 
         for(usize i = 0; i < s4.len; i++){
-            tassert_eqi(s4.arr[i], it->slice[i]);
+            tassert_eq(s4.arr[i], it->slice[i]);
         }
         if (s4.len == 0){
             tassert(s4.arr == NULL && "must be NULL when empty");

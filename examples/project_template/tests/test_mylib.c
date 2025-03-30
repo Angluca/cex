@@ -20,8 +20,8 @@ test$setup()
 
 test$case(my_test_add)
 {
-    tassert_eqi(4, mylib.add(1, 3));
-    tassert_eqi(30, mylib.add(1, 29));
+    tassert_eq(4, mylib.add(1, 3));
+    tassert_eq(30, mylib.add(1, 29));
 
     return EOK;
 }
@@ -29,7 +29,7 @@ test$case(my_test_add)
 test$case(my_test_mul)
 {
     // Oops, it looks like there is a bug in mylib.mul() ;) 
-    tassert_eqi(6, mylib.mul(2, 3));
+    tassert_eq(6, mylib.mul(2, 3));
     return EOK;
 }
 
