@@ -193,7 +193,7 @@ static Exc
 _check_eq_err(const char* a, const char* b, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
-    if (!(a == NULL || b == NULL) && !str.eq(a, b)) {
+    if (!str.eq(a, b)) {
         const char* ea = (a == EOK) ? "Error.ok" : a;
         const char* eb = (b == EOK) ? "Error.ok" : b;
         snprintf(
