@@ -217,7 +217,6 @@ void __sanitizer_print_stack_trace();
 
 #ifdef CEXTEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
-#define __CEX_OUT_STREAM stdout
 int __cex_test_uassert_enabled = 1;
 #define uassert_disable() __cex_test_uassert_enabled = 0
 #define uassert_enable() __cex_test_uassert_enabled = 1
@@ -227,7 +226,6 @@ int __cex_test_uassert_enabled = 1;
     _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEXTEST")
 #define uassert_enable() (void)0
 #define uassert_is_enabled() true
-#define __CEX_OUT_STREAM stderr
 #define __cex_test_postmortem_ctx NULL
 #define __cex_test_postmortem_exists() 0
 #define __cex_test_postmortem_f(ctx)
@@ -244,7 +242,7 @@ int __cex_test_uassert_enabled = 1;
     ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
-                __CEX_OUT_STREAM,                                                                  \
+                (uassert_is_enabled() ? stderr : stdout),                                                                  \
                 "[ASSERT] ",                                                                       \
                 __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
@@ -262,7 +260,7 @@ int __cex_test_uassert_enabled = 1;
     ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
-                __CEX_OUT_STREAM,                                                                  \
+                (uassert_is_enabled() ? stderr : stdout),                                                                  \
                 "[ASSERT] ",                                                                       \
                 __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
