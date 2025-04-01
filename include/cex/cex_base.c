@@ -1,4 +1,5 @@
 #pragma once
+
 #include "cex_base.h"
 
 const struct _CEX_Error_struct Error = {
@@ -19,3 +20,18 @@ const struct _CEX_Error_struct Error = {
     .os = "OSError",                 // generic OS check
     .timeout = "TimeoutError",       // await interval timeout
 };
+
+void
+__cex__panic(void)
+{
+    fflush(stdout);
+    fflush(stderr);
+    sanitizer_stack_trace();
+
+#ifdef CEXTEST
+    raise(SIGTRAP);
+#else
+    abort();
+#endif
+    return;
+}

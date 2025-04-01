@@ -1,9 +1,19 @@
 #define cexy$cc_args "-Wall", "-Wextra"
-#define BUILD_DIR "build_cex/"
+#define BUILD_DIR "build/"
 
 #define CEX_IMPLEMENTATION
 #define CEX_BUILD
 #include "cex.h"
+
+#if defined __has_include
+#  if __has_include(<nonexistent_header.h>)
+#    include <nonexistent_header.h>
+#  else
+#    warning "Header nonexistent_header.h not found, skipping..."
+#  endif
+#else
+#  warning "Compiler does not support __has_include, cannot check header"
+#endif
 
 Exception cmd_check(int argc, const char** argv, void* user_ctx);
 Exception cmd_build(int argc, const char** argv, void* user_ctx);
@@ -52,6 +62,7 @@ cmd_build(int argc, const char** argv, void* user_ctx)
     (void)user_ctx;
     log$debug("Start building something\n");
     e$ret(os.fs.mkdir(BUILD_DIR));
+    e$assert(false && "foo");
 
     mem$scope(tmem$, _)
     {

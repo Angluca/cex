@@ -83,7 +83,7 @@ test$case(test_str_len)
     tassert_eq(2, str.len("wa"));
     tassert_eq(0, str.len(""));
 
-    char a[1] = {0};
+    char a[1] = { 0 };
     tassert_eq(0, str.len(a));
     tassert_eq(0, str.len(NULL));
 
@@ -369,8 +369,8 @@ test$case(test_eqi)
     char* s2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123!@#тест";
     tassert(str.eqi(s, s2));
 
-    tassert(!str.eqi(s, s2+1));
-    tassert(!str.eqi(s+1, s2));
+    tassert(!str.eqi(s, s2 + 1));
+    tassert(!str.eqi(s + 1, s2));
 
     return EOK;
 }
@@ -1667,10 +1667,7 @@ test$case(test_str_sprintf)
     tassert_eq('\0', buffer[arr$len(buffer) - 1]);
 
     memset(buffer, 'z', sizeof(buffer));
-    tassert_er(
-        Error.overflow,
-        str.sprintf(buffer, sizeof(buffer), "%s", "12345678900129830128308")
-    );
+    tassert_er(Error.overflow, str.sprintf(buffer, sizeof(buffer), "%s", "12345678900129830128308"));
     tassert_eq("", buffer);
     tassert_eq('\0', buffer[arr$len(buffer) - 1]);
 
@@ -1973,12 +1970,7 @@ test$case(test_split_lines)
     {
         var s = str.sstr("ab c\n\nde fg\rkl\r\nfff\fvvv\v");
         const char* expected[] = {
-            "ab c",
-            "",
-            "de fg",
-            "kl",
-            "fff",
-            "vvv",
+            "ab c", "", "de fg", "kl", "fff", "vvv",
         };
         arr$(char*) res = str.split_lines(s.buf, _);
         tassert(res != NULL);
@@ -2099,5 +2091,31 @@ test$case(test_str_slice_eq)
 
     return EOK;
 }
-
+test$case(test_str_match)
+{
+    tassert(str.match("test", "*"));
+    tassert(str.match("", "*"));
+    tassert(!str.match(NULL, "*"));
+    tassert(!str.match("test.txt", ""));
+    tassert(str.match("test.txt", "*txt"));
+    tassert(!str.match("test.txt", "*.tx"));
+    tassert(str.match("test.txt", "*.txt"));
+    tassert(str.match("test.txt", "*xt"));
+    tassert(str.match("txt", "???"));
+    tassert(str.match("txta", "???a"));
+    tassert(!str.match("txt", "???a"));
+    tassert(!str.match("txt", "??"));
+    tassert(str.match("t", "?"));
+    tassert(str.match("t", "*"));
+    tassert(str.match("test1.txt", "test?.txt"));
+    tassert(str.match("test.txt", "*.*"));
+    tassert(str.match("test1.txt", "t*t?.txt"));
+    tassert(str.match("test.txt", "*?txt"));
+    tassert(str.match("test.txt", "*.???"));
+    tassert(str.match("test.txt", "*?t?*"));
+    tassert(str.match( "a*b", "a\\*b"));
+    tassert(str.match("backup.txt", "[!a]*.txt"));
+    tassert(str.match("image.png", "image.[jp][pn]g"));
+    return EOK;
+}
 test$main();

@@ -1,19 +1,27 @@
 #ifndef CEX_HEADER_H
 #define CEX_HEADER_H
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdalign.h>
+#include <threads.h>
+#include <stdarg.h>
+
+#ifdef _WIN32
+typedef struct _IO_FILE FILE;
+#else
+typedef struct _IO_FILE FILE;
+#endif
+
 #include <ctype.h>
 #include <errno.h>
 #include <float.h>
 #include <math.h>
 #include <signal.h>
-#include <stdalign.h>
 #include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <threads.h>
 #include <unistd.h>
 
 #ifdef _WIN32
@@ -78,7 +86,7 @@ typedef uint64_t u64;
 typedef float f32;
 typedef double f64;
 typedef size_t usize;
-typedef ssize_t isize;
+typedef ptrdiff_t isize;
 
 /// automatic variable type, supported by GCC/Clang
 #define var __auto_type
@@ -144,10 +152,7 @@ extern const struct _CEX_Error_struct
 
 // NOTE: you may try to define our own fprintf
 #define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                          \
-    (({                                                                                            \
-        fprintf(stream, "%s ( %s:%d %s() ) ", prefix, filename, line, func);                       \
-        fprintf(stream, format, ##__VA_ARGS__);                                                    \
-    }))
+    fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
 
 static inline bool
 __cex__fprintf_dummy(void)
@@ -291,8 +296,6 @@ int __cex_test_uassert_enabled = 1;
 #endif // #ifdef CEXTEST
 
 
-
-
 /**
  * @def uassert(A)
  * @brief Custom assertion, with support of sanitizer call stack printout at failure.
@@ -301,7 +304,7 @@ int __cex_test_uassert_enabled = 1;
     ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
-                (uassert_is_enabled() ? stderr : stdout),                                                                  \
+                (uassert_is_enabled() ? stderr : stdout),                                          \
                 "[ASSERT] ",                                                                       \
                 __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
@@ -310,7 +313,7 @@ int __cex_test_uassert_enabled = 1;
                 #A                                                                                 \
             );                                                                                     \
             if (uassert_is_enabled()) {                                                            \
-                __cex__assert();                                                                   \
+                __cex__panic();                                                                    \
             }                                                                                      \
         }                                                                                          \
     })
@@ -319,7 +322,7 @@ int __cex_test_uassert_enabled = 1;
     ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
-                (uassert_is_enabled() ? stderr : stdout),                                                                  \
+                (uassert_is_enabled() ? stderr : stdout),                                          \
                 "[ASSERT] ",                                                                       \
                 __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
@@ -328,34 +331,18 @@ int __cex_test_uassert_enabled = 1;
                 ##__VA_ARGS__                                                                      \
             );                                                                                     \
             if (uassert_is_enabled()) {                                                            \
-                __cex__assert();                                                                   \
+                __cex__panic();                                                                    \
             }                                                                                      \
         }                                                                                          \
     })
 #endif
 
-#ifndef __cex__abort
-#ifdef CEXTEST
-#define __cex__abort() raise(SIGTRAP)
-#else
-#define __cex__abort() abort()
-#endif
-#endif
-
-#ifndef __cex__assert
-#define __cex__assert()                                                                            \
-    ({                                                                                             \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-        sanitizer_stack_trace();                                                                   \
-        __cex__abort();                                                                            \
-    })
-#endif
+__attribute__((noinline)) void __cex__panic(void);
 
 #define unreachable(format, ...)                                                                   \
     ({                                                                                             \
         __cex__fprintf(                                                                            \
-            stderr,                                                                      \
+            stderr,                                                                                \
             "[UNREACHABLE] ",                                                                      \
             __FILE_NAME__,                                                                         \
             __LINE__,                                                                              \
@@ -363,8 +350,7 @@ int __cex_test_uassert_enabled = 1;
             format "\n",                                                                           \
             ##__VA_ARGS__                                                                          \
         );                                                                                         \
-        sanitizer_stack_trace();                                                                   \
-        __cex__abort();                                                                            \
+        __cex__panic();                                                                            \
     })
 
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
@@ -1508,9 +1494,6 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__sbuf sbuf; 
 
 #define io$ansi(text, ansi_col) "\033[" ansi_col "m" text "\033[0m"
 
-__attribute__((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
-__attribute__((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
-__attribute__ ((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
 struct __module__io
 {
     // Autogenerated by CEX
@@ -1527,7 +1510,6 @@ Exception       (*fread_line)(FILE* file, str_s* s, IAllocator allc);
 Exception       (*fseek)(FILE* file, long offset, int whence);
 Exception       (*ftell)(FILE* file, usize* size);
 Exception       (*fwrite)(FILE* file, const void* obj_buffer, usize obj_el_size, usize obj_count);
-bool            (*has_ansi_support)();
 bool            (*isatty)(FILE* file);
 void            (*printf)(const char* format, ...);
 void            (*rewind)(FILE* file);
@@ -3391,6 +3373,7 @@ struct _cex_test_context_s
 *                   cex_base.c
 */
 
+
 const struct _CEX_Error_struct Error = {
     .ok = EOK,                       // Success
     .memory = "MemoryError",         // memory allocation error
@@ -3409,6 +3392,21 @@ const struct _CEX_Error_struct Error = {
     .os = "OSError",                 // generic OS check
     .timeout = "TimeoutError",       // await interval timeout
 };
+
+void
+__cex__panic(void)
+{
+    fflush(stdout);
+    fflush(stderr);
+    sanitizer_stack_trace();
+
+#ifdef CEXTEST
+    raise(SIGTRAP);
+#else
+    abort();
+#endif
+    return;
+}
 
 /*
 *                   mem.c
@@ -8937,17 +8935,8 @@ bool
 io_isatty(FILE* file)
 {
     uassert(file != NULL);
-    return isatty(fileno(file)) == 1;
-}
-
-bool
-io_has_ansi_support()
-{
     // TODO: add windows version
-    if (!isatty(fileno(stdout))) {
-        return false;
-    }
-    return true;
+    return isatty(fileno(stdout)) == 1;
 }
 
 Exception
@@ -9456,7 +9445,6 @@ const struct __module__io io = {
     .fopen = io_fopen,
     .fileno = io_fileno,
     .isatty = io_isatty,
-    .has_ansi_support = io_has_ansi_support,
     .fflush = io_fflush,
     .fseek = io_fseek,
     .rewind = io_rewind,
@@ -10888,6 +10876,7 @@ const struct __module__os os = {
 *                   test.c
 */
 #ifdef CEXTEST
+#include <math.h>
 
 enum _cex_test_eq_op_e
 {
@@ -10900,7 +10889,7 @@ enum _cex_test_eq_op_e
     _cex_test_eq_op__ge,
 };
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -10951,7 +10940,7 @@ _check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_almost(f64 a, f64 b, f64 delta, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -10962,7 +10951,7 @@ _check_eq_almost(f64 a, f64 b, f64 delta, int line)
     } else if (isinf(a) && isinf(b)) {
         passed = (signbit(a) == signbit(b));
     } else {
-        passed = fabs(abdelta) <= ((delta != 0) ? delta : (f64)FLT_EPSILON);
+        passed = fabs(abdelta) <= ((delta != 0) ? delta : (f64)0.0000001);
     }
     if (!passed) {
         snprintf(
@@ -10981,7 +10970,7 @@ _check_eq_almost(f64 a, f64 b, f64 delta, int line)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
 {
     (void)op;
@@ -10996,7 +10985,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
     } else if (isinf(a) && isinf(b)) {
         is_equal = (signbit(a) == signbit(b));
     } else {
-        is_equal = fabs(delta) <= (f64)FLT_EPSILON;
+        is_equal = fabs(delta) <= (f64)0.0000001;
     }
     switch (op) {
         case _cex_test_eq_op__na:
@@ -11044,7 +11033,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
 {
     bool passed = false;
@@ -11078,7 +11067,7 @@ _check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_err(const char* a, const char* b, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -11100,7 +11089,7 @@ _check_eq_err(const char* a, const char* b, int line)
 }
 
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_ptr(const void* a, const void* b, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -11120,7 +11109,7 @@ _check_eq_ptr(const void* a, const void* b, int line)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
 {
     bool passed = false;
@@ -11155,7 +11144,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
     return EOK;
 }
 
-static void
+static void __attribute__((noinline))
 cex_test_mute()
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -11167,7 +11156,7 @@ cex_test_mute()
         dup2(fileno(ctx->out_stream), STDOUT_FILENO);
     }
 }
-static void
+static void __attribute__((noinline))
 cex_test_unmute(Exc test_result)
 {
     (void)test_result;
@@ -11193,7 +11182,7 @@ cex_test_unmute(Exc test_result)
 }
 
 
-static int
+static int __attribute__((noinline))
 cex_test_main_fn(int argc, char** argv)
 {
     (void)argc;
@@ -11216,7 +11205,7 @@ cex_test_main_fn(int argc, char** argv)
 
     ctx->quiet_mode = false;
     // FIX: after migrating to CEX c build system
-    ctx->has_ansi = true; // io.has_ansi_support();
+    ctx->has_ansi = true; // io.is_atty();
 
     argparse_opt_s options[] = {
         argparse$opt_help(),

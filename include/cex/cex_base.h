@@ -19,7 +19,7 @@ typedef uint64_t u64;
 typedef float f32;
 typedef double f64;
 typedef size_t usize;
-typedef ssize_t isize;
+typedef ptrdiff_t isize;
 
 /// automatic variable type, supported by GCC/Clang
 #define var __auto_type
@@ -85,10 +85,7 @@ extern const struct _CEX_Error_struct
 
 // NOTE: you may try to define our own fprintf
 #define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                          \
-    (({                                                                                            \
-        fprintf(stream, "%s ( %s:%d %s() ) ", prefix, filename, line, func);                       \
-        fprintf(stream, format, ##__VA_ARGS__);                                                    \
-    }))
+    fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
 
 static inline bool
 __cex__fprintf_dummy(void)
@@ -232,8 +229,6 @@ int __cex_test_uassert_enabled = 1;
 #endif // #ifdef CEXTEST
 
 
-
-
 /**
  * @def uassert(A)
  * @brief Custom assertion, with support of sanitizer call stack printout at failure.
@@ -242,7 +237,7 @@ int __cex_test_uassert_enabled = 1;
     ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
-                (uassert_is_enabled() ? stderr : stdout),                                                                  \
+                (uassert_is_enabled() ? stderr : stdout),                                          \
                 "[ASSERT] ",                                                                       \
                 __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
@@ -251,7 +246,7 @@ int __cex_test_uassert_enabled = 1;
                 #A                                                                                 \
             );                                                                                     \
             if (uassert_is_enabled()) {                                                            \
-                __cex__assert();                                                                   \
+                __cex__panic();                                                                    \
             }                                                                                      \
         }                                                                                          \
     })
@@ -260,7 +255,7 @@ int __cex_test_uassert_enabled = 1;
     ({                                                                                             \
         if (unlikely(!((A)))) {                                                                    \
             __cex__fprintf(                                                                        \
-                (uassert_is_enabled() ? stderr : stdout),                                                                  \
+                (uassert_is_enabled() ? stderr : stdout),                                          \
                 "[ASSERT] ",                                                                       \
                 __FILE_NAME__,                                                                     \
                 __LINE__,                                                                          \
@@ -269,34 +264,18 @@ int __cex_test_uassert_enabled = 1;
                 ##__VA_ARGS__                                                                      \
             );                                                                                     \
             if (uassert_is_enabled()) {                                                            \
-                __cex__assert();                                                                   \
+                __cex__panic();                                                                    \
             }                                                                                      \
         }                                                                                          \
     })
 #endif
 
-#ifndef __cex__abort
-#ifdef CEXTEST
-#define __cex__abort() raise(SIGTRAP)
-#else
-#define __cex__abort() abort()
-#endif
-#endif
-
-#ifndef __cex__assert
-#define __cex__assert()                                                                            \
-    ({                                                                                             \
-        fflush(stdout);                                                                            \
-        fflush(stderr);                                                                            \
-        sanitizer_stack_trace();                                                                   \
-        __cex__abort();                                                                            \
-    })
-#endif
+__attribute__((noinline)) void __cex__panic(void);
 
 #define unreachable(format, ...)                                                                   \
     ({                                                                                             \
         __cex__fprintf(                                                                            \
-            stderr,                                                                      \
+            stderr,                                                                                \
             "[UNREACHABLE] ",                                                                      \
             __FILE_NAME__,                                                                         \
             __LINE__,                                                                              \
@@ -304,8 +283,7 @@ int __cex_test_uassert_enabled = 1;
             format "\n",                                                                           \
             ##__VA_ARGS__                                                                          \
         );                                                                                         \
-        sanitizer_stack_trace();                                                                   \
-        __cex__abort();                                                                            \
+        __cex__panic();                                                                            \
     })
 
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)

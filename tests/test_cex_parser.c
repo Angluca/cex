@@ -473,4 +473,30 @@ test$case(test_token_this_file)
     return EOK;
 }
 
+test$case(test_token_json)
+{
+    // clang-format off
+    char* code = 
+        "{\"hi\": {\"foo\": \"test\"}\n";
+
+    // clang-format on
+    CexLexer_c lx = CexLexer_create(code, 0, false);
+    cex_token_s t;
+    u32 nit = 0;
+    while( (t = CexLexer_next_token(&lx)).type){
+        io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
+    }
+    tassert(false);
+    t = CexLexer_next_token(&lx);
+    tassertf(
+        t.type == CexTkn__eof,
+        "step: %d type_exp=%d, t.type=%d t.value='%S'\n",
+        nit,
+        CexTkn__eof,
+        t.type,
+        t.value
+    );
+    return EOK;
+}
+
 test$main();

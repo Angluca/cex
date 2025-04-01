@@ -1,17 +1,25 @@
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdalign.h>
+#include <threads.h>
+#include <stdarg.h>
+
+#ifdef _WIN32
+typedef struct _IO_FILE FILE;
+#else
+typedef struct _IO_FILE FILE;
+#endif
+
 #include <ctype.h>
 #include <errno.h>
 #include <float.h>
 #include <math.h>
 #include <signal.h>
-#include <stdalign.h>
 #include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <threads.h>
 #include <unistd.h>
 
 #ifdef _WIN32

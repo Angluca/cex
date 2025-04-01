@@ -33,7 +33,7 @@ test$case(test_os_listdir)
 
     mem$scope(tmem$, _)
     {
-        arr$(char*) files = os.fs.dir_list("tests/data/", false, _);
+        arr$(char*) files = os.fs.find("tests/data/", false, _);
         tassert(files != NULL);
         tassert(arr$len(files) > 0);
 
