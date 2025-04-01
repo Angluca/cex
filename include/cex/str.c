@@ -1,4 +1,5 @@
 #pragma once
+#include "_sprintf.h"
 #include "all.h"
 
 static inline bool
@@ -67,7 +68,9 @@ str_eq(const char* a, const char* b)
     return strcmp(a, b) == 0;
 }
 
-bool str_eqi(const char *a, const char *b) {
+bool
+str_eqi(const char* a, const char* b)
+{
     if (unlikely(a == NULL || b == NULL)) {
         return a == b;
     }
@@ -1311,6 +1314,152 @@ str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
     return result;
 }
 
+/**
+* matches any sequence of characters
+? matches any single character
+[abc] matches any character in the set (a, b, or c)
+[!abc] matches any character not in the set
+[a-z] matches range (for a character)
+[a-zA-Z0-9_@#$] matches range multiple / range + single mixing
+[a-z+] matches range for a sequence of characters
+*/
+bool
+str_match(const char* str, const char* pattern)
+{
+    if (unlikely(str == NULL)) {
+        return false;
+    }
+    uassert(pattern && "null pattern");
+
+    while (*pattern != '\0') {
+        switch (*pattern) {
+            case '*':
+                while (*pattern == '*') {
+                    pattern++;
+                }
+
+                if (!*pattern) {
+                    return true;
+                }
+
+                if (*pattern != '?' && *pattern != '[' && *pattern != '\\') {
+                    while (*str && *pattern != *str) {
+                        str++;
+                    }
+                }
+
+                while (*str) {
+                    if (str_match(str, pattern)) {
+                        return true;
+                    }
+                    str++;
+                }
+                return false;
+
+            case '?':
+                if (*str == '\0') {
+                    return false; // '?' requires a character
+                }
+                str++;
+                pattern++;
+                break;
+
+            case '[': {
+                const char* pstart = pattern;
+                while (*str != '\0') {
+                    bool negate = false;
+                    bool repeating = false;
+                    pattern = pstart + 1;
+
+                    if (unlikely(*pattern == '!')) {
+                        uassert(*(pattern + 1) != ']' && "expected some chars after [!..]");
+                        negate = true;
+                        pattern++;
+                    }
+
+                    bool matched = false;
+                    while (*pattern != ']' && *pattern != '\0') {
+                        if (*(pattern + 1) == '-' && *(pattern + 2) != ']' &&
+                            *(pattern + 2) != '\0') {
+                            // Handle character ranges like a-zA-Z0-9
+                            uassertf(
+                                *pattern < *(pattern + 2),
+                                "pattern [n-m] sequence, n must be less than m: [%c-%c]",
+                                *pattern,
+                                *(pattern + 2)
+                            );
+                            if (*str >= *pattern && *str <= *(pattern + 2)) {
+                                matched = true;
+                            }
+                            pattern += 3;
+                        } else if (*pattern == '\\') {
+                            // Escape sequence
+                            pattern++;
+                            if (*pattern != '\0') {
+                                if (*pattern == *str) {
+                                    matched = true;
+                                }
+                                pattern++;
+                            }
+                        } else {
+                            if (unlikely(*pattern == '+' && *(pattern + 1) == ']')) {
+                                // repeating group [a-z+]@, match all cases until @
+                                repeating = true;
+                            } else {
+                                if (*pattern == *str) {
+                                    matched = true;
+                                }
+                            }
+                            pattern++;
+                        }
+                    }
+
+                    if (unlikely(*pattern != ']')) {
+                        uassert(false && "Invalid pattern - no closing ']'");
+                        return false;
+                    } else {
+                        pattern++;
+                        if (matched == negate) {
+                            if (repeating) {
+                                // We have not matched char, but it may match to next pattern
+                                break;
+                            }
+                            return false;
+                        }
+
+                        str++;
+                        if (!repeating) {
+                            break; // while (*str != '\0') {
+                        }
+                    }
+                }
+
+                if (*str == '\0') {
+                    return *str == *pattern;
+                }
+                break;
+            }
+
+            case '\\':
+                // Escape next character
+                pattern++;
+                if (*pattern == '\0') {
+                    return false;
+                }
+                fallthrough();
+
+            default:
+                if (*pattern != *str) {
+                    return false;
+                }
+                str++;
+                pattern++;
+        }
+    }
+
+    return *str == '\0';
+}
+
 const struct __module__str str = {
     // Autogenerated by CEX
     // clang-format off
@@ -1335,6 +1484,7 @@ const struct __module__str str = {
     .split = str_split,
     .split_lines = str_split_lines,
     .join = str_join,
+    .match = str_match,
 
     .slice = {  // sub-module .slice >>>
         .eq = str__slice__eq,

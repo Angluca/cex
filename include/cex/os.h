@@ -72,8 +72,6 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_filetype_s ftype, voi
         os$cmda(_args, _args_len);                                                                 \
     })
 
-__attribute__((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
-__attribute__ ((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
 __attribute__ ((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
 struct __module__os
 {
@@ -83,9 +81,9 @@ struct __module__os
 void            (*sleep)(u32 period_millisec);
 
 struct {  // sub-module .fs >>>
-    arr$(char*)     (*dir_list)(const char* path, bool is_recursive, IAllocator allc);
     Exception       (*dir_walk)(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx);
     os_fs_filetype_s (*file_type)(const char* path);
+    arr$(char*)     (*find)(const char* path, bool is_recursive, IAllocator allc);
     Exception       (*getcwd)(sbuf_c* out);
     Exception       (*mkdir)(const char* path);
     Exception       (*remove)(const char* path);
@@ -121,4 +119,3 @@ struct {  // sub-module .cmd >>>
 } cmd;  // sub-module .cmd <<<
     // clang-format on
 };
-__attribute__ ((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen

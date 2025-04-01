@@ -2093,6 +2093,7 @@ test$case(test_str_slice_eq)
 }
 test$case(test_str_match)
 {
+    uassert_disable();
     tassert(str.match("test", "*"));
     tassert(str.match("", "*"));
     tassert(!str.match(NULL, "*"));
@@ -2113,9 +2114,48 @@ test$case(test_str_match)
     tassert(str.match("test.txt", "*?txt"));
     tassert(str.match("test.txt", "*.???"));
     tassert(str.match("test.txt", "*?t?*"));
-    tassert(str.match( "a*b", "a\\*b"));
+    tassert(str.match("a*b", "a\\*b"));
     tassert(str.match("backup.txt", "[!a]*.txt"));
     tassert(str.match("image.png", "image.[jp][pn]g"));
+    tassert(!str.match("a", "[]"));
+    tassert(str.match("a", "[!]"));
+    tassert(!str.match("a", "[!"));
+    tassert(!str.match("a", "["));
+    tassert(str.match("a", "[ab]"));
+    tassert(str.match("b", "[ab]"));
+    tassert(str.match("b", "[abc]"));
+    tassert(str.match("c", "[abc]"));
+    tassert(str.match("a", "[a-c]"));
+    tassert(str.match("b", "[a-c]"));
+    tassert(str.match("c", "[a-c]"));
+    tassert(str.match("A", "[a-cA-C]"));
+    tassert(str.match("0", "[a-cA-C0-9]"));
+    tassert(!str.match("D", "[a-cA-C0-9]"));
+    tassert(!str.match("d", "[a-cA-C1-9]"));
+    tassert(!str.match("0", "[a-cA-C1-9]"));
+    tassert(str.match("_", "[_a-cd]"));
+    tassert(str.match("a", "[_a-cd]"));
+    tassert(str.match("b", "[_a-cd]"));
+    tassert(str.match("c", "[_a-cd]"));
+    tassert(str.match("d", "[_a-cd]"));
+    tassert(str.match("_", "[a-c_A-C1-9]"));
+    tassert(str.match("-", "[a-z-]"));
+    tassert(str.match("*", "[a-c*]"));
+    tassert(!str.match("d", "[a-c*]")); // * - is literal
+    tassert(str.match("*", "[*a-z]"));
+    tassert(str.match("*", "[a-z\\*]"));
+    tassert(str.match("]", "[\\]]"));
+    tassert(str.match("[", "[\\[]"));
+    tassert(str.match("abc", "[a-c+]"));
+    tassert(str.match("abc@", "[a-c+]@"));
+    tassert(str.match("abcfed", "[a-c+]*"));
+    tassert(str.match("abdef", "[a-c+][d-f+]"));
+    tassert(!str.match("abcf", "[a-c+]"));
+    tassert(str.match("abcf", "[a-c+]?"));
+    tassert(!str.match("", "[a-c+]"));
+    tassert(str.match("abcd", "[!d-f+]?"));
+    tassert(str.match("abcf", "[!d-f+]?"));
+    tassert(!str.match("abcff", "[!d-f+]?"));
     return EOK;
 }
 test$main();

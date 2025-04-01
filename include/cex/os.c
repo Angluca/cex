@@ -269,7 +269,7 @@ _os__fs__dir_list_walker(const char* path, os_fs_filetype_s ftype, void* user_ct
     return EOK;
 }
 
-static arr$(char*) os__fs__dir_list(const char* path, bool is_recursive, IAllocator allc)
+static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator allc)
 {
 
     if (unlikely(path == NULL)) {
@@ -768,7 +768,7 @@ const struct __module__os os = {
         .file_type = os__fs__file_type,
         .remove = os__fs__remove,
         .dir_walk = os__fs__dir_walk,
-        .dir_list = os__fs__dir_list,
+        .find = os__fs__find,
         .getcwd = os__fs__getcwd,
     },  // sub-module .fs <<<
 
