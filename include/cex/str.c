@@ -1322,6 +1322,7 @@ str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
 [a-z] matches range (for a character)
 [a-zA-Z0-9_@#$] matches range multiple / range + single mixing
 [a-z+] matches range for a sequence of characters
+(csv|txt|dat) - matches full string occurrence
 */
 bool
 str_match(const char* str, const char* pattern)
@@ -1364,6 +1365,61 @@ str_match(const char* str, const char* pattern)
                 pattern++;
                 break;
 
+            case '(': {
+                const char* strstart = str;
+                if (unlikely(*(pattern + 1) == ')')) {
+                    uassert(false && "Empty '()' group");
+                    return false;
+                }
+
+                while (*str != '\0') {
+                    pattern++;
+                    str = strstart;
+                    bool matched = false;
+                    while (*pattern != '\0') {
+                        if (unlikely(*pattern == '\\')) {
+                            pattern++;
+                            if (unlikely(*pattern == '\0')) {
+                                uassert(false && "Unterminated \\ sequence inside '()' group");
+                                return false;
+                            }
+                        }
+                        if (*pattern == *str) {
+                            matched = true;
+                        } else {
+                            while (*pattern != '|' && *pattern != ')' && *pattern != '\0') {
+                                pattern++;
+                            }
+                            break;
+                        }
+                        pattern++;
+                        str++;
+                    }
+                    if (*pattern == '|') {
+                        if (!matched) {
+                            continue;
+                        }
+                        // we have found the match, just skip to the end of group
+                        while (*pattern != ')' && *pattern != '\0') {
+                            pattern++;
+                        }
+                    }
+
+                    if (unlikely(*pattern != ')')) {
+                        uassert(false && "Invalid pattern - no closing ')'");
+                        return false;
+                    }
+
+                    pattern++;
+                    if (!matched) {
+                        return false;
+                    } else {
+                        // All good find next pattern
+                        break; // while (*str != '\0') {
+                    }
+                }
+                break;
+            }
             case '[': {
                 const char* pstart = pattern;
                 while (*str != '\0') {

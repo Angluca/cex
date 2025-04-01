@@ -2146,16 +2146,49 @@ test$case(test_str_match)
     tassert(str.match("*", "[a-z\\*]"));
     tassert(str.match("]", "[\\]]"));
     tassert(str.match("[", "[\\[]"));
+    tassert(str.match("\\", "[\\\\]"));
     tassert(str.match("abc", "[a-c+]"));
     tassert(str.match("abc@", "[a-c+]@"));
     tassert(str.match("abcfed", "[a-c+]*"));
     tassert(str.match("abdef", "[a-c+][d-f+]"));
     tassert(!str.match("abcf", "[a-c+]"));
+    tassert(str.match("abc+", "[+a-c+]"));
     tassert(str.match("abcf", "[a-c+]?"));
     tassert(!str.match("", "[a-c+]"));
     tassert(str.match("abcd", "[!d-f+]?"));
     tassert(str.match("abcf", "[!d-f+]?"));
     tassert(!str.match("abcff", "[!d-f+]?"));
+
+    tassert(!str.match("abc", "(\\"));
+    tassert(str.match("abc", "(abc)"));
+    tassert(str.match("def", "(abc|def)"));
+    tassert(str.match("abcdef", "abc(abc|def)"));
+    tassert(str.match("abXdef", "ab?(abc|def)"));
+    tassert(str.match("abcdef", "(abc|def)(abc|def)"));
+    tassert(!str.match("adef", "(cdef)"));
+    tassert(!str.match("bdef", "(cdef)"));
+    tassert(!str.match("f", "(cdef)"));
+    tassert(!str.match("f", "(cdef)"));
+    tassert(!str.match("fas", "(fa)"));
+    tassert(!str.match("fas", "(fa)"));
+    tassert(str.match("fa@", "(fa)@"));
+    tassert(str.match("faB", "(fa)B"));
+    tassert(str.match("faZ", "(fa)?"));
+    tassert(str.match("faZ", "(fa)*"));
+    tassert(str.match("faZ", "(fa)[A-Z]"));
+    tassert(!str.match("fas", "(fa|)"));
+    tassert(str.match("fa", "(fa|)"));
+    tassert(str.match("fa", "(|fa)"));
+    tassert(!str.match("fa", "(|)"));
+    tassert(!str.match("fa", "()"));
+    tassert(!str.match("fa", "fa()"));
+    tassert(str.match("fa)", "(fa\\))"));
+    tassert(str.match("fa|", "(fa\\|)"));
+    tassert(str.match("fa\\", "(fa\\\\)"));
+
+    // NOTE: \\+ - makes pattern non repeating it will test only 'a' and fail
+    tassert(!str.match("abc+", "[a-c\\+]"));
+    tassert(str.match("a+", "a[a-c\\+]"));
     return EOK;
 }
 test$main();
