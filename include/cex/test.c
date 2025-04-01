@@ -1,5 +1,6 @@
 #include "all.h"
 #ifdef CEXTEST
+#include <math.h>
 
 enum _cex_test_eq_op_e
 {
@@ -12,7 +13,7 @@ enum _cex_test_eq_op_e
     _cex_test_eq_op__ge,
 };
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -63,7 +64,7 @@ _check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_almost(f64 a, f64 b, f64 delta, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -74,7 +75,7 @@ _check_eq_almost(f64 a, f64 b, f64 delta, int line)
     } else if (isinf(a) && isinf(b)) {
         passed = (signbit(a) == signbit(b));
     } else {
-        passed = fabs(abdelta) <= ((delta != 0) ? delta : (f64)FLT_EPSILON);
+        passed = fabs(abdelta) <= ((delta != 0) ? delta : (f64)0.0000001);
     }
     if (!passed) {
         snprintf(
@@ -93,7 +94,7 @@ _check_eq_almost(f64 a, f64 b, f64 delta, int line)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
 {
     (void)op;
@@ -108,7 +109,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
     } else if (isinf(a) && isinf(b)) {
         is_equal = (signbit(a) == signbit(b));
     } else {
-        is_equal = fabs(delta) <= (f64)FLT_EPSILON;
+        is_equal = fabs(delta) <= (f64)0.0000001;
     }
     switch (op) {
         case _cex_test_eq_op__na:
@@ -156,7 +157,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
 {
     bool passed = false;
@@ -190,7 +191,7 @@ _check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_err(const char* a, const char* b, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -212,7 +213,7 @@ _check_eq_err(const char* a, const char* b, int line)
 }
 
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eq_ptr(const void* a, const void* b, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -232,7 +233,7 @@ _check_eq_ptr(const void* a, const void* b, int line)
     return EOK;
 }
 
-static Exc
+static Exc __attribute__((noinline))
 _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
 {
     bool passed = false;
@@ -267,7 +268,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
     return EOK;
 }
 
-static void
+static void __attribute__((noinline))
 cex_test_mute()
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
@@ -279,7 +280,7 @@ cex_test_mute()
         dup2(fileno(ctx->out_stream), STDOUT_FILENO);
     }
 }
-static void
+static void __attribute__((noinline))
 cex_test_unmute(Exc test_result)
 {
     (void)test_result;
@@ -305,7 +306,7 @@ cex_test_unmute(Exc test_result)
 }
 
 
-static int
+static int __attribute__((noinline))
 cex_test_main_fn(int argc, char** argv)
 {
     (void)argc;
@@ -328,7 +329,7 @@ cex_test_main_fn(int argc, char** argv)
 
     ctx->quiet_mode = false;
     // FIX: after migrating to CEX c build system
-    ctx->has_ansi = true; // io.has_ansi_support();
+    ctx->has_ansi = true; // io.is_atty();
 
     argparse_opt_s options[] = {
         argparse$opt_help(),

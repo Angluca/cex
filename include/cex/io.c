@@ -42,17 +42,8 @@ bool
 io_isatty(FILE* file)
 {
     uassert(file != NULL);
-    return isatty(fileno(file)) == 1;
-}
-
-bool
-io_has_ansi_support()
-{
     // TODO: add windows version
-    if (!isatty(fileno(stdout))) {
-        return false;
-    }
-    return true;
+    return isatty(fileno(stdout)) == 1;
 }
 
 Exception
@@ -561,7 +552,6 @@ const struct __module__io io = {
     .fopen = io_fopen,
     .fileno = io_fileno,
     .isatty = io_isatty,
-    .has_ansi_support = io_has_ansi_support,
     .fflush = io_fflush,
     .fseek = io_fseek,
     .rewind = io_rewind,
