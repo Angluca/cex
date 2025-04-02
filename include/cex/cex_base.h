@@ -85,7 +85,7 @@ extern const struct _CEX_Error_struct
 
 // NOTE: you may try to define our own fprintf
 #define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                          \
-    fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
+    io.fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
 
 static inline bool
 __cex__fprintf_dummy(void)
@@ -303,8 +303,12 @@ __attribute__((noinline)) void __cex__panic(void);
          unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func)));                    \
          _var_name = EOK)
 
+#if defined(CEXTEST) || defined(CEXBUILD)
+#define e$except_silent(_var_name, _func) e$except(_var_name, _func)
+#else
 #define e$except_silent(_var_name, _func)                                                          \
     for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
+#endif
 
 #define e$except_errno(_expression)                                                                \
     if (unlikely(                                                                                  \
