@@ -2924,7 +2924,7 @@ _Static_assert(sizeof(os_fs_filetype_s) == sizeof(usize) * 2, "size?");
 typedef Exception os_fs_dir_walk_f(const char* path, os_fs_filetype_s ftype, void* user_ctx);
 
 
-#ifdef CEX_BUILD
+#ifdef CEXBUILD
 #define _os$args_print(msg, args, args_len)                                                        \
     log$debug(msg "");                                                                             \
     for (u32 i = 0; i < args_len - 1; i++) {                                                       \
@@ -3342,7 +3342,7 @@ struct _cex_test_context_s
 *                   cexy.h
 */
 
-#if defined(CEX_BUILD)
+#if defined(CEXBUILD)
 
 #ifndef cexy$cc
 #if defined(__clang__)
@@ -3359,7 +3359,7 @@ struct _cex_test_context_s
 #define cexy$needs_rebuild
 #define cexy$initialize
 
-#endif // #if defined(CEX_BUILD)
+#endif // #if defined(CEXBUILD)
 
 /*
 *                   CEX IMPLEMENTATION 

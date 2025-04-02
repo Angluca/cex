@@ -253,45 +253,97 @@ end:
     return result;
 }
 
+struct _os_fs_find_ctx_s
+{
+    const char* pattern;
+    arr$(char*) result;
+    IAllocator allc;
+};
+
 static Exception
-_os__fs__dir_list_walker(const char* path, os_fs_filetype_s ftype, void* user_ctx)
+_os__fs__find_walker(const char* path, os_fs_filetype_s ftype, void* user_ctx)
 {
     (void)ftype;
-    arr$(const char*) arr = *(arr$(const char*)*)user_ctx;
-    uassert(arr != NULL);
+    struct _os_fs_find_ctx_s* ctx = (struct _os_fs_find_ctx_s*)user_ctx;
+    uassert(ctx->result != NULL);
+    if (ftype.is_directory) {
+        return EOK; // skip, only supports finding files!
+    }
 
-    // Doing graceful memory check, otherwise arr$push will assert
-    if (!arr$grow_check(arr, 1)) {
+    str_s file_part = os.path.split(path, false);
+    if (!str.match(file_part.buf, ctx->pattern)) {
+        return EOK; // just skip when patten not matched
+    }
+
+    // allocate new string because path is stack allocated buffer in os__fs__dir_walk()
+    char* new_path = str.clone(path, ctx->allc);
+    if (new_path == NULL) {
         return Error.memory;
     }
-    arr$push(arr, path);
-    *(arr$(const char*)*)user_ctx = arr; // in case of reallocation update this
+
+    // Doing graceful memory check, otherwise arr$push will assert
+    if (!arr$grow_check(ctx->result, 1)) {
+        return Error.memory;
+    }
+    arr$push(ctx->result, new_path);
     return EOK;
 }
 
 static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator allc)
 {
 
-    if (unlikely(path == NULL)) {
-        return NULL;
-    }
-    if (allc == NULL) {
-        return NULL;
-    }
-    arr$(char*) result = arr$new(result, allc);
-    if (result == NULL) {
+    if (unlikely(allc == NULL)) {
         return NULL;
     }
 
-    // NOTE: we specially pass &result, in order to maintain realloc-pointer change
-    e$except_silent(err, os__fs__dir_walk(path, is_recursive, _os__fs__dir_list_walker, &result))
-    {
-        if (result != NULL) {
-            arr$free(result);
-        }
-        result = NULL;
+    str_s dir_part = dir_part = os.path.split(path, true);
+    if (dir_part.buf == NULL) {
+#if defined(CEXTEST) || defined(CEXBUILD)
+        (void)e$raise(Error.argument, "Bad path: os.fn.find('%s')", path);
+#endif
+        return NULL;
     }
-    return result;
+
+    char path_buf[PATH_MAX + 2] = { 0 };
+    if (dir_part.len > 0 && str.slice.copy(path_buf, dir_part, sizeof(path_buf))) {
+        uassert(dir_part.len < PATH_MAX);
+        return NULL;
+    }
+    if (str.copy(
+            path_buf + dir_part.len + 1,
+            path + dir_part.len,
+            sizeof(path_buf) - dir_part.len - 1
+        )) {
+        uassert(dir_part.len < PATH_MAX);
+        return NULL;
+    }
+    char* dir_name = (dir_part.len > 0) ? path_buf : ".";
+    char* pattern = (dir_part.len > 0) ? path_buf + dir_part.len + 1 : path_buf;
+    if (*pattern == os$PATH_SEP) {
+        pattern++;
+    }
+    if (*pattern == '\0') {
+        pattern = "*";
+    }
+
+    struct _os_fs_find_ctx_s ctx = { .result = arr$new(ctx.result, allc),
+                                     .pattern = pattern,
+                                     .allc = allc };
+    if (unlikely(ctx.result == NULL)) {
+        return NULL;
+    }
+
+    e$except_silent(err, os__fs__dir_walk(dir_name, is_recursive, _os__fs__find_walker, &ctx))
+    {
+        for$each(it, ctx.result) {
+            mem$free(allc, it); // each individual item was allocated too
+        }
+        if (ctx.result != NULL) {
+            arr$free(ctx.result);
+        }
+        ctx.result = NULL;
+    }
+    return ctx.result;
 }
 
 static Exception

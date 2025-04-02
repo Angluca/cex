@@ -28,49 +28,136 @@ test$case(test_os_dir_walk_print)
     return EOK;
 }
 
-test$case(test_os_listdir)
+test$case(test_os_find)
 {
 
     mem$scope(tmem$, _)
     {
-        arr$(char*) files = os.fs.find("tests/data/", false, _);
+        arr$(char*) files = os.fs.find("tests/data/dir1/", false, _);
         tassert(files != NULL);
         tassert(arr$len(files) > 0);
+        ;
+        hm$(char*, bool) exp_files = hm$new(exp_files, _);
+        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+        hm$set(exp_files, "tests/data/dir1/file3.txt", true);
 
-        const char* expected[] = {
-            "tests/data/allocator_fopen.txt",       "tests/data/text_file_50b.txt",
-            "tests/data/text_file_empty.txt",       "tests/data/text_file_fprintf.txt",
-            "tests/data/text_file_line_4095.txt",   "tests/data/text_file_only_newline.txt",
-            "tests/data/text_file_win_newline.txt", "tests/data/text_file_write.txt",
-            "tests/data/text_file_zero_byte.txt",   "tests/data/dir1",
-        };
         u32 nit = 0;
         for$each(it, files)
         {
-            bool is_found = false;
-            for$each(itf, expected, arr$len(expected))
-            {
-                if (str.eq(it, itf)) {
-                    is_found = true;
-                    break;
-                }
-            }
-            if (!is_found) {
-                io.printf("Not found in expected: %s\n", it);
-                tassert(is_found && "file not found in expected");
-            }
+            log$debug("found file: %s\n", it);
+            tassert(NULL != hm$getp(exp_files, it));
             nit++;
         }
-        tassert_eq(nit, arr$len(expected));
+        tassert_eq(nit, hm$len(exp_files));
     }
 
-    //
-    // tassert(sbuf.len(&listdir) > 0);
-    // tassert_er(Error.not_found, os.fs.listdir("tests/data/unknownfolder", &listdir));
-    // tassert_eq(sbuf.len(&listdir), 0);
-    //
-    // sbuf.destroy(&listdir);
-    return EOK;
+   return EOK;
+}
+
+test$case(test_os_find_no_trailing_slash)
+{
+
+    mem$scope(tmem$, _)
+    {
+        // NOTE: when dir1 is a directory, and input path is without a pattern
+        //       dir1 considered as a pattern
+        arr$(char*) files = os.fs.find("tests/data/dir1", false, _);
+        tassert(files != NULL);
+        tassert_eq(arr$len(files), 0);
+    }
+
+   return EOK;
+}
+
+test$case(test_os_find_pattern)
+{
+
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) files = os.fs.find("tests/data/dir1/*.txt", false, _);
+        tassert(files != NULL);
+        tassert(arr$len(files) > 0);
+
+        hm$(char*, bool) exp_files = hm$new(exp_files, _);
+        hm$set(exp_files, "tests/data/dir1/file3.txt", true);
+
+        u32 nit = 0;
+        for$each(it, files)
+        {
+            log$debug("found file: %s\n", it);
+            tassert(NULL != hm$getp(exp_files, it));
+            nit++;
+        }
+        tassert_eq(nit, hm$len(exp_files));
+    }
+
+   return EOK;
+}
+
+test$case(test_os_find_pattern_glob)
+{
+
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) files = os.fs.find("tests/data/dir1/file?.(txt|csv)", false, _);
+        tassert(files != NULL);
+        tassert(arr$len(files) > 0);
+        ;
+        hm$(char*, bool) exp_files = hm$new(exp_files, _);
+        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+        hm$set(exp_files, "tests/data/dir1/file3.txt", true);
+
+        u32 nit = 0;
+        for$each(it, files)
+        {
+            log$debug("found file: %s\n", it);
+            tassert(NULL != hm$getp(exp_files, it));
+            nit++;
+        }
+        tassert_eq(nit, hm$len(exp_files));
+    }
+
+   return EOK;
+}
+
+test$case(test_os_find_pattern_with_relative_non_norm_path)
+{
+
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) files = os.fs.find("tests/data/../../tests/data/dir1/*.txt", false, _);
+        tassert(files != NULL);
+        tassert_eq(arr$len(files), 1);
+    }
+
+   return EOK;
+}
+
+test$case(test_os_find_recursive)
+{
+
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) files = os.fs.find("tests/data/dir1/*.csv", true, _);
+        tassert(files != NULL);
+        tassert(arr$len(files) > 0);
+        ;
+        hm$(char*, bool) exp_files = hm$new(exp_files, _);
+        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+        hm$set(exp_files, "tests/data/dir1/dir2/dir3/file4.csv", true);
+        hm$set(exp_files, "tests/data/dir1/dir2/file2.csv", true);
+
+        u32 nit = 0;
+        for$each(it, files)
+        {
+            log$debug("found file: %s\n", it);
+            tassert(NULL != hm$getp(exp_files, it));
+            nit++;
+        }
+        tassert_eq(nit, hm$len(exp_files));
+    }
+
+   return EOK;
 }
 
 test$case(test_os_getcwd)

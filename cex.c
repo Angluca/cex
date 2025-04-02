@@ -2,7 +2,7 @@
 #define BUILD_DIR "build/"
 
 #define CEX_IMPLEMENTATION
-#define CEX_BUILD
+#define CEXBUILD
 #include "cex.h"
 
 #if defined __has_include

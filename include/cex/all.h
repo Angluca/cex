@@ -1,5 +1,5 @@
 // clang-format off
-#define CEX_BUILD
+#define CEXBUILD
 #pragma once
 #include <cex/cex_header.h>
 #include <cex/cex_base.h>

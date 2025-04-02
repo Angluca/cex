@@ -1,6 +1,6 @@
 #include "all.h"
 
-#if defined(CEX_BUILD)
+#if defined(CEXBUILD)
 
 #ifndef cexy$cc
 #if defined(__clang__)
@@ -17,4 +17,4 @@
 #define cexy$needs_rebuild
 #define cexy$initialize
 
-#endif // #if defined(CEX_BUILD)
+#endif // #if defined(CEXBUILD)
