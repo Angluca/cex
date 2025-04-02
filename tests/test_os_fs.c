@@ -160,6 +160,31 @@ test$case(test_os_find_recursive)
    return EOK;
 }
 
+test$case(test_os_find_direct_match)
+{
+
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) files = os.fs.find("tests/data/dir1/file1.csv", true, _);
+        tassert(files != NULL);
+        tassert_eq(arr$len(files), 1);
+        ;
+        hm$(char*, bool) exp_files = hm$new(exp_files, _);
+        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+
+        u32 nit = 0;
+        for$each(it, files)
+        {
+            log$debug("found file: %s\n", it);
+            tassert(NULL != hm$getp(exp_files, it));
+            nit++;
+        }
+        tassert_eq(nit, hm$len(exp_files));
+    }
+
+   return EOK;
+}
+
 test$case(test_os_getcwd)
 {
     sbuf_c s = sbuf.create(10, mem$);
@@ -203,7 +228,7 @@ test$case(test_os_mkdir)
     }
 
     var ftype = os.fs.file_type(TBUILDDIR "mytestdir");
-    tassert_er(ftype.result, Error.not_found);
+    tassert_er(ftype.error, Error.not_found);
     tassert_eq(ftype.is_valid, 0);
     tassert_eq(ftype.is_directory, 0);
     tassert_eq(ftype.is_file, 0);
@@ -214,8 +239,8 @@ test$case(test_os_mkdir)
     tassert_er(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
     tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestdir"));
     ftype = os.fs.file_type(TBUILDDIR "mytestdir");
-    tassert_er(ftype.result, Error.ok);
     tassert_eq(ftype.is_valid, 1);
+    tassert_ne(ftype.mtime, 0);
     tassert_eq(ftype.is_directory, 1);
     tassert_eq(ftype.is_file, 0);
     tassert_eq(ftype.is_symlink, 0);
@@ -228,13 +253,13 @@ test$case(test_os_mkdir)
     tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
 
     ftype = os.fs.file_type("tests/data/dir1/dir2_symlink");
-    tassert_er(ftype.result, Error.ok);
     tassert_eq(ftype.is_valid, 1);
     tassert_eq(ftype.is_directory, 1);
     tassert_eq(ftype.is_file, 0);
     tassert_eq(ftype.is_symlink, 1);
     tassert_eq(ftype.is_other, 0);
     tassert_eq(ftype.is_other, 0);
+    tassert_ne(ftype.mtime, 0);
 
     return EOK;
 }
@@ -244,8 +269,8 @@ test$case(test_os_fs_file_type)
 
     tassert_er(EOK, os.path.exists(__FILE__));
     var ftype = os.fs.file_type(__FILE__);
-    tassert_er(ftype.result, Error.ok);
     tassert_eq(ftype.is_valid, 1);
+    tassert_ne(ftype.mtime, 0);
     tassert_eq(ftype.is_directory, 0);
     tassert_eq(ftype.is_file, 1);
     tassert_eq(ftype.is_symlink, 0);
@@ -274,8 +299,8 @@ test$case(test_os_rename_dir)
     tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
     tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestdir2"));
     var ftype = os.fs.file_type(TBUILDDIR "mytestdir2");
-    tassert_er(ftype.result, EOK);
     tassert_eq(ftype.is_valid, 1);
+    tassert_ne(ftype.mtime, 0);
     tassert_eq(ftype.is_directory, 1);
     tassert_eq(ftype.is_file, 0);
     tassert_eq(ftype.is_symlink, 0);
@@ -302,7 +327,6 @@ test$case(test_os_rename_file)
     tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestfile.txt2"));
     var ftype = os.fs.file_type(TBUILDDIR "mytestfile.txt2");
-    tassert_er(ftype.result, EOK);
     tassert_eq(ftype.is_valid, 1);
     tassert_eq(ftype.is_directory, 0);
     tassert_eq(ftype.is_file, 1);

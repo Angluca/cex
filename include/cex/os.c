@@ -68,7 +68,7 @@ os__fs__mkdir(const char* path)
 static os_fs_filetype_s
 os__fs__file_type(const char* path)
 {
-    os_fs_filetype_s result = { .result = Error.argument };
+    os_fs_filetype_s result = { .error = Error.argument };
     if (path == NULL || path[0] == '\0') {
         return result;
     }
@@ -96,15 +96,16 @@ os__fs__file_type(const char* path)
     struct stat statbuf;
     if (lstat(path, &statbuf) < 0) {
         if (errno == ENOENT) {
-            result.result = Error.not_found;
+            result.error = Error.not_found;
         } else {
-            result.result = strerror(errno);
+            result.error = strerror(errno);
         }
         return result;
     }
     result.is_valid = true;
-    result.result = EOK;
+    result.error = EOK;
     result.is_other = true;
+    result.mtime = statbuf.st_mtime;
 
     if (!S_ISLNK(statbuf.st_mode)) {
         if (S_ISREG(statbuf.st_mode)) {
@@ -119,9 +120,9 @@ os__fs__file_type(const char* path)
         result.is_symlink = true;
         if (stat(path, &statbuf) < 0) {
             if (errno == ENOENT) {
-                result.result = Error.not_found;
+                result.error = Error.not_found;
             } else {
-                result.result = strerror(errno);
+                result.error = strerror(errno);
             }
             return result;
         }
@@ -215,8 +216,8 @@ os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_
         }
 
         var ftype = os.fs.file_type(path_buf);
-        if (ftype.result != EOK) {
-            result = ftype.result;
+        if (!ftype.is_valid) {
+            result = ftype.error;
             goto end;
         }
 

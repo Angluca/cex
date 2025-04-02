@@ -19,7 +19,10 @@ typedef struct os_cmd_c
 
 typedef struct os_fs_filetype_s
 {
-    Exc result;
+    union {
+        Exc error;
+        time_t mtime;
+    };
     usize is_valid : 1;
     usize is_directory : 1;
     usize is_symlink : 1;
