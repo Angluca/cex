@@ -366,6 +366,17 @@ test$case(test_for_arr)
     return EOK;
 }
 
+test$case(test_for_each_null)
+{
+    arr$(char*) array = NULL;
+    for$each(v, array)
+    {
+        (void)v;
+        tassert(false && "must not happen!");
+    }
+    return EOK;
+}
+
 test$case(test_slice)
 {
     char buf[] = { 'a', 'b', 'c' };
@@ -1026,6 +1037,47 @@ test$case(test_hashmap_basic_clear)
     tassert(hm$getp(intmap, 3) == NULL);
 
     hm$free(intmap);
+    return EOK;
+}
+
+test$case(test_hashmap_basic_iteration)
+{
+    hm$(int, int) intmap = hm$new(intmap, mem$);
+    tassert(intmap != NULL);
+
+    tassert(hm$set(intmap, 1, 10));
+    tassert(hm$set(intmap, 2, 20));
+    tassert(hm$set(intmap, 3, 30));
+
+    tassert_eq(hm$len(intmap), 3);
+    tassert_eq(arr$len(intmap), 3);
+
+    u32 nit = 1;
+    for$each(it, intmap) {
+        tassert_eq(it.key, nit);
+        tassert_eq(it.value, nit*10);
+        nit++;
+    }
+    tassert_eq(nit-1, arr$len(intmap));
+
+    nit = 1;
+    for$eachp(it, intmap) {
+        tassert_eq(it->key, nit);
+        tassert_eq(it->value, nit*10);
+        nit++;
+    }
+    tassert_eq(nit-1, arr$len(intmap));
+
+    hm$free(intmap);
+    tassert_eq(0, arr$len(intmap));
+    tassert_eq(0, hm$len(intmap));
+    tassert(intmap == NULL);
+
+    for$eachp(it, intmap) {
+        (void)it;
+        tassert(false && "should never happen");
+    }
+
     return EOK;
 }
 

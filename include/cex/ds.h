@@ -374,8 +374,10 @@ struct cexds_hm_new_kwargs_s
 
 #define hm$len(t)                                                                                  \
     ({                                                                                             \
-        cexds_arr_integrity(t, CEXDS_HM_MAGIC);                                                    \
-        cexds_header((t))->length;                                                                 \
+        if (t != NULL) {                                                                           \
+            cexds_arr_integrity(t, CEXDS_HM_MAGIC);                                                \
+        }                                                                                          \
+        (t) ? cexds_header((t))->length : 0;                                                       \
     })
 
 typedef struct cexds_string_block
