@@ -477,10 +477,12 @@ io__file__save(const char* path, const char* contents)
     }
 
     usize contents_len = strlen(contents);
-    e$except_silent(err, io_fwrite(file, contents, 1, contents_len))
-    {
-        io_fclose(&file);
-        return err;
+    if (contents_len > 0) {
+        e$except_silent(err, io_fwrite(file, contents, 1, contents_len))
+        {
+            io_fclose(&file);
+            return err;
+        }
     }
 
     io_fclose(&file);
