@@ -3,7 +3,7 @@
 #define TBUILDDIR "tests/build/"
 
 Exception
-test_dir_walk(const char* path, os_fs_filetype_s ftype, void* user_ctx)
+test_dir_walk(const char* path, os_fs_stat_s ftype, void* user_ctx)
 {
     u32* cnt = (u32*)user_ctx;
     uassert(cnt != NULL);
@@ -197,24 +197,22 @@ test$case(test_os_getcwd)
 
 test$case(test_os_path_exists)
 {
-    tassert_er(Error.argument, os.path.exists(NULL));
-    tassert_er(Error.argument, os.path.exists(""));
-    tassert_er(EOK, os.path.exists("."));
-    tassert_er(EOK, os.path.exists(".."));
-    tassert_er(EOK, os.path.exists("./tests"));
-    tassert_er(EOK, os.path.exists(__FILE__));
-    tassert_er(Error.not_found, os.path.exists("./tests/test_os_posix.cpp"));
+    tassert_eq(0, os.path.exists(NULL));
+    tassert_eq(0, os.path.exists(""));
+    tassert_eq(1, os.path.exists("."));
+    tassert_eq(1, os.path.exists(".."));
+    tassert_eq(1, os.path.exists("./tests"));
+    tassert_eq(1, os.path.exists(__FILE__));
+    tassert_eq(0, os.path.exists("./tests/test_os_posix.cpp"));
 
-    tassert_er(EOK, os.path.exists("tests/"));
+    tassert_eq(1, os.path.exists("tests/"));
 
     char buf[PATH_MAX + 10];
     memset(buf, 'a', arr$len(buf));
     buf[PATH_MAX + 8] = '\0';
     uassert_disable();
 
-    // Path is too long, and exceeds PATH_MAX buffer size
-    tassert_er(Error.argument, os.path.exists(buf));
-
+    tassert_eq(0, os.path.exists(buf));
 
     return EOK;
 }
@@ -227,7 +225,7 @@ test$case(test_os_mkdir)
     if (os.fs.remove(TBUILDDIR "mytestdir")) {
     }
 
-    var ftype = os.fs.file_type(TBUILDDIR "mytestdir");
+    var ftype = os.fs.stat(TBUILDDIR "mytestdir");
     tassert_er(ftype.error, Error.not_found);
     tassert_eq(ftype.is_valid, 0);
     tassert_eq(ftype.is_directory, 0);
@@ -235,10 +233,10 @@ test$case(test_os_mkdir)
     tassert_eq(ftype.is_symlink, 0);
     tassert_eq(ftype.is_other, 0);
 
-    tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestdir"));
     tassert_er(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
-    tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestdir"));
-    ftype = os.fs.file_type(TBUILDDIR "mytestdir");
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestdir"));
+    ftype = os.fs.stat(TBUILDDIR "mytestdir");
     tassert_eq(ftype.is_valid, 1);
     tassert_ne(ftype.mtime, 0);
     tassert_eq(ftype.is_directory, 1);
@@ -250,9 +248,9 @@ test$case(test_os_mkdir)
     tassert_er(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
 
     tassert_er(Error.ok, os.fs.remove(TBUILDDIR "mytestdir"));
-    tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestdir"));
 
-    ftype = os.fs.file_type("tests/data/dir1/dir2_symlink");
+    ftype = os.fs.stat("tests/data/dir1/dir2_symlink");
     tassert_eq(ftype.is_valid, 1);
     tassert_eq(ftype.is_directory, 1);
     tassert_eq(ftype.is_file, 0);
@@ -264,11 +262,11 @@ test$case(test_os_mkdir)
     return EOK;
 }
 
-test$case(test_os_fs_file_type)
+test$case(test_os_fs_stat)
 {
 
-    tassert_er(EOK, os.path.exists(__FILE__));
-    var ftype = os.fs.file_type(__FILE__);
+    tassert_eq(1, os.path.exists(__FILE__));
+    var ftype = os.fs.stat(__FILE__);
     tassert_eq(ftype.is_valid, 1);
     tassert_ne(ftype.mtime, 0);
     tassert_eq(ftype.is_directory, 0);
@@ -284,11 +282,11 @@ test$case(test_os_rename_dir)
     if (os.fs.remove(TBUILDDIR "mytestdir")) {
     }
 
-    tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestdir"));
     tassert_er(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
-    tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestdir"));
 
-    tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestdir"));
 
     tassert_er(Error.argument, os.fs.rename("", "foo"));
     tassert_er(Error.argument, os.fs.rename(NULL, "foo"));
@@ -296,9 +294,9 @@ test$case(test_os_rename_dir)
     tassert_er(Error.argument, os.fs.rename("foo", NULL));
 
     tassert_er(Error.ok, os.fs.rename(TBUILDDIR "mytestdir", TBUILDDIR "mytestdir2"));
-    tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestdir"));
-    tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestdir2"));
-    var ftype = os.fs.file_type(TBUILDDIR "mytestdir2");
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestdir"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestdir2"));
+    var ftype = os.fs.stat(TBUILDDIR "mytestdir2");
     tassert_eq(ftype.is_valid, 1);
     tassert_ne(ftype.mtime, 0);
     tassert_eq(ftype.is_directory, 1);
@@ -319,14 +317,14 @@ test$case(test_os_rename_file)
     if (os.fs.remove(TBUILDDIR "mytestfile.txt2")) {
     }
 
-    tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_er(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt", "foo"));
-    tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt"));
 
     tassert_er(Error.ok, os.fs.rename(TBUILDDIR "mytestfile.txt", TBUILDDIR "mytestfile.txt2"));
-    tassert_er(Error.not_found, os.path.exists(TBUILDDIR "mytestfile.txt"));
-    tassert_er(Error.ok, os.path.exists(TBUILDDIR "mytestfile.txt2"));
-    var ftype = os.fs.file_type(TBUILDDIR "mytestfile.txt2");
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt2"));
+    var ftype = os.fs.stat(TBUILDDIR "mytestfile.txt2");
     tassert_eq(ftype.is_valid, 1);
     tassert_eq(ftype.is_directory, 0);
     tassert_eq(ftype.is_file, 1);

@@ -65,10 +65,10 @@ os__fs__mkdir(const char* path)
     return EOK;
 }
 
-static os_fs_filetype_s
-os__fs__file_type(const char* path)
+static os_fs_stat_s
+os__fs__stat(const char* path)
 {
-    os_fs_filetype_s result = { .error = Error.argument };
+    os_fs_stat_s result = { .error = Error.argument };
     if (path == NULL || path[0] == '\0') {
         return result;
     }
@@ -215,7 +215,7 @@ os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_
             goto end;
         }
 
-        var ftype = os.fs.file_type(path_buf);
+        var ftype = os.fs.stat(path_buf);
         if (!ftype.is_valid) {
             result = ftype.error;
             goto end;
@@ -262,7 +262,7 @@ struct _os_fs_find_ctx_s
 };
 
 static Exception
-_os__fs__find_walker(const char* path, os_fs_filetype_s ftype, void* user_ctx)
+_os__fs__find_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
 {
     (void)ftype;
     struct _os_fs_find_ctx_s* ctx = (struct _os_fs_find_ctx_s*)user_ctx;
@@ -393,67 +393,11 @@ os__env__unset(const char* name)
     unsetenv(name);
 }
 
-static Exception
+static bool
 os__path__exists(const char* file_path)
 {
-
-    if (file_path == NULL) {
-        return Error.argument;
-    }
-
-    usize path_len = strlen(file_path);
-    if (path_len == 0) {
-        return Error.argument;
-    }
-
-    if (path_len >= PATH_MAX) {
-        return Error.argument;
-    }
-
-#if _WIN32
-    errno = 0;
-    DWORD dwAttrib = GetFileAttributesA(file_path);
-    if (dwAttrib != INVALID_FILE_ATTRIBUTES) {
-
-        return EOK;
-    } else {
-        /*
-        Here are some common file-related functions and the types of errors they might set:
-CreateFile: Used to open or create a file.
-ERROR_FILE_NOT_FOUND (2): The file does not exist.
-ERROR_PATH_NOT_FOUND (3): The specified path does not exist.
-ERROR_ACCESS_DENIED (5): The file cannot be accessed due to permissions.
-ERROR_SHARING_VIOLATION (32): The file is in use by another process.
-ReadFile: Used to read data from a file.
-ERROR_HANDLE_EOF (38): Attempted to read past the end of the file.
-ERROR_IO_DEVICE (1117): An I/O error occurred.
-WriteFile: Used to write data to a file.
-ERROR_DISK_FULL (112): The disk is full.
-ERROR_ACCESS_DENIED (5): The file is read-only or locked.
-CloseHandle: Used to close a file handle.
-ERROR_INVALID_HANDLE (6): The handle is invalid.
-DeleteFile: Used to delete a file.
-ERROR_FILE_NOT_FOUND (2): The file does not exist.
-ERROR_ACCESS_DENIED (5): The file is read-only or in use.
-MoveFile: Used to move or rename a file.
-ERROR_FILE_EXISTS (80): The destination file already exists.
-ERROR_ACCESS_DENIED (5): The file is in use or locked.
-Example: Using GetLastError() with File Operations
-    */
-        // TODO: handle other win32 errors!
-        uassert(false && "TODO handle other win32 errors!");
-        return Error.not_found;
-    }
-#else
-    struct stat statbuf;
-    if (stat(file_path, &statbuf) < 0) {
-        if (errno == ENOENT) {
-            return Error.not_found;
-        }
-        return strerror(errno);
-    }
-    return EOK;
-#endif
+    var ftype = os.fs.stat(file_path);
+    return ftype.is_valid;
 }
 
 static char*
@@ -818,7 +762,7 @@ const struct __module__os os = {
     .fs = {  // sub-module .fs >>>
         .rename = os__fs__rename,
         .mkdir = os__fs__mkdir,
-        .file_type = os__fs__file_type,
+        .stat = os__fs__stat,
         .remove = os__fs__remove,
         .dir_walk = os__fs__dir_walk,
         .find = os__fs__find,

@@ -17,7 +17,7 @@ typedef struct os_cmd_c
     bool _is_subprocess;
 } os_cmd_c;
 
-typedef struct os_fs_filetype_s
+typedef struct os_fs_stat_s
 {
     union {
         Exc error;
@@ -28,10 +28,10 @@ typedef struct os_fs_filetype_s
     usize is_symlink : 1;
     usize is_file : 1;
     usize is_other : 1;
-} os_fs_filetype_s;
-_Static_assert(sizeof(os_fs_filetype_s) == sizeof(usize) * 2, "size?");
+} os_fs_stat_s;
+_Static_assert(sizeof(os_fs_stat_s) == sizeof(usize) * 2, "size?");
 
-typedef Exception os_fs_dir_walk_f(const char* path, os_fs_filetype_s ftype, void* user_ctx);
+typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* user_ctx);
 
 
 #ifdef CEXBUILD
@@ -84,12 +84,12 @@ void            (*sleep)(u32 period_millisec);
 
 struct {  // sub-module .fs >>>
     Exception       (*dir_walk)(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx);
-    os_fs_filetype_s (*file_type)(const char* path);
     arr$(char*)     (*find)(const char* path, bool is_recursive, IAllocator allc);
     Exception       (*getcwd)(sbuf_c* out);
     Exception       (*mkdir)(const char* path);
     Exception       (*remove)(const char* path);
     Exception       (*rename)(const char* old_path, const char* new_path);
+    os_fs_stat_s    (*stat)(const char* path);
 } fs;  // sub-module .fs <<<
 
 struct {  // sub-module .env >>>
@@ -101,7 +101,7 @@ struct {  // sub-module .env >>>
 struct {  // sub-module .path >>>
     char*           (*basename)(const char* path, IAllocator allc);
     char*           (*dirname)(const char* path, IAllocator allc);
-    Exception       (*exists)(const char* file_path);
+    bool            (*exists)(const char* file_path);
     char*           (*join)(arr$(char*) parts, IAllocator allc);
     str_s           (*split)(const char* path, bool return_dir);
 } path;  // sub-module .path <<<

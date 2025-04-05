@@ -14,7 +14,8 @@
 
 
 #define cexy$run
-#define cexy$needs_rebuild
 #define cexy$initialize
+#define cexy$needs_build(target, src_array)                                                      \
+    ({ cexy_needs_build((target), (src_array), arr$len(src_array), false); })
 
 #endif // #if defined(CEXBUILD)
