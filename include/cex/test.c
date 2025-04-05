@@ -383,8 +383,8 @@ cex_test_main_fn(int argc, char** argv)
         fprintf(stderr, "-------------------------------------\n\n");
     }
     if (ctx->setup_suite_fn) {
-        e$except(err, ctx->setup_suite_fn())
-        {
+        Exc err = NULL;
+        if ((err = ctx->setup_suite_fn())) {
             fprintf(
                 stderr,
                 "[%s] test$setup_suite() failed with %s (suite %s stopped)\n",
@@ -421,21 +421,22 @@ cex_test_main_fn(int argc, char** argv)
 #ifndef NDEBUG
         uassert_enable(); // unconditionally enable previously disabled asserts
 #endif
-        cex_test_mute();
-        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
-        alloc_heap->stats.n_allocs = 0;
-        alloc_heap->stats.n_free = 0;
         Exc err = EOK;
-        if (ctx->setup_case_fn && (ctx->setup_case_fn() != EOK)) {
+        if (ctx->setup_case_fn && (err = ctx->setup_case_fn()) != EOK) {
             fprintf(
                 stderr,
-                "[%s] test$setup() failed with %s (suite %s stopped)\n",
+                "[%s] test$setup() failed with '%s' (suite %s stopped)\n",
                 ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
                 err,
                 __FILE__
             );
             return 1;
         }
+
+        cex_test_mute();
+        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
+        alloc_heap->stats.n_allocs = 0;
+        alloc_heap->stats.n_free = 0;
         err = t.test_fn();
         if (ctx->quiet_mode && err != EOK) {
             fprintf(stdout, "[%s] %s\n", ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL", err);
@@ -463,7 +464,7 @@ cex_test_main_fn(int argc, char** argv)
                 fprintf(stderr, "F");
             }
         }
-        if (ctx->teardown_case_fn && (ctx->teardown_case_fn() != EOK)) {
+        if (ctx->teardown_case_fn && (err = ctx->teardown_case_fn()) != EOK) {
             fprintf(
                 stderr,
                 "[%s] test$teardown() failed with %s (suite %s stopped)\n",
@@ -538,4 +539,4 @@ cex_test_main_fn(int argc, char** argv)
     } // Return code, logic is inversed
     return ctx->tests_run == 0 || ctx->tests_failed > 0;
 }
-#endif //ifdef CEXTEST
+#endif // ifdef CEXTEST
