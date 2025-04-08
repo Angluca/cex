@@ -1,29 +1,46 @@
 #include <cex/all.c>
 
-#define TBUILDDIR "tests/build/"
+#define TBUILDDIR "tests/build/os_fs_test/"
+test$setup_case()
+{
+    e$ret(os.fs.remove_tree(TBUILDDIR));
+    e$ret(os.fs.mkdir(TBUILDDIR));
+    return EOK;
+}
+test$teardown_case()
+{
+    e$ret(os.fs.remove_tree(TBUILDDIR));
+    return EOK;
+}
 
 Exception
 test_dir_walk(const char* path, os_fs_stat_s ftype, void* user_ctx)
 {
     u32* cnt = (u32*)user_ctx;
     uassert(cnt != NULL);
-    printf("path walker: %s, is_dir: %d, user_ctx: %p\n", path, ftype.is_directory, user_ctx);
+    printf(
+        "path walker: %s, is_dir: %d, is_link: %d, user_ctx: %p\n",
+        path,
+        ftype.is_directory,
+        ftype.is_symlink,
+        user_ctx
+    );
     *cnt += 1;
     return EOK;
 }
 
 test$case(test_os_dir_walk_print)
 {
-    u32 nfiles = 0;
+    u32 ncalls = 0;
 
-    // recursive walk (only files called)
-    tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", true, test_dir_walk, &nfiles));
-    tassert_eq(4, nfiles);
+    // recursive walk (each file + directory + non recursive symlinks)
+    tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", true, test_dir_walk, &ncalls));
+    tassert_eq(8, ncalls);
 
     // non-recursive
-    nfiles = 0;
-    tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", false, test_dir_walk, &nfiles));
-    tassert_eq(3, nfiles);
+    ncalls = 0;
+    tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", false, test_dir_walk, &ncalls));
+    tassert_eq(5, ncalls);
 
     return EOK;
 }
@@ -51,7 +68,7 @@ test$case(test_os_find)
         tassert_eq(nit, hm$len(exp_files));
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_inside_foreach)
@@ -73,7 +90,7 @@ test$case(test_os_find_inside_foreach)
         tassert_eq(nit, hm$len(exp_files));
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_exact)
@@ -94,7 +111,7 @@ test$case(test_os_find_exact)
         tassert_eq(nit, hm$len(exp_files));
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_exact_recursive)
@@ -115,7 +132,7 @@ test$case(test_os_find_exact_recursive)
         tassert_eq(nit, hm$len(exp_files));
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_no_trailing_slash)
@@ -130,7 +147,7 @@ test$case(test_os_find_no_trailing_slash)
         tassert_eq(arr$len(files), 0);
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_pattern)
@@ -155,7 +172,7 @@ test$case(test_os_find_pattern)
         tassert_eq(nit, hm$len(exp_files));
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_pattern_glob)
@@ -181,7 +198,7 @@ test$case(test_os_find_pattern_glob)
         tassert_eq(nit, hm$len(exp_files));
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_pattern_with_relative_non_norm_path)
@@ -194,7 +211,7 @@ test$case(test_os_find_pattern_with_relative_non_norm_path)
         tassert_eq(arr$len(files), 1);
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_recursive)
@@ -221,7 +238,7 @@ test$case(test_os_find_recursive)
         tassert_eq(nit, hm$len(exp_files));
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_find_direct_match)
@@ -246,7 +263,7 @@ test$case(test_os_find_direct_match)
         tassert_eq(nit, hm$len(exp_files));
     }
 
-   return EOK;
+    return EOK;
 }
 
 test$case(test_os_getcwd)
@@ -405,9 +422,9 @@ test$case(test_os_path_join)
 {
     mem$scope(tmem$, ta)
     {
-        arr$(char*) parts = arr$new(parts, ta);
+        arr$(const char*) parts = arr$new(parts, ta);
         arr$pushm(parts, "cexstr", str.fmt(ta, "%s_%d.txt", "foo", 10));
-        char* p = os.path.join(parts, ta);
+        char* p = os.path.join(parts, arr$len(parts), ta);
         tassert_eq("cexstr/foo_10.txt", p);
     }
     return EOK;
@@ -490,4 +507,31 @@ test$case(test_os_path_basename_dirname)
     return EOK;
 }
 
+test$case(test_os_mkpath)
+{
+    e$ret(os.fs.remove_tree(TBUILDDIR));
+
+    tassert(!os.path.exists(TBUILDDIR));
+    tassert(!os.path.exists(TBUILDDIR "mydir1/"));
+    tassert(!os.path.exists(TBUILDDIR "mydir1/foo.txt"));
+
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "mydir1/foo.txt"));
+    tassert(os.path.exists(TBUILDDIR "mydir1/"));
+    tassert(!os.path.exists(TBUILDDIR "mydir1/foo.txt"));
+
+    tassert(!os.path.exists(TBUILDDIR "mydir2/"));
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "mydir2/"));
+    tassert(os.path.exists(TBUILDDIR "mydir2/"));
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "mydir2/foo.txt"));
+    tassert(!os.path.exists(TBUILDDIR "mydir2/foo.txt"));
+
+
+    // removing existing
+    e$ret(os.fs.remove_tree(TBUILDDIR));
+    tassert(!os.path.exists(TBUILDDIR));
+    // removing non-existing also OK
+    e$ret(os.fs.remove_tree(TBUILDDIR));
+
+    return EOK;
+}
 test$main();

@@ -65,6 +65,31 @@ os__fs__mkdir(const char* path)
     return EOK;
 }
 
+static Exception
+os__fs__mkpath(const char* path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return Error.argument;
+    }
+    str_s dir = os.path.split(path, true);
+    char dir_path[PATH_MAX] = {0};
+    usize dir_path_len = 0;
+
+    for$iter(str_s, it, str.slice.iter_split(dir, "\\/", &it.iterator)) {
+        if (dir_path_len > 0) {
+            uassert(dir_path_len < sizeof(dir_path)-2);
+            dir_path[dir_path_len] = os$PATH_SEP;
+            dir_path_len++;
+            dir_path[dir_path_len] = '\0';
+        }
+        e$ret(str.slice.copy(dir_path + dir_path_len, *it.val, sizeof(dir_path) - dir_path_len));
+        dir_path_len += it.val->len;
+        log$debug("path_part: '%S' dir_path: '%s'\n", *it.val, dir_path);
+        e$ret(os.fs.mkdir(dir_path));
+    }
+    return EOK;
+}
+
 static os_fs_stat_s
 os__fs__stat(const char* path)
 {
@@ -138,6 +163,7 @@ os__fs__stat(const char* path)
     return result;
 #endif
 }
+
 
 static Exception
 os__fs__remove(const char* path)
@@ -220,23 +246,19 @@ os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_
             goto end;
         }
 
-        if (ftype.is_symlink) {
-            continue; // does not follow symlinks!
-        }
-
-        if (is_recursive && ftype.is_directory) {
+        if (is_recursive && ftype.is_directory && !ftype.is_symlink) {
             e$except_silent(err, os__fs__dir_walk(path_buf, is_recursive, callback_fn, user_ctx))
             {
                 result = err;
                 goto end;
             }
 
-        } else {
-            e$except_silent(err, callback_fn(path_buf, ftype, user_ctx))
-            {
-                result = err;
-                goto end;
-            }
+        } 
+        // After recursive call make a callback on a directory itself
+        e$except_silent(err, callback_fn(path_buf, ftype, user_ctx))
+        {
+            result = err;
+            goto end;
         }
     }
 
@@ -261,6 +283,35 @@ struct _os_fs_find_ctx_s
 };
 
 static Exception
+_os__fs__remove_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
+{
+    (void)user_ctx;
+    (void)ftype;
+    e$except_silent(err, os__fs__remove(path)){
+        return err;
+    }
+    return EOK;
+}
+static Exception
+os__fs__remove_tree(const char* path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return Error.argument;
+    }
+    if (!os.path.exists(path)){
+        return EOK;
+    }
+    e$except_silent(err, os__fs__dir_walk(path, true, _os__fs__remove_tree_walker, NULL))
+    {
+        return err;
+    }
+    e$except_silent(err, os__fs__remove(path)){
+        return err;
+    }
+    return EOK;
+}
+
+static Exception
 _os__fs__find_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
 {
     (void)ftype;
@@ -268,6 +319,9 @@ _os__fs__find_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
     uassert(ctx->result != NULL);
     if (ftype.is_directory) {
         return EOK; // skip, only supports finding files!
+    }
+    if (ftype.is_symlink) {
+        return EOK; // does not follow symlinks!
     }
 
     str_s file_part = os.path.split(path, false);
@@ -774,9 +828,11 @@ const struct __module__os os = {
     .fs = {  // sub-module .fs >>>
         .rename = os__fs__rename,
         .mkdir = os__fs__mkdir,
+        .mkpath = os__fs__mkpath,
         .stat = os__fs__stat,
         .remove = os__fs__remove,
         .dir_walk = os__fs__dir_walk,
+        .remove_tree = os__fs__remove_tree,
         .find = os__fs__find,
         .getcwd = os__fs__getcwd,
     },  // sub-module .fs <<<
