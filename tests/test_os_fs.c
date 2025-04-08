@@ -54,6 +54,70 @@ test$case(test_os_find)
    return EOK;
 }
 
+test$case(test_os_find_inside_foreach)
+{
+
+    mem$scope(tmem$, _)
+    {
+        hm$(char*, bool) exp_files = hm$new(exp_files, _);
+        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+        hm$set(exp_files, "tests/data/dir1/file3.txt", true);
+
+        u32 nit = 0;
+        for$each(it, os.fs.find("tests/data/dir1/", false, _))
+        {
+            log$debug("found file: %s\n", it);
+            tassert(NULL != hm$getp(exp_files, it));
+            nit++;
+        }
+        tassert_eq(nit, hm$len(exp_files));
+    }
+
+   return EOK;
+}
+
+test$case(test_os_find_exact)
+{
+
+    mem$scope(tmem$, _)
+    {
+        hm$(char*, bool) exp_files = hm$new(exp_files, _);
+        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+
+        u32 nit = 0;
+        for$each(it, os.fs.find("tests/data/dir1/file1.csv", false, _))
+        {
+            log$debug("found file: %s\n", it);
+            tassert(NULL != hm$getp(exp_files, it));
+            nit++;
+        }
+        tassert_eq(nit, hm$len(exp_files));
+    }
+
+   return EOK;
+}
+
+test$case(test_os_find_exact_recursive)
+{
+
+    mem$scope(tmem$, _)
+    {
+        hm$(char*, bool) exp_files = hm$new(exp_files, _);
+        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+
+        u32 nit = 0;
+        for$each(it, os.fs.find("tests/data/dir1/file1.csv", true, _))
+        {
+            log$debug("found file: %s\n", it);
+            tassert(NULL != hm$getp(exp_files, it));
+            nit++;
+        }
+        tassert_eq(nit, hm$len(exp_files));
+    }
+
+   return EOK;
+}
+
 test$case(test_os_find_no_trailing_slash)
 {
 

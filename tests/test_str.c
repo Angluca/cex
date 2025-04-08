@@ -2015,26 +2015,32 @@ test$case(test_tjoin)
     mem$scope(tmem$, _)
     {
 
-        arr$(char*) res = arr$new(res, _);
+        arr$(const char*) res = arr$new(res, _);
         tassert(res != NULL);
         arr$pushm(res, "foo");
 
-        char* joined = str.join(res, ",", _);
+        char* joined = str.join(res, arr$len(res), ",", _);
         tassert(joined != NULL);
         tassert(joined != res[0]); // new memory allocated
         tassert_eq(joined, "foo");
 
         arr$pushm(res, "bar");
-        joined = str.join(res, ", ", _);
+        joined = str.join(res, arr$len(res), ", ", _);
         tassert(joined != NULL);
         tassert(joined != res[0]); // new memory allocated
         tassert_eq(joined, "foo, bar");
 
         arr$pushm(res, "baz");
-        joined = str.join(res, ", ", _);
+        joined = str.join(res, arr$len(res), ", ", _);
         tassert(joined != NULL);
         tassert(joined != res[0]); // new memory allocated
         tassert_eq(joined, "foo, bar, baz");
+
+        char* s = "3";
+        char s2[] = "4";
+        joined = str$join(_, ", ", "1", "2", s, s2);
+        tassert(joined != NULL);
+        tassert_eq(joined, "1, 2, 3, 4");
     }
 
     return EOK;

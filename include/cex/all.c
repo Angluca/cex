@@ -16,6 +16,7 @@
 #include "os.c"
 #include "argparse.c"
 #include "cex_code_gen.c"
+#include "CexLexer.c"
 #include "cexy.c"
 #include "test.c"
 #endif // CEX_HEADER_H
