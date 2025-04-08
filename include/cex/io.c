@@ -43,7 +43,7 @@ io_isatty(FILE* file)
 {
     uassert(file != NULL);
     // TODO: add windows version
-    return isatty(fileno(stdout)) == 1;
+    return isatty(fileno(file)) == 1;
 }
 
 Exception

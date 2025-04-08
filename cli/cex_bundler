@@ -66,6 +66,7 @@ class Bundler:
             "os.h",
             "test.h",
             "cexy.h",
+            "CexLexer.h",
         ]
         print(f"Bundling: {headers}")
         hbuf = io.StringIO()

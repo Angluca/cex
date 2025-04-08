@@ -794,9 +794,16 @@ class CEXProcessor:
                         return True
 
             line = line.strip()
-            for i, c in enumerate(line):
+            i = 0
+            # for i, c in enumerate(line):
+            while i < len(line):
+                c = line[i]
+                # print(f"{self.buf.getvalue()}: {i}:{c}")
                 # We are in signature
                 if self._is_signature:
+                    if c == "\\":
+                        i += 2
+                        continue
                     # Decide definition type based on signature
                     if c in self._brackets:
                         if c == "(":
@@ -831,6 +838,9 @@ class CEXProcessor:
                     if self._is_signature:
                         self.buf.write(c)
                 else:
+                    if c == "\\":
+                        i += 2
+                        continue
                     # FIX: in code comments breaks parsing (duplicate code generated)
                     # Example:
                     #  struct {
@@ -852,6 +862,7 @@ class CEXProcessor:
                                     return False
                     else:
                         if not self._in_string_quotes:
+                            assert c == "'" or c == '"'
                             self._in_string_quotes.append(c)
                         else:
                             if c == '"' or c == "'":
@@ -868,8 +879,7 @@ class CEXProcessor:
                                             self._in_string_quotes.pop()
                                         else:
                                             self._in_string_quotes.append(c)
-
-                    pass
+                i += 1
 
             if self._is_signature:
                 self.buf.write(" ")
@@ -1152,6 +1162,7 @@ class CEXProcessor:
             if isinstance(b, CEXProcessor.Code):
                 if self.is_func_code(b):
                     f = CEXProcessor.Func(b.buf.getvalue(), ns)
+                    # print(f)
                     if f.ifc_name and f.is_public_cex:
                         if f.is_inline and not f.is_static:
                             raise ValueError(
@@ -1265,7 +1276,7 @@ class CEXProcessor:
                 continue
 
             f = CEXProcessor.Func(block.buf.getvalue(), self.namespace)
-            # print(f)
+            print(f)
             if not self.is_public_header and not f.is_public_cex:
                 continue
 

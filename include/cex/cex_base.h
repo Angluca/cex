@@ -100,54 +100,54 @@ __cex__fprintf_dummy(void)
 #define __FILE_NAME__ __FILE__
 #endif
 
-#define CEX_LOG_LVL_NONE 0
-#define CEX_LOG_LVL_ERR 1
-#define CEX_LOG_LVL_WARN 2
-#define CEX_LOG_LVL_INFO 3
-#define CEX_LOG_LVL_DEBUG 4
-#define CEX_LOG_LVL_TRACE 5
-
 #ifndef CEX_LOG_LVL
+// LVL Value
+// 0 - mute all including assert messages, tracebacks, errors
+// 1 - allow log$error + assert messages, tracebacks
+// 2 - allow log$warn
+// 3 - allow log$info
+// 4 - allow log$debug
+// 5 - allow log$trace
 // NOTE: you may override this level to manage log$* verbosity
-#define CEX_LOG_LVL CEX_LOG_LVL_DEBUG
+#define CEX_LOG_LVL 4
 #endif
 
-#if CEX_LOG_LVL > CEX_LOG_LVL_NONE
+#if CEX_LOG_LVL > 0
 #define log$error(format, ...)                                                                     \
     (__cex__fprintf(stdout, "[ERROR]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$error(format, ...) __cex__fprintf_dummy()
 #endif
 
-#if CEX_LOG_LVL > CEX_LOG_LVL_ERR
+#if CEX_LOG_LVL > 1
 #define log$warn(format, ...)                                                                      \
     (__cex__fprintf(stdout, "[WARN]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$warn(format, ...) __cex__fprintf_dummy()
 #endif
 
-#if CEX_LOG_LVL > CEX_LOG_LVL_WARN
+#if CEX_LOG_LVL > 2
 #define log$info(format, ...)                                                                      \
     (__cex__fprintf(stdout, "[INFO]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$info(format, ...) __cex__fprintf_dummy()
 #endif
 
-#if CEX_LOG_LVL > CEX_LOG_LVL_INFO
+#if CEX_LOG_LVL > 3
 #define log$debug(format, ...)                                                                     \
     (__cex__fprintf(stdout, "[DEBUG]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$debug(format, ...) __cex__fprintf_dummy()
 #endif
 
-#if CEX_LOG_LVL > CEX_LOG_LVL_DEBUG
+#if CEX_LOG_LVL > 4
 #define log$trace(format, ...)                                                                     \
     (__cex__fprintf(stdout, "[TRACE]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$trace(format, ...) __cex__fprintf_dummy()
 #endif
 
-#if CEX_LOG_LVL > CEX_LOG_LVL_NONE
+#if CEX_LOG_LVL > 0
 #define __cex__traceback(uerr, fail_func)                                                          \
     (__cex__fprintf(                                                                               \
          stdout,                                                                                   \

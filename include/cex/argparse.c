@@ -560,9 +560,9 @@ argparse_run_command(argparse_c* self, void* user_ctx)
     if (self->_ctx.argc == 0) {
         // seems default command (with no args)
         const char* dummy_args[] = {self->_ctx.current_command->name};
-        return self->_ctx.current_command->func(1, dummy_args, user_ctx);
+        return self->_ctx.current_command->func(1, (char**)dummy_args, user_ctx);
     } else {
-        return self->_ctx.current_command->func(self->_ctx.argc, (const char**)self->_ctx.argv, user_ctx);
+        return self->_ctx.current_command->func(self->_ctx.argc, (char**)self->_ctx.argv, user_ctx);
     }
 }
 

@@ -1,6 +1,7 @@
 #define cexy$cc_args "-Wall", "-Wextra"
 #define BUILD_DIR "build/"
 
+#define CEX_LOG_LVL 4  /* 0 (mute all) - 5 (log$trace) */
 #define CEX_IMPLEMENTATION
 #define CEXBUILD
 #include "cex.h"
@@ -15,18 +16,21 @@
 #  warning "Compiler does not support __has_include, cannot check header"
 #endif
 
-Exception cmd_check(int argc, const char** argv, void* user_ctx);
-Exception cmd_build(int argc, const char** argv, void* user_ctx);
+Exception cmd_check(int argc, char** argv, void* user_ctx);
+Exception cmd_build(int argc, char** argv, void* user_ctx);
+Exception cmd_test(int argc, char** argv, void* user_ctx);
 
 int
 main(int argc, char** argv)
 {
+    cexy$initialize();
+
     // clang-format off
     argparse_c args = {
-        .commands =
-            (argparse_cmd_s[]){
+        .commands = (argparse_cmd_s[]) {
                 { .name = "check", .func = cmd_check, .help = "Validates build environment" },
                 { .name = "build", .func = cmd_build, .help = "Builds project", .is_default = 1 },
+                { .name = "test", .func = cmd_test, .help = "Test running" },
                 { 0 }, // null term
             },
     };
@@ -43,7 +47,33 @@ main(int argc, char** argv)
 }
 
 Exception
-cmd_check(int argc, const char** argv, void* user_ctx)
+cmd_test(int argc, char** argv, void* user_ctx)
+{
+    uassert(argc > 0);
+    uassert(argv != NULL);
+
+    argparse_c args = {
+        .options =(argparse_opt_s[]){
+            argparse$opt_help(),
+            {0}, // null term
+        }
+    };
+    // clang-format on
+
+    if (argparse.parse(&args, argc, argv)) {
+        return "TODO";
+    }
+    (void)argc;
+    (void)argv;
+    (void)user_ctx;
+    io.printf("CEX health report\n");
+    io.printf("cexy$cc: %s\n", cexy$cc);
+    io.printf("cexy$cc_args: %s\n", cex$stringize(cexy$cc_args));
+    return EOK;
+}
+
+Exception
+cmd_check(int argc, char** argv, void* user_ctx)
 {
     (void)argc;
     (void)argv;
@@ -55,7 +85,7 @@ cmd_check(int argc, const char** argv, void* user_ctx)
 }
 
 Exception
-cmd_build(int argc, const char** argv, void* user_ctx)
+cmd_build(int argc, char** argv, void* user_ctx)
 {
     (void)argc;
     (void)argv;

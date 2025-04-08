@@ -17,7 +17,7 @@ typedef Exception (*argparse_callback_f)(
     void* ctx
 );
 typedef Exception (*argparse_convert_f)(const char* s, void* out_val);
-typedef Exception (*argparse_command_f)(int argc, const char** argv, void* user_ctx);
+typedef Exception (*argparse_command_f)(int argc, char** argv, void* user_ctx);
 
 typedef struct argparse_opt_s
 {
