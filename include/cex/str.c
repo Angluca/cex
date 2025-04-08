@@ -1268,7 +1268,7 @@ static arr$(char*) str_split_lines(const char* s, IAllocator allc)
 }
 
 static char*
-str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
+str_join(char** str_arr, usize str_arr_len, const char* join_by, IAllocator allc)
 {
     if (str_arr == NULL || join_by == NULL) {
         return NULL;
@@ -1281,7 +1281,7 @@ str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
 
     char* result = NULL;
     usize cursor = 0;
-    for$each(s, str_arr)
+    for$each(s, str_arr, str_arr_len)
     {
         if (s == NULL) {
             if (result != NULL) {
@@ -1314,18 +1314,7 @@ str_join(arr$(char*) str_arr, const char* join_by, IAllocator allc)
     return result;
 }
 
-/**
-* matches any sequence of characters
-? matches any single character
-[abc] matches any character in the set (a, b, or c)
-[!abc] matches any character not in the set
-[a-z] matches range (for a character)
-[a-zA-Z0-9_@#$] matches range multiple / range + single mixing
-[a-z+] matches range for a sequence of characters
-(csv|txt|dat) - matches full string occurrence
-*/
-bool
-str_match(const char* str, const char* pattern)
+static bool str_match(const char* str, const char* pattern)
 {
     if (unlikely(str == NULL)) {
         return false;
