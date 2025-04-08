@@ -1,4 +1,4 @@
-#include "cex_parser.h"
+#include "CexLexer.h"
 
 // NOTE: lx$ are the temporary macro (will be #undef at the end of this file)
 #define lx$next(lx)                                                                                \
@@ -24,7 +24,7 @@
         (c) = *lx->cur;                                                                            \
     }
 
-static CexLexer_c
+CexLexer_c
 CexLexer_create(char* content, u32 content_len, bool fold_scopes)
 {
     uassert(content != NULL);
@@ -39,7 +39,7 @@ CexLexer_create(char* content, u32 content_len, bool fold_scopes)
 }
 
 static cex_token_s
-CexLexer_scan_ident(CexLexer_c* lx)
+CexLexer__scan_ident(CexLexer_c* lx)
 {
     cex_token_s t = { .type = CexTkn__ident, .value = { .buf = lx->cur, .len = 0 } };
     char c;
@@ -54,7 +54,7 @@ CexLexer_scan_ident(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer_scan_number(CexLexer_c* lx)
+CexLexer__scan_number(CexLexer_c* lx)
 {
     cex_token_s t = { .type = CexTkn__number, .value = { .buf = lx->cur, .len = 0 } };
     char c;
@@ -77,7 +77,7 @@ CexLexer_scan_number(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer_scan_string(CexLexer_c* lx)
+CexLexer__scan_string(CexLexer_c* lx)
 {
     cex_token_s t = { .type = (*lx->cur == '"' ? CexTkn__string : CexTkn__char),
                       .value = { .buf = lx->cur + 1, .len = 0 } };
@@ -99,7 +99,7 @@ CexLexer_scan_string(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer_scan_comment(CexLexer_c* lx)
+CexLexer__scan_comment(CexLexer_c* lx)
 {
     cex_token_s t = { .type = lx->cur[1] == '/' ? CexTkn__comment_single : CexTkn__comment_multi,
                       .value = { .buf = lx->cur, .len = 2 } };
@@ -130,7 +130,7 @@ CexLexer_scan_comment(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer_scan_preproc(CexLexer_c* lx)
+CexLexer__scan_preproc(CexLexer_c* lx)
 {
     lx$next(lx);
     char c = *lx->cur;
@@ -153,7 +153,7 @@ CexLexer_scan_preproc(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer_scan_scope(CexLexer_c* lx)
+CexLexer__scan_scope(CexLexer_c* lx)
 {
     cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
 
@@ -226,13 +226,13 @@ CexLexer_scan_scope(CexLexer_c* lx)
                     break;
                 case '"':
                 case '\'': {
-                    var s = CexLexer_scan_string(lx);
+                    var s = CexLexer__scan_string(lx);
                     t.value.len += s.value.len + 2;
                     continue;
                 }
                 case '/': {
                     if (lx->cur[1] == '/' || lx->cur[1] == '*') {
-                        var s = CexLexer_scan_comment(lx);
+                        var s = CexLexer__scan_comment(lx);
                         t.value.len += s.value.len;
                         continue;
                     }
@@ -240,7 +240,7 @@ CexLexer_scan_scope(CexLexer_c* lx)
                 }
                 case '#': {
                     char* ppstart = lx->cur;
-                    var s = CexLexer_scan_preproc(lx);
+                    var s = CexLexer__scan_preproc(lx);
                     if (s.value.buf) {
                         t.value.len += s.value.len + (s.value.buf - ppstart) + 1;
                     }
@@ -267,7 +267,7 @@ CexLexer_scan_scope(CexLexer_c* lx)
     }
 }
 
-static cex_token_s
+cex_token_s
 CexLexer_next_token(CexLexer_c* lx)
 {
 
@@ -285,19 +285,19 @@ CexLexer_next_token(CexLexer_c* lx)
         }
 
         if (isalpha(c) || c == '_') {
-            return CexLexer_scan_ident(lx);
+            return CexLexer__scan_ident(lx);
         }
         if (isdigit(c)) {
-            return CexLexer_scan_number(lx);
+            return CexLexer__scan_number(lx);
         }
 
         switch (c) {
             case '\'':
             case '"':
-                return CexLexer_scan_string(lx);
+                return CexLexer__scan_string(lx);
             case '/':
                 if (lx->cur[1] == '/' || lx->cur[1] == '*') {
-                    return CexLexer_scan_comment(lx);
+                    return CexLexer__scan_comment(lx);
                 } else {
                     break;
                 }
@@ -317,7 +317,7 @@ CexLexer_next_token(CexLexer_c* lx)
             case '{':
             case '(':
             case '[':
-                return CexLexer_scan_scope(lx);
+                return CexLexer__scan_scope(lx);
             case '}':
                 return tok$new(CexTkn__rbrace);
             case ')':
@@ -325,7 +325,7 @@ CexLexer_next_token(CexLexer_c* lx)
             case ']':
                 return tok$new(CexTkn__rbracket);
             case '#':
-                return CexLexer_scan_preproc(lx);
+                return CexLexer__scan_preproc(lx);
             default:
                 break;
         }

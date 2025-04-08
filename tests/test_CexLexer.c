@@ -1,5 +1,4 @@
 #include <cex/all.c>
-#include <cex/cex_parser.c>
 
 typedef struct token_cmp_s
 {
@@ -469,6 +468,9 @@ test$case(test_token_this_file)
         nit++;
         prev_tok = lx.cur;
     }
+    tassert_eq(CexLexer_next_token(&lx).type, CexTkn__eof); 
+    tassert_eq(CexLexer_next_token(&lx).type, CexTkn__eof); 
+    tassert_eq(CexLexer_next_token(&lx).type, CexTkn__eof); 
     mem$free(mem$, code);
     return EOK;
 }
@@ -486,7 +488,6 @@ test$case(test_token_json)
     while( (t = CexLexer_next_token(&lx)).type){
         io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
     }
-    tassert(false);
     t = CexLexer_next_token(&lx);
     tassertf(
         t.type == CexTkn__eof,

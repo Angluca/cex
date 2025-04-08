@@ -1,4 +1,5 @@
 #include "all.h"
+#pragma once
 
 typedef enum CexTkn_e {
     CexTkn__eof = 0,
@@ -41,3 +42,10 @@ typedef struct CexLexer_c {
     u32 line;
     bool fold_scopes;
 } CexLexer_c;
+
+CexLexer_c
+CexLexer_create(char* content, u32 content_len, bool fold_scopes);
+
+cex_token_s
+CexLexer_next_token(CexLexer_c* lx);
+
