@@ -158,7 +158,6 @@ os__fs__remove(const char* path)
 #endif
 }
 
-
 Exception
 os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
 {
@@ -297,12 +296,24 @@ static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator 
         return NULL;
     }
 
+
     str_s dir_part = dir_part = os.path.split(path, true);
     if (dir_part.buf == NULL) {
 #if defined(CEXTEST) || defined(CEXBUILD)
         (void)e$raise(Error.argument, "Bad path: os.fn.find('%s')", path);
 #endif
         return NULL;
+    }
+
+    if (!is_recursive) {
+        var f = os.fs.stat(path);
+        if (f.is_valid && f.is_file) {
+            // Find used with exact file path, we still have to return array + allocated path copy
+            arr$(char*) result = arr$new(result, allc);
+            char* it = str.clone(path, allc);
+            arr$push(result, it);
+            return result;
+        }
     }
 
     char path_buf[PATH_MAX + 2] = { 0 };
@@ -336,7 +347,8 @@ static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator 
 
     e$except_silent(err, os__fs__dir_walk(dir_name, is_recursive, _os__fs__find_walker, &ctx))
     {
-        for$each(it, ctx.result) {
+        for$each(it, ctx.result)
+        {
             mem$free(allc, it); // each individual item was allocated too
         }
         if (ctx.result != NULL) {
@@ -401,10 +413,10 @@ os__path__exists(const char* file_path)
 }
 
 static char*
-os__path__join(arr$(char*) parts, IAllocator allc)
+os__path__join(const char** parts, u32 parts_len, IAllocator allc)
 {
     char sep[2] = { os$PATH_SEP, '\0' };
-    return str.join(parts, sep, allc);
+    return str.join(parts, parts_len, sep, allc);
 }
 
 static str_s
