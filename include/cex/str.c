@@ -1268,7 +1268,7 @@ static arr$(char*) str_split_lines(const char* s, IAllocator allc)
 }
 
 static char*
-str_join(char** str_arr, usize str_arr_len, const char* join_by, IAllocator allc)
+str_join(const char** str_arr, usize str_arr_len, const char* join_by, IAllocator allc)
 {
     if (str_arr == NULL || join_by == NULL) {
         return NULL;

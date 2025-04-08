@@ -37,6 +37,12 @@ _Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
         __slice;                                                                                   \
     })
 
+#define str$join(allocator, str_join_by, str_parts...)                                                     \
+    ({                                                                                             \
+        const char* _args[] = { str_parts };                                                      \
+        usize _args_len = arr$len(_args);                                                          \
+        str.join(_args, _args_len, str_join_by, allocator);                                                 \
+    })
 
 struct __module__str
 {
@@ -51,7 +57,7 @@ bool            (*eqi)(const char* a, const char* b);
 char*           (*find)(const char* haystack, const char* needle);
 char*           (*findr)(const char* haystack, const char* needle);
 char*           (*fmt)(IAllocator allc, const char* format, ...);
-char*           (*join)(char** str_arr, usize str_arr_len, const char* join_by, IAllocator allc);
+char*           (*join)(const char** str_arr, usize str_arr_len, const char* join_by, IAllocator allc);
 usize           (*len)(const char* s);
 char*           (*lower)(const char* s, IAllocator allc);
 char*           (*replace)(const char* str, const char* old_sub, const char* new_sub, IAllocator allc);
