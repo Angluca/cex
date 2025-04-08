@@ -1314,9 +1314,10 @@ str_join(const char** str_arr, usize str_arr_len, const char* join_by, IAllocato
     return result;
 }
 
-static bool str_match(const char* str, const char* pattern)
+
+static bool _str_match(const char* str, isize str_len, const char* pattern)
 {
-    if (unlikely(str == NULL)) {
+    if (unlikely(str == NULL || str_len <= 0)) {
         return false;
     }
     uassert(pattern && "null pattern");
@@ -1333,37 +1334,42 @@ static bool str_match(const char* str, const char* pattern)
                 }
 
                 if (*pattern != '?' && *pattern != '[' && *pattern != '\\') {
-                    while (*str && *pattern != *str) {
+                    while (str_len > 0 && *pattern != *str) {
                         str++;
+                        str_len--;
                     }
                 }
 
-                while (*str) {
-                    if (str_match(str, pattern)) {
+                while (str_len > 0) {
+                    if (_str_match(str, str_len, pattern)) {
                         return true;
                     }
                     str++;
+                    str_len--;
                 }
                 return false;
 
             case '?':
-                if (*str == '\0') {
+                if (str_len == 0) {
                     return false; // '?' requires a character
                 }
                 str++;
+                str_len--;
                 pattern++;
                 break;
 
             case '(': {
                 const char* strstart = str;
+                isize str_len_start = str_len;
                 if (unlikely(*(pattern + 1) == ')')) {
                     uassert(false && "Empty '()' group");
                     return false;
                 }
 
-                while (*str != '\0') {
+                while (str_len > 0) {
                     pattern++;
                     str = strstart;
+                    str_len = str_len_start;
                     bool matched = false;
                     while (*pattern != '\0') {
                         if (unlikely(*pattern == '\\')) {
@@ -1383,6 +1389,7 @@ static bool str_match(const char* str, const char* pattern)
                         }
                         pattern++;
                         str++;
+                        str_len--;
                     }
                     if (*pattern == '|') {
                         if (!matched) {
@@ -1411,7 +1418,7 @@ static bool str_match(const char* str, const char* pattern)
             }
             case '[': {
                 const char* pstart = pattern;
-                while (*str != '\0') {
+                while (str_len > 0) {
                     bool negate = false;
                     bool repeating = false;
                     pattern = pstart + 1;
@@ -1473,13 +1480,14 @@ static bool str_match(const char* str, const char* pattern)
                         }
 
                         str++;
+                        str_len--;
                         if (!repeating) {
                             break; // while (*str != '\0') {
                         }
                     }
                 }
 
-                if (*str == '\0') {
+                if (str_len == 0) {
                     return *str == *pattern;
                 }
                 break;
@@ -1498,11 +1506,19 @@ static bool str_match(const char* str, const char* pattern)
                     return false;
                 }
                 str++;
+                str_len--;
                 pattern++;
         }
     }
 
-    return *str == '\0';
+    return str_len == 0;
+}
+
+static bool str__slice__match(str_s s, const char* pattern) {
+    return _str_match(s.buf, s.len, pattern);
+}
+static bool str_match(const char* s, const char* pattern) {
+    return _str_match(s, str.len(s), pattern);
 }
 
 const struct __module__str str = {
@@ -1539,6 +1555,7 @@ const struct __module__str str = {
         .ends_with = str__slice__ends_with,
         .remove_prefix = str__slice__remove_prefix,
         .remove_suffix = str__slice__remove_suffix,
+        .match = str__slice__match,
         .lstrip = str__slice__lstrip,
         .rstrip = str__slice__rstrip,
         .strip = str__slice__strip,

@@ -81,6 +81,7 @@ struct {  // sub-module .slice >>>
     bool            (*eq)(str_s a, str_s b);
     str_s*          (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
     str_s           (*lstrip)(str_s s);
+    bool            (*match)(str_s s, const char* pattern);
     str_s           (*remove_prefix)(str_s s, str_s prefix);
     str_s           (*remove_suffix)(str_s s, str_s suffix);
     str_s           (*rstrip)(str_s s);

@@ -2097,12 +2097,14 @@ test$case(test_str_slice_eq)
 
     return EOK;
 }
+
 test$case(test_str_match)
 {
     uassert_disable();
     tassert(str.match("test", "*"));
-    tassert(str.match("", "*"));
+    tassert(!str.match("", "*"));
     tassert(!str.match(NULL, "*"));
+    tassert(str.match(".txt", "*.txt"));
     tassert(!str.match("test.txt", ""));
     tassert(str.match("test.txt", "*txt"));
     tassert(!str.match("test.txt", "*.tx"));
@@ -2195,6 +2197,23 @@ test$case(test_str_match)
     // NOTE: \\+ - makes pattern non repeating it will test only 'a' and fail
     tassert(!str.match("abc+", "[a-c\\+]"));
     tassert(str.match("a+", "a[a-c\\+]"));
+    return EOK;
+}
+
+test$case(test_str_slice_match)
+{
+    str_s src = str$s("my_test __String.txt");
+    tassert(str.slice.match(src, "*"));
+    tassert(str.slice.match(src, "*.txt"));
+    tassert(str.slice.match(src, "*.txt*"));
+    tassert(str.slice.match(src, "my_test*.txt"));
+    tassert(str.slice.match(src, "my_test* *.txt"));
+    tassert(!str.slice.match(str.slice.sub(src, 1, 0), "my_test* *.txt"));
+    tassert(!str.slice.match(str.slice.sub(src, 0, 3), "my_t"));
+    tassert(str.slice.match(str.slice.sub(src, 0, 4), "my_t"));
+    tassert(str.slice.match(str.slice.sub(src, 0, 4), "my_t*"));
+    tassert(str.slice.match(str.slice.sub(src, 0, 4), "my_?"));
+    tassert(!str.slice.match(str.slice.sub(src, 0, 4), "my_t?"));
     return EOK;
 }
 test$main();

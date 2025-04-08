@@ -162,18 +162,13 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
                     );
                     continue;
                 }
-                if (!str.slice.starts_with(incf, str$s("\"")) ||
-                    !str.slice.ends_with(incf, str$s("\""))) {
-                    // system includes skipped
-                    continue;
-                }
-
-                incf = str.slice.sub(incf, 1, -1);
                 log$trace("Processing include: '%S'\n", incf);
-                if (!str.slice.ends_with(incf, str$s(".c")) &&
-                    !str.slice.ends_with(incf, str$s(".h"))) {
+                if (!str.slice.match(incf, "\"*.[hc]\"")){
+                    // system includes skipped
+                    log$trace("Skipping include: '%S'\n", incf);
                     continue;
                 }
+                incf = str.slice.sub(incf, 1, -1);
 
                 mem$scope(tmem$, _)
                 {
