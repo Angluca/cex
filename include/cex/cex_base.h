@@ -100,41 +100,54 @@ __cex__fprintf_dummy(void)
 #define __FILE_NAME__ __FILE__
 #endif
 
+#define CEX_LOG_LVL_NONE 0
+#define CEX_LOG_LVL_ERR 1
+#define CEX_LOG_LVL_WARN 2
+#define CEX_LOG_LVL_INFO 3
+#define CEX_LOG_LVL_DEBUG 4
+#define CEX_LOG_LVL_TRACE 5
+
 #ifndef CEX_LOG_LVL
 // NOTE: you may override this level to manage log$* verbosity
-#define CEX_LOG_LVL 5
+#define CEX_LOG_LVL CEX_LOG_LVL_DEBUG
 #endif
 
-#if CEX_LOG_LVL > 0
+#if CEX_LOG_LVL > CEX_LOG_LVL_NONE
 #define log$error(format, ...)                                                                     \
     (__cex__fprintf(stdout, "[ERROR]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$error(format, ...) __cex__fprintf_dummy()
 #endif
 
-#if CEX_LOG_LVL > 1
+#if CEX_LOG_LVL > CEX_LOG_LVL_ERR
 #define log$warn(format, ...)                                                                      \
     (__cex__fprintf(stdout, "[WARN]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$warn(format, ...) __cex__fprintf_dummy()
 #endif
 
-#if CEX_LOG_LVL > 2
+#if CEX_LOG_LVL > CEX_LOG_LVL_WARN
 #define log$info(format, ...)                                                                      \
     (__cex__fprintf(stdout, "[INFO]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$info(format, ...) __cex__fprintf_dummy()
 #endif
 
-#if CEX_LOG_LVL > 3
+#if CEX_LOG_LVL > CEX_LOG_LVL_INFO
 #define log$debug(format, ...)                                                                     \
     (__cex__fprintf(stdout, "[DEBUG]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
 #else
 #define log$debug(format, ...) __cex__fprintf_dummy()
 #endif
 
+#if CEX_LOG_LVL > CEX_LOG_LVL_DEBUG
+#define log$trace(format, ...)                                                                     \
+    (__cex__fprintf(stdout, "[TRACE]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
+#else
+#define log$trace(format, ...) __cex__fprintf_dummy()
+#endif
 
-#if CEX_LOG_LVL > 0
+#if CEX_LOG_LVL > CEX_LOG_LVL_NONE
 #define __cex__traceback(uerr, fail_func)                                                          \
     (__cex__fprintf(                                                                               \
          stdout,                                                                                   \
