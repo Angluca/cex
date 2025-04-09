@@ -158,11 +158,41 @@ test$case(test_null_ptr)
     return EOK;
 }
 
+#define test_err(a) ({\
+    Exc err = NULL;\
+    (a) ? a : err;\
+})
+
+#define test_a(a) ({\
+    int _a = a;\
+    _a + 1;\
+})
+test$case(test_nested_compound_expr)
+{
+    Exc err = Error.memory;
+    Exc a = Error.io;
+    tassert(err == Error.memory);
+    tassert(a == Error.io);
+    tassert(test_err(Error.memory) == Error.memory);
+    tassert(test_err(a) == Error.io);
+    // tassert(test_err(err) == Error.memory);
+    tassert(err == Error.memory);
+    tassert(a == Error.io);
+    int _a = 0;
+    tassert_eq(test_a(2), 3);
+    tassert_eq(_a, 0);
+
+    return EOK;
+}
+
 test$case(test_nested_excepts)
 {
 
+    tassert_er(Error.io, foo(0));
     e$except_silent(err, foo(0))
     {
+        printf("Loop: %s\n", err);
+        tassert(err == Error.io);
         tassert_er(err, Error.io);
 
         e$except_silent(err, foo(2))

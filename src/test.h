@@ -179,58 +179,61 @@ struct _cex_test_context_s
     })
 #define tassert_eq(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_er(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
-        if ((err = _check_eq_err((a), (b), __LINE__))) {                                           \
+        Exc cex$tmpname(err) = NULL;                                                               \
+        if ((cex$tmpname(err) = _check_eq_err((a), (b), __LINE__))) {                              \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_eq_almost(a, b, delta)                                                             \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
-        if ((err = _check_eq_almost((a), (b), (delta), __LINE__))) {                               \
+        Exc cex$tmpname(err) = NULL;                                                               \
+        if ((cex$tmpname(err) = _check_eq_almost((a), (b), (delta), __LINE__))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 #define tassert_eq_ptr(a, b)                                                                       \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
-        if ((err = _check_eq_ptr((a), (b), __LINE__))) {                                           \
+        Exc cex$tmpname(err) = NULL;                                                               \
+        if ((cex$tmpname(err) = _check_eq_ptr((a), (b), __LINE__))) {                              \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
-#define tassert_eq_mem(a, b...)                                                                        \
-    ({                                                                                              \
+#define tassert_eq_mem(a, b...)                                                                    \
+    ({                                                                                             \
         var _a = (a);                                                                              \
         var _b = (b);                                                                              \
-        _Static_assert(__builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)), "incompatible"); \
-        _Static_assert(sizeof(_a) == sizeof(_b), "different size");                                   \
-        if (memcmp(&_a, &_b, sizeof(_a)) != 0) {                                                \
-            _test$tassert_breakpoint();                                                             \
-            if (str.sprintf(                                                                        \
-                    _cex_test__mainfn_state.str_buf,                                                \
-                    CEXTEST_AMSG_MAX_LEN - 1,                                                       \
+        _Static_assert(                                                                            \
+            __builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)),                          \
+            "incompatible"                                                                         \
+        );                                                                                         \
+        _Static_assert(sizeof(_a) == sizeof(_b), "different size");                                \
+        if (memcmp(&_a, &_b, sizeof(_a)) != 0) {                                                   \
+            _test$tassert_breakpoint();                                                            \
+            if (str.sprintf(                                                                       \
+                    _cex_test__mainfn_state.str_buf,                                               \
+                    CEXTEST_AMSG_MAX_LEN - 1,                                                      \
                     _test$log_err("a and b are not binary equal")                                  \
-                )) {                                                                                \
-            }                                                                                       \
-            return _cex_test__mainfn_state.str_buf;                                                 \
-        }                                                                                           \
+                )) {                                                                               \
+            }                                                                                      \
+            return _cex_test__mainfn_state.str_buf;                                                \
+        }                                                                                          \
     })
 
-#define tassert_eq_arr(a, b...)                                                                       \
+#define tassert_eq_arr(a, b...)                                                                    \
     ({                                                                                             \
         var _a = (a);                                                                              \
         var _b = (b);                                                                              \
@@ -272,50 +275,50 @@ struct _cex_test_context_s
 
 #define tassert_ne(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_le(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_lt(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_ge(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_gt(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })

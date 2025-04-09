@@ -150,16 +150,15 @@ __cex__fprintf_dummy(void)
 #if CEX_LOG_LVL > 0
 #define __cex__traceback(uerr, fail_func)                                                          \
     (__cex__fprintf(                                                                               \
-         stdout,                                                                                   \
-         "[^STCK]  ",                                                                              \
-         __FILE_NAME__,                                                                            \
-         __LINE__,                                                                                 \
-         __func__,                                                                                 \
-         "^^^^^ [%s] in function call `%s`\n",                                                     \
-         uerr,                                                                                     \
-         fail_func                                                                                 \
-     ),                                                                                            \
-     1)
+        stdout,                                                                                    \
+        "[^STCK]  ",                                                                               \
+        __FILE_NAME__,                                                                             \
+        __LINE__,                                                                                  \
+        __func__,                                                                                  \
+        "^^^^^ [%s] in function call `%s`\n",                                                      \
+        uerr,                                                                                      \
+        fail_func                                                                                  \
+    ))
 
 /**
  * @brief Non disposable assert, returns Error.assert CEX exception when failed
@@ -313,10 +312,10 @@ __attribute__((noinline)) void __cex__panic(void);
 // WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
 #define e$except(_var_name, _func)                                                                 \
     for (Exc _var_name = _func;                                                                    \
-         unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func)));                    \
+         unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                    \
          _var_name = EOK)
 
-#if defined(CEXTEST) || defined(CEXBUILD)
+#if 0 //defined(CEXTEST) || defined(CEXBUILD)
 #define e$except_silent(_var_name, _func) e$except(_var_name, _func)
 #else
 #define e$except_silent(_var_name, _func)                                                          \
@@ -326,16 +325,17 @@ __attribute__((noinline)) void __cex__panic(void);
 #define e$except_errno(_expression)                                                                \
     if (unlikely(                                                                                  \
             ((_expression) == -1) &&                                                               \
-            log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno))    \
+            (log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno)),  \
+             1)                                                                                    \
         ))
 
 #define e$except_null(_expression)                                                                 \
-    if (unlikely(((_expression) == NULL) && log$error("`%s` returned NULL\n", #_expression)))
+    if (unlikely(((_expression) == NULL) && (log$error("`%s` returned NULL\n", #_expression), 1)))
 
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
-             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                         \
+             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func), 1)                      \
          );                                                                                        \
          cex$tmpname(__cex_err_traceback_) = EOK)                                                  \
     return cex$tmpname(__cex_err_traceback_)
@@ -343,7 +343,7 @@ __attribute__((noinline)) void __cex__panic(void);
 #define e$goto(_func, _label)                                                                      \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
-             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                         \
+             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func), 1)                      \
          );                                                                                        \
          cex$tmpname(__cex_err_traceback_) = EOK)                                                  \
     goto _label

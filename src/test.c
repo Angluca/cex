@@ -295,6 +295,8 @@ cex_test_unmute(Exc test_result)
         dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
 
         if (test_result != EOK && flen > 1) {
+            fflush(stdout);
+            fflush(stderr);
             fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
             int c;
             while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') {
