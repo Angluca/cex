@@ -1,4 +1,4 @@
-#include <cex/all.c>
+#include "include/cex/all.c"
 #include <lib/deque/deque.h>
 #include <lib/deque/deque.c>
 

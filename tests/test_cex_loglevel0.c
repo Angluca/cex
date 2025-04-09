@@ -1,5 +1,5 @@
 #define CEX_LOG_LVL 0
-#include <cex/all.c>
+#include "include/cex/all.c"
 
 
 test$NOOPT Exception

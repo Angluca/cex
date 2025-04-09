@@ -1,7 +1,7 @@
 // NOTE: we do "#include .c" to have granular control over test behavior, also exposing static
 // functions for testing, and making test build process trivial, i.e. "gcc test_name.c"
 #include "../src/App.c"
-#include <cex/all.c>
+#include "include/cex/all.c"
 #include <cex/test/test.h>
 
 IAllocator allocator;

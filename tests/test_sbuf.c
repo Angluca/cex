@@ -1,4 +1,4 @@
-#include <cex/all.c>
+#include "include/cex/all.c"
 
 Exception
 append_to_cap(sbuf_c* s)

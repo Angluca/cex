@@ -1,5 +1,5 @@
 #include <cex/all.h>
-#include <cex/all.c>
+#include "include/cex/all.c"
 
 
 test$case(os_cmd_create)

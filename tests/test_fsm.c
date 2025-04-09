@@ -1,4 +1,4 @@
-#include <cex/all.c>
+#include "include/cex/all.c"
 #include <lib/fsm/fsm.c>
 #include <lib/test/fff.h>
 

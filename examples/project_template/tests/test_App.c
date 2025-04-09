@@ -1,4 +1,4 @@
-#include <cex/all.c>
+#include "include/cex/all.c"
 #include <cex/test/fff.h>
 #include <cex/test/test.h>
 #include "src/App.c"

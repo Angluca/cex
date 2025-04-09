@@ -1,4 +1,4 @@
-#include <cex/all.c>
+#include "include/cex/all.c"
 
 #define TBUILDDIR "tests/build/os_fs_test/"
 test$setup_case()

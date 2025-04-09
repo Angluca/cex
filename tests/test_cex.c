@@ -1,4 +1,4 @@
-#include <cex/all.c>
+#include "include/cex/all.c"
 
 test$NOOPT Exception
 foo(int condition)
