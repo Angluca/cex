@@ -1,4 +1,4 @@
-#include "include/cex/all.c"
+#include "src/all.c"
 #include <math.h>
 
 test$case(test_tassert_i8)

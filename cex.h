@@ -2989,8 +2989,8 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* u
         uassert(_args_len < PTRDIFF_MAX && "negative length or overflow");                         \
         _os$args_print("CMD:", args, _args_len);                                                   \
         os_cmd_c _cmd = { 0 };                                                                     \
-        e$except_silent(err, os.cmd.run((const char**)args, _args_len, &_cmd)){}                                   \
-        e$except_silent(err, os.cmd.join(&_cmd, 0, NULL));                                                        \
+        e$ret(os.cmd.run((const char**)args, _args_len, &_cmd));                                   \
+        e$ret(os.cmd.join(&_cmd, 0, NULL));                                                        \
         /* NOLINTEND */                                                                            \
     })
 

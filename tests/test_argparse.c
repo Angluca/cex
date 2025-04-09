@@ -1,5 +1,5 @@
-#include "include/cex/all.c"
-#include <cex/all.h>
+#include "src/all.c"
+#include "src/all.h"
 
 test$case(test_argparse_init_short)
 {

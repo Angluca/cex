@@ -1,4 +1,4 @@
-#include "include/cex/all.c"
+#include "src/all.c"
 
 #define USE_STB 1
 

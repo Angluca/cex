@@ -1,4 +1,4 @@
-#include "include/cex/all.c"
+#include "src/all.c"
 #include <cex/argparse/argparse.c>
 #include "App.c"
 #include <stdlib.h>

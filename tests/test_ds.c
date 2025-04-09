@@ -1,5 +1,5 @@
-#include "cex/all.h"
-#include "include/cex/all.c"
+#include "src/all.h"
+#include "src/all.c"
 
 
 static void

@@ -1,5 +1,5 @@
 #define NDEBUG
-#include "include/cex/all.c"
+#include "src/all.c"
 
 test$case(test_poison_by_cex)
 {

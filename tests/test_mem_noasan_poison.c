@@ -1,5 +1,5 @@
 #undef __SANITIZE_ADDRESS__ // disables sanitizer manual poison
-#include "include/cex/all.c"
+#include "src/all.c"
 
 test$case(test_poison_by_cex)
 {

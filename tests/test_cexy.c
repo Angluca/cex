@@ -1,7 +1,6 @@
 #define TBUILDDIR "tests/build/cexytest/"
 #define cexy$cc_include "-I.","-I" TBUILDDIR
-#include "cex/test.h"
-#include "include/cex/all.c"
+#include "src/all.c"
 
 test$setup_case()
 {

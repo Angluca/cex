@@ -1,5 +1,5 @@
 #pragma once
-#include <cex/all.h>
+#include "cex.h"
 
 typedef struct deque_new_kwargs_s
 {

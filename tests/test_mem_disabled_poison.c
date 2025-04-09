@@ -1,5 +1,5 @@
 #define CEX_DISABLE_POISON 1
-#include "include/cex/all.c"
+#include "src/all.c"
 
 test$case(test_poison_totally_disabled)
 {

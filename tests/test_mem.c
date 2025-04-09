@@ -1,4 +1,4 @@
-#include "include/cex/all.c"
+#include "src/all.c"
 
 test$case(test_is_power_of2)
 {

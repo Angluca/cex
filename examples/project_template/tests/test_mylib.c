@@ -1,4 +1,4 @@
-#include "include/cex/all.c"
+#include "src/all.c"
 #include <cex/test/test.h>
 #include <cex/test/fff.h>
 #include "lib/mylib.c"

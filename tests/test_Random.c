@@ -1,4 +1,4 @@
-#include "include/cex/all.c"
+#include "src/all.c"
 #include <lib/random/Random.c>
 
 struct foo {

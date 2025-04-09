@@ -1,6 +1,6 @@
-#include "include/cex/all.c"
-#include <lib/deque/deque.h>
-#include <lib/deque/deque.c>
+#include "src/all.c"
+#include "lib/deque/deque.h"
+#include "lib/deque/deque.c"
 
 
 deque$typedef(deque_int, int, false);
