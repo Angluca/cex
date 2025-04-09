@@ -51,14 +51,14 @@ argparse_usage(argparse_c* self)
     } else {
         if (self->commands) {
             fprintf(stdout, "%s {", self->program_name);
-            for$eachp(c, self->commands, self->commands_len){
+            for$eachp(c, self->commands, self->commands_len)
+            {
                 isize i = c - self->commands;
-                if(i == 0){
+                if (i == 0) {
                     fprintf(stdout, "%s", c->name);
                 } else {
                     fprintf(stdout, ",%s", c->name);
                 }
-
             }
             fprintf(stdout, "} [cmd_options] [cmd_args]\n");
 
@@ -150,7 +150,7 @@ argparse_usage(argparse_c* self)
 
     for$eachp(cmd, self->commands, self->commands_len)
     {
-        fprintf(stdout, "%-20s%s%s\n", cmd->name,  cmd->help, cmd->is_default ? " (default)": "");
+        fprintf(stdout, "%-20s%s%s\n", cmd->name, cmd->help, cmd->is_default ? " (default)" : "");
     }
 
     // print epilog
@@ -430,11 +430,7 @@ argparse__parse_commands(argparse_c* self)
         }
     }
     if (cmd == NULL) {
-        fprintf(
-            stdout,
-            "error: unknown command name '%s', try --help\n",
-            (cmd_arg) ? cmd_arg : ""
-        );
+        fprintf(stdout, "error: unknown command name '%s', try --help\n", (cmd_arg) ? cmd_arg : "");
         return Error.argsparse;
     }
     self->_ctx.current_command = cmd;
@@ -548,18 +544,108 @@ argparse_parse(argparse_c* self, int argc, char** argv)
 
     if (self->commands) {
         return argparse__parse_commands(self);
-    } else {
+    } else if (self->options) {
         return argparse__parse_options(self);
     }
     return Error.ok;
 }
+/*
+fn String! ArgParse.next(&self, String[] argv)
+{
+    assert(self.arguments.len == 0, "ArgParse already initialized or double parse call");
+
+    if (!self._ctx.has_argument) {
+        // initial call
+        assert(argv.len > 0, "empty argv");
+        self._ctx.argc = argv.len - 1;
+        self._ctx.cpidx = 0;
+        self._ctx.argv = argv[1..];
+        self._ctx.out = argv;
+    }
+
+    // protection flag (prevents mixed usage with ArgParse.parse())
+    self._ctx.has_argument = true;
+
+    if (self._ctx.argc > 0 && self._ctx.argv.len > 0) {
+        String arg = self._ctx.argv[0];
+        if (arg.len == 0) {
+            io::printf("Error: argument too short `%s`\n", arg);
+            return ArgError.INVALID_ARGUMENT?;
+        }
+        if (self._ctx.cpidx > 0) {
+            // we have --opt=foo, return 'foo' part
+            arg = arg[self._ctx.cpidx+1..];
+            self._ctx.cpidx = 0;
+        } else if (arg.starts_with("--")) {
+            if(try idx = arg.index_of_char('=')) {
+                // handling --opt=foo, returns '--opt' and 'foo'
+                self._ctx.cpidx = (int)idx;
+
+                if (idx == arg.len-1) {
+                    io::printf("Error: option has no value `%s`\n", arg);
+                    return ArgError.INVALID_ARGUMENT?;
+                }
+                arg = arg[..idx-1];
+                // return '--opt' part
+                return arg;
+            }
+        }
+        self._ctx.argc--;
+        self._ctx.argv = self._ctx.argv[1..];
+        return arg;
+    }
+
+    return "";
+}*/
+static const char*
+argparse_next(argparse_c* self)
+{
+    uassert(self != NULL);
+    uassert(
+        self->options == NULL && self->commands == NULL &&
+        "this is low level method use empty self, i.e. `argparse_c my_args = {0};`"
+    );
+    uassert(self->_ctx.argv != NULL && "forgot argparse.parse() call?");
+
+    if (self->_ctx.argc > 0) {
+        var result = self->_ctx.argv[0];
+
+        if (self->_ctx.cpidx > 0) {
+            // we have --opt=foo, return 'foo' part
+            result = self->_ctx.argv[0] + self->_ctx.cpidx + 1;
+            self->_ctx.cpidx = 0;
+        } else {
+            if (str.starts_with(result, "--")) {
+                char* eq = str.find(result, "=");
+                if (eq) {
+                    static char part_arg[128]; // temp buffer sustained after scope exit
+                    self->_ctx.cpidx = eq - result;
+                    if ((usize)self->_ctx.cpidx + 1 >= sizeof(part_arg)) {
+                        return NULL;
+                    }
+                    if (str.copy(part_arg, result, sizeof(part_arg))) {
+                        return NULL;
+                    }
+                    part_arg[self->_ctx.cpidx] = '\0';
+                    return part_arg;
+                }
+            }
+        }
+        self->_ctx.argc--;
+        self->_ctx.argv++;
+        return result;
+    } else {
+        return NULL;
+    }
+}
+
 static Exception
 argparse_run_command(argparse_c* self, void* user_ctx)
 {
     uassert(self->_ctx.current_command != NULL && "not parsed/parse error?");
     if (self->_ctx.argc == 0) {
         // seems default command (with no args)
-        const char* dummy_args[] = {self->_ctx.current_command->name};
+        const char* dummy_args[] = { self->_ctx.current_command->name };
         return self->_ctx.current_command->func(1, (char**)dummy_args, user_ctx);
     } else {
         return self->_ctx.current_command->func(self->_ctx.argc, (char**)self->_ctx.argv, user_ctx);
@@ -586,6 +672,7 @@ const struct __module__argparse argparse = {
     // clang-format off
     .usage = argparse_usage,
     .parse = argparse_parse,
+    .next = argparse_next,
     .run_command = argparse_run_command,
     .argc = argparse_argc,
     .argv = argparse_argv,

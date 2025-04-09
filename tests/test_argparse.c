@@ -915,19 +915,25 @@ test$case(test_argparse_float_short_arg__argc_remainder)
 }
 
 
-Exception argparse_command_test(int argc, const char** argv, void* user_ctx) {
+Exception
+argparse_command_test(int argc, char** argv, void* user_ctx)
+{
     e$assert(argc > 0);
     e$assert(argv != NULL);
     printf("argparse_command_test: %d, %p, %s\n", argc, argv, (char*)user_ctx);
     return EOK;
 }
-Exception argparse_command_test2(int argc, const char** argv, void* user_ctx) {
+Exception
+argparse_command_test2(int argc, char** argv, void* user_ctx)
+{
     e$assert(argc > 0);
     e$assert(argv != NULL);
     printf("argparse_command_test2: %d, %p, %s\n", argc, argv, (char*)user_ctx);
     return EOK;
 }
-Exception argparse_command_test3(int argc, const char** argv, void* user_ctx) {
+Exception
+argparse_command_test3(int argc, char** argv, void* user_ctx)
+{
     e$assert(argc > 0);
     e$assert(argv != NULL);
     printf("argparse_command_test3: %d, %p, %s\n", argc, argv, (char*)user_ctx);
@@ -937,10 +943,11 @@ Exception argparse_command_test3(int argc, const char** argv, void* user_ctx) {
 test$case(test_argparse_commands_bad)
 {
     argparse_c args = {
-        .commands = (argparse_cmd_s[]) {
-            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
-            {0}, // null term
-        },
+        .commands =
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
+                { 0 }, // null term
+            },
     };
 
     char* argv[] = { "program_name", "-f", "10", "arg1", "arg2" };
@@ -954,14 +961,19 @@ test$case(test_argparse_commands_bad)
 test$case(test_argparse_commands_and_option_mutually_exclusive)
 {
     argparse_c args = {
-        .options = (argparse_opt_s[]) {
-            argparse$opt_help(),
-            {0}, // null term
-        },
-        .commands = (argparse_cmd_s[]) {
-            {.name = "foo", .func = argparse_command_test, .help = "foo command", .is_default = 1},
-            {0}, // null term
-        },
+        .options =
+            (argparse_opt_s[]){
+                argparse$opt_help(),
+                { 0 }, // null term
+            },
+        .commands =
+            (argparse_cmd_s[]){
+                { .name = "foo",
+                  .func = argparse_command_test,
+                  .help = "foo command",
+                  .is_default = 1 },
+                { 0 }, // null term
+            },
     };
 
     char* argv[] = { "program_name", "-f", "10", "arg1", "arg2" };
@@ -976,15 +988,19 @@ test$case(test_argparse_commands_and_option_mutually_exclusive)
 test$case(test_argparse_commands_usage)
 {
     argparse_c args = {
-        .commands = (argparse_cmd_s[]) {
-            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
-            {.name = "bar", .func = argparse_command_test, .help = "bar command", .is_default=1},
-            {.name = "baz", .func = argparse_command_test, .help = "baz command"},
-            {0}, // null term
-        },
+        .commands =
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
+                { .name = "bar",
+                  .func = argparse_command_test,
+                  .help = "bar command",
+                  .is_default = 1 },
+                { .name = "baz", .func = argparse_command_test, .help = "baz command" },
+                { 0 }, // null term
+            },
     };
 
-    char* argv[] = { "program_name", "--help"};
+    char* argv[] = { "program_name", "--help" };
     int argc = arr$len(argv);
 
     tassert_er(Error.argsparse, argparse.parse(&args, argc, argv));
@@ -995,15 +1011,19 @@ test$case(test_argparse_commands_usage)
 test$case(test_argparse_commands_usage_short_h)
 {
     argparse_c args = {
-        .commands = (argparse_cmd_s[]) {
-            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
-            {.name = "bar", .func = argparse_command_test, .help = "bar command", .is_default=1},
-            {.name = "baz", .func = argparse_command_test, .help = "baz command"},
-            {0}, // null term
-        },
+        .commands =
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
+                { .name = "bar",
+                  .func = argparse_command_test,
+                  .help = "bar command",
+                  .is_default = 1 },
+                { .name = "baz", .func = argparse_command_test, .help = "baz command" },
+                { 0 }, // null term
+            },
     };
 
-    char* argv[] = { "program_name", "-h"};
+    char* argv[] = { "program_name", "-h" };
     int argc = arr$len(argv);
 
     tassert_er(Error.argsparse, argparse.parse(&args, argc, argv));
@@ -1015,15 +1035,19 @@ test$case(test_argparse_commands_usage_short_h)
 test$case(test_argparse_commands_default)
 {
     argparse_c args = {
-        .commands = (argparse_cmd_s[]) {
-            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
-            {.name = "bar", .func = argparse_command_test2, .help = "bar command", .is_default=1},
-            {.name = "baz", .func = argparse_command_test3, .help = "baz command"},
-            {0}, // null term
-        },
+        .commands =
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
+                { .name = "bar",
+                  .func = argparse_command_test2,
+                  .help = "bar command",
+                  .is_default = 1 },
+                { .name = "baz", .func = argparse_command_test3, .help = "baz command" },
+                { 0 }, // null term
+            },
     };
 
-    char* argv[] = { "program_name"};
+    char* argv[] = { "program_name" };
     int argc = arr$len(argv);
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
@@ -1036,15 +1060,19 @@ test$case(test_argparse_commands_default)
 test$case(test_argparse_commands_name)
 {
     argparse_c args = {
-        .commands = (argparse_cmd_s[]) {
-            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
-            {.name = "bar", .func = argparse_command_test2, .help = "bar command", .is_default=1},
-            {.name = "baz", .func = argparse_command_test3, .help = "baz command"},
-            {0}, // null term
-        },
+        .commands =
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
+                { .name = "bar",
+                  .func = argparse_command_test2,
+                  .help = "bar command",
+                  .is_default = 1 },
+                { .name = "baz", .func = argparse_command_test3, .help = "baz command" },
+                { 0 }, // null term
+            },
     };
 
-    char* argv[] = { "program_name", "foo"};
+    char* argv[] = { "program_name", "foo" };
     int argc = arr$len(argv);
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
@@ -1060,15 +1088,19 @@ test$case(test_argparse_commands_name)
 test$case(test_argparse_commands_name_with_args)
 {
     argparse_c args = {
-        .commands = (argparse_cmd_s[]) {
-            {.name = "foo", .func = argparse_command_test, .help = "foo command"},
-            {.name = "bar", .func = argparse_command_test2, .help = "bar command", .is_default=1},
-            {.name = "baz", .func = argparse_command_test3, .help = "baz command"},
-            {0}, // null term
-        },
+        .commands =
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
+                { .name = "bar",
+                  .func = argparse_command_test2,
+                  .help = "bar command",
+                  .is_default = 1 },
+                { .name = "baz", .func = argparse_command_test3, .help = "baz command" },
+                { 0 }, // null term
+            },
     };
 
-    char* argv[] = { "program_name", "foo", "-h", "--cool"};
+    char* argv[] = { "program_name", "foo", "-h", "--cool" };
     int argc = arr$len(argv);
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
@@ -1079,6 +1111,40 @@ test$case(test_argparse_commands_name_with_args)
     tassert_eq(args._ctx.argv[2], "--cool");
     tassert_er(EOK, argparse.run_command(&args, "cool2"));
 
+
+    return EOK;
+}
+
+test$case(test_args_next)
+{
+    char* argv[] = { "some", "a", "b", "c" };
+    int argc = arr$len(argv);
+    argparse_c args = { 0 };
+    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+    tassert_eq("some", args.program_name);
+    tassert_eq("a", argparse.next(&args));
+    tassert_eq("b", argparse.next(&args));
+    tassert_eq("c", argparse.next(&args));
+    tassert_eq(0, argparse.argc(&args));
+    tassert_eq(argparse.next(&args), NULL);
+    tassert_eq(argparse.next(&args), NULL);
+
+    return EOK;
+}
+
+test$case(test_args_next_double_dash)
+{
+    char* argv[] = { "some", "a", "--b=foo", "--c", "zoo" };
+    int argc = arr$len(argv);
+    argparse_c args = { 0 };
+    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+    tassert_eq("some", args.program_name);
+    tassert_eq("a", argparse.next(&args));
+    tassert_eq("--b", argparse.next(&args));
+    tassert_eq("foo", argparse.next(&args));
+    tassert_eq("--c", argparse.next(&args));
+    tassert_eq("zoo", argparse.next(&args));
+    tassert_eq(argparse.next(&args), NULL);
 
     return EOK;
 }
