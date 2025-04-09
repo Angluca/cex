@@ -24,7 +24,7 @@ argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason,
 static void
 argparse_usage(argparse_c* self)
 {
-    uassert(self->_ctx.argv != NULL && "usage before parse!");
+    uassert(self->argv != NULL && "usage before parse!");
 
     fprintf(stdout, "Usage:\n");
     if (self->usage) {
@@ -174,10 +174,10 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
             if (self->_ctx.optvalue) {
                 *(const char**)opt->value = self->_ctx.optvalue;
                 self->_ctx.optvalue = NULL;
-            } else if (self->_ctx.argc > 1) {
-                self->_ctx.argc--;
+            } else if (self->argc > 1) {
+                self->argc--;
                 self->_ctx.cpidx++;
-                *(const char**)opt->value = *++self->_ctx.argv;
+                *(const char**)opt->value = *++self->argv;
             } else {
                 return argparse__error(self, opt, "requires a value", is_long);
             }
@@ -203,11 +203,11 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                     return argparse__error(self, opt, "argument parsing error", is_long);
                 }
                 self->_ctx.optvalue = NULL;
-            } else if (self->_ctx.argc > 1) {
-                self->_ctx.argc--;
+            } else if (self->argc > 1) {
+                self->argc--;
                 self->_ctx.cpidx++;
-                self->_ctx.argv++;
-                e$except_silent(err, opt->convert(*self->_ctx.argv, opt->value))
+                self->argv++;
+                e$except_silent(err, opt->convert(*self->argv, opt->value))
                 {
                     return argparse__error(self, opt, "argument parsing error", is_long);
                 }
@@ -346,12 +346,12 @@ argparse__long_opt(argparse_c* self, argparse_opt_s* options)
         if (!options->long_name) {
             continue;
         }
-        rest = argparse__prefix_skip(self->_ctx.argv[0] + 2, options->long_name);
+        rest = argparse__prefix_skip(self->argv[0] + 2, options->long_name);
         if (!rest) {
             if (options->type != CexArgParseType__boolean) {
                 continue;
             }
-            rest = argparse__prefix_skip(self->_ctx.argv[0] + 2 + 3, options->long_name);
+            rest = argparse__prefix_skip(self->argv[0] + 2 + 3, options->long_name);
             if (!rest) {
                 continue;
             }
@@ -372,20 +372,20 @@ static Exception
 argparse__report_error(argparse_c* self, Exc err)
 {
     // invalidate argc
-    self->_ctx.argc = 0;
+    self->argc = 0;
 
     if (err == Error.not_found) {
         if (self->options != NULL) {
-            fprintf(stdout, "error: unknown option `%s`\n", self->_ctx.argv[0]);
+            fprintf(stdout, "error: unknown option `%s`\n", self->argv[0]);
         } else {
             fprintf(
                 stdout,
                 "error: command name expected, got option `%s`, try --help\n",
-                self->_ctx.argv[0]
+                self->argv[0]
             );
         }
     } else if (err == Error.integrity) {
-        fprintf(stdout, "error: option `%s` follows argument\n", self->_ctx.argv[0]);
+        fprintf(stdout, "error: option `%s` follows argument\n", self->argv[0]);
     }
     return Error.argsparse;
 }
@@ -406,7 +406,7 @@ argparse__parse_commands(argparse_c* self)
     }
 
     argparse_cmd_s* cmd = NULL;
-    const char* cmd_arg = (self->_ctx.argc > 0) ? self->_ctx.argv[0] : NULL;
+    const char* cmd_arg = (self->argc > 0) ? self->argv[0] : NULL;
 
     if (str.eq(cmd_arg, "-h") || str.eq(cmd_arg, "--help")) {
         argparse_usage(self);
@@ -434,6 +434,7 @@ argparse__parse_commands(argparse_c* self)
         return Error.argsparse;
     }
     self->_ctx.current_command = cmd;
+    self->_ctx.cpidx = 0;
 
     return EOK;
 }
@@ -451,20 +452,20 @@ argparse__parse_options(argparse_c* self)
             _opt++;
         }
     }
-    int initial_argc = self->_ctx.argc + 1;
+    int initial_argc = self->argc + 1;
     e$except_silent(err, argparse__options_check(self, true))
     {
         return err;
     }
 
-    for (; self->_ctx.argc; self->_ctx.argc--, self->_ctx.argv++) {
-        const char* arg = self->_ctx.argv[0];
+    for (; self->argc; self->argc--, self->argv++) {
+        const char* arg = self->argv[0];
         if (arg[0] != '-' || !arg[1]) {
             self->_ctx.has_argument = true;
 
             if (self->commands != 0) {
-                self->_ctx.argc--;
-                self->_ctx.argv++;
+                self->argc--;
+                self->argv++;
                 break;
             }
             continue;
@@ -492,8 +493,8 @@ argparse__parse_options(argparse_c* self)
         }
         // if '--' presents
         if (!arg[2]) {
-            self->_ctx.argc--;
-            self->_ctx.argv++;
+            self->argc--;
+            self->argv++;
             self->_ctx.cpidx++;
             break;
         }
@@ -515,8 +516,10 @@ argparse__parse_options(argparse_c* self)
         return err;
     }
 
-    self->_ctx.out += self->_ctx.cpidx + 1; // excludes 1st argv[0], program_name
-    self->_ctx.argc = initial_argc - self->_ctx.cpidx - 1;
+    self->argv = self->_ctx.out + self->_ctx.cpidx + 1; // excludes 1st argv[0], program_name
+    self->argc = initial_argc - self->_ctx.cpidx - 1;
+    self->_ctx.cpidx = 0;
+
     return EOK;
 }
 
@@ -538,8 +541,8 @@ argparse_parse(argparse_c* self, int argc, char** argv)
     // reset if we have several runs
     memset(&self->_ctx, 0, sizeof(self->_ctx));
 
-    self->_ctx.argc = argc - 1;
-    self->_ctx.argv = argv + 1;
+    self->argc = argc - 1;
+    self->argv = argv + 1;
     self->_ctx.out = argv;
 
     if (self->commands) {
@@ -549,70 +552,19 @@ argparse_parse(argparse_c* self, int argc, char** argv)
     }
     return Error.ok;
 }
-/*
-fn String! ArgParse.next(&self, String[] argv)
-{
-    assert(self.arguments.len == 0, "ArgParse already initialized or double parse call");
 
-    if (!self._ctx.has_argument) {
-        // initial call
-        assert(argv.len > 0, "empty argv");
-        self._ctx.argc = argv.len - 1;
-        self._ctx.cpidx = 0;
-        self._ctx.argv = argv[1..];
-        self._ctx.out = argv;
-    }
-
-    // protection flag (prevents mixed usage with ArgParse.parse())
-    self._ctx.has_argument = true;
-
-    if (self._ctx.argc > 0 && self._ctx.argv.len > 0) {
-        String arg = self._ctx.argv[0];
-        if (arg.len == 0) {
-            io::printf("Error: argument too short `%s`\n", arg);
-            return ArgError.INVALID_ARGUMENT?;
-        }
-        if (self._ctx.cpidx > 0) {
-            // we have --opt=foo, return 'foo' part
-            arg = arg[self._ctx.cpidx+1..];
-            self._ctx.cpidx = 0;
-        } else if (arg.starts_with("--")) {
-            if(try idx = arg.index_of_char('=')) {
-                // handling --opt=foo, returns '--opt' and 'foo'
-                self._ctx.cpidx = (int)idx;
-
-                if (idx == arg.len-1) {
-                    io::printf("Error: option has no value `%s`\n", arg);
-                    return ArgError.INVALID_ARGUMENT?;
-                }
-                arg = arg[..idx-1];
-                // return '--opt' part
-                return arg;
-            }
-        }
-        self._ctx.argc--;
-        self._ctx.argv = self._ctx.argv[1..];
-        return arg;
-    }
-
-    return "";
-}*/
 static const char*
 argparse_next(argparse_c* self)
 {
     uassert(self != NULL);
-    uassert(
-        self->options == NULL && self->commands == NULL &&
-        "this is low level method use empty self, i.e. `argparse_c my_args = {0};`"
-    );
-    uassert(self->_ctx.argv != NULL && "forgot argparse.parse() call?");
+    uassert(self->argv != NULL && "forgot argparse.parse() call?");
 
-    if (self->_ctx.argc > 0) {
-        var result = self->_ctx.argv[0];
+    var result = self->argv[0];
+    if (self->argc > 0) {
 
         if (self->_ctx.cpidx > 0) {
             // we have --opt=foo, return 'foo' part
-            result = self->_ctx.argv[0] + self->_ctx.cpidx + 1;
+            result = self->argv[0] + self->_ctx.cpidx + 1;
             self->_ctx.cpidx = 0;
         } else {
             if (str.starts_with(result, "--")) {
@@ -631,39 +583,31 @@ argparse_next(argparse_c* self)
                 }
             }
         }
-        self->_ctx.argc--;
-        self->_ctx.argv++;
-        return result;
-    } else {
-        return NULL;
+        self->argc--;
+        self->argv++;
     }
+
+    if (unlikely(self->argc == 0)) {
+        // After reaching argc=0, argv getting stack-overflowed (ASAN issues), we set to fake NULL
+        static char* null_argv[] = { NULL };
+        // reset NULL every call, because static null_argv may be overwritten in user code maybe
+        null_argv[0] = NULL; 
+        self->argv = null_argv;
+    }
+    return result;
 }
 
 static Exception
 argparse_run_command(argparse_c* self, void* user_ctx)
 {
     uassert(self->_ctx.current_command != NULL && "not parsed/parse error?");
-    if (self->_ctx.argc == 0) {
+    if (self->argc == 0) {
         // seems default command (with no args)
         const char* dummy_args[] = { self->_ctx.current_command->name };
         return self->_ctx.current_command->func(1, (char**)dummy_args, user_ctx);
     } else {
-        return self->_ctx.current_command->func(self->_ctx.argc, (char**)self->_ctx.argv, user_ctx);
+        return self->_ctx.current_command->func(self->argc, (char**)self->argv, user_ctx);
     }
-}
-
-static u32
-argparse_argc(argparse_c* self)
-{
-    uassert(self->_ctx.out != NULL && "argparse.parse() not called?");
-    return self->_ctx.argc;
-}
-
-static char**
-argparse_argv(argparse_c* self)
-{
-    uassert(self->_ctx.out != NULL && "argparse.parse() not called?");
-    return self->_ctx.out;
 }
 
 
@@ -674,7 +618,5 @@ const struct __module__argparse argparse = {
     .parse = argparse_parse,
     .next = argparse_next,
     .run_command = argparse_run_command,
-    .argc = argparse_argc,
-    .argv = argparse_argv,
     // clang-format on
 };

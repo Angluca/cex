@@ -1,4 +1,4 @@
-#include "cexy.h"
+#include "all.h"
 #include "os.h"
 
 static void
@@ -15,7 +15,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
             return;
         }
 
-        log$debug("building self: %s -> %s\n", cex_source, bin_path);
+        log$info("Building self: %s -> %s\n", cex_source, bin_path);
         char* old_name = str.fmt(_, "%s.old", bin_path);
         if (os.path.exists(bin_path)) {
             if (os.fs.remove(old_name)) {

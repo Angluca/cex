@@ -296,9 +296,11 @@ test$case(test_argparse_arguments)
     tassert_eq(argv[1], "arg1");         // unchanged
     tassert_eq(argv[2], "arg2");         // unchanged
     //
-    tassert_eq(argparse.argc(&args), 2);
-    tassert_eq(argparse.argv(&args)[0], "arg1");
-    tassert_eq(argparse.argv(&args)[1], "arg2");
+    tassert_eq(args.argc, 2);
+    tassert(args.argv != NULL);
+    tassert(args.argv[0] != NULL);
+    tassert_eq(args.argv[0], "arg1");
+    tassert_eq(args.argv[1], "arg2");
 
     return EOK;
 }
@@ -334,9 +336,9 @@ test$case(test_argparse_arguments_after_options)
     tassert_eq(argv[3], "arg1");         // unchanged
     tassert_eq(argv[4], "arg2");         // unchanged
     //
-    // tassert_eq(argparse.argc(&args), 2);
-    tassert_eq(argparse.argv(&args)[0], "arg1");
-    tassert_eq(argparse.argv(&args)[1], "arg2");
+    tassert_eq(args.argc, 2);
+    tassert_eq(args.argv[0], "arg1");
+    tassert_eq(args.argv[1], "arg2");
 
     return EOK;
 }
@@ -375,9 +377,9 @@ test$case(test_argparse_arguments_stacked_short_opt)
     tassert_eq(argv[3], "arg1");         // unchanged
     tassert_eq(argv[4], "arg2");         // unchanged
     //
-    tassert_eq(argparse.argc(&args), 2);
-    tassert_eq(argparse.argv(&args)[0], "arg1");
-    tassert_eq(argparse.argv(&args)[1], "arg2");
+    tassert_eq(args.argc, 2);
+    tassert_eq(args.argv[0], "arg1");
+    tassert_eq(args.argv[1], "arg2");
 
     return EOK;
 }
@@ -418,10 +420,10 @@ test$case(test_argparse_arguments_double_dash)
     tassert_eq(argv[4], "arg1");         // unchanged
     tassert_eq(argv[5], "arg2");         // unchanged
     //
-    tassert_eq(argparse.argc(&args), 3);
-    tassert_eq(argparse.argv(&args)[0], "--int=100");
-    tassert_eq(argparse.argv(&args)[1], "arg1");
-    tassert_eq(argparse.argv(&args)[2], "arg2");
+    tassert_eq(args.argc, 3);
+    tassert_eq(args.argv[0], "--int=100");
+    tassert_eq(args.argv[1], "arg1");
+    tassert_eq(args.argv[2], "arg2");
 
     return EOK;
 }
@@ -462,7 +464,7 @@ test$case(test_argparse_arguments__option_follows_argument_not_allowed)
     tassert_eq(argv[3], "arg2");         // unchanged
     tassert_eq(argv[4], "--int=100");    // unchanged
     //
-    tassert_eq(argparse.argc(&args), 0);
+    tassert_eq(args.argc, 0);
 
     return EOK;
 }
@@ -514,11 +516,11 @@ test$case(test_argparse_arguments__parsing_error)
 //     int argc = arr$len(argv);
 //
 //     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
-//     tassert_eq(argparse.argc(&args), 4);
-//     tassert_eq(argparse.argv(&args)[0], "arg1");
-//     tassert_eq(argparse.argv(&args)[1], "-fi");
-//     tassert_eq(argparse.argv(&args)[2], "arg2");
-//     tassert_eq(argparse.argv(&args)[3], "--int=100");
+//     tassert_eq(args.argc, 4);
+//     tassert_eq(args.argv[0], "arg1");
+//     tassert_eq(args.argv[1], "-fi");
+//     tassert_eq(args.argv[2], "arg2");
+//     tassert_eq(args.argv[3], "--int=100");
 //
 //     return EOK;
 // }
@@ -552,17 +554,17 @@ test$case(test_argparse_arguments__parsing_error)
 //     tassert_eq(int_num, 1);
 //     tassert_eq(int_num2, -100);
 //     tassert_eq(args.program_name, "program_name");
-//     tassert_eq(argparse.argc(&args), 4);
-//     tassert_eq(argparse.argv(&args)[0], "cmd_name");
-//     tassert_eq(argparse.argv(&args)[1], "-fi");
-//     tassert_eq(argparse.argv(&args)[2], "--int=100");
-//     tassert_eq(argparse.argv(&args)[3], "cmd_arg_something");
+//     tassert_eq(args.argc, 4);
+//     tassert_eq(args.argv[0], "cmd_name");
+//     tassert_eq(args.argv[1], "-fi");
+//     tassert_eq(args.argv[2], "--int=100");
+//     tassert_eq(args.argv[3], "cmd_arg_something");
 //
 //     argparse_c cmd_args = {
 //         .options = options,
 //         .options_len = arr$len(options),
 //     };
-//     tassert_er(Error.ok, argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args)));
+//     tassert_er(Error.ok, argparse.parse(&cmd_args, args.argc, args.argv));
 //     tassert_eq(args.program_name, "program_name");
 //     tassert_eq(force, 1);
 //     tassert_eq(int_num, 0);
@@ -614,7 +616,7 @@ test$case(test_argparse_arguments__parsing_error)
 //     };
 //     tassert_er(
 //         Error.argsparse,
-//         argparse.parse(&cmd_args, argparse.argc(&args), argparse.argv(&args))
+//         argparse.parse(&cmd_args, args.argc, args.argv)
 //     );
 //
 //     return EOK;
@@ -847,9 +849,9 @@ test$case(test_argparse_int_short_arg__argc_remainder)
     tassert_eq(force, 10);
     tassert_eq(argc, 5); // unchanged
 
-    tassert_eq(argparse.argc(&args), 2);
-    tassert_eq(argparse.argv(&args)[0], "arg1");
-    tassert_eq(argparse.argv(&args)[1], "arg2");
+    tassert_eq(args.argc, 2);
+    tassert_eq(args.argv[0], "arg1");
+    tassert_eq(args.argv[1], "arg2");
 
     return EOK;
 }
@@ -877,9 +879,9 @@ test$case(test_argparse_str_short_arg__argc_remainder)
     tassert_eq(force, "10");
     tassert_eq(argc, 5); // unchanged
 
-    tassert_eq(argparse.argc(&args), 2);
-    tassert_eq(argparse.argv(&args)[0], "arg1");
-    tassert_eq(argparse.argv(&args)[1], "arg2");
+    tassert_eq(args.argc, 2);
+    tassert_eq(args.argv[0], "arg1");
+    tassert_eq(args.argv[1], "arg2");
 
     return EOK;
 }
@@ -904,12 +906,21 @@ test$case(test_argparse_float_short_arg__argc_remainder)
 
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+    tassert_eq(args._ctx.cpidx, 0);
     tassert_eq(force, 10.0f);
     tassert_eq(argc, 5); // unchanged
 
-    tassert_eq(argparse.argc(&args), 2);
-    tassert_eq(argparse.argv(&args)[0], "arg1");
-    tassert_eq(argparse.argv(&args)[1], "arg2");
+    tassert_eq(args.argc, 2);
+    tassert_eq(args.argv[0], "arg1");
+    tassert_eq(args.argv[1], "arg2");
+
+    tassert_eq("arg1", argparse.next(&args));
+    tassert_eq(args.argc, 1);
+    tassert_eq(args.argv[0], "arg2");
+
+    tassert_eq("arg2", argparse.next(&args));
+    tassert_eq(args.argc, 0);
+    tassert_eq(args.argv[0], NULL);
 
     return EOK;
 }
@@ -1077,8 +1088,8 @@ test$case(test_argparse_commands_name)
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eq_ptr(args._ctx.current_command->func, argparse_command_test);
-    tassert_eq(args._ctx.argc, 1);
-    tassert_eq(args._ctx.argv[0], "foo");
+    tassert_eq(args.argc, 1);
+    tassert_eq(args.argv[0], "foo");
 
     tassert_er(EOK, argparse.run_command(&args, "cool"));
 
@@ -1105,10 +1116,10 @@ test$case(test_argparse_commands_name_with_args)
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eq_ptr(args._ctx.current_command->func, argparse_command_test);
-    tassert_eq(args._ctx.argc, 3);
-    tassert_eq(args._ctx.argv[0], "foo");
-    tassert_eq(args._ctx.argv[1], "-h");
-    tassert_eq(args._ctx.argv[2], "--cool");
+    tassert_eq(args.argc, 3);
+    tassert_eq(args.argv[0], "foo");
+    tassert_eq(args.argv[1], "-h");
+    tassert_eq(args.argv[2], "--cool");
     tassert_er(EOK, argparse.run_command(&args, "cool2"));
 
 
@@ -1125,7 +1136,7 @@ test$case(test_args_next)
     tassert_eq("a", argparse.next(&args));
     tassert_eq("b", argparse.next(&args));
     tassert_eq("c", argparse.next(&args));
-    tassert_eq(0, argparse.argc(&args));
+    tassert_eq(0, args.argc);
     tassert_eq(argparse.next(&args), NULL);
     tassert_eq(argparse.next(&args), NULL);
 
@@ -1145,6 +1156,33 @@ test$case(test_args_next_double_dash)
     tassert_eq("--c", argparse.next(&args));
     tassert_eq("zoo", argparse.next(&args));
     tassert_eq(argparse.next(&args), NULL);
+
+    return EOK;
+}
+
+test$case(test_args_next_argc_argv)
+{
+    char* argv[] = { "some", "a", "b", "c" };
+    int argc = arr$len(argv);
+    argparse_c args = { 0 };
+    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
+    tassert_eq("some", args.program_name);
+
+    tassert_eq("a", argparse.next(&args));
+    tassert_eq(2, args.argc);
+    tassert_eq("b", args.argv[0]);
+
+    tassert_eq("b", argparse.next(&args));
+    tassert_eq(1, args.argc);
+    tassert_eq("c", args.argv[0]);
+
+    tassert_eq("c", argparse.next(&args));
+    tassert_eq(0, args.argc);
+    tassert_eq(args.argv[0], NULL);
+    tassert_eq(argparse.next(&args), NULL);
+    tassert_eq(argparse.next(&args), NULL);
+    tassert_eq(0, args.argc);
+    tassert_eq(args.argv[0], NULL);
 
     return EOK;
 }

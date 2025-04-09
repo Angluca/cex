@@ -120,5 +120,5 @@ class Bundler:
 
 if __name__ == "__main__":
 
-    b = Bundler("./include/cex/", "./")
+    b = Bundler("./src/", "./")
     b.bundle()

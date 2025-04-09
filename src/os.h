@@ -41,7 +41,7 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* u
 #define os$PATH_SEP '/'
 #endif
 
-#ifdef CEXBUILD
+#if defined(CEXBUILD) && CEX_LOG_LVL > 3
 #define _os$args_print(msg, args, args_len)                                                        \
     log$debug(msg "");                                                                             \
     for (u32 i = 0; i < args_len - 1; i++) {                                                       \
@@ -49,8 +49,8 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* u
         io.printf(" ");                                                                            \
         if (str.find(a, " ")) {                                                                    \
             io.printf("\'%s\'", a);                                                                \
-        } else if (a == NULL || *a == '\0') {                                                              \
-            io.printf("\'(empty arg)\'");                                                                   \
+        } else if (a == NULL || *a == '\0') {                                                      \
+            io.printf("\'(empty arg)\'");                                                          \
         } else {                                                                                   \
             io.printf("%s", a);                                                                    \
         }                                                                                          \
@@ -70,8 +70,11 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* u
         uassert(_args_len < PTRDIFF_MAX && "negative length or overflow");                         \
         _os$args_print("CMD:", args, _args_len);                                                   \
         os_cmd_c _cmd = { 0 };                                                                     \
-        e$except_silent(err, os.cmd.run((const char**)args, _args_len, &_cmd)) {}                  \
-        e$except_silent(err, os.cmd.join(&_cmd, 0, NULL));                                         \
+        Exc result = os.cmd.run((const char**)args, _args_len, &_cmd);                             \
+        if (result == EOK) {                                                                       \
+            result = os.cmd.join(&_cmd, 0, NULL);                                                   \
+        };                                                                                         \
+        result;                                                                                    \
         /* NOLINTEND */                                                                            \
     })
 

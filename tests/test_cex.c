@@ -39,6 +39,7 @@ test$case(test_sysfunc)
 
     errno = 777;
     u32 nit = 0;
+    tassert_eq(-1, sys_func(-1));
     e$except_errno(ret = sys_func(-1))
     {
         log$error("Except: ret=%d errno=%d\n", ret, errno);
@@ -158,6 +159,8 @@ test$case(test_null_ptr)
 
 test$case(test_nested_excepts)
 {
+
+    tassert_eq(Error.io, foo(0));
 
     e$except_silent(err, foo(0))
     {

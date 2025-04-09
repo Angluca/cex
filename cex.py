@@ -17,8 +17,8 @@ class CEXEnv:
     def __init__(self):
         self.cli_path = os.path.abspath(__file__)
         self.root = os.path.dirname(self.cli_path)
-        self.include_path = os.path.join(self.root, "include")
-        self.cex_lib = os.path.join(self.root, "include", "cex")
+        self.include_path = os.path.join(self.root, "src")
+        self.cex_lib = os.path.join(self.root, "src", )
         self.cex_h_path = os.path.join(self.cex_lib, "cex_base.h")
         self.cex_c_path = os.path.join(self.cex_lib, "cex_base.c")
         self.fff_h_path = os.path.join(self.cex_lib, "fff.h")
