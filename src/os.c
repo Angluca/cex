@@ -349,7 +349,7 @@ static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator 
     }
 
 
-    str_s dir_part = dir_part = os.path.split(path, true);
+    str_s dir_part = os.path.split(path, true);
     if (dir_part.buf == NULL) {
 #if defined(CEXTEST) || defined(CEXBUILD)
         (void)e$raise(Error.argument, "Bad path: os.fn.find('%s')", path);
@@ -382,7 +382,7 @@ static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator 
         return NULL;
     }
     char* dir_name = (dir_part.len > 0) ? path_buf : ".";
-    char* pattern = (dir_part.len > 0) ? path_buf + dir_part.len + 1 : path_buf;
+    char* pattern = path_buf + dir_part.len + 1;
     if (*pattern == os$PATH_SEP) {
         pattern++;
     }
@@ -734,10 +734,10 @@ os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
     }
 
     for (u32 i = 0; i < args_len - 1; i++) {
-        if (args[i] == NULL) {
+        if (args[i] == NULL || args[i][0] == '\0' ) {
             return e$raise(
                 Error.argument,
-                "`args` item[%d] is NULL, which may indicate string operation failure",
+                "`args` item[%d] is NULL/empty, which may indicate string operation failure",
                 i
             );
         }

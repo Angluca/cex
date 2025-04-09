@@ -135,6 +135,23 @@ test$case(test_os_find_exact_recursive)
     return EOK;
 }
 
+test$case(test_os_find_bad_pattern)
+{
+
+    mem$scope(tmem$, _)
+    {
+        u32 nit = 0;
+        for$each(it, os.fs.find("lakjdalksjdlkjzxcoiasdznxcas", true, _))
+        {
+            log$debug("WTF Found: %s\n", it);
+            nit++;
+        }
+        tassert_eq(nit, 0);
+    }
+
+    return EOK;
+}
+
 test$case(test_os_find_no_trailing_slash)
 {
 
