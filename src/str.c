@@ -1366,7 +1366,7 @@ static bool _str_match(const char* str, isize str_len, const char* pattern)
                     return false;
                 }
 
-                while (str_len > 0) {
+                while (str_len_start > 0) {
                     pattern++;
                     str = strstart;
                     str_len = str_len_start;
@@ -1383,6 +1383,7 @@ static bool _str_match(const char* str, isize str_len, const char* pattern)
                             matched = true;
                         } else {
                             while (*pattern != '|' && *pattern != ')' && *pattern != '\0') {
+                                matched = false;
                                 pattern++;
                             }
                             break;

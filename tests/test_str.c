@@ -2197,6 +2197,15 @@ test$case(test_str_match)
     // NOTE: \\+ - makes pattern non repeating it will test only 'a' and fail
     tassert(!str.match("abc+", "[a-c\\+]"));
     tassert(str.match("a+", "a[a-c\\+]"));
+
+    tassert(str.match("clean", "(clean)"));
+    tassert(str.match("run", "(run|clean)"));
+    tassert(str.match("build", "(run|build|clean)"));
+    tassert(str.match("create", "(run|build|create|clean)"));
+    tassert(str.match("build", "(run|build|create|clean)"));
+    tassert(str.match("foo", "(run|build|create|clean|foo)"));
+    tassert(str.match("clean", "(run|build|create|clean)"));
+    tassert(str.match("clean", "(run|build|cleany|clean)"));
     return EOK;
 }
 
