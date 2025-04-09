@@ -35,6 +35,12 @@ _Static_assert(sizeof(os_fs_stat_s) == sizeof(usize) * 2, "size?");
 typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* user_ctx);
 
 
+#ifdef _WIN32
+#define os$PATH_SEP '\\'
+#else
+#define os$PATH_SEP '/'
+#endif
+
 #ifdef CEXBUILD
 #define _os$args_print(msg, args, args_len)                                                        \
     log$debug(msg "");                                                                             \

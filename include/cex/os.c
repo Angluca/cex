@@ -1,11 +1,6 @@
 #pragma once
 #include "all.h"
 
-#ifdef _WIN32
-#define os$PATH_SEP '\\'
-#else
-#define os$PATH_SEP '/'
-#endif
 
 static void
 os_sleep(u32 period_millisec)
@@ -73,6 +68,10 @@ os__fs__mkpath(const char* path)
     }
     str_s dir = os.path.split(path, true);
     char dir_path[PATH_MAX] = {0};
+    e$ret(str.slice.copy(dir_path, dir, sizeof(dir_path)));
+    if (os.path.exists(dir_path)) {
+        return EOK;
+    }
     usize dir_path_len = 0;
 
     for$iter(str_s, it, str.slice.iter_split(dir, "\\/", &it.iterator)) {
@@ -84,7 +83,6 @@ os__fs__mkpath(const char* path)
         }
         e$ret(str.slice.copy(dir_path + dir_path_len, *it.val, sizeof(dir_path) - dir_path_len));
         dir_path_len += it.val->len;
-        log$debug("path_part: '%S' dir_path: '%s'\n", *it.val, dir_path);
         e$ret(os.fs.mkdir(dir_path));
     }
     return EOK;

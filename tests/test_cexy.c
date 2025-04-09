@@ -5,23 +5,53 @@
 
 test$setup_case()
 {
-    mem$scope(tmem$, _)
-    {
-        arr$(char*) files = os.fs.find(TBUILDDIR "/*", true, _);
-        for$each(f, files)
-        {
-            e$ret(os.fs.remove(f));
-        }
-        e$ret(os.fs.remove(TBUILDDIR));
-    }
-    e$ret(os.fs.mkdir("tests/build"));
+    e$ret(os.fs.remove_tree(TBUILDDIR));
     e$assert(!os.path.exists(TBUILDDIR) && "must not exist!");
-    e$ret(os.fs.mkdir(TBUILDDIR));
+    e$ret(os.fs.mkpath(TBUILDDIR));
     e$assert(os.path.exists(TBUILDDIR) && "must exist!");
     return EOK;
 }
 test$teardown_case()
 {
+    e$ret(os.fs.remove_tree(TBUILDDIR));
+    return EOK;
+}
+
+test$case(test_target_make)
+{
+    mem$scope(tmem$, _)
+    {
+        char* tgt = TBUILDDIR "my_tgt_dir/my_tgt";
+        char* src = TBUILDDIR "my_src.c";
+        e$assert(!os.path.exists(TBUILDDIR "my_tgt_dir/") && "must not exist!");
+
+        e$ret(io.file.save(src, "#include <my_src2.c>"));
+        char* tgt_file = cexy.target_make(src, TBUILDDIR "my_tgt_dir", "my_tgt", _);
+        e$assert(os.path.exists(TBUILDDIR "my_tgt_dir/") && "must exist!");
+        tassert_eq(tgt_file, tgt);
+        e$assert(!os.path.exists(tgt_file) && "must not exist!");
+    }
+    return EOK;
+}
+
+test$case(test_target_make_with_ext)
+{
+    mem$scope(tmem$, _)
+    {
+        char* src = TBUILDDIR "my_src/my_src.c";
+        e$assert(!os.path.exists(TBUILDDIR "my_src/") && "must not exist!");
+        e$assert(!os.path.exists(TBUILDDIR "my_tgt/") && "must not exist!");
+        e$ret(os.fs.mkpath(src));
+    
+
+        e$ret(io.file.save(src, "#include <my_src2.c>"));
+        tassert(!os.path.exists(TBUILDDIR "my_tgt_dir/"));
+        char* tgt_file = cexy.target_make(src, TBUILDDIR "my_tgt_dir", ".test", _);
+        tassert(tgt_file != NULL);
+        tassert(os.path.exists(TBUILDDIR "my_tgt_dir/") && "must exist!");
+        tassert_eq(tgt_file, TBUILDDIR "my_tgt_dir/" TBUILDDIR "my_src/my_src.c.test");
+        e$assert(!os.path.exists(tgt_file) && "must not exist!");
+    }
     return EOK;
 }
 
