@@ -551,7 +551,7 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
     if (unlikely(!iterator->initialized)) {
         iterator->initialized = 1;
         // First run handling
-        if (unlikely(!str__isvalid(&s))) {
+        if (unlikely(!str__isvalid(&s) || s.len == 0)) {
             iterator->stopped = 1;
             return (str_s){0};
         }

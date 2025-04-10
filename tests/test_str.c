@@ -494,6 +494,15 @@ test$case(test_iter_split)
         nit++;
     }
     tassert_eq(nit, 5);
+
+
+    s = str.sstr("");
+    nit = 0;
+    for$iter(str_s, it, str.slice.iter_split(s, "\n", &it.iterator))
+    {
+        tassert(false && "should not happen");
+    }
+    tassert_eq(nit, 0);
     return EOK;
 }
 
