@@ -4,7 +4,7 @@
 #define cexy$cc_include "-I.", "-I./lib/"
 #endif
 
-#define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
+#define CEX_LOG_LVL 3 /* 0 (mute all) - 5 (log$trace) */
 #define CEX_IMPLEMENTATION
 #define CEXBUILD
 #include "cex.h"
@@ -142,6 +142,7 @@ cex_bundle(void)
         $pn("\n\n#endif // ifndef CEX_HEADER_H");
 
         u32 cex_lines = 0;
+        (void)cex_lines;
         for$each(c, hbuf, sbuf.len(&hbuf))
         {
             if (c == '\n') {
@@ -170,45 +171,24 @@ cmd_test(int argc, char** argv, void* user_ctx)
     const char* usage =
         "usage: ./cex test {run,build,create,clean,debug} all|test/test_file.c [--test-options]";
 
-    if (!str.match(cmd, "(run|build|create|clean|debug)")) {
-        return e$raise(Error.argsparse, "Invalid command: '%s'\n%s", cmd, usage);
-    }
-    if (target == NULL) {
+    if (!str.match(cmd, "(run|build|create|clean|debug)") || target == NULL) {
         return e$raise(
             Error.argsparse,
-            "Invalid target: '%s', expected all or tests/test_some_file.c\n%s",
+            "Invalid command: '%s' or target: '%s'\n%s",
+            cmd,
             target,
             usage
         );
     }
-    bool is_all = false;
-    if (str.eq(target, "all")) {
-        is_all = true;
-        target = "tests/test_*.c";
-    }
-
-    if (!str.match(target, "*test*.c")) {
-        return e$raise(
-            Error.argsparse,
-            "Invalid target: '%s', expected all or tests/test_some_file.c",
-            target
-        );
-    }
 
     if (str.eq(cmd, "create")) {
-        e$assert(!is_all && "all target is not supported by `create` command");
-        e$ret(cexy.test_create(target));
+        e$ret(cexy.test.create(target));
         return EOK;
     } else if (str.eq(cmd, "clean")) {
-        if (is_all) {
-            log$info("Cleaning all tests\n");
-            e$ret(os.fs.remove_tree(cexy$build_dir "/tests/"));
-        } else {
-            log$info("Cleaning target: %s\n", target);
-            e$ret(os.fs.remove(target));
-        }
+        e$ret(cexy.test.clean(target));
         return EOK;
     }
+    e$ret(cexy.test.make_target_pattern(&target)); // validation + convert 'all' -> "tests/test_*.c"
 
     // Build stage
     u32 n_tests = 0;
@@ -227,7 +207,6 @@ cmd_test(int argc, char** argv, void* user_ctx)
             arr$pushm(
                 args,
                 cexy$cc,
-                cexy$cc_args,
                 cexy$cc_args_test,
                 cexy$cc_include,
                 // cexy$ld_args,
@@ -244,31 +223,10 @@ cmd_test(int argc, char** argv, void* user_ctx)
 
     log$info("Tests building: %d tests processed, %d tests built\n", n_tests, n_built);
 
-    Exc result = EOK;
     if (str.match(cmd, "(run|debug)")) {
-        mem$scope(tmem$, _)
-        {
-            for$each(test_src, os.fs.find(target, true, _))
-            {
-                char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
-                arr$(char*) args = arr$new(args, _);
-                if (str.eq(cmd, "debug")) {
-                    arr$pushm(args, cexy$debug_cmd);
-                }
-                arr$pushm(args, test_target, );
-                if (is_all) {
-                    arr$push(args, "--quiet");
-                }
-                arr$pusha(args, cmd_args.argv, cmd_args.argc);
-                arr$push(args, NULL);
-                if (os$cmda(args)) {
-                    log$error("<<<<<<<<<<<<<<<<<< Test failed: %s\n", test_target);
-                    result = Error.runtime;
-                }
-            }
-        }
+        e$ret(cexy.test.run(target, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
     }
-    return result;
+    return EOK;
 }
 
 Exception

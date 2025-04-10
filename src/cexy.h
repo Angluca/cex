@@ -70,8 +70,14 @@ void            (*build_self)(int argc, char** argv, const char* cex_source);
 bool            (*src_changed)(const char* target_path, arr$(char*) src_array);
 bool            (*src_include_changed)(const char* target_path, const char* src_path, arr$(char*) alt_include_path);
 char*           (*target_make)(const char* src_path, const char* build_dir, const char* name_or_extension, IAllocator allocator);
-Exception       (*test_create)(const char* test_path);
+
+struct {  // sub-module .test >>>
+    Exception       (*clean)(const char* target);
+    Exception       (*create)(const char* target);
+    Exception       (*make_target_pattern)(const char** target);
+    Exception       (*run)(const char* target, bool is_debug, int argc, char** argv);
+} test;  // sub-module .test <<<
     // clang-format on
 };
-__attribute__((visibility("hidden"))) extern const struct __module__cexy cexy; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__cexy cexy; // CEX Autogen
 #endif // #if defined(CEXBUILD)

@@ -3579,10 +3579,16 @@ void            (*build_self)(int argc, char** argv, const char* cex_source);
 bool            (*src_changed)(const char* target_path, arr$(char*) src_array);
 bool            (*src_include_changed)(const char* target_path, const char* src_path, arr$(char*) alt_include_path);
 char*           (*target_make)(const char* src_path, const char* build_dir, const char* name_or_extension, IAllocator allocator);
-Exception       (*test_create)(const char* test_path);
+
+struct {  // sub-module .test >>>
+    Exception       (*clean)(const char* target);
+    Exception       (*create)(const char* target);
+    Exception       (*make_target_pattern)(const char** target);
+    Exception       (*run)(const char* target, bool is_debug, int argc, char** argv);
+} test;  // sub-module .test <<<
     // clang-format on
 };
-__attribute__((visibility("hidden"))) extern const struct __module__cexy cexy; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __module__cexy cexy; // CEX Autogen
 #endif // #if defined(CEXBUILD)
 
 
@@ -12309,7 +12315,7 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
                     continue;
                 }
                 log$trace("Processing include: '%S'\n", incf);
-                if (!str.slice.match(incf, "\"*.[hc]\"")){
+                if (!str.slice.match(incf, "\"*.[hc]\"")) {
                     // system includes skipped
                     log$trace("Skipping include: '%S'\n", incf);
                     continue;
@@ -12392,18 +12398,24 @@ cexy_src_changed(const char* target_path, arr$(char*) src_array)
 }
 
 static char*
-cexy_target_make(const char* src_path, const char* build_dir, const char* name_or_extension, IAllocator allocator){
+cexy_target_make(
+    const char* src_path,
+    const char* build_dir,
+    const char* name_or_extension,
+    IAllocator allocator
+)
+{
     uassert(allocator != NULL);
 
-    if(src_path == NULL || src_path[0] == '\0'){
+    if (src_path == NULL || src_path[0] == '\0') {
         log$error("src_path is NULL or empty\n");
         return NULL;
     }
-    if(build_dir == NULL){
+    if (build_dir == NULL) {
         log$error("build_dir is NULL\n");
         return NULL;
     }
-    if(name_or_extension == NULL || name_or_extension[0] == '\0'){
+    if (name_or_extension == NULL || name_or_extension[0] == '\0') {
         log$error("name_or_extension is NULL or empty\n");
         return NULL;
     }
@@ -12422,7 +12434,8 @@ cexy_target_make(const char* src_path, const char* build_dir, const char* name_o
         result = str.fmt(allocator, "%s%c%s", build_dir, os$PATH_SEP, name_or_extension);
         uassert(result != NULL && "memory error");
     }
-    e$except(err, os.fs.mkpath(result)) {
+    e$except(err, os.fs.mkpath(result))
+    {
         mem$free(allocator, result);
     }
 
@@ -12430,12 +12443,21 @@ cexy_target_make(const char* src_path, const char* build_dir, const char* name_o
 }
 
 Exception
-cexy_test_create(const char* test_path) {
-    if (os.path.exists(test_path)) {
-        return e$raise(Error.exists, "Test file already exists: %s", test_path);
+cexy__test__create(const char* target)
+{
+    if (os.path.exists(target)) {
+        return e$raise(Error.exists, "Test file already exists: %s", target);
+    }
+    if (str.eq(target, "all") || str.find(target, "*")) {
+        return e$raise(
+            Error.argument,
+            "You must pass exact file path, not pattern, got: %s",
+            target
+        );
     }
 
-    mem$scope(tmem$, _){
+    mem$scope(tmem$, _)
+    {
         sbuf_c buf = sbuf.create(1024 * 10, _);
         cg$init(&buf);
         $pn("#define CEX_IMPLEMENTATION");
@@ -12446,17 +12468,100 @@ cexy_test_create(const char* test_path) {
         $pn("//test$setup_suite() {return EOK;}");
         $pn("//test$teardown_suite() {return EOK;}");
         $pn("");
-        $scope("test$case(%s)", "my_test_case") {
+        $scope("test$case(%s)", "my_test_case")
+        {
             $pn("tassert_eq(1, 0);");
             $pn("return EOK;");
         }
         $pn("");
         $pn("test$main();");
 
-        e$ret(io.file.save(test_path, buf));
+        e$ret(io.file.save(target, buf));
     }
     return EOK;
 }
+
+Exception
+cexy__test__clean(const char* target)
+{
+    if (os.path.exists(target)) {
+        return e$raise(Error.exists, "Test file already exists: %s", target);
+    }
+
+    if (str.eq(target, "all")) {
+        log$info("Cleaning all tests\n");
+        e$ret(os.fs.remove_tree(cexy$build_dir "/tests/"));
+    } else {
+        log$info("Cleaning target: %s\n", target);
+        e$ret(os.fs.remove(target));
+    }
+    return EOK;
+}
+
+Exception
+cexy__test__make_target_pattern(const char** target)
+{
+    if (target == NULL) {
+        return e$raise(
+            Error.argsparse,
+            "Invalid target: '%s', expected all or tests/test_some_file.c\n%s",
+            *target
+        );
+    }
+    if (str.eq(*target, "all")) {
+        *target = "tests/test_*.c";
+    }
+
+    if (!str.match(*target, "*test*.c")) {
+        return e$raise(
+            Error.argsparse,
+            "Invalid target: '%s', expected all or tests/test_some_file.c",
+            *target
+        );
+    }
+    return EOK;
+}
+
+Exception
+cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
+{
+    Exc result = EOK;
+    u32 n_tests = 0;
+    u32 n_failed = 0;
+    mem$scope(tmem$, _)
+    {
+        for$each(test_src, os.fs.find(target, true, _))
+        {
+            n_tests++;
+            char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
+            arr$(char*) args = arr$new(args, _);
+            if (is_debug) {
+                if (str.ends_with(target, "test_*.c")) {
+                    return e$raise(
+                        Error.argument,
+                        "Debug expect direct file path, i.e. tests/test_some_file.c, got: %s",
+                        target
+                    );
+                }
+                arr$pushm(args, cexy$debug_cmd);
+            }
+            arr$pushm(args, test_target, );
+            if (str.ends_with(target, "test_*.c")) {
+                arr$push(args, "--quiet");
+            }
+            arr$pusha(args, argv, argc);
+            arr$push(args, NULL);
+            if (os$cmda(args)) {
+                log$error("<<<<<<<<<<<<<<<<<< Test failed: %s\n", test_target);
+                n_failed++;
+                result = Error.runtime;
+            }
+        }
+    }
+    log$info("Test run completed: %d tests, %d passed, %d failed\n", n_tests, n_tests-n_failed, n_failed);
+    return result;
+}
+
 
 const struct __module__cexy cexy = {
     // Autogenerated by CEX
@@ -12465,7 +12570,13 @@ const struct __module__cexy cexy = {
     .src_include_changed = cexy_src_include_changed,
     .src_changed = cexy_src_changed,
     .target_make = cexy_target_make,
-    .test_create = cexy_test_create,
+
+    .test = {  // sub-module .test >>>
+        .create = cexy__test__create,
+        .clean = cexy__test__clean,
+        .make_target_pattern = cexy__test__make_target_pattern,
+        .run = cexy__test__run,
+    },  // sub-module .test <<<
     // clang-format on
 };
 
