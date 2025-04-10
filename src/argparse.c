@@ -430,6 +430,7 @@ argparse__parse_commands(argparse_c* self)
         }
     }
     if (cmd == NULL) {
+        argparse_usage(self);
         fprintf(stdout, "error: unknown command name '%s', try --help\n", (cmd_arg) ? cmd_arg : "");
         return Error.argsparse;
     }

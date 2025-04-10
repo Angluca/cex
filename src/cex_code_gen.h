@@ -74,10 +74,12 @@ typedef struct cex_codegen_s
          cex$tmpname(codegen_sentinel) = NULL)
 
 
-static void cex_codegen_print(cex_codegen_s* cg, bool rep_new_line, const char* format, ...);
-static cex_codegen_s* cex_codegen_print_scope_enter(cex_codegen_s* cg, const char* format, ...);
-static void cex_codegen_print_scope_exit(cex_codegen_s** cgptr);
-static cex_codegen_s* cex_codegen_print_case_enter(cex_codegen_s* cg, const char* format, ...);
-static void cex_codegen_print_case_exit(cex_codegen_s** cgptr);
+void cex_codegen_print_line(cex_codegen_s* cg, const char* format, ...);
+void cex_codegen_print(cex_codegen_s* cg, bool rep_new_line, const char* format, ...);
+cex_codegen_s* cex_codegen_print_scope_enter(cex_codegen_s* cg, const char* format, ...);
+void cex_codegen_print_scope_exit(cex_codegen_s** cgptr);
+cex_codegen_s* cex_codegen_print_case_enter(cex_codegen_s* cg, const char* format, ...);
+void cex_codegen_print_case_exit(cex_codegen_s** cgptr);
+void cex_codegen_indent(cex_codegen_s* cg);
 
 #endif // ifdef CEXBUILD

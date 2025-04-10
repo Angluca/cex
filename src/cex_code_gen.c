@@ -1,9 +1,8 @@
 #include "cex_code_gen.h"
 #include "all.h"
 #ifdef CEXBUILD
-#ifdef CEX_IMPLEMENTATION
 
-static inline void
+void
 cex_codegen_indent(cex_codegen_s* cg)
 {
     if (unlikely(cg->error != EOK)) {
@@ -28,7 +27,7 @@ cex_codegen_indent(cex_codegen_s* cg)
         va_end(va);                                                                                \
     } while (0)
 
-static void
+void
 cex_codegen_print(cex_codegen_s* cg, bool rep_new_line, const char* format, ...)
 {
     if (unlikely(cg->error != EOK)) {
@@ -43,7 +42,7 @@ cex_codegen_print(cex_codegen_s* cg, bool rep_new_line, const char* format, ...)
     cg$printva(cg);
 }
 
-static void
+void
 cex_codegen_print_line(cex_codegen_s* cg, const char* format, ...)
 {
     if (unlikely(cg->error != EOK)) {
@@ -53,7 +52,7 @@ cex_codegen_print_line(cex_codegen_s* cg, const char* format, ...)
     cg$printva(cg);
 }
 
-static cex_codegen_s*
+cex_codegen_s*
 cex_codegen_print_scope_enter(cex_codegen_s* cg, const char* format, ...)
 {
     usize slen = sbuf.len(cg->buf);
@@ -66,7 +65,7 @@ cex_codegen_print_scope_enter(cex_codegen_s* cg, const char* format, ...)
     return cg;
 }
 
-static void
+void
 cex_codegen_print_scope_exit(cex_codegen_s** cgptr)
 {
     uassert(*cgptr != NULL);
@@ -80,7 +79,7 @@ cex_codegen_print_scope_exit(cex_codegen_s** cgptr)
 }
 
 
-static cex_codegen_s*
+cex_codegen_s*
 cex_codegen_print_case_enter(cex_codegen_s* cg, const char* format, ...)
 {
     cex_codegen_indent(cg);
@@ -90,7 +89,7 @@ cex_codegen_print_case_enter(cex_codegen_s* cg, const char* format, ...)
     return cg;
 }
 
-static void
+void
 cex_codegen_print_case_exit(cex_codegen_s** cgptr)
 {
     uassert(*cgptr != NULL);
@@ -106,5 +105,4 @@ cex_codegen_print_case_exit(cex_codegen_s** cgptr)
 }
 
 #undef cg$printva
-#endif // #ifdef CEX_IMPLEMENTATION
 #endif // #ifdef CEXBUILD
