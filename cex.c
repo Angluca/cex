@@ -27,7 +27,7 @@ main(int argc, char** argv)
         .epilog = cexy$epilog,
         .commands = (argparse_cmd_s[]) {
                 { .name = "check", .func = cmd_check, .help = "Validates build environment" },
-                { .name = "build", .func = cmd_build, .help = "Builds project", .is_default = 1 },
+                { .name = "build", .func = cmd_build, .help = "Builds project"},
                 { .name = "test", .func = cmd_test, .help = "Test running" },
                 { 0 }, // null term
             },
@@ -99,9 +99,6 @@ cex_bundle(void)
                 if (str.slice.match(it.val, "#include \"*\"")) {
                     continue;
                 }
-                if (str.slice.match(it.val, "#include <*>")) {
-                    continue;
-                }
                 $pf("%S", it.val);
             }
         }
@@ -137,9 +134,6 @@ cex_bundle(void)
                     continue;
                 }
                 if (str.slice.match(it.val, "#include \"*\"")) {
-                    continue;
-                }
-                if (str.slice.match(it.val, "#include <*>")) {
                     continue;
                 }
                 $pf("%S", it.val);

@@ -766,6 +766,7 @@ extern IAllocator const _cex__default_global__allocator_heap__allc;
 /*
 *                          src/AllocatorArena.h
 */
+#include <stddef.h>
 
 #define CEX_ALLOCATOR_MAX_SCOPE_STACK 16
 
@@ -1779,6 +1780,8 @@ __attribute__((visibility("hidden"))
 #pragma warning(disable : 4668)
 #endif
 
+#include <stdio.h>
+#include <string.h>
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -1966,6 +1969,12 @@ subprocess_weak int subprocess_alive(struct subprocess_s *const process);
 #endif
 
 #if !defined(_WIN32)
+#include <signal.h>
+#include <spawn.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #endif
 
 #if defined(_WIN32)
@@ -1979,6 +1988,7 @@ typedef int subprocess_intptr_t;
 typedef unsigned int subprocess_size_t;
 #endif
 #else
+#include <inttypes.h>
 
 typedef intptr_t subprocess_intptr_t;
 typedef size_t subprocess_size_t;
@@ -2113,6 +2123,7 @@ SUBPROCESS_DLLIMPORT subprocess_intptr_t __cdecl _get_osfhandle(int);
 #ifndef __MINGW32__
 void *__cdecl _alloca(subprocess_size_t);
 #else
+#include <malloc.h>
 #endif
 
 #ifdef __clang__
@@ -3690,6 +3701,7 @@ _cex_allocator_memscope_cleanup(IAllocator* allc)
 /*
 *                          src/AllocatorHeap.c
 */
+#include <stdint.h>
 
 // clang-format off
 static void* _cex_allocator_heap__malloc(IAllocator self,usize size, usize alignment);
@@ -7923,7 +7935,7 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
     if (unlikely(!iterator->initialized)) {
         iterator->initialized = 1;
         // First run handling
-        if (unlikely(!str__isvalid(&s))) {
+        if (unlikely(!str__isvalid(&s) || s.len == 0)) {
             iterator->stopped = 1;
             return (str_s){0};
         }
@@ -8957,6 +8969,7 @@ const struct __module__str str = {
 /*
 *                          src/sbuf.c
 */
+#include <stdarg.h>
 
 struct _sbuf__sprintf_ctx
 {
@@ -10589,7 +10602,6 @@ const struct __module__argparse argparse = {
 /*
 *                          src/_subprocess.c
 */
-(null)
 
 
 /*
@@ -11466,6 +11478,7 @@ const struct __module__os os = {
 *                          src/test.c
 */
 #ifdef CEXTEST
+#include <math.h>
 
 enum _cex_test_eq_op_e
 {
