@@ -1,3 +1,4 @@
+#pragma once
 #ifndef CEX_HEADER_H
 #define CEX_HEADER_H
 #include <stdint.h>
@@ -64,8 +65,9 @@ typedef struct _IO_FILE FILE;
 
 
 
+
 /*
-*                   cex_base.h
+*                          src/cex_base.h
 */
 /**
  * @file cex/cex.h
@@ -510,10 +512,10 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
  *
  * for$iter(u32, it, array_iterator(arr2, arr$len(arr2), &it.iterator))
  */
-#define for$iter(eltype, it, iter_func)                                                            \
+#define for$iter(it_val_type, it, iter_func)                                                            \
     struct cex$tmpname(__cex_iter_)                                                                 \
     {                                                                                              \
-        eltype val;                                                                   \
+        it_val_type val;                                                                   \
         union /* NOTE:  iterator above and this struct shadow each other */                       \
         {                                                                                          \
             cex_iterator_s iterator;                                                                   \
@@ -551,8 +553,10 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 #endif
 #endif
 
+
+
 /*
-*                   mem.h
+*                          src/mem.h
 */
 
 #define CEX_ALLOCATOR_HEAP_MAGIC 0xF00dBa01
@@ -561,7 +565,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 #define CEX_ALLOCATOR_TEMP_PAGE_SIZE 1024 * 256
 
 // clang-format off
-#define IAllocator const struct Allocator_i*
+#define IAllocator const struct Allocator_i* 
 typedef struct Allocator_i
 {
     // >>> cacheline
@@ -733,8 +737,10 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
 #define mem$asan_poison_check(addr, len) (1)
 #endif // #if !CEX_DISABLE_POISON
 
+
+
 /*
-*                   AllocatorHeap.h
+*                          src/AllocatorHeap.h
 */
 
 typedef struct
@@ -755,10 +761,11 @@ _Static_assert(offsetof(AllocatorHeap_c, alloc) == 0, "base must be the 1st stru
 extern AllocatorHeap_c _cex__default_global__allocator_heap;
 extern IAllocator const _cex__default_global__allocator_heap__allc;
 
+
+
 /*
-*                   AllocatorArena.h
+*                          src/AllocatorArena.h
 */
-#include <stddef.h>
 
 #define CEX_ALLOCATOR_MAX_SCOPE_STACK 16
 
@@ -828,8 +835,10 @@ bool            (*sanitize)(IAllocator allc);
 };
 __attribute__ ((visibility("hidden"))) extern const struct __class__AllocatorArena AllocatorArena; // CEX Autogen
 
+
+
 /*
-*                   ds.h
+*                          src/ds.h
 */
 
 // this is a simple string arena allocator, initialize with e.g. 'cexds_string_arena my_arena={0}'.
@@ -1236,8 +1245,10 @@ enum
 #define cexds_arrgrowf cexds_arrgrowf
 #define cexds_shmode_func_wrapper(t, e, m) cexds_shmode_func(e, m)
 
+
+
 /*
-*                   _sprintf.h
+*                          src/_sprintf.h
 */
 // stb_sprintf - v1.10 - public domain snprintf() implementation
 // originally by Jeff Roberts / RAD Game Tools, 2015/10/20
@@ -1358,8 +1369,10 @@ CEXSP__PUBLICDEC int cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, c
 CEXSP__PUBLICDEC void cexsp__set_separators(char comma, char period);
 // clang-format on
 
+
+
 /*
-*                   str.h
+*                          src/str.h
 */
 /**
  * @file
@@ -1467,8 +1480,10 @@ struct {  // sub-module .convert >>>
 };
 __attribute__ ((visibility("hidden"))) extern const struct __module__str str; // CEX Autogen
 
+
+
 /*
-*                   sbuf.h
+*                          src/sbuf.h
 */
 
 typedef char* sbuf_c;
@@ -1512,8 +1527,10 @@ void            (*update_len)(sbuf_c* self);
 };
 __attribute__ ((visibility("hidden"))) extern const struct __module__sbuf sbuf; // CEX Autogen
 
+
+
 /*
-*                   io.h
+*                          src/io.h
 */
 
 #define io$ansi(text, ansi_col) "\033[" ansi_col "m" text "\033[0m"
@@ -1549,8 +1566,10 @@ struct {  // sub-module .file >>>
 };
 __attribute__ ((visibility("hidden"))) extern const struct __module__io io; // CEX Autogen
 
+
+
 /*
-*                   argparse.h
+*                          src/argparse.h
 */
 /**
  * Copyright (C) 2012-2015 Yecheng Fu <cofyc.jackson at gmail dot com>
@@ -1712,8 +1731,10 @@ void            (*usage)(argparse_c* self);
 __attribute__((visibility("hidden"))
 ) extern const struct __module__argparse argparse; // CEX Autogen
 
+
+
 /*
-*                   _subprocess.h
+*                          src/_subprocess.h
 */
 /*
    The latest version of this library is available on GitHub;
@@ -1758,8 +1779,6 @@ __attribute__((visibility("hidden"))
 #pragma warning(disable : 4668)
 #endif
 
-#include <stdio.h>
-#include <string.h>
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -1947,12 +1966,6 @@ subprocess_weak int subprocess_alive(struct subprocess_s *const process);
 #endif
 
 #if !defined(_WIN32)
-#include <signal.h>
-#include <spawn.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
 #endif
 
 #if defined(_WIN32)
@@ -1966,7 +1979,6 @@ typedef int subprocess_intptr_t;
 typedef unsigned int subprocess_size_t;
 #endif
 #else
-#include <inttypes.h>
 
 typedef intptr_t subprocess_intptr_t;
 typedef size_t subprocess_size_t;
@@ -2101,7 +2113,6 @@ SUBPROCESS_DLLIMPORT subprocess_intptr_t __cdecl _get_osfhandle(int);
 #ifndef __MINGW32__
 void *__cdecl _alloca(subprocess_size_t);
 #else
-#include <malloc.h>
 #endif
 
 #ifdef __clang__
@@ -2919,8 +2930,10 @@ int subprocess_alive(struct subprocess_s *const process) {
 
 #endif /* SHEREDOM_SUBPROCESS_H_INCLUDED */
 
+
+
 /*
-*                   os.h
+*                          src/os.h
 */
 
 typedef struct os_cmd_flags_s
@@ -3064,8 +3077,10 @@ struct {  // sub-module .cmd >>>
 };
 __attribute__((visibility("hidden"))) extern const struct __module__os os; // CEX Autogen
 
+
+
 /*
-*                   test.h
+*                          src/test.h
 */
 
 typedef Exception (*_cex_test_case_f)(void);
@@ -3389,8 +3404,10 @@ struct _cex_test_context_s
         }                                                                                          \
     })
 
+
+
 /*
-*                   cexy.h
+*                          src/cexy.h
 */
 
 #if defined(CEXBUILD)
@@ -3462,8 +3479,10 @@ char*           (*target_make)(const char* src_path, const char* build_dir, cons
 __attribute__((visibility("hidden"))) extern const struct __module__cexy cexy; // CEX Autogen
 #endif // #if defined(CEXBUILD)
 
+
+
 /*
-*                   CexLexer.h
+*                          src/CexLexer.h
 */
 
 typedef enum CexTkn_e {
@@ -3515,8 +3534,10 @@ cex_token_s
 CexLexer_next_token(CexLexer_c* lx);
 
 
+
+
 /*
-*                   cex_code_gen.h
+*                          src/cex_code_gen.h
 */
 #ifdef CEXBUILD
 
@@ -3525,7 +3546,6 @@ typedef struct cex_codegen_s
     sbuf_c* buf;
     u32 indent;
     Exc error;
-    u32 nlines;
 } cex_codegen_s;
 
 /*
@@ -3601,16 +3621,20 @@ static void cex_codegen_print_case_exit(cex_codegen_s** cgptr);
 
 #endif // ifdef CEXBUILD
 
+
+
 /*
 *                   CEX IMPLEMENTATION 
 */
 
 
+
 #ifdef CEX_IMPLEMENTATION
 
 
+
 /*
-*                   cex_base.c
+*                          src/cex_base.c
 */
 
 
@@ -3648,8 +3672,10 @@ __cex__panic(void)
     return;
 }
 
+
+
 /*
-*                   mem.c
+*                          src/mem.c
 */
 
 void
@@ -3659,10 +3685,11 @@ _cex_allocator_memscope_cleanup(IAllocator* allc)
     (*allc)->scope_exit(*allc);
 }
 
+
+
 /*
-*                   AllocatorHeap.c
+*                          src/AllocatorHeap.c
 */
-#include <stdint.h>
 
 // clang-format off
 static void* _cex_allocator_heap__malloc(IAllocator self,usize size, usize alignment);
@@ -3685,7 +3712,7 @@ AllocatorHeap_c _cex__default_global__allocator_heap = {
         .meta = {
             .magic_id =CEX_ALLOCATOR_HEAP_MAGIC,
             .is_arena = false,
-            .is_temp = false,
+            .is_temp = false, 
         }
     },
 };
@@ -3812,7 +3839,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
         uassert(ptr_offset >= sizeof(u64) * 2);
         uassert(ptr_offset <= 64 + 16);
         uassert(ptr_offset <= alignment + sizeof(u64) * 2);
-        // poison area after header and before allocated pointer
+        // poison area after header and before allocated pointer 
         mem$asan_poison(result - sizeof(u64), sizeof(u64));
         ((u64*)result)[-2] = _cex_allocator_heap__hdr_set(size, ptr_offset, alignment);
 
@@ -3985,8 +4012,10 @@ _cex_allocator_heap__scope_depth(IAllocator self)
     return 1; // always 1
 }
 
+
+
 /*
-*                   AllocatorArena.c
+*                          src/AllocatorArena.c
 */
 
 #define CEX_ARENA_MAX_ALLOC UINT32_MAX - 1000
@@ -4444,8 +4473,8 @@ AllocatorArena_create(usize page_size)
             .scope_depth = _cex_allocator_arena__scope_depth,
             .meta = {
                 .magic_id = CEX_ALLOCATOR_ARENA_MAGIC,
-                .is_arena = true,
-                .is_temp = false,
+                .is_arena = true, 
+                .is_temp = false, 
             }
         },
         .page_size = page_size,
@@ -4552,8 +4581,8 @@ thread_local AllocatorArena_c _cex__default_global__allocator_temp = {
         .meta = {
             .magic_id = CEX_ALLOCATOR_TEMP_MAGIC,
             .is_arena = true,  // coming... soon
-            .is_temp = true,
-        },
+            .is_temp = true, 
+        }, 
     },
     .page_size = CEX_ALLOCATOR_TEMP_PAGE_SIZE,
 };
@@ -4567,8 +4596,10 @@ const struct __class__AllocatorArena AllocatorArena = {
     // clang-format on
 };
 
+
+
 /*
-*                   ds.c
+*                          src/ds.c
 */
 
 
@@ -5662,8 +5693,10 @@ cexds_strreset(cexds_string_arena* a)
     memset(a, 0, sizeof(*a));
 }
 
+
+
 /*
-*                   _sprintf.c
+*                          src/_sprintf.c
 */
 /*
 This code is based on refactored stb_sprintf.h
@@ -7335,8 +7368,10 @@ cexsp__real_to_str(
 #endif // CEX_SPRINTF_NOFLOAT
 
 
+
+
 /*
-*                   str.c
+*                          src/str.c
 */
 
 static inline bool
@@ -7933,7 +7968,7 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
             return tok;
         } else if(idx == 0) {
             return (str_s){ .buf = "", .len = 0 };
-        }
+        } 
         else {
             // Sub from prev cursor to idx (excluding split char)
             ctx->cursor += idx;
@@ -8157,7 +8192,7 @@ str__to_double(const char* self, double* num, i32 exp_min, i32 exp_max)
             // INF 'INITY' part (optional but still valid)
             // clang-format off
             if (unlikely(len - i >= 5)) {
-                if ((s[i + 0] == 'i' || s[i + 0] == 'I') &&
+                if ((s[i + 0] == 'i' || s[i + 0] == 'I') && 
                     (s[i + 1] == 'n' || s[i + 1] == 'N') &&
                     (s[i + 2] == 'i' || s[i + 2] == 'I') &&
                     (s[i + 3] == 't' || s[i + 3] == 'T') &&
@@ -8917,10 +8952,11 @@ const struct __module__str str = {
     // clang-format on
 };
 
+
+
 /*
-*                   sbuf.c
+*                          src/sbuf.c
 */
-#include <stdarg.h>
 
 struct _sbuf__sprintf_ctx
 {
@@ -9341,8 +9377,10 @@ const struct __module__sbuf sbuf = {
     // clang-format on
 };
 
+
+
 /*
-*                   io.c
+*                          src/io.c
 */
 
 Exception
@@ -9920,8 +9958,10 @@ const struct __module__io io = {
     // clang-format on
 };
 
+
+
 /*
-*                   argparse.c
+*                          src/argparse.c
 */
 
 static const char*
@@ -10514,7 +10554,7 @@ argparse_next(argparse_c* self)
         // After reaching argc=0, argv getting stack-overflowed (ASAN issues), we set to fake NULL
         static char* null_argv[] = { NULL };
         // reset NULL every call, because static null_argv may be overwritten in user code maybe
-        null_argv[0] = NULL;
+        null_argv[0] = NULL; 
         self->argv = null_argv;
     }
     return result;
@@ -10544,13 +10584,16 @@ const struct __module__argparse argparse = {
     // clang-format on
 };
 
+
+
 /*
-*                   _subprocess.c
+*                          src/_subprocess.c
 */
+(null)
 
 
 /*
-*                   os.c
+*                          src/os.c
 */
 
 
@@ -10803,7 +10846,7 @@ os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_
                 goto end;
             }
 
-        }
+        } 
         // After recursive call make a callback on a directory itself
         e$except_silent(err, callback_fn(path_buf, ftype, user_ctx))
         {
@@ -11417,11 +11460,12 @@ const struct __module__os os = {
     // clang-format on
 };
 
+
+
 /*
-*                   test.c
+*                          src/test.c
 */
 #ifdef CEXTEST
-#include <math.h>
 
 enum _cex_test_eq_op_e
 {
@@ -11964,8 +12008,10 @@ cex_test_main_fn(int argc, char** argv)
 }
 #endif // ifdef CEXTEST
 
+
+
 /*
-*                   cexy.c
+*                          src/cexy.c
 */
 
 static void
@@ -12260,8 +12306,10 @@ const struct __module__cexy cexy = {
     // clang-format on
 };
 
+
+
 /*
-*                   CexLexer.c
+*                          src/CexLexer.c
 */
 
 // NOTE: lx$ are the temporary macro (will be #undef at the end of this file)
@@ -12605,8 +12653,10 @@ CexLexer_next_token(CexLexer_c* lx)
 #undef lx$peek
 #undef lx$skip_space
 
+
+
 /*
-*                   cex_code_gen.c
+*                          src/cex_code_gen.c
 */
 #ifdef CEXBUILD
 #ifdef CEX_IMPLEMENTATION
@@ -12717,7 +12767,9 @@ cex_codegen_print_case_exit(cex_codegen_s** cgptr)
 #endif // #ifdef CEX_IMPLEMENTATION
 #endif // #ifdef CEXBUILD
 
-#endif // #ifdef CEX_IMPLEMENTATION
 
 
-#endif // #ifndef CEX_HEADER_H
+#endif // ifndef CEX_IMPLEMENTATION
+
+
+#endif // ifndef CEX_HEADER_H

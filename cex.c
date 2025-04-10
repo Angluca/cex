@@ -57,7 +57,7 @@ cex_bundle(void)
             "src/cex_base.h", "src/mem.h",      "src/AllocatorHeap.h", "src/AllocatorArena.h",
             "src/ds.h",       "src/_sprintf.h", "src/str.h",           "src/sbuf.h",
             "src/io.h",       "src/argparse.h", "src/_subprocess.h",   "src/os.h",
-            "src/test.h",     "src/cexy.h",     "src/CexLexer.h",
+            "src/test.h",     "src/cexy.h",     "src/CexLexer.h", "src/cex_code_gen.h"
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
 
@@ -91,11 +91,8 @@ cex_bundle(void)
             {
                 exit(1);
             }
-            printf("File %s, size: %ld\n", hdr, content.len);
             for$iter(str_s, it, str.slice.iter_split(content, "\n", &it.iterator))
             {
-                io.printf("line: %04ld: %S\n", it.idx.i, it.val);
-
                 if (str.slice.match(it.val, "#pragma once*")) {
                     continue;
                 }
@@ -105,11 +102,51 @@ cex_bundle(void)
                 if (str.slice.match(it.val, "#include <*>")) {
                     continue;
                 }
-                // $pf("%S", *it.val);
+                $pf("%S", it.val);
             }
-            fflush(stdout);
-            break;
         }
+
+
+        $pn("\n");
+        $pn("/*");
+        $pn("*                   CEX IMPLEMENTATION ");
+        $pn("*/");
+        $pn("\n\n");
+        $pn("#ifdef CEX_IMPLEMENTATION\n");
+
+        for$each(hdr, bundle)
+        {
+            char* cfile = str.replace(hdr, ".h", ".c", _);
+            $pn("\n");
+            $pn("/*");
+            $pf("*                          %s", cfile);
+            $pn("*/");
+            FILE* fh;
+            e$except(err, io.fopen(&fh, cfile, "r"))
+            {
+                exit(1);
+            }
+            str_s content;
+            e$except(err, io.fread_all(fh, &content, _))
+            {
+                exit(1);
+            }
+            for$iter(str_s, it, str.slice.iter_split(content, "\n", &it.iterator))
+            {
+                if (str.slice.match(it.val, "#pragma once*")) {
+                    continue;
+                }
+                if (str.slice.match(it.val, "#include \"*\"")) {
+                    continue;
+                }
+                if (str.slice.match(it.val, "#include <*>")) {
+                    continue;
+                }
+                $pf("%S", it.val);
+            }
+        }
+        $pn("\n\n#endif // ifndef CEX_IMPLEMENTATION");
+        $pn("\n\n#endif // ifndef CEX_HEADER_H");
 
         u32 cex_lines = 0;
         for$each(c, hbuf, sbuf.len(&hbuf)) {
@@ -118,7 +155,7 @@ cex_bundle(void)
             }
         }
         log$debug("Saving cex.h: new size: %dKB lines: %d\n", sbuf.len(&hbuf) / 1024, cex_lines);
-        e$except(err, io.file.save("cex2.h", hbuf)){
+        e$except(err, io.file.save("cex.h", hbuf)){
             exit(1);
         }
     }
