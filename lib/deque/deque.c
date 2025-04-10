@@ -414,13 +414,16 @@ _cex_deque_iter_get(_cex_deque_c* self, i32 direction, cex_iterator_s* iterator)
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
     _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
 
-    if (unlikely(iterator->val == NULL)) {
+    if (unlikely(!iterator->initialized)) {
+        iterator->initialized = 1;
+
         // iterator first run/initialization
         _cex_deque_head_s* head = _cex_deque__head(*self);
 
         usize cnt = head->idx_tail - head->idx_head;
         if (unlikely(cnt == 0)) {
             // Empty deque, early exit
+            iterator->stopped = 1;
             return NULL;
         }
 
@@ -439,13 +442,13 @@ _cex_deque_iter_get(_cex_deque_c* self, i32 direction, cex_iterator_s* iterator)
         ctx->cursor += ctx->direction;
         ctx->cnt++;
         if (ctx->cnt == ctx->max_count) {
+            iterator->stopped = 1;
             return NULL;
         }
     }
 
     iterator->idx.i = ctx->cursor;
-    iterator->val = _cex_deque__get_byindex((_cex_deque_head_s*)*self, ctx->cursor);
-    return iterator->val;
+    return  _cex_deque__get_byindex((_cex_deque_head_s*)*self, ctx->cursor);
 }
 
 void*
@@ -465,12 +468,14 @@ _cex_deque_iter_fetch(_cex_deque_c* self, i32 direction, cex_iterator_s* iterato
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
     _Static_assert(alignof(struct iter_ctx) == alignof(usize), "ctx alignment mismatch");
 
-    if (unlikely(iterator->val == NULL)) {
+    if (unlikely(!iterator->initialized)) {
+        iterator->initialized = 1;
         // iterator first run/initialization
         _cex_deque_head_s* head = _cex_deque__head(*self);
 
         usize cnt = head->idx_tail - head->idx_head;
         if (unlikely(cnt == 0)) {
+            iterator->stopped = 1;
             // Empty deque, early exit
             return NULL;
         }
@@ -490,6 +495,7 @@ _cex_deque_iter_fetch(_cex_deque_c* self, i32 direction, cex_iterator_s* iterato
 
         if (unlikely(ctx->cnt == ctx->max_count)) {
             uassert(_cex_deque_len(self) == 0 && "que size was changed during iterator");
+            iterator->stopped = 1;
             return NULL;
         }
     }
@@ -497,12 +503,10 @@ _cex_deque_iter_fetch(_cex_deque_c* self, i32 direction, cex_iterator_s* iterato
     if (ctx->direction > 0) {
         // que always return index = 0
         iterator->idx.i = 0;
-        iterator->val = _cex_deque_dequeue(self);
+        return _cex_deque_dequeue(self);
     } else {
         // stack always return index = dequeue.capacity
         iterator->idx.i = ctx->capacity;
-        iterator->val = _cex_deque_pop(self);
+        return _cex_deque_pop(self);
     }
-
-    return iterator->val;
 }

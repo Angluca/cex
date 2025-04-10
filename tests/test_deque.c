@@ -556,7 +556,7 @@ test$case(test_deque_iter_get)
     u32 nit = 123;
 
     nit = 0;
-    for$iter(int, it, deque_int.iter_get(&a, 1, &it.iterator))
+    for$iter(int*, it, deque_int.iter_get(&a, 1, &it.iterator))
     {
         tassert(false && "should never happen!");
         nit++;
@@ -572,7 +572,7 @@ test$case(test_deque_iter_get)
 
     // Getting que item (keeping element in que)
     nit = 0;
-    for$iter(int, it, deque_int.iter_get(&a, 1, &it.iterator))
+    for$iter(int*, it, deque_int.iter_get(&a, 1, &it.iterator))
     {
         tassert_eq(it.idx.i, nit);
         tassert_eq(*it.val, nit);
@@ -581,7 +581,7 @@ test$case(test_deque_iter_get)
 
     // Getting que in reverse order
     nit = 0;
-    for$iter(int, it, deque_int.iter_get(&a, -1, &it.iterator))
+    for$iter(int*, it, deque_int.iter_get(&a, -1, &it.iterator))
     {
         tassert_eq(it.idx.i, 15 - nit);
         tassert_eq(*it.val, 15 - nit);
@@ -611,7 +611,7 @@ test$case(test_deque_iter_fetch)
     u32 nit = 123;
 
     nit = 0;
-    for$iter(int, it, deque_int.iter_fetch(&a, 1, &it.iterator))
+    for$iter(int*, it, deque_int.iter_fetch(&a, 1, &it.iterator))
     {
         tassert(false && "should never happen!");
         nit++;
@@ -627,7 +627,7 @@ test$case(test_deque_iter_fetch)
 
     // Fetching que item (iter with removing from que)
     nit = 0;
-    for$iter(int, it, deque_int.iter_fetch(&a, 1, &it.iterator))
+    for$iter(int*, it, deque_int.iter_fetch(&a, 1, &it.iterator))
     {
         tassert_eq(it.idx.i, 0);
         tassert_eq(*it.val, nit);
@@ -660,7 +660,7 @@ test$case(test_deque_iter_fetch_reversed)
     u32 nit = 123;
 
     nit = 0;
-    for$iter(int, it, deque_int.iter_fetch(&a, -1, &it.iterator))
+    for$iter(int*, it, deque_int.iter_fetch(&a, -1, &it.iterator))
     {
         tassert(false && "should never happen!");
         nit++;
@@ -676,7 +676,7 @@ test$case(test_deque_iter_fetch_reversed)
 
     // Fetching que item (iter with removing from que)
     nit = 0;
-    for$iter(int, it, deque_int.iter_fetch(&a, -1, &it.iterator))
+    for$iter(int*, it, deque_int.iter_fetch(&a, -1, &it.iterator))
     {
         tassert_eq(*it.val, 15 - nit);
         tassert_eq(it.idx.i, head->capacity);

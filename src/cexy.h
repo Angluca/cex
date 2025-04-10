@@ -62,7 +62,7 @@ struct __module__cexy
     // clang-format off
 
 void            (*build_self)(int argc, char** argv, const char* cex_source);
-bool            (*src_changed)(const char* target_path, const arr$(char*) src_array);
+bool            (*src_changed)(const char* target_path, arr$(char*) src_array);
 bool            (*src_include_changed)(const char* target_path, const char* src_path, arr$(char*) alt_include_path);
 char*           (*target_make)(const char* src_path, const char* build_dir, const char* name_or_extension, IAllocator allocator);
     // clang-format on

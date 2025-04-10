@@ -31,7 +31,7 @@ argparse_usage(argparse_c* self)
 
         for$iter(str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator))
         {
-            if (it.val->len == 0) {
+            if (it.val.len == 0) {
                 break;
             }
 
@@ -42,7 +42,7 @@ argparse_usage(argparse_c* self)
                 fprintf(stdout, "%s ", self->program_name);
             }
 
-            if (fwrite(it.val->buf, sizeof(char), it.val->len, stdout)) {
+            if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) {
                 ;
             }
 

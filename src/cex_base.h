@@ -417,23 +417,22 @@ struct _cex_arr_slice
  */
 typedef struct
 {
-    // NOTE: fields order must match with for$iter union!
-    void* val;
     struct
     {
         union
         {
             usize i;
-            u64 ikey;
             char* skey;
             void* pkey;
         };
     } idx;
-    char _ctx[48];
+    char _ctx[47];
+    u8 stopped;
+    u8 initialized;
 } cex_iterator_s;
 _Static_assert(sizeof(usize) == sizeof(void*), "usize expected as sizeof ptr");
 _Static_assert(alignof(usize) == alignof(void*), "alignof pointer != alignof usize");
-// _Static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
+_Static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
 _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 
 /**
@@ -444,19 +443,18 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
  *
  * for$iter(u32, it, array_iterator(arr2, arr$len(arr2), &it.iterator))
  */
-#define for$iter(eltype, it, iter_func)                                                            \
-    union cex$tmpname(__cex_iter_)                                                                 \
+#define for$iter(it_val_type, it, iter_func)                                                            \
+    struct cex$tmpname(__cex_iter_)                                                                 \
     {                                                                                              \
-        cex_iterator_s iterator;                                                                   \
-        struct /* NOTE:  iterator above and this struct shadow each other */                       \
+        it_val_type val;                                                                   \
+        union /* NOTE:  iterator above and this struct shadow each other */                       \
         {                                                                                          \
-            typeof(eltype)* val;                                                                   \
+            cex_iterator_s iterator;                                                                   \
             struct                                                                                 \
             {                                                                                      \
                 union                                                                              \
                 {                                                                                  \
                     usize i;                                                                       \
-                    u64 ikey;                                                                      \
                     char* skey;                                                                    \
                     void* pkey;                                                                    \
                 };                                                                                 \
@@ -464,7 +462,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
         };                                                                                         \
     };                                                                                             \
                                                                                                    \
-    for (union cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; it.val != NULL;               \
+    for (struct cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; !it.iterator.stopped;               \
          it.val = (iter_func))
 
 

@@ -62,7 +62,7 @@ test$case(test_needs_build_invalid)
         tassert_eq(0, cexy.src_changed("", NULL));
 
         char* tgt = TBUILDDIR " my_tgt";
-        arr$(const char*) src = arr$new(src, _);
+        arr$(char*) src = arr$new(src, _);
         arr$pushm(src, TBUILDDIR "my_tgt.c");
         tassert_eq(0, cexy.src_changed("", src));
 
@@ -79,7 +79,7 @@ test$case(test_needs_build)
     mem$scope(tmem$, _)
     {
         char* tgt = TBUILDDIR " my_tgt";
-        arr$(const char*) src = arr$new(src, _);
+        arr$(char*) src = arr$new(src, _);
         arr$pushm(src, TBUILDDIR "my_tgt.c");
 
         e$ret(io.file.save(src[0], "// hello"));
@@ -103,7 +103,7 @@ test$case(test_needs_build_many_files_not_exists)
     mem$scope(tmem$, _)
     {
         char* tgt = TBUILDDIR " my_tgt";
-        arr$(const char*) src = arr$new(src, _);
+        arr$(char*) src = arr$new(src, _);
         arr$pushm(src, TBUILDDIR "my_src1.c", TBUILDDIR "my_src2");
 
         e$ret(io.file.save(tgt, ""));
@@ -122,7 +122,7 @@ test$case(test_needs_build_many_files)
     mem$scope(tmem$, _)
     {
         char* tgt = TBUILDDIR " my_tgt";
-        arr$(const char*) src = arr$new(src, _);
+        arr$(char*) src = arr$new(src, _);
         arr$pushm(src, TBUILDDIR "my_src1.c", TBUILDDIR "my_src2.c");
         e$ret(io.file.save(src[0], "// hello"));
         e$ret(io.file.save(src[1], "// world"));

@@ -217,16 +217,15 @@ __cex__fprintf_dummy(void)
 #if CEX_LOG_LVL > 0
 #define __cex__traceback(uerr, fail_func)                                                          \
     (__cex__fprintf(                                                                               \
-         stdout,                                                                                   \
-         "[^STCK]  ",                                                                              \
-         __FILE_NAME__,                                                                            \
-         __LINE__,                                                                                 \
-         __func__,                                                                                 \
-         "^^^^^ [%s] in function call `%s`\n",                                                     \
-         uerr,                                                                                     \
-         fail_func                                                                                 \
-     ),                                                                                            \
-     1)
+        stdout,                                                                                    \
+        "[^STCK]  ",                                                                               \
+        __FILE_NAME__,                                                                             \
+        __LINE__,                                                                                  \
+        __func__,                                                                                  \
+        "^^^^^ [%s] in function call `%s`\n",                                                      \
+        uerr,                                                                                      \
+        fail_func                                                                                  \
+    ))
 
 /**
  * @brief Non disposable assert, returns Error.assert CEX exception when failed
@@ -380,10 +379,10 @@ __attribute__((noinline)) void __cex__panic(void);
 // WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
 #define e$except(_var_name, _func)                                                                 \
     for (Exc _var_name = _func;                                                                    \
-         unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func)));                    \
+         unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                    \
          _var_name = EOK)
 
-#if defined(CEXTEST) || defined(CEXBUILD)
+#if 0 //defined(CEXTEST) || defined(CEXBUILD)
 #define e$except_silent(_var_name, _func) e$except(_var_name, _func)
 #else
 #define e$except_silent(_var_name, _func)                                                          \
@@ -393,16 +392,17 @@ __attribute__((noinline)) void __cex__panic(void);
 #define e$except_errno(_expression)                                                                \
     if (unlikely(                                                                                  \
             ((_expression) == -1) &&                                                               \
-            log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno))    \
+            (log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno)),  \
+             1)                                                                                    \
         ))
 
 #define e$except_null(_expression)                                                                 \
-    if (unlikely(((_expression) == NULL) && log$error("`%s` returned NULL\n", #_expression)))
+    if (unlikely(((_expression) == NULL) && (log$error("`%s` returned NULL\n", #_expression), 1)))
 
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
-             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                         \
+             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func), 1)                      \
          );                                                                                        \
          cex$tmpname(__cex_err_traceback_) = EOK)                                                  \
     return cex$tmpname(__cex_err_traceback_)
@@ -410,7 +410,7 @@ __attribute__((noinline)) void __cex__panic(void);
 #define e$goto(_func, _label)                                                                      \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
-             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func))                         \
+             (__cex__traceback(cex$tmpname(__cex_err_traceback_), #_func), 1)                      \
          );                                                                                        \
          cex$tmpname(__cex_err_traceback_) = EOK)                                                  \
     goto _label
@@ -484,23 +484,22 @@ struct _cex_arr_slice
  */
 typedef struct
 {
-    // NOTE: fields order must match with for$iter union!
-    void* val;
     struct
     {
         union
         {
             usize i;
-            u64 ikey;
             char* skey;
             void* pkey;
         };
     } idx;
-    char _ctx[48];
+    char _ctx[47];
+    u8 stopped;
+    u8 initialized;
 } cex_iterator_s;
 _Static_assert(sizeof(usize) == sizeof(void*), "usize expected as sizeof ptr");
 _Static_assert(alignof(usize) == alignof(void*), "alignof pointer != alignof usize");
-// _Static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
+_Static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
 _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 
 /**
@@ -512,18 +511,17 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
  * for$iter(u32, it, array_iterator(arr2, arr$len(arr2), &it.iterator))
  */
 #define for$iter(eltype, it, iter_func)                                                            \
-    union cex$tmpname(__cex_iter_)                                                                 \
+    struct cex$tmpname(__cex_iter_)                                                                 \
     {                                                                                              \
-        cex_iterator_s iterator;                                                                   \
-        struct /* NOTE:  iterator above and this struct shadow each other */                       \
+        eltype val;                                                                   \
+        union /* NOTE:  iterator above and this struct shadow each other */                       \
         {                                                                                          \
-            typeof(eltype)* val;                                                                   \
+            cex_iterator_s iterator;                                                                   \
             struct                                                                                 \
             {                                                                                      \
                 union                                                                              \
                 {                                                                                  \
                     usize i;                                                                       \
-                    u64 ikey;                                                                      \
                     char* skey;                                                                    \
                     void* pkey;                                                                    \
                 };                                                                                 \
@@ -531,7 +529,7 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
         };                                                                                         \
     };                                                                                             \
                                                                                                    \
-    for (union cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; it.val != NULL;               \
+    for (struct cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; !it.iterator.stopped;               \
          it.val = (iter_func))
 
 
@@ -1442,7 +1440,7 @@ struct {  // sub-module .slice >>>
     Exception       (*copy)(char* dest, str_s src, usize destlen);
     bool            (*ends_with)(str_s s, str_s suffix);
     bool            (*eq)(str_s a, str_s b);
-    str_s*          (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
+    str_s           (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
     str_s           (*lstrip)(str_s s);
     bool            (*match)(str_s s, const char* pattern);
     str_s           (*remove_prefix)(str_s s, str_s prefix);
@@ -3247,58 +3245,61 @@ struct _cex_test_context_s
     })
 #define tassert_eq(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_er(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
-        if ((err = _check_eq_err((a), (b), __LINE__))) {                                           \
+        Exc cex$tmpname(err) = NULL;                                                               \
+        if ((cex$tmpname(err) = _check_eq_err((a), (b), __LINE__))) {                              \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_eq_almost(a, b, delta)                                                             \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
-        if ((err = _check_eq_almost((a), (b), (delta), __LINE__))) {                               \
+        Exc cex$tmpname(err) = NULL;                                                               \
+        if ((cex$tmpname(err) = _check_eq_almost((a), (b), (delta), __LINE__))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 #define tassert_eq_ptr(a, b)                                                                       \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
-        if ((err = _check_eq_ptr((a), (b), __LINE__))) {                                           \
+        Exc cex$tmpname(err) = NULL;                                                               \
+        if ((cex$tmpname(err) = _check_eq_ptr((a), (b), __LINE__))) {                              \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
-#define tassert_eq_mem(a, b...)                                                                        \
-    ({                                                                                              \
+#define tassert_eq_mem(a, b...)                                                                    \
+    ({                                                                                             \
         var _a = (a);                                                                              \
         var _b = (b);                                                                              \
-        _Static_assert(__builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)), "incompatible"); \
-        _Static_assert(sizeof(_a) == sizeof(_b), "different size");                                   \
-        if (memcmp(&_a, &_b, sizeof(_a)) != 0) {                                                \
-            _test$tassert_breakpoint();                                                             \
-            if (str.sprintf(                                                                        \
-                    _cex_test__mainfn_state.str_buf,                                                \
-                    CEXTEST_AMSG_MAX_LEN - 1,                                                       \
+        _Static_assert(                                                                            \
+            __builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)),                          \
+            "incompatible"                                                                         \
+        );                                                                                         \
+        _Static_assert(sizeof(_a) == sizeof(_b), "different size");                                \
+        if (memcmp(&_a, &_b, sizeof(_a)) != 0) {                                                   \
+            _test$tassert_breakpoint();                                                            \
+            if (str.sprintf(                                                                       \
+                    _cex_test__mainfn_state.str_buf,                                               \
+                    CEXTEST_AMSG_MAX_LEN - 1,                                                      \
                     _test$log_err("a and b are not binary equal")                                  \
-                )) {                                                                                \
-            }                                                                                       \
-            return _cex_test__mainfn_state.str_buf;                                                 \
-        }                                                                                           \
+                )) {                                                                               \
+            }                                                                                      \
+            return _cex_test__mainfn_state.str_buf;                                                \
+        }                                                                                          \
     })
 
-#define tassert_eq_arr(a, b...)                                                                       \
+#define tassert_eq_arr(a, b...)                                                                    \
     ({                                                                                             \
         var _a = (a);                                                                              \
         var _b = (b);                                                                              \
@@ -3340,51 +3341,51 @@ struct _cex_test_context_s
 
 #define tassert_ne(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_le(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_lt(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_ge(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
 #define tassert_gt(a, b)                                                                           \
     ({                                                                                             \
-        Exc err = NULL;                                                                            \
+        Exc cex$tmpname(err) = NULL;                                                               \
         var genf = _test$tassert_fn((a), (b));                                                     \
-        if ((err = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                               \
+        if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                  \
             _test$tassert_breakpoint();                                                            \
-            return err;                                                                            \
+            return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
 
@@ -3453,7 +3454,7 @@ struct __module__cexy
     // clang-format off
 
 void            (*build_self)(int argc, char** argv, const char* cex_source);
-bool            (*src_changed)(const char* target_path, const arr$(char*) src_array);
+bool            (*src_changed)(const char* target_path, arr$(char*) src_array);
 bool            (*src_include_changed)(const char* target_path, const char* src_path, arr$(char*) alt_include_path);
 char*           (*target_make)(const char* src_path, const char* build_dir, const char* name_or_extension, IAllocator allocator);
     // clang-format on
@@ -3513,6 +3514,92 @@ CexLexer_create(char* content, u32 content_len, bool fold_scopes);
 cex_token_s
 CexLexer_next_token(CexLexer_c* lx);
 
+
+/*
+*                   cex_code_gen.h
+*/
+#ifdef CEXBUILD
+
+typedef struct cex_codegen_s
+{
+    sbuf_c* buf;
+    u32 indent;
+    Exc error;
+    u32 nlines;
+} cex_codegen_s;
+
+/*
+ *                  CODE GEN MACROS
+ */
+#define cg$var __cex_code_gen
+#define cg$init(out_sbuf)                                                                          \
+    cex_codegen_s cex$tmpname(code_gen) = { .buf = (out_sbuf) };                                   \
+    cex_codegen_s* cg$var = &cex$tmpname(code_gen)
+#define cg$is_valid() (cg$var != NULL && cg$var->buf != NULL && cg$var->error == EOK)
+#define cg$indent() ({ cg$var->indent += 4; })
+#define cg$dedent()                                                                                \
+    ({                                                                                             \
+        if (cg$var->indent >= 4)                                                                   \
+            cg$var->indent -= 4;                                                                   \
+    })
+
+/*
+ *                  CODE MACROS
+ */
+#define $pn(text) cex_codegen_print_line(cg$var, "%s\n", text)
+#define $pf(format, ...) cex_codegen_print_line(cg$var, format "\n", __VA_ARGS__)
+#define $pa(format, ...) cex_codegen_print(cg$var, true, format, __VA_ARGS__)
+
+// clang-format off
+#define $scope(format, ...) \
+    for (cex_codegen_s* cex$tmpname(codegen_scope)  \
+                __attribute__ ((__cleanup__(cex_codegen_print_scope_exit))) =  \
+                cex_codegen_print_scope_enter(cg$var, format, __VA_ARGS__),\
+        *cex$tmpname(codegen_sentinel) = cg$var;\
+        cex$tmpname(codegen_sentinel); \
+        cex$tmpname(codegen_sentinel) = NULL)
+#define $func(format, ...) $scope(format, __VA_ARGS__)
+// clang-format on
+
+
+#define $if(format, ...) $scope("if (" format ") ", __VA_ARGS__)
+#define $elseif(format, ...)                                                                       \
+    $pa(" else ", "");                                                                             \
+    $if(format, __VA_ARGS__)
+#define $else()                                                                                    \
+    $pa(" else", "");                                                                              \
+    $scope(" ", "")
+
+
+#define $while(format, ...) $scope("while (" format ") ", __VA_ARGS__)
+#define $for(format, ...) $scope("for (" format ") ", __VA_ARGS__)
+#define $foreach(format, ...) $scope("for$each (" format ") ", __VA_ARGS__)
+
+
+#define $switch(format, ...) $scope("switch (" format ") ", __VA_ARGS__)
+#define $case(format, ...)                                                                         \
+    for (cex_codegen_s * cex$tmpname(codegen_scope)                                                \
+                             __attribute__((__cleanup__(cex_codegen_print_case_exit))) =           \
+             cex_codegen_print_case_enter(cg$var, "case " format, __VA_ARGS__),                    \
+                             *cex$tmpname(codegen_sentinel) = cg$var;                              \
+         cex$tmpname(codegen_sentinel);                                                            \
+         cex$tmpname(codegen_sentinel) = NULL)
+#define $default()                                                                                 \
+    for (cex_codegen_s * cex$tmpname(codegen_scope)                                                \
+                             __attribute__((__cleanup__(cex_codegen_print_case_exit))) =           \
+             cex_codegen_print_case_enter(cg$var, "default", NULL),                                \
+                             *cex$tmpname(codegen_sentinel) = cg$var;                              \
+         cex$tmpname(codegen_sentinel);                                                            \
+         cex$tmpname(codegen_sentinel) = NULL)
+
+
+static void cex_codegen_print(cex_codegen_s* cg, bool rep_new_line, const char* format, ...);
+static cex_codegen_s* cex_codegen_print_scope_enter(cex_codegen_s* cg, const char* format, ...);
+static void cex_codegen_print_scope_exit(cex_codegen_s** cgptr);
+static cex_codegen_s* cex_codegen_print_case_enter(cex_codegen_s* cg, const char* format, ...);
+static void cex_codegen_print_case_exit(cex_codegen_s** cgptr);
+
+#endif // ifdef CEXBUILD
 
 /*
 *                   CEX IMPLEMENTATION 
@@ -7782,7 +7869,7 @@ str__slice__cmpi(str_s self, str_s other)
     return cmp;
 }
 
-static str_s*
+static str_s
 str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
@@ -7793,21 +7880,23 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
     {
         usize cursor;
         usize split_by_len;
-        str_s str;
         usize str_len;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
     _Static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
 
-    if (unlikely(iterator->val == NULL)) {
+    if (unlikely(!iterator->initialized)) {
+        iterator->initialized = 1;
         // First run handling
         if (unlikely(!str__isvalid(&s))) {
-            return NULL;
+            iterator->stopped = 1;
+            return (str_s){0};
         }
         ctx->split_by_len = strlen(split_by);
 
         if (ctx->split_by_len == 0) {
-            return NULL;
+            iterator->stopped = 1;
+            return (str_s){0};
         }
         uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
@@ -7816,24 +7905,19 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
             idx = s.len;
         }
         ctx->cursor = idx;
-        ctx->str = str.slice.sub(s, 0, idx);
-
-        iterator->val = &ctx->str;
         iterator->idx.i = 0;
-        return iterator->val;
+        return str.slice.sub(s, 0, idx);
     } else {
-        uassert(iterator->val == &ctx->str);
-
         if (ctx->cursor >= s.len) {
-            return NULL; // reached the end stops
+            iterator->stopped = 1;
+            return (str_s){0};
         }
         ctx->cursor++;
         if (unlikely(ctx->cursor == s.len)) {
             // edge case, we have separator at last col
             // it's not an error, return empty split token
             iterator->idx.i++;
-            ctx->str = (str_s){ .buf = "", .len = 0 };
-            return iterator->val;
+            return (str_s){ .buf = "", .len = 0 };
         }
 
         // Get remaining string after prev split_by char
@@ -7844,15 +7928,17 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 
         if (idx < 0) {
             // No more splits, return remaining part
-            ctx->str = tok;
             ctx->cursor = s.len;
-        } else {
-            // Sub from prev cursor to idx (excluding split char)
-            ctx->str = str.slice.sub(tok, 0, idx);
-            ctx->cursor += idx;
+            // iterator->stopped = 1;
+            return tok;
+        } else if(idx == 0) {
+            return (str_s){ .buf = "", .len = 0 };
         }
-
-        return iterator->val;
+        else {
+            // Sub from prev cursor to idx (excluding split char)
+            ctx->cursor += idx;
+            return str.slice.sub(tok, 0, idx);
+        }
     }
 }
 
@@ -8470,7 +8556,7 @@ static arr$(char*) str_split(const char* s, const char* split_by, IAllocator all
 
     for$iter(str_s, it, str__slice__iter_split(src, split_by, &it.iterator))
     {
-        char* tok = str__slice__clone(*it.val, allc);
+        char* tok = str__slice__clone(it.val, allc);
         arr$push(result, tok);
     }
 
@@ -9868,7 +9954,7 @@ argparse_usage(argparse_c* self)
 
         for$iter(str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator))
         {
-            if (it.val->len == 0) {
+            if (it.val.len == 0) {
                 break;
             }
 
@@ -9879,7 +9965,7 @@ argparse_usage(argparse_c* self)
                 fprintf(stdout, "%s ", self->program_name);
             }
 
-            if (fwrite(it.val->buf, sizeof(char), it.val->len, stdout)) {
+            if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) {
                 ;
             }
 
@@ -10271,6 +10357,7 @@ argparse__parse_commands(argparse_c* self)
         return Error.argsparse;
     }
     self->_ctx.current_command = cmd;
+    self->_ctx.cpidx = 0;
 
     return EOK;
 }
@@ -10354,6 +10441,7 @@ argparse__parse_options(argparse_c* self)
 
     self->argv = self->_ctx.out + self->_ctx.cpidx + 1; // excludes 1st argv[0], program_name
     self->argc = initial_argc - self->_ctx.cpidx - 1;
+    self->_ctx.cpidx = 0;
 
     return EOK;
 }
@@ -10392,14 +10480,10 @@ static const char*
 argparse_next(argparse_c* self)
 {
     uassert(self != NULL);
-    uassert(
-        self->options == NULL && self->commands == NULL &&
-        "this is low level method use empty self, i.e. `argparse_c my_args = {0};`"
-    );
     uassert(self->argv != NULL && "forgot argparse.parse() call?");
 
+    var result = self->argv[0];
     if (self->argc > 0) {
-        var result = self->argv[0];
 
         if (self->_ctx.cpidx > 0) {
             // we have --opt=foo, return 'foo' part
@@ -10424,10 +10508,16 @@ argparse_next(argparse_c* self)
         }
         self->argc--;
         self->argv++;
-        return result;
-    } else {
-        return NULL;
     }
+
+    if (unlikely(self->argc == 0)) {
+        // After reaching argc=0, argv getting stack-overflowed (ASAN issues), we set to fake NULL
+        static char* null_argv[] = { NULL };
+        // reset NULL every call, because static null_argv may be overwritten in user code maybe
+        null_argv[0] = NULL;
+        self->argv = null_argv;
+    }
+    return result;
 }
 
 static Exception
@@ -10543,8 +10633,8 @@ os__fs__mkpath(const char* path)
             dir_path_len++;
             dir_path[dir_path_len] = '\0';
         }
-        e$ret(str.slice.copy(dir_path + dir_path_len, *it.val, sizeof(dir_path) - dir_path_len));
-        dir_path_len += it.val->len;
+        e$ret(str.slice.copy(dir_path + dir_path_len, it.val, sizeof(dir_path) - dir_path_len));
+        dir_path_len += it.val.len;
         e$ret(os.fs.mkdir(dir_path));
     }
     return EOK;
@@ -11626,6 +11716,8 @@ cex_test_unmute(Exc test_result)
         dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
 
         if (test_result != EOK && flen > 1) {
+            fflush(stdout);
+            fflush(stderr);
             fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
             int c;
             while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') {
@@ -12066,7 +12158,7 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
 }
 
 static bool
-cexy_src_changed(const char* target_path, const arr$(char*) src_array)
+cexy_src_changed(const char* target_path, arr$(char*) src_array)
 {
     usize src_array_len = arr$len(src_array);
     if (unlikely(src_array == NULL || src_array_len == 0)) {
@@ -12512,6 +12604,118 @@ CexLexer_next_token(CexLexer_c* lx)
 #undef lx$next
 #undef lx$peek
 #undef lx$skip_space
+
+/*
+*                   cex_code_gen.c
+*/
+#ifdef CEXBUILD
+#ifdef CEX_IMPLEMENTATION
+
+static inline void
+cex_codegen_indent(cex_codegen_s* cg)
+{
+    if (unlikely(cg->error != EOK)) {
+        return;
+    }
+    for (u32 i = 0; i < cg->indent; i++) {
+        Exc err = sbuf.append(cg->buf, " ");
+        if (unlikely(err != EOK && cg->error != EOK)) {
+            cg->error = err;
+        }
+    }
+}
+
+#define cg$printva(cg) /* temp macro! */                                                           \
+    do {                                                                                           \
+        va_list va;                                                                                \
+        va_start(va, format);                                                                      \
+        Exc err = sbuf.appendfva(cg->buf, format, va);                                             \
+        if (unlikely(err != EOK && cg->error != EOK)) {                                            \
+            cg->error = err;                                                                       \
+        }                                                                                          \
+        va_end(va);                                                                                \
+    } while (0)
+
+static void
+cex_codegen_print(cex_codegen_s* cg, bool rep_new_line, const char* format, ...)
+{
+    if (unlikely(cg->error != EOK)) {
+        return;
+    }
+    if (rep_new_line) {
+        usize slen = sbuf.len(cg->buf);
+        if (slen && cg->buf[0][slen - 1] == '\n') {
+            sbuf.shrink(cg->buf, slen - 1);
+        }
+    }
+    cg$printva(cg);
+}
+
+static void
+cex_codegen_print_line(cex_codegen_s* cg, const char* format, ...)
+{
+    if (unlikely(cg->error != EOK)) {
+        return;
+    }
+    cex_codegen_indent(cg);
+    cg$printva(cg);
+}
+
+static cex_codegen_s*
+cex_codegen_print_scope_enter(cex_codegen_s* cg, const char* format, ...)
+{
+    usize slen = sbuf.len(cg->buf);
+    if (slen && cg->buf[0][slen - 1] == '\n') {
+        cex_codegen_indent(cg);
+    }
+    cg$printva(cg);
+    cex_codegen_print(cg, false, "%c\n", '{');
+    cg->indent += 4;
+    return cg;
+}
+
+static void
+cex_codegen_print_scope_exit(cex_codegen_s** cgptr)
+{
+    uassert(*cgptr != NULL);
+    cex_codegen_s* cg = *cgptr;
+
+    if (cg->indent >= 4) {
+        cg->indent -= 4;
+    }
+    cex_codegen_indent(cg);
+    cex_codegen_print(cg, false, "%c\n", '}');
+}
+
+
+static cex_codegen_s*
+cex_codegen_print_case_enter(cex_codegen_s* cg, const char* format, ...)
+{
+    cex_codegen_indent(cg);
+    cg$printva(cg);
+    cex_codegen_print(cg, false, ": %c\n", '{');
+    cg->indent += 4;
+    return cg;
+}
+
+static void
+cex_codegen_print_case_exit(cex_codegen_s** cgptr)
+{
+    uassert(*cgptr != NULL);
+    cex_codegen_s* cg = *cgptr;
+
+    if (cg->indent >= 4) {
+        cg->indent -= 4;
+    }
+    cex_codegen_indent(cg);
+    cex_codegen_print_line(cg, "break;\n", '}');
+    cex_codegen_indent(cg);
+    cex_codegen_print(cg, false, "%c\n", '}');
+}
+
+#undef cg$printva
+#endif // #ifdef CEX_IMPLEMENTATION
+#endif // #ifdef CEXBUILD
 
 #endif // #ifdef CEX_IMPLEMENTATION
 

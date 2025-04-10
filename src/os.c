@@ -81,8 +81,8 @@ os__fs__mkpath(const char* path)
             dir_path_len++;
             dir_path[dir_path_len] = '\0';
         }
-        e$ret(str.slice.copy(dir_path + dir_path_len, *it.val, sizeof(dir_path) - dir_path_len));
-        dir_path_len += it.val->len;
+        e$ret(str.slice.copy(dir_path + dir_path_len, it.val, sizeof(dir_path) - dir_path_len));
+        dir_path_len += it.val.len;
         e$ret(os.fs.mkdir(dir_path));
     }
     return EOK;

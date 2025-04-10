@@ -13,10 +13,12 @@
 Exception cmd_check(int argc, char** argv, void* user_ctx);
 Exception cmd_build(int argc, char** argv, void* user_ctx);
 Exception cmd_test(int argc, char** argv, void* user_ctx);
+void cex_bundle(void);
 
 int
 main(int argc, char** argv)
 {
+    cex_bundle();
     cexy$initialize();
 
     // clang-format off
@@ -40,6 +42,86 @@ main(int argc, char** argv)
         return 1;
     }
     return 0;
+}
+
+void
+cex_bundle(void)
+{
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) src = os.fs.find("src/*.[hc]", false, _);
+        if (!cexy.src_changed("cex.h", src)) {
+            return;
+        }
+        const char* bundle[] = {
+            "src/cex_base.h", "src/mem.h",      "src/AllocatorHeap.h", "src/AllocatorArena.h",
+            "src/ds.h",       "src/_sprintf.h", "src/str.h",           "src/sbuf.h",
+            "src/io.h",       "src/argparse.h", "src/_subprocess.h",   "src/os.h",
+            "src/test.h",     "src/cexy.h",     "src/CexLexer.h",
+        };
+        log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
+
+        // Using CEX code generation engine for bundling
+        sbuf_c hbuf = sbuf.create(1024 * 1024, _);
+        cg$init(&hbuf);
+        $pn("#pragma once");
+        $pn("#ifndef CEX_HEADER_H");
+        $pn("#define CEX_HEADER_H");
+
+        char* cex_header;
+        e$except_null(cex_header = io.file.load("src/cex_header.h", _))
+        {
+            exit(1);
+        }
+        $pn(cex_header);
+
+        for$each(hdr, bundle)
+        {
+            $pn("\n");
+            $pn("/*");
+            $pf("*                          %s", hdr);
+            $pn("*/");
+            FILE* fh;
+            e$except(err, io.fopen(&fh, hdr, "r"))
+            {
+                exit(1);
+            }
+            str_s content;
+            e$except(err, io.fread_all(fh, &content, _))
+            {
+                exit(1);
+            }
+            printf("File %s, size: %ld\n", hdr, content.len);
+            for$iter(str_s, it, str.slice.iter_split(content, "\n", &it.iterator))
+            {
+                io.printf("line: %04ld: %S\n", it.idx.i, it.val);
+
+                if (str.slice.match(it.val, "#pragma once*")) {
+                    continue;
+                }
+                if (str.slice.match(it.val, "#include \"*\"")) {
+                    continue;
+                }
+                if (str.slice.match(it.val, "#include <*>")) {
+                    continue;
+                }
+                // $pf("%S", *it.val);
+            }
+            fflush(stdout);
+            break;
+        }
+
+        u32 cex_lines = 0;
+        for$each(c, hbuf, sbuf.len(&hbuf)) {
+            if (c == '\n') {
+                cex_lines++;
+            }
+        }
+        log$debug("Saving cex.h: new size: %dKB lines: %d\n", sbuf.len(&hbuf) / 1024, cex_lines);
+        e$except(err, io.file.save("cex2.h", hbuf)){
+            exit(1);
+        }
+    }
 }
 
 Exception
@@ -74,6 +156,13 @@ cmd_test(int argc, char** argv, void* user_ctx)
         target = "tests/test_*.c";
     }
 
+    if (!str.match(target, "test*.c")) {
+        return e$raise(
+            Error.argsparse,
+            "Invalid target: '%s', expected all or tests/test_some_file.c",
+            target
+        );
+    }
 
     if (str.eq(cmd, "create")) {
         e$assert(!is_all && "all target is not supported by `create` command");
@@ -88,14 +177,6 @@ cmd_test(int argc, char** argv, void* user_ctx)
             e$ret(os.fs.remove(target));
         }
         return EOK;
-    }
-
-    if (!str.match(target, "test*.c")) {
-        return e$raise(
-            Error.argsparse,
-            "Invalid target: '%s', expected all or tests/test_some_file.c",
-            target
-        );
     }
 
     // Build stage
@@ -125,7 +206,7 @@ cmd_test(int argc, char** argv, void* user_ctx)
                 test_target,
             );
             arr$push(args, NULL);
-            os$cmda(args);
+            e$ret(os$cmda(args));
             n_built++;
         }
     }

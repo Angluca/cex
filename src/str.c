@@ -532,7 +532,7 @@ str__slice__cmpi(str_s self, str_s other)
     return cmp;
 }
 
-static str_s*
+static str_s
 str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
@@ -543,21 +543,23 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
     {
         usize cursor;
         usize split_by_len;
-        str_s str;
         usize str_len;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
     _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
     _Static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
 
-    if (unlikely(iterator->val == NULL)) {
+    if (unlikely(!iterator->initialized)) {
+        iterator->initialized = 1;
         // First run handling
         if (unlikely(!str__isvalid(&s))) {
-            return NULL;
+            iterator->stopped = 1;
+            return (str_s){0};
         }
         ctx->split_by_len = strlen(split_by);
 
         if (ctx->split_by_len == 0) {
-            return NULL;
+            iterator->stopped = 1;
+            return (str_s){0};
         }
         uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
@@ -566,24 +568,19 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
             idx = s.len;
         }
         ctx->cursor = idx;
-        ctx->str = str.slice.sub(s, 0, idx);
-
-        iterator->val = &ctx->str;
         iterator->idx.i = 0;
-        return iterator->val;
+        return str.slice.sub(s, 0, idx);
     } else {
-        uassert(iterator->val == &ctx->str);
-
         if (ctx->cursor >= s.len) {
-            return NULL; // reached the end stops
+            iterator->stopped = 1;
+            return (str_s){0};
         }
         ctx->cursor++;
         if (unlikely(ctx->cursor == s.len)) {
             // edge case, we have separator at last col
             // it's not an error, return empty split token
             iterator->idx.i++;
-            ctx->str = (str_s){ .buf = "", .len = 0 };
-            return iterator->val;
+            return (str_s){ .buf = "", .len = 0 };
         }
 
         // Get remaining string after prev split_by char
@@ -594,15 +591,17 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 
         if (idx < 0) {
             // No more splits, return remaining part
-            ctx->str = tok;
             ctx->cursor = s.len;
-        } else {
+            // iterator->stopped = 1;
+            return tok;
+        } else if(idx == 0) {
+            return (str_s){ .buf = "", .len = 0 };
+        } 
+        else {
             // Sub from prev cursor to idx (excluding split char)
-            ctx->str = str.slice.sub(tok, 0, idx);
             ctx->cursor += idx;
+            return str.slice.sub(tok, 0, idx);
         }
-
-        return iterator->val;
     }
 }
 
@@ -1220,7 +1219,7 @@ static arr$(char*) str_split(const char* s, const char* split_by, IAllocator all
 
     for$iter(str_s, it, str__slice__iter_split(src, split_by, &it.iterator))
     {
-        char* tok = str__slice__clone(*it.val, allc);
+        char* tok = str__slice__clone(it.val, allc);
         arr$push(result, tok);
     }
 

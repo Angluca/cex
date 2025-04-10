@@ -387,9 +387,9 @@ test$case(test_iter_split)
     };
     for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
     {
-        tassert(it.val->buf);
+        tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(*it.val, str.sstr(expected1[nit])), 0);
+        tassert_eq(str.slice.cmp(it.val, str.sstr(expected1[nit])), 0);
         nit++;
     }
     tassert_eq(nit, 1);
@@ -402,9 +402,9 @@ test$case(test_iter_split)
     };
     for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
     {
-        tassert(it.val->buf);
+        tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(*it.val, str.sstr(expected2[nit])), 0);
+        tassert_eq(str.slice.cmp(it.val, str.sstr(expected2[nit])), 0);
         nit++;
     }
     tassert_eq(nit, 2);
@@ -419,9 +419,9 @@ test$case(test_iter_split)
     };
     for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
     {
-        tassert(it.val->buf);
+        tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(*it.val, str.sstr(expected3[nit])), 0);
+        tassert_eq(str.slice.cmp(it.val, str.sstr(expected3[nit])), 0);
         nit++;
     }
     tassert_eq(nit, 4);
@@ -436,9 +436,9 @@ test$case(test_iter_split)
     s = str.sstr("123,456,88,");
     for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
     {
-        tassert(it.val->buf);
+        tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(*it.val, str.sstr(expected4[nit])), 0);
+        tassert_eq(str.slice.cmp(it.val, str.sstr(expected4[nit])), 0);
         tassert_eq(it.idx.i, nit);
         nit++;
     }
@@ -454,9 +454,9 @@ test$case(test_iter_split)
     };
     for$iter(str_s, it, str.slice.iter_split(s, ",@#", &it.iterator))
     {
-        tassert(it.val->buf);
+        tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(*it.val, str.sstr(expected5[nit])), 0);
+        tassert_eq(str.slice.cmp(it.val, str.sstr(expected5[nit])), 0);
         tassert_eq(it.idx.i, nit);
         nit++;
     }
@@ -471,12 +471,29 @@ test$case(test_iter_split)
     s = str.sstr("123\n456\n");
     for$iter(str_s, it, str.slice.iter_split(s, "\n", &it.iterator))
     {
-        tassert(it.val->buf);
+        tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(*it.val, str.sstr(expected6[nit])), 0);
+        tassert_eq(str.slice.cmp(it.val, str.sstr(expected6[nit])), 0);
         nit++;
     }
     tassert_eq(nit, 3);
+
+    nit = 0;
+    const char* expected7[] = {
+        "123",
+        "",
+        "",
+        "456",
+        "",
+    };
+    s = str.sstr("123\n\n\n456\n");
+    for$iter(str_s, it, str.slice.iter_split(s, "\n", &it.iterator))
+    {
+        tassert(it.val.buf);
+        tassert_eq(it.val, str.sstr(expected7[nit]));
+        nit++;
+    }
+    tassert_eq(nit, 5);
     return EOK;
 }
 

@@ -79,7 +79,7 @@ struct {  // sub-module .slice >>>
     Exception       (*copy)(char* dest, str_s src, usize destlen);
     bool            (*ends_with)(str_s s, str_s suffix);
     bool            (*eq)(str_s a, str_s b);
-    str_s*          (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
+    str_s           (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
     str_s           (*lstrip)(str_s s);
     bool            (*match)(str_s s, const char* pattern);
     str_s           (*remove_prefix)(str_s s, str_s prefix);

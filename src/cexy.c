@@ -191,7 +191,7 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
 }
 
 static bool
-cexy_src_changed(const char* target_path, const arr$(char*) src_array)
+cexy_src_changed(const char* target_path, arr$(char*) src_array)
 {
     usize src_array_len = arr$len(src_array);
     if (unlikely(src_array == NULL || src_array_len == 0)) {
