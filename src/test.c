@@ -354,7 +354,6 @@ cex_test_main_fn(int argc, char** argv)
 
     e$except_silent(err, argparse.parse(&args, argc, argv))
     {
-        argparse.usage(&args);
         return 1;
     }
 

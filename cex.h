@@ -3542,6 +3542,10 @@ void cex_codegen_indent(cex_codegen_s* cg);
 #define cexy$ld_libs ""
 #endif
 
+#ifndef cexy$debug_cmd
+#define cexy$debug_cmd "gdb", "--args"
+#endif
+
 #ifndef cexy$cc_args_test
 #define cexy$cc_args_test                                                                          \
     "-DCEXTEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3", "-Itests/",         \
@@ -3558,9 +3562,10 @@ void cex_codegen_indent(cex_codegen_s* cg);
     "* cexy$cc               " cexy$cc "\n"                                                        \
     "* cexy$cc_include       " cex$stringize(cexy$cc_include) "\n"                                 \
     "* cexy$cc_args          " cex$stringize(cexy$cc_args) "\n"                                    \
-    "* cexy$cc_args_test     " cex$stringize(cexy$cc_args_test) "\n"\
+    "* cexy$cc_args_test     " cex$stringize(cexy$cc_args_test) "\n"                               \
     "* cexy$ld_args          " cex$stringize(cexy$ld_args) "\n"                                    \
-    "* cexy$ld_libs          " cex$stringize(cexy$ld_libs) "\n"
+    "* cexy$ld_libs          " cex$stringize(cexy$ld_libs) "\n"                                    \
+    "* cexy$debug_cmd        " cex$stringize(cexy$debug_cmd) "\n"
 
 /* clang-format on */
 #define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
@@ -3577,7 +3582,7 @@ char*           (*target_make)(const char* src_path, const char* build_dir, cons
 Exception       (*test_create)(const char* test_path);
     // clang-format on
 };
-__attribute__ ((visibility("hidden"))) extern const struct __module__cexy cexy; // CEX Autogen
+__attribute__((visibility("hidden"))) extern const struct __module__cexy cexy; // CEX Autogen
 #endif // #if defined(CEXBUILD)
 
 
@@ -11836,7 +11841,6 @@ cex_test_main_fn(int argc, char** argv)
 
     e$except_silent(err, argparse.parse(&args, argc, argv))
     {
-        argparse.usage(&args);
         return 1;
     }
 

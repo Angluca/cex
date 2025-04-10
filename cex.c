@@ -37,8 +37,7 @@ main(int argc, char** argv)
     if (argparse.parse(&args, argc, argv)) {
         return 1;
     }
-    e$except(err, argparse.run_command(&args, NULL))
-    {
+    if (argparse.run_command(&args, NULL)) {
         return 1;
     }
     return 0;
@@ -54,10 +53,10 @@ cex_bundle(void)
             return;
         }
         const char* bundle[] = {
-            "src/cex_base.h", "src/mem.h",      "src/AllocatorHeap.h", "src/AllocatorArena.h",
-            "src/ds.h",       "src/_sprintf.h", "src/str.h",           "src/sbuf.h",
-            "src/io.h",       "src/argparse.h", "src/_subprocess.h",   "src/os.h",
-            "src/test.h", "src/cex_code_gen.h",   "src/cexy.h",     "src/CexLexer.h" 
+            "src/cex_base.h", "src/mem.h",          "src/AllocatorHeap.h", "src/AllocatorArena.h",
+            "src/ds.h",       "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
+            "src/io.h",       "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
+            "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexLexer.h"
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
 
@@ -143,13 +142,15 @@ cex_bundle(void)
         $pn("\n\n#endif // ifndef CEX_HEADER_H");
 
         u32 cex_lines = 0;
-        for$each(c, hbuf, sbuf.len(&hbuf)) {
+        for$each(c, hbuf, sbuf.len(&hbuf))
+        {
             if (c == '\n') {
                 cex_lines++;
             }
         }
         log$debug("Saving cex.h: new size: %dKB lines: %d\n", sbuf.len(&hbuf) / 1024, cex_lines);
-        e$except(err, io.file.save("cex.h", hbuf)){
+        e$except(err, io.file.save("cex.h", hbuf))
+        {
             exit(1);
         }
     }
@@ -166,19 +167,18 @@ cmd_test(int argc, char** argv, void* user_ctx)
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* cmd = argparse.next(&cmd_args);
     const char* target = argparse.next(&cmd_args);
+    const char* usage =
+        "usage: ./cex test {run,build,create,clean,debug} all|test/test_file.c [--test-options]";
 
     if (!str.match(cmd, "(run|build|create|clean|debug)")) {
-        return e$raise(
-            Error.argsparse,
-            "Invalid command: '%s', expected {run, build, create, clean}",
-            cmd
-        );
+        return e$raise(Error.argsparse, "Invalid command: '%s'\n%s", cmd, usage);
     }
     if (target == NULL) {
         return e$raise(
             Error.argsparse,
-            "Invalid target: '%s', expected all or tests/test_some_file.c",
-            target
+            "Invalid target: '%s', expected all or tests/test_some_file.c\n%s",
+            target,
+            usage
         );
     }
     bool is_all = false;
@@ -253,7 +253,7 @@ cmd_test(int argc, char** argv, void* user_ctx)
                 char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
                 arr$(char*) args = arr$new(args, _);
                 if (str.eq(cmd, "debug")) {
-                    arr$pushm(args, "gdb", "--args", );
+                    arr$pushm(args, cexy$debug_cmd);
                 }
                 arr$pushm(args, test_target, );
                 if (is_all) {
