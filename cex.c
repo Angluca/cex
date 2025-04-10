@@ -187,7 +187,7 @@ cmd_test(int argc, char** argv, void* user_ctx)
         target = "tests/test_*.c";
     }
 
-    if (!str.match(target, "test*.c")) {
+    if (!str.match(target, "*test*.c")) {
         return e$raise(
             Error.argsparse,
             "Invalid target: '%s', expected all or tests/test_some_file.c",
@@ -197,7 +197,7 @@ cmd_test(int argc, char** argv, void* user_ctx)
 
     if (str.eq(cmd, "create")) {
         e$assert(!is_all && "all target is not supported by `create` command");
-        log$info("test create (TODO)");
+        e$ret(cexy.test_create(target));
         return EOK;
     } else if (str.eq(cmd, "clean")) {
         if (is_all) {

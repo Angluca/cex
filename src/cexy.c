@@ -283,7 +283,7 @@ cexy_target_make(const char* src_path, const char* build_dir, const char* name_o
 }
 
 Exception
-cexy_test_create(char* test_path) {
+cexy_test_create(const char* test_path) {
     if (os.path.exists(test_path)) {
         return e$raise(Error.exists, "Test file already exists: %s", test_path);
     }
@@ -293,7 +293,18 @@ cexy_test_create(char* test_path) {
         cg$init(&buf);
         $pn("#define CEX_IMPLEMENTATION");
         $pn("#include \"cex.h\"");
-
+        $pn("");
+        $pn("//test$setup_case() {return EOK;}");
+        $pn("//test$teardown_case() {return EOK;}");
+        $pn("//test$setup_suite() {return EOK;}");
+        $pn("//test$teardown_suite() {return EOK;}");
+        $pn("");
+        $scope("test$case(%s)", "my_test_case") {
+            $pn("tassert_eq(1, 0);");
+            $pn("return EOK;");
+        }
+        $pn("");
+        $pn("test$main();");
 
         e$ret(io.file.save(test_path, buf));
     }
@@ -307,6 +318,8 @@ const struct __module__cexy cexy = {
     .src_include_changed = cexy_src_include_changed,
     .src_changed = cexy_src_changed,
     .target_make = cexy_target_make,
+    .test_create = cexy_test_create,
     // clang-format on
 };
+
 #endif // defined(CEXBUILD)
