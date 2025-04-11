@@ -1026,12 +1026,12 @@ class CEXProcessor:
 
         ns = self.namespace
         if self.is_public_header:
-            self.ns_struct_name = f"__header__{ns}"
+            self.ns_struct_name = f"__cex_namespace__{ns}"
         else:
             if ns == ns.lower():
-                self.ns_struct_name = f"__module__{ns}"
+                self.ns_struct_name = f"__cex_namespace__{ns}"
             else:
-                self.ns_struct_name = f"__class__{ns}"
+                self.ns_struct_name = f"__cex_namespace__{ns}"
 
     @staticmethod
     def block_probe(line: str, lineno: int) -> Block | None:
@@ -1489,7 +1489,7 @@ def action_process(args):
     if os.path.isdir(src_path):
         print("CEX Updating exising modules\n")
         re_cex_module = re.compile(r"const struct __(class|module)__")
-        re_cex_header = re.compile(r"const struct __header__")
+        re_cex_header = re.compile(r"const struct __cex_namespace__")
 
         for fn in glob.glob(f"{src_path}/**/*.c", recursive=True):
             if os.path.basename(fn).startswith("test_") or os.path.basename(

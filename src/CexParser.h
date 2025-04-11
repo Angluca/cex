@@ -28,14 +28,16 @@
     X(colon) \
     X(question) \
     X(eos) \
-    X(struct) \
-    X(enum) \
+    X(typedef) \
     X(func_decl) \
     X(func_def) \
     X(macro_const) \
     X(macro_func) \
     X(var_decl) \
     X(var_def) \
+    X(cex_module_struct) \
+    X(cex_module_decl) \
+    X(cex_module_def) \
     X(global_misc) \
     X(count) \
 

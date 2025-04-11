@@ -32,9 +32,9 @@ CexParser_create(char* content, u32 content_len, bool fold_scopes)
         content_len = strlen(content);
     }
     CexParser_c lx = { .content = content,
-                      .content_end = content + content_len,
-                      .cur = content,
-                      .fold_scopes = fold_scopes };
+                       .content_end = content + content_len,
+                       .cur = content,
+                       .fold_scopes = fold_scopes };
     return lx;
 }
 
@@ -315,8 +315,8 @@ CexParser_next_token(CexParser_c* lx)
             case '?':
                 return tok$new(CexTkn__question);
             case '=': {
-                if(lx->cur > lx->content) {
-                    switch(lx->cur[-1]){
+                if (lx->cur > lx->content) {
+                    switch (lx->cur[-1]) {
                         case '=':
                         case '*':
                         case '/':
@@ -331,7 +331,7 @@ CexParser_next_token(CexParser_c* lx)
                             break;
                     }
                 }
-                switch(lx->cur[1]){
+                switch (lx->cur[1]) {
                     case '=':
                         goto unkn;
                     default:
@@ -376,10 +376,13 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
     arr$clear(*children);
     cex_token_s t;
     cex_token_s* prev_t = NULL;
+    bool has_cex_namespace = false;
     u32 i = 0;
     (void)i;
     while ((t = CexParser_next_token(lx)).type) {
+#ifdef CEXTEST
         log$debug("%02d: %S\n", i, t.value);
+#endif
         if (unlikely(!result.type)) {
             result.type = CexTkn__global_misc;
             result.value = t.value;
@@ -412,21 +415,45 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                     }
                 } else {
                     if (prev_t && prev_t->type == CexTkn__ident) {
-                        if (!str.slice.match(prev_t->value, "__attribute__")){
+                        if (!str.slice.match(prev_t->value, "__attribute__")) {
                             result.type = CexTkn__func_decl;
                         }
                     }
                 }
                 break;
             }
+            case CexTkn__brace_block: {
+                if (result.type == CexTkn__func_decl) {
+                    result.type = CexTkn__func_def;
+                    goto end;
+                }
+                break;
+            }
             case CexTkn__eq: {
-                result.type = CexTkn__var_def;
+                if (has_cex_namespace) {
+                    result.type = CexTkn__cex_module_def;
+                } else {
+                    result.type = CexTkn__var_def;
+                }
                 break;
             }
 
             case CexTkn__ident: {
-                if (str.slice.match(t.value, "extern")) {
+                if (str.slice.match(t.value, "(typedef|struct|enum|union)")) {
+                    if (result.type != CexTkn__var_decl) {
+                        result.type = CexTkn__typedef;
+                    }
+                } else if (str.slice.match(t.value, "extern")) {
                     result.type = CexTkn__var_decl;
+                } else if (str.slice.match(t.value, "__cex_namespace__*")) {
+                    has_cex_namespace = true;
+                    ;
+
+                    if (result.type == CexTkn__var_decl) {
+                        result.type = CexTkn__cex_module_decl;
+                    } else if (result.type == CexTkn__typedef) {
+                        result.type = CexTkn__cex_module_struct;
+                    }
                 }
                 break;
             }
@@ -437,7 +464,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
             }
         }
         i++;
-        prev_t = &(*children)[arr$len(*children)-1];
+        prev_t = &(*children)[arr$len(*children) - 1];
     }
 end:
     return result;
