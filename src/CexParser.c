@@ -491,13 +491,14 @@ CexParser_decl_parse(cex_token_s decl_token, arr$(cex_token_s) children, IAlloca
             return NULL;
     }
     cex_decl_s* result = mem$new(alloc, cex_decl_s);
-    if (decl_token.type == CexTkn__func_decl || decl_token.type == CexTkn__func_def) {
+    if (decl_token.type == CexTkn__func_decl || decl_token.type == CexTkn__func_def ||
+        decl_token.type == CexTkn__macro_func) {
         result->args = sbuf.create(128, alloc);
         result->ret_type = sbuf.create(128, alloc);
     }
     result->type = decl_token.type;
     const char* ignore_pattern =
-        "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec)";
+        "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec|noreturn|_Noreturn)";
 
 #define $append_fmt(buf, tok) /* temp macro, formats return type and arguments */                  \
     switch ((tok).type) {                                                                          \
@@ -546,6 +547,40 @@ CexParser_decl_parse(cex_token_s decl_token, arr$(cex_token_s) children, IAlloca
                 }
                 break;
             }
+            case CexTkn__preproc: {
+                if (decl_token.type == CexTkn__macro_func) {
+                    uassert(str.slice.starts_with(it.value, str$s("define")));
+                    isize iname_start = str.slice.index_of(it.value, str$s(" "));
+                    isize iarg_start = str.slice.index_of(it.value, str$s("("));
+                    isize iarg_end = str.slice.index_of(it.value, str$s(")"));
+
+                    if (iname_start < 0 || iarg_start < 0 || iarg_end < 0 ||
+                        iname_start > iarg_start || iarg_start > iarg_end) {
+#if defined(CEXTEST)
+                        log$error("bad macro function: %S\n", it.value);
+#endif
+                        goto fail;
+                    }
+                    result->name = str.slice.sub(it.value, iname_start + 1, iarg_start);
+                    var margs = str.slice.sub(it.value, iarg_start + 1, iarg_end);
+                    if (margs.len > 0) {
+                        e$goto(sbuf.appendf(&result->args, "%S", margs), fail);
+                    }
+                } else if (decl_token.type == CexTkn__macro_const) {
+                    uassert(str.slice.starts_with(it.value, str$s("define")));
+                    isize iname_start = str.slice.index_of(it.value, str$s(" "));
+                    if (iname_start < 0){
+                        goto fail;
+                    }
+                    var mconst = str.slice.sub(it.value, iname_start + 1, 0);
+                    iname_start = str.slice.index_of(mconst, str$s(" "));
+                    if (iname_start < 0){
+                        goto fail;
+                    }
+                    result->name = str.slice.sub(mconst, 0, iname_start);
+                }
+                break;
+            }
             case CexTkn__comment_multi:
             case CexTkn__comment_single: {
                 if (result->name.buf == NULL && sbuf.len(&result->ret_type) == 0 &&
@@ -565,6 +600,19 @@ CexParser_decl_parse(cex_token_s decl_token, arr$(cex_token_s) children, IAlloca
                 }
 
                 if (prev_t.type == CexTkn__ident) {
+                    if (result->name.buf == NULL) {
+                        if (str.slice.match(it.value, "\\(\\**\\)")) {
+#if defined(CEXTEST)
+                            // this looks a function returning function pointer,
+                            // we intentionally don't support this, use typedef func ptr
+                            log$error(
+                                "Skipping function (returns raw fn pointer, use typedef): \n%S\n",
+                                decl_token.value
+                            );
+#endif
+                            goto fail;
+                        }
+                    }
                     result->name = prev_t.value;
                 }
 

@@ -1455,6 +1455,7 @@ struct {  // sub-module .slice >>>
     bool            (*ends_with)(str_s s, str_s suffix);
     bool            (*eq)(str_s a, str_s b);
     str_s           (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
+    isize           (*index_of)(str_s s, str_s needle);
     str_s           (*lstrip)(str_s s);
     bool            (*match)(str_s s, const char* pattern);
     str_s           (*remove_prefix)(str_s s, str_s prefix);
@@ -7704,6 +7705,28 @@ str_findr(const char* haystack, const char* needle)
     return NULL;
 }
 
+static isize
+str__slice__index_of(str_s str, str_s needle)
+{
+    if (unlikely(!str.buf || !needle.buf || needle.len == 0 || needle.len > str.len)) {
+        return -1;
+    }
+    if (unlikely(needle.len == 1)) {
+        char n = needle.buf[0];
+        for (usize i = 0; i < str.len; i++) { 
+            if (str.buf[i] == n) {
+                return i;
+            }
+        }
+    } else {
+        for (usize i = 0; i <= str.len - needle.len; i++) {
+            if (memcmp(&str.buf[i], needle.buf, needle.len) == 0) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
 
 static bool
 str__slice__starts_with(str_s str, str_s prefix)
@@ -7986,13 +8009,13 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
         // First run handling
         if (unlikely(!str__isvalid(&s) || s.len == 0)) {
             iterator->stopped = 1;
-            return (str_s){0};
+            return (str_s){ 0 };
         }
         ctx->split_by_len = strlen(split_by);
 
         if (ctx->split_by_len == 0) {
             iterator->stopped = 1;
-            return (str_s){0};
+            return (str_s){ 0 };
         }
         uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
@@ -8006,7 +8029,7 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
     } else {
         if (ctx->cursor >= s.len) {
             iterator->stopped = 1;
-            return (str_s){0};
+            return (str_s){ 0 };
         }
         ctx->cursor++;
         if (unlikely(ctx->cursor == s.len)) {
@@ -8027,10 +8050,9 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
             ctx->cursor = s.len;
             // iterator->stopped = 1;
             return tok;
-        } else if(idx == 0) {
+        } else if (idx == 0) {
             return (str_s){ .buf = "", .len = 0 };
-        } 
-        else {
+        } else {
             // Sub from prev cursor to idx (excluding split char)
             ctx->cursor += idx;
             return str.slice.sub(tok, 0, idx);
@@ -8747,7 +8769,8 @@ str_join(const char** str_arr, usize str_arr_len, const char* join_by, IAllocato
 }
 
 
-static bool _str_match(const char* str, isize str_len, const char* pattern)
+static bool
+_str_match(const char* str, isize str_len, const char* pattern)
 {
     if (unlikely(str == NULL || str_len <= 0)) {
         return false;
@@ -8947,10 +8970,14 @@ static bool _str_match(const char* str, isize str_len, const char* pattern)
     return str_len == 0;
 }
 
-static bool str__slice__match(str_s s, const char* pattern) {
+static bool
+str__slice__match(str_s s, const char* pattern)
+{
     return _str_match(s.buf, s.len, pattern);
 }
-static bool str_match(const char* s, const char* pattern) {
+static bool
+str_match(const char* s, const char* pattern)
+{
     return _str_match(s, str.len(s), pattern);
 }
 
@@ -8989,6 +9016,7 @@ const struct __cex_namespace__str str = {
         .remove_prefix = str__slice__remove_prefix,
         .remove_suffix = str__slice__remove_suffix,
         .match = str__slice__match,
+        .index_of = str__slice__index_of,
         .lstrip = str__slice__lstrip,
         .rstrip = str__slice__rstrip,
         .strip = str__slice__strip,
@@ -9205,7 +9233,8 @@ sbuf_shrink(sbuf_c* self, u32 new_length)
 static u32
 sbuf_len(const sbuf_c* self)
 {
-    if (self == NULL) {
+    uassert(self != NULL);
+    if (*self == NULL) {
         return 0;
     }
     sbuf_head_s* head = sbuf__head(*self);
@@ -13124,13 +13153,14 @@ CexParser_decl_parse(cex_token_s decl_token, arr$(cex_token_s) children, IAlloca
             return NULL;
     }
     cex_decl_s* result = mem$new(alloc, cex_decl_s);
-    if (decl_token.type == CexTkn__func_decl || decl_token.type == CexTkn__func_def) {
+    if (decl_token.type == CexTkn__func_decl || decl_token.type == CexTkn__func_def ||
+        decl_token.type == CexTkn__macro_func) {
         result->args = sbuf.create(128, alloc);
         result->ret_type = sbuf.create(128, alloc);
     }
     result->type = decl_token.type;
     const char* ignore_pattern =
-        "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec)";
+        "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec|noreturn|_Noreturn)";
 
 #define $append_fmt(buf, tok) /* temp macro, formats return type and arguments */                  \
     switch ((tok).type) {                                                                          \
@@ -13179,6 +13209,40 @@ CexParser_decl_parse(cex_token_s decl_token, arr$(cex_token_s) children, IAlloca
                 }
                 break;
             }
+            case CexTkn__preproc: {
+                if (decl_token.type == CexTkn__macro_func) {
+                    uassert(str.slice.starts_with(it.value, str$s("define")));
+                    isize iname_start = str.slice.index_of(it.value, str$s(" "));
+                    isize iarg_start = str.slice.index_of(it.value, str$s("("));
+                    isize iarg_end = str.slice.index_of(it.value, str$s(")"));
+
+                    if (iname_start < 0 || iarg_start < 0 || iarg_end < 0 ||
+                        iname_start > iarg_start || iarg_start > iarg_end) {
+#if defined(CEXTEST)
+                        log$error("bad macro function: %S\n", it.value);
+#endif
+                        goto fail;
+                    }
+                    result->name = str.slice.sub(it.value, iname_start + 1, iarg_start);
+                    var margs = str.slice.sub(it.value, iarg_start + 1, iarg_end);
+                    if (margs.len > 0) {
+                        e$goto(sbuf.appendf(&result->args, "%S", margs), fail);
+                    }
+                } else if (decl_token.type == CexTkn__macro_const) {
+                    uassert(str.slice.starts_with(it.value, str$s("define")));
+                    isize iname_start = str.slice.index_of(it.value, str$s(" "));
+                    if (iname_start < 0){
+                        goto fail;
+                    }
+                    var mconst = str.slice.sub(it.value, iname_start + 1, 0);
+                    iname_start = str.slice.index_of(mconst, str$s(" "));
+                    if (iname_start < 0){
+                        goto fail;
+                    }
+                    result->name = str.slice.sub(mconst, 0, iname_start);
+                }
+                break;
+            }
             case CexTkn__comment_multi:
             case CexTkn__comment_single: {
                 if (result->name.buf == NULL && sbuf.len(&result->ret_type) == 0 &&
@@ -13198,6 +13262,19 @@ CexParser_decl_parse(cex_token_s decl_token, arr$(cex_token_s) children, IAlloca
                 }
 
                 if (prev_t.type == CexTkn__ident) {
+                    if (result->name.buf == NULL) {
+                        if (str.slice.match(it.value, "\\(\\**\\)")) {
+#if defined(CEXTEST)
+                            // this looks a function returning function pointer,
+                            // we intentionally don't support this, use typedef func ptr
+                            log$error(
+                                "Skipping function (returns raw fn pointer, use typedef): \n%S\n",
+                                decl_token.value
+                            );
+#endif
+                            goto fail;
+                        }
+                    }
                     result->name = prev_t.value;
                 }
 
