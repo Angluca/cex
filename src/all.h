@@ -18,7 +18,7 @@
 #include "src/_subprocess.h"
 #include "src/os.h"
 #include "src/cex_code_gen.h"
-#include "src/CexLexer.h"
+#include "src/CexParser.h"
 #include "src/cexy.h"
 #include "src/test.h"
 // clang-format on

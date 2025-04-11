@@ -143,9 +143,10 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
             return false;
         }
 
-        CexLexer_c lx = CexLexer_create(code, 0, true);
+        (void)CexTkn_str;
+        CexParser_c lx = CexParser_create(code, 0, true);
         cex_token_s t;
-        while ((t = CexLexer_next_token(&lx)).type) {
+        while ((t = CexParser_next_token(&lx)).type) {
             if (t.type != CexTkn__preproc) {
                 continue;
             }
@@ -405,7 +406,14 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
             }
         }
     }
-    log$info("Test run completed: %d tests, %d passed, %d failed\n", n_tests, n_tests-n_failed, n_failed);
+    if (str.ends_with(target, "test_*.c")) {
+        log$info(
+            "Test run completed: %d tests, %d passed, %d failed\n",
+            n_tests,
+            n_tests - n_failed,
+            n_failed
+        );
+    }
     return result;
 }
 

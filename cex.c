@@ -56,7 +56,7 @@ cex_bundle(void)
             "src/cex_base.h", "src/mem.h",          "src/AllocatorHeap.h", "src/AllocatorArena.h",
             "src/ds.h",       "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
             "src/io.h",       "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
-            "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexLexer.h"
+            "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexParser.h"
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
 
@@ -190,6 +190,7 @@ cmd_test(int argc, char** argv, void* user_ctx)
     }
     e$ret(cexy.test.make_target_pattern(&target)); // validation + convert 'all' -> "tests/test_*.c"
 
+    log$info("Tests building: %s\n", target);
     // Build stage
     u32 n_tests = 0;
     u32 n_built = 0;

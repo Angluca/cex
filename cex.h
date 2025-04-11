@@ -3594,56 +3594,77 @@ __attribute__ ((visibility("hidden"))) extern const struct __module__cexy cexy; 
 
 
 /*
-*                          src/CexLexer.h
+*                          src/CexParser.h
 */
 
+#define CexTknList  \
+    X(eof) \
+    X(unk) \
+    X(error) \
+    X(ident) \
+    X(number) \
+    X(string) \
+    X(char) \
+    X(comment_single) \
+    X(comment_multi) \
+    X(preproc) \
+    X(lparen) \
+    X(rparen) \
+    X(lbrace) \
+    X(rbrace) \
+    X(lbracket) \
+    X(rbracket) \
+    X(bracket_block) \
+    X(brace_block) \
+    X(paren_block) \
+    X(star) \
+    X(dot) \
+    X(comma) \
+    X(eq) \
+    X(colon) \
+    X(question) \
+    X(eos) \
+    X(struct) \
+    X(enum) \
+    X(func_decl) \
+    X(func_def) \
+    X(macro_const) \
+    X(macro_func) \
+    X(var_decl) \
+    X(var_def) \
+    X(global_misc) \
+    X(count) \
+
 typedef enum CexTkn_e {
-    CexTkn__eof = 0,
-    CexTkn__unk,
-    CexTkn__error,
-    CexTkn__ident,
-    CexTkn__number,
-    CexTkn__string,
-    CexTkn__char,
-    CexTkn__comment_single,
-    CexTkn__comment_multi,
-    CexTkn__preproc,
-    CexTkn__lparen,
-    CexTkn__rparen,
-    CexTkn__lbrace,
-    CexTkn__rbrace,
-    CexTkn__lbracket,
-    CexTkn__rbracket,
-    CexTkn__bracket_block,
-    CexTkn__brace_block,
-    CexTkn__paren_block,
-    CexTkn__star,
-    CexTkn__dot,
-    CexTkn__comma,
-    CexTkn__colon,
-    CexTkn__question,
-    CexTkn__eos, // semicolon - ;
-    CexTkn__count,  // last!
+    #define X(name) CexTkn__##name,
+    CexTknList
+    #undef X
 } CexTkn_e;
+
+static const char* CexTkn_str[] = {
+    #define X(name) cex$stringize(name),
+    CexTknList
+    #undef X
+};
 
 typedef struct cex_token_s {
     CexTkn_e type;
     str_s value;
 } cex_token_s;
 
-typedef struct CexLexer_c {
+typedef struct CexParser_c {
     char* content;
     char* cur;
     char* content_end;
     u32 line;
     bool fold_scopes;
-} CexLexer_c;
+} CexParser_c;
 
-CexLexer_c
-CexLexer_create(char* content, u32 content_len, bool fold_scopes);
+CexParser_c
+CexParser_create(char* content, u32 content_len, bool fold_scopes);
 
 cex_token_s
-CexLexer_next_token(CexLexer_c* lx);
+CexParser_next_token(CexParser_c* lx);
 
 
 
@@ -12296,9 +12317,10 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
             return false;
         }
 
-        CexLexer_c lx = CexLexer_create(code, 0, true);
+        (void)CexTkn_str;
+        CexParser_c lx = CexParser_create(code, 0, true);
         cex_token_s t;
-        while ((t = CexLexer_next_token(&lx)).type) {
+        while ((t = CexParser_next_token(&lx)).type) {
             if (t.type != CexTkn__preproc) {
                 continue;
             }
@@ -12558,7 +12580,14 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
             }
         }
     }
-    log$info("Test run completed: %d tests, %d passed, %d failed\n", n_tests, n_tests-n_failed, n_failed);
+    if (str.ends_with(target, "test_*.c")) {
+        log$info(
+            "Test run completed: %d tests, %d passed, %d failed\n",
+            n_tests,
+            n_tests - n_failed,
+            n_failed
+        );
+    }
     return result;
 }
 
@@ -12585,7 +12614,7 @@ const struct __module__cexy cexy = {
 
 
 /*
-*                          src/CexLexer.c
+*                          src/CexParser.c
 */
 
 // NOTE: lx$ are the temporary macro (will be #undef at the end of this file)
@@ -12612,14 +12641,14 @@ const struct __module__cexy cexy = {
         (c) = *lx->cur;                                                                            \
     }
 
-CexLexer_c
-CexLexer_create(char* content, u32 content_len, bool fold_scopes)
+CexParser_c
+CexParser_create(char* content, u32 content_len, bool fold_scopes)
 {
     uassert(content != NULL);
     if (content_len == 0) {
         content_len = strlen(content);
     }
-    CexLexer_c lx = { .content = content,
+    CexParser_c lx = { .content = content,
                       .content_end = content + content_len,
                       .cur = content,
                       .fold_scopes = fold_scopes };
@@ -12627,7 +12656,7 @@ CexLexer_create(char* content, u32 content_len, bool fold_scopes)
 }
 
 static cex_token_s
-CexLexer__scan_ident(CexLexer_c* lx)
+CexParser__scan_ident(CexParser_c* lx)
 {
     cex_token_s t = { .type = CexTkn__ident, .value = { .buf = lx->cur, .len = 0 } };
     char c;
@@ -12642,7 +12671,7 @@ CexLexer__scan_ident(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer__scan_number(CexLexer_c* lx)
+CexParser__scan_number(CexParser_c* lx)
 {
     cex_token_s t = { .type = CexTkn__number, .value = { .buf = lx->cur, .len = 0 } };
     char c;
@@ -12665,7 +12694,7 @@ CexLexer__scan_number(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer__scan_string(CexLexer_c* lx)
+CexParser__scan_string(CexParser_c* lx)
 {
     cex_token_s t = { .type = (*lx->cur == '"' ? CexTkn__string : CexTkn__char),
                       .value = { .buf = lx->cur + 1, .len = 0 } };
@@ -12687,7 +12716,7 @@ CexLexer__scan_string(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer__scan_comment(CexLexer_c* lx)
+CexParser__scan_comment(CexParser_c* lx)
 {
     cex_token_s t = { .type = lx->cur[1] == '/' ? CexTkn__comment_single : CexTkn__comment_multi,
                       .value = { .buf = lx->cur, .len = 2 } };
@@ -12718,7 +12747,7 @@ CexLexer__scan_comment(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer__scan_preproc(CexLexer_c* lx)
+CexParser__scan_preproc(CexParser_c* lx)
 {
     lx$next(lx);
     char c = *lx->cur;
@@ -12741,7 +12770,7 @@ CexLexer__scan_preproc(CexLexer_c* lx)
 }
 
 static cex_token_s
-CexLexer__scan_scope(CexLexer_c* lx)
+CexParser__scan_scope(CexParser_c* lx)
 {
     cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
 
@@ -12814,13 +12843,13 @@ CexLexer__scan_scope(CexLexer_c* lx)
                     break;
                 case '"':
                 case '\'': {
-                    var s = CexLexer__scan_string(lx);
+                    var s = CexParser__scan_string(lx);
                     t.value.len += s.value.len + 2;
                     continue;
                 }
                 case '/': {
                     if (lx->cur[1] == '/' || lx->cur[1] == '*') {
-                        var s = CexLexer__scan_comment(lx);
+                        var s = CexParser__scan_comment(lx);
                         t.value.len += s.value.len;
                         continue;
                     }
@@ -12828,7 +12857,7 @@ CexLexer__scan_scope(CexLexer_c* lx)
                 }
                 case '#': {
                     char* ppstart = lx->cur;
-                    var s = CexLexer__scan_preproc(lx);
+                    var s = CexParser__scan_preproc(lx);
                     if (s.value.buf) {
                         t.value.len += s.value.len + (s.value.buf - ppstart) + 1;
                     }
@@ -12856,7 +12885,7 @@ CexLexer__scan_scope(CexLexer_c* lx)
 }
 
 cex_token_s
-CexLexer_next_token(CexLexer_c* lx)
+CexParser_next_token(CexParser_c* lx)
 {
 
 #define tok$new(tok_type)                                                                          \
@@ -12873,19 +12902,19 @@ CexLexer_next_token(CexLexer_c* lx)
         }
 
         if (isalpha(c) || c == '_') {
-            return CexLexer__scan_ident(lx);
+            return CexParser__scan_ident(lx);
         }
         if (isdigit(c)) {
-            return CexLexer__scan_number(lx);
+            return CexParser__scan_number(lx);
         }
 
         switch (c) {
             case '\'':
             case '"':
-                return CexLexer__scan_string(lx);
+                return CexParser__scan_string(lx);
             case '/':
                 if (lx->cur[1] == '/' || lx->cur[1] == '*') {
-                    return CexLexer__scan_comment(lx);
+                    return CexParser__scan_comment(lx);
                 } else {
                     break;
                 }
@@ -12902,10 +12931,36 @@ CexLexer_next_token(CexLexer_c* lx)
                 return tok$new(CexTkn__colon);
             case '?':
                 return tok$new(CexTkn__question);
+            case '=': {
+                if(lx->cur > lx->content) {
+                    switch(lx->cur[-1]){
+                        case '=':
+                        case '*':
+                        case '/':
+                        case '~':
+                        case '!':
+                        case '+':
+                        case '-':
+                        case '>':
+                        case '<':
+                            goto unkn;
+                        default:
+                            break;
+                    }
+                }
+                switch(lx->cur[1]){
+                    case '=':
+                        goto unkn;
+                    default:
+                        break;
+                }
+
+                return tok$new(CexTkn__eq);
+            }
             case '{':
             case '(':
             case '[':
-                return CexLexer__scan_scope(lx);
+                return CexParser__scan_scope(lx);
             case '}':
                 return tok$new(CexTkn__rbrace);
             case ')':
@@ -12913,16 +12968,96 @@ CexLexer_next_token(CexLexer_c* lx)
             case ']':
                 return tok$new(CexTkn__rbracket);
             case '#':
-                return CexLexer__scan_preproc(lx);
+                return CexParser__scan_preproc(lx);
             default:
                 break;
         }
 
+
+    unkn:
         return tok$new(CexTkn__unk);
     }
 
 #undef tok$new
     return (cex_token_s){ 0 }; // EOF
+}
+
+cex_token_s
+CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
+{
+    uassert(lx->fold_scopes && "CexParser must be with fold_scopes=true");
+    uassert(children != NULL && "non initialized arr$");
+    uassert(*children != NULL && "non initialized arr$");
+    cex_token_s result = { 0 };
+
+    arr$clear(*children);
+    cex_token_s t;
+    cex_token_s* prev_t = NULL;
+    u32 i = 0;
+    (void)i;
+    while ((t = CexParser_next_token(lx)).type) {
+        log$debug("%02d: %S\n", i, t.value);
+        if (unlikely(!result.type)) {
+            result.type = CexTkn__global_misc;
+            result.value = t.value;
+            if (t.type == CexTkn__preproc) {
+                result.value.buf--;
+                result.value.len++;
+            }
+        } else {
+            // Extend token text
+            result.value.len = t.value.buf - result.value.buf + t.value.len;
+            uassert(result.value.len < 1024 * 1024 && "token diff it too high, bad pointers?");
+        }
+        arr$push(*children, t);
+        switch (t.type) {
+            case CexTkn__preproc: {
+                if (str.slice.match(t.value, "define *\\(*\\)*")) {
+                    result.type = CexTkn__macro_func;
+                } else if (str.slice.match(t.value, "define *")) {
+                    result.type = CexTkn__macro_const;
+                } else {
+                    result.type = CexTkn__preproc;
+                }
+                goto end;
+            }
+            case CexTkn__paren_block: {
+                if (result.type == CexTkn__var_decl) {
+                    // Check if not __attribute__(())
+                    if (!str.slice.match(t.value, "\\(\\(*\\)\\)")) {
+                        result.type = CexTkn__func_decl;
+                    }
+                } else {
+                    if (prev_t && prev_t->type == CexTkn__ident) {
+                        if (!str.slice.match(prev_t->value, "__attribute__")){
+                            result.type = CexTkn__func_decl;
+                        }
+                    }
+                }
+                break;
+            }
+            case CexTkn__eq: {
+                result.type = CexTkn__var_def;
+                break;
+            }
+
+            case CexTkn__ident: {
+                if (str.slice.match(t.value, "extern")) {
+                    result.type = CexTkn__var_decl;
+                }
+                break;
+            }
+            case CexTkn__eos: {
+                goto end;
+            }
+            default: {
+            }
+        }
+        i++;
+        prev_t = &(*children)[arr$len(*children)-1];
+    }
+end:
+    return result;
 }
 
 #undef lx$next
