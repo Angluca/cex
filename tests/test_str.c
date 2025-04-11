@@ -2251,4 +2251,32 @@ test$case(test_str_slice_match)
     tassert(!str.slice.match(str.slice.sub(src, 0, 4), "my_t?"));
     return EOK;
 }
+
+test$case(test_slice_index_of)
+{
+
+    str_s s = str$s("1234");
+    tassert_eq(-1, str.slice.index_of(s, (str_s){0}));
+    tassert_eq(-1, str.slice.index_of(s, (str_s){0, "sd"}));
+    tassert_eq(-1, str.slice.index_of(s, (str_s){0, "sd"}));
+
+    tassert_eq(-1, str.slice.index_of((str_s){0}, str$s("foo")));
+    tassert_eq(-1, str.slice.index_of((str_s){0, "sd"}, str$s("foo")));
+    tassert_eq(-1, str.slice.index_of((str_s){0, "sd"}, str$s("foo")));
+    tassert_eq(-1, str.slice.index_of(str$s("fo"), str$s("foo")));
+
+    tassert_eq(-1, str.slice.index_of(s, str$s("")));
+    tassert_eq(0, str.slice.index_of(s, str$s("1")));
+    tassert_eq(2, str.slice.index_of(s, str$s("3")));
+    tassert_eq(3, str.slice.index_of(s, str$s("4")));
+    tassert_eq(-1, str.slice.index_of(s, str$s("5")));
+    
+
+    tassert_eq(-1, str.slice.index_of(s, str$s("12345")));
+    tassert_eq(1, str.slice.index_of(s, str$s("234")));
+    tassert_eq(2, str.slice.index_of(s, str$s("34")));
+    tassert_eq(0, str.slice.index_of(s, str$s("1234")));
+
+    return EOK;
+}
 test$main();
