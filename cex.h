@@ -3597,64 +3597,67 @@ __attribute__ ((visibility("hidden"))) extern const struct __cex_namespace__cexy
 *                          src/CexParser.h
 */
 
-#define CexTknList  \
-    X(eof) \
-    X(unk) \
-    X(error) \
-    X(ident) \
-    X(number) \
-    X(string) \
-    X(char) \
-    X(comment_single) \
-    X(comment_multi) \
-    X(preproc) \
-    X(lparen) \
-    X(rparen) \
-    X(lbrace) \
-    X(rbrace) \
-    X(lbracket) \
-    X(rbracket) \
-    X(bracket_block) \
-    X(brace_block) \
-    X(paren_block) \
-    X(star) \
-    X(dot) \
-    X(comma) \
-    X(eq) \
-    X(colon) \
-    X(question) \
-    X(eos) \
-    X(typedef) \
-    X(func_decl) \
-    X(func_def) \
-    X(macro_const) \
-    X(macro_func) \
-    X(var_decl) \
-    X(var_def) \
-    X(cex_module_struct) \
-    X(cex_module_decl) \
-    X(cex_module_def) \
-    X(global_misc) \
-    X(count) \
+#define CexTknList                                                                                 \
+    X(eof)                                                                                         \
+    X(unk)                                                                                         \
+    X(error)                                                                                       \
+    X(ident)                                                                                       \
+    X(number)                                                                                      \
+    X(string)                                                                                      \
+    X(char)                                                                                        \
+    X(comment_single)                                                                              \
+    X(comment_multi)                                                                               \
+    X(preproc)                                                                                     \
+    X(lparen)                                                                                      \
+    X(rparen)                                                                                      \
+    X(lbrace)                                                                                      \
+    X(rbrace)                                                                                      \
+    X(lbracket)                                                                                    \
+    X(rbracket)                                                                                    \
+    X(bracket_block)                                                                               \
+    X(brace_block)                                                                                 \
+    X(paren_block)                                                                                 \
+    X(star)                                                                                        \
+    X(dot)                                                                                         \
+    X(comma)                                                                                       \
+    X(eq)                                                                                          \
+    X(colon)                                                                                       \
+    X(question)                                                                                    \
+    X(eos)                                                                                         \
+    X(typedef)                                                                                     \
+    X(func_decl)                                                                                   \
+    X(func_def)                                                                                    \
+    X(macro_const)                                                                                 \
+    X(macro_func)                                                                                  \
+    X(var_decl)                                                                                    \
+    X(var_def)                                                                                     \
+    X(cex_module_struct)                                                                           \
+    X(cex_module_decl)                                                                             \
+    X(cex_module_def)                                                                              \
+    X(global_misc)                                                                                 \
+    X(count)
 
-typedef enum CexTkn_e {
-    #define X(name) CexTkn__##name,
+typedef enum CexTkn_e
+{
+#define X(name) CexTkn__##name,
     CexTknList
-    #undef X
+#undef X
 } CexTkn_e;
 
 static const char* CexTkn_str[] = {
-    #define X(name) cex$stringize(name),
+#define X(name) cex$stringize(name),
     CexTknList
-    #undef X
+#undef X
 };
 
-typedef struct cex_token_s {
+typedef struct cex_token_s
+{
     CexTkn_e type;
     str_s value;
 } cex_token_s;
 
-typedef struct CexParser_c {
+typedef struct CexParser_c
+{
     char* content;
     char* cur;
     char* content_end;
@@ -3662,12 +3665,21 @@ typedef struct CexParser_c {
     bool fold_scopes;
 } CexParser_c;
 
-CexParser_c
-CexParser_create(char* content, u32 content_len, bool fold_scopes);
+typedef struct cex_decl_s
+{
+    str_s name;      // must be 1st for sorting
+    str_s docs;      // reference to closest /// or /** block
+    str_s body;      // reference to code {} if applicable
+    sbuf_c ret_type; // refined return type
+    sbuf_c args;     // refined argument list
+    CexTkn_e type;   // decl type (typedef, func, macro, etc)
+    bool is_static;
+    bool is_inline;
+} cex_decl_s;
 
-cex_token_s
-CexParser_next_token(CexParser_c* lx);
+CexParser_c CexParser_create(char* content, u32 content_len, bool fold_scopes);
 
+cex_token_s CexParser_next_token(CexParser_c* lx);
 
 
 
@@ -9193,7 +9205,9 @@ sbuf_shrink(sbuf_c* self, u32 new_length)
 static u32
 sbuf_len(const sbuf_c* self)
 {
-    uassert(self != NULL);
+    if (self == NULL) {
+        return 0;
+    }
     sbuf_head_s* head = sbuf__head(*self);
     return head->length;
 }
@@ -12663,7 +12677,7 @@ CexParser__scan_ident(CexParser_c* lx)
     cex_token_s t = { .type = CexTkn__ident, .value = { .buf = lx->cur, .len = 0 } };
     char c;
     while ((c = lx$next(lx))) {
-        if (!(isalpha(c) || c == '_' || c == '$')) {
+        if (!(isalnum(c) || c == '_' || c == '$')) {
             lx$rewind(lx);
             break;
         }
@@ -12903,7 +12917,7 @@ CexParser_next_token(CexParser_c* lx)
             break;
         }
 
-        if (isalpha(c) || c == '_') {
+        if (isalpha(c) || c == '_' || c == '$') {
             return CexParser__scan_ident(lx);
         }
         if (isdigit(c)) {
@@ -12999,7 +13013,9 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
     u32 i = 0;
     (void)i;
     while ((t = CexParser_next_token(lx)).type) {
-        log$debug("%02d: %S\n", i, t.value);
+#ifdef CEXTEST
+        log$debug("%02d: %-15s %S\n", i, CexTkn_str[t.type], t.value);
+#endif
         if (unlikely(!result.type)) {
             result.type = CexTkn__global_misc;
             result.value = t.value;
@@ -13026,9 +13042,8 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
             }
             case CexTkn__paren_block: {
                 if (result.type == CexTkn__var_decl) {
-                    // Check if not __attribute__(())
                     if (!str.slice.match(t.value, "\\(\\(*\\)\\)")) {
-                        result.type = CexTkn__func_decl;
+                        result.type = CexTkn__func_decl; // Check if not __attribute__(())
                     }
                 } else {
                     if (prev_t && prev_t->type == CexTkn__ident) {
@@ -13062,12 +13077,11 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                     }
                 } else if (str.slice.match(t.value, "extern")) {
                     result.type = CexTkn__var_decl;
-                } else if(str.slice.match(t.value, "__cex_namespace__*")) {
-                    has_cex_namespace = true;;
-
+                } else if (str.slice.match(t.value, "__cex_namespace__*")) {
+                    has_cex_namespace = true;
                     if (result.type == CexTkn__var_decl) {
-                        result.type = CexTkn__cex_module_decl; 
-                    } else if(result.type == CexTkn__typedef) {
+                        result.type = CexTkn__cex_module_decl;
+                    } else if (result.type == CexTkn__typedef) {
                         result.type = CexTkn__cex_module_struct;
                     }
                 }
@@ -13085,6 +13099,128 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
 end:
     return result;
 }
+
+void
+CexParser_decl_free(cex_decl_s* decl, IAllocator alloc)
+{
+    (void)alloc; // maybe used in the future
+    if (decl) {
+        sbuf.destroy(&decl->args);
+        sbuf.destroy(&decl->ret_type);
+    }
+}
+
+cex_decl_s*
+CexParser_decl_parse(cex_token_s decl_token, arr$(cex_token_s) children, IAllocator alloc)
+{
+    (void)children;
+    switch (decl_token.type) {
+        case CexTkn__func_decl:
+        case CexTkn__func_def:
+        case CexTkn__macro_func:
+        case CexTkn__macro_const:
+            break;
+        default:
+            return NULL;
+    }
+    cex_decl_s* result = mem$new(alloc, cex_decl_s);
+    if (decl_token.type == CexTkn__func_decl || decl_token.type == CexTkn__func_def) {
+        result->args = sbuf.create(128, alloc);
+        result->ret_type = sbuf.create(128, alloc);
+    }
+    result->type = decl_token.type;
+    const char* ignore_pattern =
+        "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec)";
+
+    cex_token_s prev_t = { 0 };
+    bool prev_skipped = false;
+    for$each(it, children)
+    {
+        if (it.type == CexTkn__ident) {
+            if (str.slice.eq(it.value, str$s("static"))) {
+                result->is_static = true;
+            }
+            if (str.slice.eq(it.value, str$s("inline"))) {
+                result->is_inline = true;
+            }
+            if (str.slice.match(it.value, ignore_pattern)) {
+                prev_skipped = true;
+                // GCC attribute
+                continue;
+            }
+        } else if (it.type == CexTkn__bracket_block) {
+            if (str.slice.starts_with(it.value, str$s("[["))) {
+                // Clang/C23 attribute
+                continue;
+            }
+        } else if (it.type == CexTkn__comment_multi || it.type == CexTkn__comment_single) {
+            if (result->name.buf == NULL && sbuf.len(&result->ret_type) == 0 &&
+                sbuf.len(&result->args) == 0) {
+                result->docs = it.value;
+            }
+        } else if (it.type == CexTkn__brace_block) {
+            result->body = it.value;
+        } else if (it.type == CexTkn__paren_block) {
+            if (prev_skipped) {
+                prev_skipped = false;
+                continue;
+            }
+
+            if (prev_t.type == CexTkn__ident) {
+                result->name = prev_t.value;
+            }
+
+            if (it.value.len > 2) {
+                // strip initial ()
+                CexParser_c lx = CexParser_create(it.value.buf + 1, it.value.len - 2, true);
+                cex_token_s t = { 0 };
+                bool skip_next = false;
+                while ((t = CexParser_next_token(&lx)).type) {
+#ifdef CEXTEST
+                    log$debug("arg token: type: %s '%S'\n", CexTkn_str[t.type], t.value);
+#endif
+                    if (t.type == CexTkn__ident && str.slice.match(t.value, ignore_pattern)) {
+                        skip_next = true;
+                        continue;
+                    }
+                    if (t.type == CexTkn__paren_block && skip_next) {
+                        skip_next = false;
+                        continue;
+                    }
+                    if (str.slice.starts_with(t.value, str$s("[["))) {
+                        continue;
+                    }
+
+                    switch (t.type) {
+                        case CexTkn__eof:
+                        case CexTkn__comma:
+                        case CexTkn__star:
+                        case CexTkn__rbracket:
+                        case CexTkn__lbracket:
+                            break;
+                        default:
+                            if (sbuf.len(&result->args) > 0) {
+                                e$goto(sbuf.append(&result->args, " "), fail);
+                            }
+                    }
+
+                    e$goto(sbuf.appendf(&result->args, "%S", t.value), fail);
+
+                    skip_next = false;
+                }
+            }
+        }
+        prev_skipped = false;
+        prev_t = it;
+    }
+
+    return result;
+
+fail:
+    CexParser_decl_free(result, alloc);
+    return NULL;
+}
+
 
 #undef lx$next
 #undef lx$peek

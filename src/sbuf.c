@@ -188,7 +188,9 @@ sbuf_shrink(sbuf_c* self, u32 new_length)
 static u32
 sbuf_len(const sbuf_c* self)
 {
-    uassert(self != NULL);
+    if (self == NULL) {
+        return 0;
+    }
     sbuf_head_s* head = sbuf__head(*self);
     return head->length;
 }

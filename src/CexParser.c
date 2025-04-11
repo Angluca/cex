@@ -44,7 +44,7 @@ CexParser__scan_ident(CexParser_c* lx)
     cex_token_s t = { .type = CexTkn__ident, .value = { .buf = lx->cur, .len = 0 } };
     char c;
     while ((c = lx$next(lx))) {
-        if (!(isalpha(c) || c == '_' || c == '$')) {
+        if (!(isalnum(c) || c == '_' || c == '$')) {
             lx$rewind(lx);
             break;
         }
@@ -284,7 +284,7 @@ CexParser_next_token(CexParser_c* lx)
             break;
         }
 
-        if (isalpha(c) || c == '_') {
+        if (isalpha(c) || c == '_' || c == '$') {
             return CexParser__scan_ident(lx);
         }
         if (isdigit(c)) {
@@ -381,7 +381,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
     (void)i;
     while ((t = CexParser_next_token(lx)).type) {
 #ifdef CEXTEST
-        log$debug("%02d: %S\n", i, t.value);
+        log$debug("%02d: %-15s %S\n", i, CexTkn_str[t.type], t.value);
 #endif
         if (unlikely(!result.type)) {
             result.type = CexTkn__global_misc;
@@ -409,9 +409,8 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
             }
             case CexTkn__paren_block: {
                 if (result.type == CexTkn__var_decl) {
-                    // Check if not __attribute__(())
                     if (!str.slice.match(t.value, "\\(\\(*\\)\\)")) {
-                        result.type = CexTkn__func_decl;
+                        result.type = CexTkn__func_decl; // Check if not __attribute__(())
                     }
                 } else {
                     if (prev_t && prev_t->type == CexTkn__ident) {
@@ -447,8 +446,6 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                     result.type = CexTkn__var_decl;
                 } else if (str.slice.match(t.value, "__cex_namespace__*")) {
                     has_cex_namespace = true;
-                    ;
-
                     if (result.type == CexTkn__var_decl) {
                         result.type = CexTkn__cex_module_decl;
                     } else if (result.type == CexTkn__typedef) {
@@ -469,6 +466,128 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
 end:
     return result;
 }
+
+void
+CexParser_decl_free(cex_decl_s* decl, IAllocator alloc)
+{
+    (void)alloc; // maybe used in the future
+    if (decl) {
+        sbuf.destroy(&decl->args);
+        sbuf.destroy(&decl->ret_type);
+    }
+}
+
+cex_decl_s*
+CexParser_decl_parse(cex_token_s decl_token, arr$(cex_token_s) children, IAllocator alloc)
+{
+    (void)children;
+    switch (decl_token.type) {
+        case CexTkn__func_decl:
+        case CexTkn__func_def:
+        case CexTkn__macro_func:
+        case CexTkn__macro_const:
+            break;
+        default:
+            return NULL;
+    }
+    cex_decl_s* result = mem$new(alloc, cex_decl_s);
+    if (decl_token.type == CexTkn__func_decl || decl_token.type == CexTkn__func_def) {
+        result->args = sbuf.create(128, alloc);
+        result->ret_type = sbuf.create(128, alloc);
+    }
+    result->type = decl_token.type;
+    const char* ignore_pattern =
+        "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec)";
+
+    cex_token_s prev_t = { 0 };
+    bool prev_skipped = false;
+    for$each(it, children)
+    {
+        if (it.type == CexTkn__ident) {
+            if (str.slice.eq(it.value, str$s("static"))) {
+                result->is_static = true;
+            }
+            if (str.slice.eq(it.value, str$s("inline"))) {
+                result->is_inline = true;
+            }
+            if (str.slice.match(it.value, ignore_pattern)) {
+                prev_skipped = true;
+                // GCC attribute
+                continue;
+            }
+        } else if (it.type == CexTkn__bracket_block) {
+            if (str.slice.starts_with(it.value, str$s("[["))) {
+                // Clang/C23 attribute
+                continue;
+            }
+        } else if (it.type == CexTkn__comment_multi || it.type == CexTkn__comment_single) {
+            if (result->name.buf == NULL && sbuf.len(&result->ret_type) == 0 &&
+                sbuf.len(&result->args) == 0) {
+                result->docs = it.value;
+            }
+        } else if (it.type == CexTkn__brace_block) {
+            result->body = it.value;
+        } else if (it.type == CexTkn__paren_block) {
+            if (prev_skipped) {
+                prev_skipped = false;
+                continue;
+            }
+
+            if (prev_t.type == CexTkn__ident) {
+                result->name = prev_t.value;
+            }
+
+            if (it.value.len > 2) {
+                // strip initial ()
+                CexParser_c lx = CexParser_create(it.value.buf + 1, it.value.len - 2, true);
+                cex_token_s t = { 0 };
+                bool skip_next = false;
+                while ((t = CexParser_next_token(&lx)).type) {
+#ifdef CEXTEST
+                    log$debug("arg token: type: %s '%S'\n", CexTkn_str[t.type], t.value);
+#endif
+                    if (t.type == CexTkn__ident && str.slice.match(t.value, ignore_pattern)) {
+                        skip_next = true;
+                        continue;
+                    }
+                    if (t.type == CexTkn__paren_block && skip_next) {
+                        skip_next = false;
+                        continue;
+                    }
+                    if (str.slice.starts_with(t.value, str$s("[["))) {
+                        continue;
+                    }
+
+                    switch (t.type) {
+                        case CexTkn__eof:
+                        case CexTkn__comma:
+                        case CexTkn__star:
+                        case CexTkn__rbracket:
+                        case CexTkn__lbracket:
+                            break;
+                        default:
+                            if (sbuf.len(&result->args) > 0) {
+                                e$goto(sbuf.append(&result->args, " "), fail);
+                            }
+                    }
+
+                    e$goto(sbuf.appendf(&result->args, "%S", t.value), fail);
+
+                    skip_next = false;
+                }
+            }
+        }
+        prev_skipped = false;
+        prev_t = it;
+    }
+
+    return result;
+
+fail:
+    CexParser_decl_free(result, alloc);
+    return NULL;
+}
+
 
 #undef lx$next
 #undef lx$peek

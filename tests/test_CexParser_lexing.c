@@ -264,6 +264,7 @@ test$case(test_token_brace_parens_brackets)
     return EOK;
 }
 
+
 test$case(test_token_paren_block)
 {
     // <code>, <token txt>, <token_type>
@@ -338,13 +339,12 @@ test$case(test_token_paren_block_overflow_test)
 test$case(test_token_misc)
 {
     // <code>, <token txt>, <token_type>
-    token_cmp_s tokens[] = {
-        { "*", "*", CexTkn__star }, { ".", ".", CexTkn__dot },   { ",", ",", CexTkn__comma },
-        { ";", ";", CexTkn__eos },  { ":", ":", CexTkn__colon }, { "?", "?", CexTkn__question },
-        { "=", "=", CexTkn__eq },
+    token_cmp_s tokens[] = { { "*", "*", CexTkn__star },  { ".", ".", CexTkn__dot },
+                             { ",", ",", CexTkn__comma }, { ";", ";", CexTkn__eos },
+                             { ":", ":", CexTkn__colon }, { "?", "?", CexTkn__question },
+                             { "=", "=", CexTkn__eq },
 
-        { "=*", "=", CexTkn__eq }
-    };
+                             { "=*", "=", CexTkn__eq } };
     for$each(it, tokens)
     {
         CexParser_c lx = CexParser_create(it.code, 0, false);
@@ -451,7 +451,7 @@ test$case(test_token_this_file)
     while ((t = CexParser_next_token(&lx)).type) {
         /* NOTE:
          * Tokenize this file, and make sure that all test functions are parsed correctly
-        */
+         */
         // io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
 
         tassertf(t.type != CexTkn__unk, "step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
@@ -459,21 +459,21 @@ test$case(test_token_this_file)
         if (t.type == CexTkn__brace_block) {
             tassert(str.slice.starts_with(t.value, str$s("{")));
             tassert(str.slice.ends_with(t.value, str$s("}")));
-        } 
+        }
         if (t.type == CexTkn__paren_block) {
             tassert(str.slice.starts_with(t.value, str$s("(")));
             tassert(str.slice.ends_with(t.value, str$s(")")));
-        } 
+        }
         if (t.type == CexTkn__bracket_block) {
             tassert(str.slice.starts_with(t.value, str$s("[")));
             tassert(str.slice.ends_with(t.value, str$s("]")));
-        } 
+        }
         nit++;
         prev_tok = lx.cur;
     }
-    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof); 
-    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof); 
-    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof); 
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
     mem$free(mem$, code);
     return EOK;
 }
@@ -488,7 +488,7 @@ test$case(test_token_json)
     CexParser_c lx = CexParser_create(code, 0, false);
     cex_token_s t;
     u32 nit = 0;
-    while( (t = CexParser_next_token(&lx)).type){
+    while ((t = CexParser_next_token(&lx)).type) {
         io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
     }
     t = CexParser_next_token(&lx);
@@ -503,4 +503,40 @@ test$case(test_token_json)
     return EOK;
 }
 
+test$case(test_token_idents)
+{
+    // <code>, <token txt>, <token_type>
+    token_cmp_s tokens[] = {
+        { "foo", "foo", CexTkn__ident },           { "foo_bar", "foo_bar", CexTkn__ident },
+        { "_foo_bar", "_foo_bar", CexTkn__ident }, { "_foo$bar", "_foo$bar", CexTkn__ident },
+        { "$foo$bar", "$foo$bar", CexTkn__ident },
+        { "FOO", "FOO", CexTkn__ident },
+        { "FOO2", "FOO2", CexTkn__ident },
+        { "2FOO", "2FOO", CexTkn__number },
+        { "FOO2(", "FOO2", CexTkn__ident },
+    };
+    for$each(it, tokens)
+    {
+        CexParser_c lx = CexParser_create(it.code, 0, false);
+        tassert(*lx.cur);
+        cex_token_s t = CexParser_next_token(&lx);
+        tassertf(
+            t.type == it.type,
+            "code='%s', type_exp=%s, type_act=%s",
+            it.code,
+            CexTkn_str[it.type],
+            CexTkn_str[t.type]
+        );
+        tassertf(
+            str.slice.eq(t.value, str.sstr(it.exp_token)),
+            "code='%s', val_exp='%s' val_value='%S'",
+            it.code,
+            it.exp_token,
+            t.value
+        );
+        tassert(t.value.buf >= it.code && t.value.buf <= it.code + strlen(it.code));
+    }
+
+    return EOK;
+}
 test$main();
