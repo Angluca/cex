@@ -366,7 +366,7 @@ test$case(test_funcs_decl_parse_ret_type)
         tassert(d != NULL);
         tassert_eq(d->type, CexTkn__func_def);
         tassert_eq(d->name, str$s("add"));
-        tassert_eq(d->ret_type, "int");
+        tassert_eq(d->ret_type, "int*");
 
 
     }
