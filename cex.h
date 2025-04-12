@@ -13545,14 +13545,13 @@ CexParser_decl_parse(
                 }
                 if (str.slice.match(it.value, ignore_pattern)) {
                     prev_skipped = true;
-                    // GCC attribute
                     continue;
                 }
                 if (ignore_keywords_pattern && str.slice.match(it.value, ignore_keywords_pattern)) {
                     prev_skipped = true;
-                    // GCC attribute
                     continue;
                 }
+                prev_skipped = false;
                 break;
             }
             case CexTkn__bracket_block: {
@@ -13658,6 +13657,7 @@ CexParser_decl_parse(
         case CexTkn__eof:                                                                          \
         case CexTkn__comma:                                                                        \
         case CexTkn__star:                                                                         \
+        case CexTkn__dot:                                                                          \
         case CexTkn__rbracket:                                                                     \
         case CexTkn__lbracket:                                                                     \
         case CexTkn__lparen:                                                                       \
@@ -13702,6 +13702,9 @@ CexParser_decl_parse(
                     }
                     break;
                 }
+                case CexTkn__comment_multi:
+                case CexTkn__comment_single:
+                    continue;
                 case CexTkn__paren_block: {
                     if (prev_skipped) {
                         prev_skipped = false;
@@ -13712,6 +13715,7 @@ CexParser_decl_parse(
                 default:
                     $append_fmt(result->ret_type, it);
             }
+            prev_skipped = false;
         }
     }
 
@@ -13725,24 +13729,39 @@ CexParser_decl_parse(
 #ifdef CEXTEST
             log$trace("arg token: type: %s '%S'\n", CexTkn_str[t.type], t.value);
 #endif
-            if (t.type == CexTkn__ident) {
-                if (str.slice.match(t.value, ignore_pattern)) {
-                    skip_next = true;
-                    continue;
+            switch (t.type) {
+                case CexTkn__ident: {
+                    if (str.slice.match(t.value, ignore_pattern)) {
+                        skip_next = true;
+                        continue;
+                    }
+                    if (ignore_keywords_pattern &&
+                        str.slice.match(t.value, ignore_keywords_pattern)) {
+                        skip_next = true;
+                        continue;
+                    }
+                    break;
                 }
-                if (ignore_keywords_pattern && str.slice.match(t.value, ignore_keywords_pattern)) {
-                    skip_next = true;
+                case CexTkn__paren_block: {
+                    if (skip_next) {
+                        skip_next = false;
+                        continue;
+                    }
+                    break;
+                }
+                case CexTkn__comment_multi:
+                case CexTkn__comment_single:
                     continue;
+                case CexTkn__bracket_block: {
+                    if (str.slice.starts_with(t.value, str$s("[["))) {
+                        continue;
+                    }
+                    fallthrough();
+                }
+                default: {
+                    break;
                 }
             }
-            if (t.type == CexTkn__paren_block && skip_next) {
-                skip_next = false;
-                continue;
-            }
-            if (str.slice.starts_with(t.value, str$s("[["))) {
-                continue;
-            }
-
             $append_fmt(result->args, t);
             skip_next = false;
         }

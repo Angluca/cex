@@ -1,3 +1,4 @@
+#define CEX_LOG_LVL 8
 #include "src/all.c"
 
 // test$setup_case() {return EOK;}
@@ -324,6 +325,81 @@ test$case(test_funcs_decl_parse)
     return EOK;
 }
 
+test$case(test_funcs_def_parse_args)
+{
+    // clang-format off
+    char* code = 
+        "int add(int a, int* b); \n"
+        "int add(int a, int b) { return 0; } \n"
+        "int add(int a, int restrict b) { return 0; } \n"
+        "int add(int a, int foo(bar) b) { return 0; } \n"
+        "int add(int a, int foo const* b) { return 0; } \n"
+        "int add(int a, int /*foo const*/ * b) { return 0; } \n"
+        "int add_va(int a, ...) { return 0; } \n"
+        "";
+    CexParser_c lx = CexParser_create(code, 0, true);
+    cex_token_s t;
+    mem$scope(tmem$, _){
+        arr$(cex_token_s) items = arr$new(items, _);
+
+        t = CexParser_next_entity(&lx, &items);
+        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        tassert_eq(t.type, CexTkn__func_decl);
+
+
+        cex_decl_s* d = CexParser_decl_parse(t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_decl);
+        tassert_eq(d->name, str$s("add"));
+        tassert_eq(d->args, "int a, int* b");
+        
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser_decl_parse(t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("add"));
+        tassert_eq(d->args, "int a, int b");
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser_decl_parse(t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("add"));
+        tassert_eq(d->args, "int a, int b");
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser_decl_parse(t, items, "foo", _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("add"));
+        tassert_eq(d->args, "int a, int b");
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser_decl_parse(t, items, "foo", _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("add"));
+        tassert_eq(d->args, "int a, int const* b");
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser_decl_parse(t, items, "foo", _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("add"));
+        tassert_eq(d->args, "int a, int* b");
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser_decl_parse(t, items, "foo", _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("add_va"));
+        tassert_eq(d->args, "int a,...");
+
+    }
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    return EOK;
+}
+
 test$case(test_funcs_decl_parse_ret_type)
 {
     // clang-format off
@@ -340,6 +416,8 @@ test$case(test_funcs_decl_parse_ret_type)
         "__int128 add(int a, int b) { return 0; } \n"
         "__attribute__((foo)) int add(int a, int b) { return 0; } \n"
         "int (*func())() {}\n"
+        "static arr$(char*) str_split(const char* s, const char* split_by, IAllocator allc){return 0;}\n"
+        "static /* comment */ arr$(char*) str_split(const char* s, const char* split_by, IAllocator allc){return 0;}\n"
         "";
     CexParser_c lx = CexParser_create(code, 0, true);
     cex_token_s t;
@@ -431,10 +509,23 @@ test$case(test_funcs_decl_parse_ret_type)
         tassert_eq(d->name, str$s("add"));
         tassert_eq(d->ret_type, "int");
 
-
         t = CexParser_next_entity(&lx, &items);
         d = CexParser_decl_parse(t, items, NULL, _);
         tassert(d == NULL);
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser_decl_parse(t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("str_split"));
+        tassert_eq(d->ret_type, "arr$(char*)");
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser_decl_parse(t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("str_split"));
+        tassert_eq(d->ret_type, "arr$(char*)");
 
     }
     tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
