@@ -315,7 +315,7 @@ __attribute__((noinline)) void __cex__panic(void);
          unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                    \
          _var_name = EOK)
 
-#if 0 //defined(CEXTEST) || defined(CEXBUILD)
+#if defined(CEXTEST) || defined(CEXBUILD)
 #define e$except_silent(_var_name, _func) e$except(_var_name, _func)
 #else
 #define e$except_silent(_var_name, _func)                                                          \
