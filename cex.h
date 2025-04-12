@@ -3550,7 +3550,8 @@ void cex_codegen_indent(cex_codegen_s* cg);
 
 #ifndef cexy$process_ignore_kw
 /**
-@brief For ignoring extra macro keywords in function signatures of libraries, as str.match() pattern string
+@brief For ignoring extra macro keywords in function signatures of libraries, as str.match() pattern
+string
 */
 #define cexy$process_ignore_kw ""
 #endif
@@ -3562,6 +3563,15 @@ void cex_codegen_indent(cex_codegen_s* cg);
         "-fsanitize=leak", "-fstack-protector-strong"
 
 #endif
+
+#define cexy$cmd_process                                                                           \
+    { .name = "process",                                                                           \
+      .func = cexy.cmd.process,                                                                    \
+      .help = "Creates CEX namespaces from project source code" }
+
+
+#define cexy$cmd_all cexy$cmd_process
+
 
 #define cexy$description "Cex build system"
 /* clang-format off */

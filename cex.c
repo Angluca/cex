@@ -26,6 +26,7 @@ main(int argc, char** argv)
         .description = cexy$description,
         .epilog = cexy$epilog,
         .commands = (argparse_cmd_s[]) {
+                cexy$cmd_all,
                 { .name = "check", .func = cmd_check, .help = "Validates build environment" },
                 { .name = "build", .func = cmd_build, .help = "Builds project"},
                 { .name = "test", .func = cmd_test, .help = "Test running" },
