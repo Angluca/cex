@@ -1,4 +1,5 @@
 #define TBUILDDIR "tests/build/cexytest/"
+#define CEX_LOG_LVL 8
 #define cexy$cc_include "-I.", "-I" TBUILDDIR
 #include "src/all.c"
 
@@ -44,7 +45,7 @@ test$case(test_src_namespace_gen)
         {
             $pn("return NULL;");
         }
-        $func("int %s__subname__fnsub2(char* foo)", ns)
+        $func("arr$(char*) %s__subname__fnsub2(char* foo)", ns)
         {
             $pn("return NULL;");
         }
@@ -64,12 +65,16 @@ test$case(test_src_namespace_gen)
 
         char* src_content = io.file.load(src, _);
         char* hdr_content = io.file.load(hdr, _);
+        log$info("Source: \n%s\n", src_content);
+        log$info("Header: \n%s\n", hdr_content);
 
         tassert(str.find(src_content, ".fn_Sub1 = src__subname__fn_Sub1,"));
         tassert(str.find(src_content, "const struct __cex_namespace__src src = "));
         tassert(str.find(src_content, "__aubName2__fnsub1(char"));
         tassert(str.find(hdr_content, "extern const struct __cex_namespace__src src"));
         tassert(str.find(hdr_content, "struct __cex_namespace__src {"));
+        tassert(str.find(hdr_content, "arr$(char*)"));
+
     }
     return EOK;
 }

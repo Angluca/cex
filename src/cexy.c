@@ -691,7 +691,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                        !str.slice.match(d->name, fn_pattern)) {
                 continue;
             }
-            log$trace("FN: %S\n", d->name);
+            log$trace("FN: %S ret_type: '%s' args: '%s'\n", d->name, d->ret_type, d->args);
             arr$push(decls, d);
         }
 
