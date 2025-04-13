@@ -385,13 +385,14 @@ io_fprintf(FILE* stream, const char* format, ...)
     }
 }
 
-void
+int
 io_printf(const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    cexsp__vfprintf(stdout, format, va);
+    int result = cexsp__vfprintf(stdout, format, va);
     va_end(va);
+    return result;
 }
 
 Exception

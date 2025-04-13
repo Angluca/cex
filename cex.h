@@ -1556,7 +1556,7 @@ Exception       (*fseek)(FILE* file, long offset, int whence);
 Exception       (*ftell)(FILE* file, usize* size);
 Exception       (*fwrite)(FILE* file, const void* obj_buffer, usize obj_el_size, usize obj_count);
 bool            (*isatty)(FILE* file);
-void            (*printf)(const char* format, ...);
+int             (*printf)(const char* format, ...);
 void            (*rewind)(FILE* file);
 
 struct {  // sub-module .file >>>
@@ -6050,10 +6050,10 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 break;
             // are we 64-bit (unix style)
             case 'l':
-                fl |= ((sizeof(long) == 8) ? CEXSP__INTMAX : 0);
+                // %ld/%lld - is always 64 bits 
+                fl |= CEXSP__INTMAX;
                 ++f;
                 if (f[0] == 'l') {
-                    fl |= CEXSP__INTMAX;
                     ++f;
                 }
                 break;
@@ -6632,14 +6632,14 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     i64 _i64 = va_arg(va, i64);
                     n64 = (u64)_i64;
                     if ((f[0] != 'u') && (_i64 < 0)) {
-                        n64 = (u64)-_i64;
+                        n64 = (_i64 != INT64_MIN) ? (u64)-_i64 : INT64_MIN;
                         fl |= CEXSP__NEGATIVE;
                     }
                 } else {
                     i32 i = va_arg(va, i32);
                     n64 = (u32)i;
                     if ((f[0] != 'u') && (i < 0)) {
-                        n64 = (u32)-i;
+                        n64 =  (i != INT32_MIN) ? (u32)-i : INT32_MIN;
                         fl |= CEXSP__NEGATIVE;
                     }
                 }
@@ -9907,13 +9907,14 @@ io_fprintf(FILE* stream, const char* format, ...)
     }
 }
 
-void
+int
 io_printf(const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    cexsp__vfprintf(stdout, format, va);
+    int result = cexsp__vfprintf(stdout, format, va);
     va_end(va);
+    return result;
 }
 
 Exception
@@ -10129,7 +10130,7 @@ argparse_usage(argparse_c* self)
 {
     uassert(self->argv != NULL && "usage before parse!");
 
-    fprintf(stdout, "Usage:\n");
+    io.printf("Usage:\n");
     if (self->usage) {
 
         for$iter(str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator))
@@ -10140,9 +10141,9 @@ argparse_usage(argparse_c* self)
 
             char* fn = strrchr(self->program_name, '/');
             if (fn != NULL) {
-                fprintf(stdout, "%s ", fn + 1);
+                io.printf("%s ", fn + 1);
             } else {
-                fprintf(stdout, "%s ", self->program_name);
+                io.printf("%s ", self->program_name);
             }
 
             if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) {
@@ -10153,26 +10154,26 @@ argparse_usage(argparse_c* self)
         }
     } else {
         if (self->commands) {
-            fprintf(stdout, "%s {", self->program_name);
+            io.printf("%s {", self->program_name);
             for$eachp(c, self->commands, self->commands_len)
             {
                 isize i = c - self->commands;
                 if (i == 0) {
-                    fprintf(stdout, "%s", c->name);
+                    io.printf("%s", c->name);
                 } else {
-                    fprintf(stdout, ",%s", c->name);
+                    io.printf(",%s", c->name);
                 }
             }
-            fprintf(stdout, "} [cmd_options] [cmd_args]\n");
+            io.printf("} [cmd_options] [cmd_args]\n");
 
         } else {
-            fprintf(stdout, "%s [options] [--] [arg1 argN]\n", self->program_name);
+            io.printf("%s [options] [--] [arg1 argN]\n", self->program_name);
         }
     }
 
     // print description
     if (self->description) {
-        fprintf(stdout, "%s\n", self->description);
+        io.printf("%s\n", self->description);
     }
 
     fputc('\n', stdout);
@@ -10227,19 +10228,19 @@ argparse_usage(argparse_c* self)
         usize pad = 0;
         if (opt->type == CexArgParseType__group) {
             fputc('\n', stdout);
-            fprintf(stdout, "%s", opt->help);
+            io.printf("%s", opt->help);
             fputc('\n', stdout);
             continue;
         }
-        pos = fprintf(stdout, "    ");
+        pos = io.printf("    ");
         if (opt->short_name) {
-            pos += fprintf(stdout, "-%c", opt->short_name);
+            pos += io.printf("-%c", opt->short_name);
         }
         if (opt->long_name && opt->short_name) {
-            pos += fprintf(stdout, ", ");
+            pos += io.printf(", ");
         }
         if (opt->long_name) {
-            pos += fprintf(stdout, "--%s", opt->long_name);
+            pos += io.printf("--%s", opt->long_name);
         }
 
         if (pos <= usage_opts_width) {
@@ -10248,17 +10249,82 @@ argparse_usage(argparse_c* self)
             fputc('\n', stdout);
             pad = usage_opts_width;
         }
-        fprintf(stdout, "%*s%s\n", (int)pad + 2, "", opt->help);
+        if (!str.find(opt->help, "\n")) {
+            io.printf("%*s%s", (int)pad + 2, "", opt->help);
+        } else {
+            u32 i = 0;
+            for$iter(str_s, it, str.slice.iter_split(str.sstr(opt->help), "\n", &it.iterator)) {
+                str_s clean = str.slice.strip(it.val);
+                if (clean.len == 0) {
+                    continue;
+                }
+                if (i > 0) {
+                    io.printf("\n");
+                }
+                io.printf("%*s%S", (i==0) ? pad+2 : (int)usage_opts_width + 2, "", clean);
+                i++;
+            }
+        }
+
+        if (!opt->required && opt->value) {
+            io.printf(" (default: ");
+            switch (opt->type) {
+                case CexArgParseType__boolean:
+                    io.printf("%c", *(bool*)opt->value ? 'Y' : 'N');
+                    break;
+                case CexArgParseType__string:
+                    if (*(const char**)opt->value != NULL){
+                        io.printf("'%s'", *(const char**)opt->value);
+                    } else {
+                        io.printf("''");
+                    }
+                    break;
+                case CexArgParseType__i8:
+                    io.printf("%d", *(i8*)opt->value);
+                    break;
+                case CexArgParseType__i16:
+                    io.printf("%d", *(i16*)opt->value);
+                    break;
+                case CexArgParseType__i32:
+                    io.printf("%d", *(i32*)opt->value);
+                    break;
+                case CexArgParseType__u8:
+                    io.printf("%u", *(u8*)opt->value);
+                    break;
+                case CexArgParseType__u16:
+                    io.printf("%u", *(u16*)opt->value);
+                    break;
+                case CexArgParseType__u32:
+                    io.printf("%u", *(u32*)opt->value);
+                    break;
+                case CexArgParseType__i64:
+                    io.printf("%ld", *(i64*)opt->value);
+                    break;
+                case CexArgParseType__u64:
+                    io.printf("%lu", *(u64*)opt->value);
+                    break;
+                case CexArgParseType__f32:
+                    io.printf("%g", *(f32*)opt->value);
+                    break;
+                case CexArgParseType__f64:
+                    io.printf("%g", *(f64*)opt->value);
+                    break;
+                default:
+                    break;
+            }
+            io.printf(")");
+        }
+        io.printf("\n");
     }
 
     for$eachp(cmd, self->commands, self->commands_len)
     {
-        fprintf(stdout, "%-20s%s%s\n", cmd->name, cmd->help, cmd->is_default ? " (default)" : "");
+        io.printf("%-20s%s%s\n", cmd->name, cmd->help, cmd->is_default ? " (default)" : "");
     }
 
     // print epilog
     if (self->epilog) {
-        fprintf(stdout, "%s\n", self->epilog);
+        io.printf("%s\n", self->epilog);
     }
 }
 static Exception
@@ -10479,7 +10545,7 @@ argparse__report_error(argparse_c* self, Exc err)
 
     if (err == Error.not_found) {
         if (self->options != NULL) {
-            fprintf(stdout, "error: unknown option `%s`\n", self->argv[0]);
+            io.printf("error: unknown option `%s`\n", self->argv[0]);
         } else {
             fprintf(
                 stdout,
@@ -10488,7 +10554,7 @@ argparse__report_error(argparse_c* self, Exc err)
             );
         }
     } else if (err == Error.integrity) {
-        fprintf(stdout, "error: option `%s` follows argument\n", self->argv[0]);
+        io.printf("error: option `%s` follows argument\n", self->argv[0]);
     }
     return Error.argsparse;
 }
@@ -10534,7 +10600,7 @@ argparse__parse_commands(argparse_c* self)
     }
     if (cmd == NULL) {
         argparse_usage(self);
-        fprintf(stdout, "error: unknown command name '%s', try --help\n", (cmd_arg) ? cmd_arg : "");
+        io.printf("error: unknown command name '%s', try --help\n", (cmd_arg) ? cmd_arg : "");
         return Error.argsparse;
     }
     self->_ctx.current_command = cmd;
@@ -10695,7 +10761,7 @@ argparse_next(argparse_c* self)
         // After reaching argc=0, argv getting stack-overflowed (ASAN issues), we set to fake NULL
         static char* null_argv[] = { NULL };
         // reset NULL every call, because static null_argv may be overwritten in user code maybe
-        null_argv[0] = NULL; 
+        null_argv[0] = NULL;
         self->argv = null_argv;
     }
     return result;
@@ -12897,18 +12963,53 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 {
     (void)user_ctx;
 
-    argparse_c cmd_args = { 0 };
+    // clang-format off
+    const char* process_help = ""
+    "process command intended for building CEXy interfaces from your source code\n\n"
+    "For example: you can create foo_fun1(), foo_fun2(), foo__bar__fun3(), foo__bar__fun4()\n"
+    "   these functions will be processed and wrapped to a `foo` namespace, so you can     \n"
+    "   access them via foo.fun1(), foo.fun2(), foo.bar.fun3(), foo.bar.fun4()\n\n" 
+
+    "Requirements / caveats: \n"
+    "1. You must have foo.c and foo.h in the same folder\n"
+    "2. Filename must start with `foo` - namespace prefix\n"
+    "3. Each function in foo.c that you'd like to add to namespace must start with `foo_`\n"
+    "4. For adding sub-namespace use `foo__subname__` prefix\n"
+    "5. Only one level of sub-namespace is allowed\n"
+    "6. You may not declare function signature in header, and ony use .c static functions\n"
+    "7. Functions with `static inline` are not included into namespace\n" 
+    "8. Functions with prefix `foo__some` are considered internal and not included\n"
+    "9. New namespace is created when you use exact foo.c argument, `all` just for updates\n"
+
+    ;
+    // clang-format on
+
+    const char* ignore_kw = cexy$process_ignore_kw;
+    argparse_c
+        cmd_args = { .program_name = "./cex",
+                     .usage = "process [options] all|path/some_file.c",
+                     .description = process_help,
+                     .epilog = "Use `all` for updates, and exact path/some_file.c for creating new\n",
+                     .options = (argparse_opt_s[]){
+                         argparse$opt_group("Options"),
+                         argparse$opt_help(),
+                         argparse$opt(
+                             &ignore_kw,
+                             'i',
+                             "ignore",
+                             .help = "ignores `keyword` or `keyword()` from processed function signatures\n  uses cexy$process_ignore_kw"
+                         ),
+                         { 0 },
+                     } };
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* target = argparse.next(&cmd_args);
-    const char* usage = "usage: ./cex process all|path/some_file.c";
-    (void)usage;
 
     if (target == NULL) {
+        argparse.usage(&cmd_args);
         return e$raise(
             Error.argsparse,
-            "Invalid target: '%s', expected all or path/some_file.c\n%s",
-            target,
-            usage
+            "Invalid target: '%s', expected all or path/some_file.c",
+            target
         );
     }
     if (str.eq(target, "all")) {

@@ -20,7 +20,7 @@ Exception       (*fseek)(FILE* file, long offset, int whence);
 Exception       (*ftell)(FILE* file, usize* size);
 Exception       (*fwrite)(FILE* file, const void* obj_buffer, usize obj_el_size, usize obj_count);
 bool            (*isatty)(FILE* file);
-void            (*printf)(const char* format, ...);
+int             (*printf)(const char* format, ...);
 void            (*rewind)(FILE* file);
 
 struct {  // sub-module .file >>>

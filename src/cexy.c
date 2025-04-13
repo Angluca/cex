@@ -631,18 +631,53 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 {
     (void)user_ctx;
 
-    argparse_c cmd_args = { 0 };
+    // clang-format off
+    const char* process_help = ""
+    "process command intended for building CEXy interfaces from your source code\n\n"
+    "For example: you can create foo_fun1(), foo_fun2(), foo__bar__fun3(), foo__bar__fun4()\n"
+    "   these functions will be processed and wrapped to a `foo` namespace, so you can     \n"
+    "   access them via foo.fun1(), foo.fun2(), foo.bar.fun3(), foo.bar.fun4()\n\n" 
+
+    "Requirements / caveats: \n"
+    "1. You must have foo.c and foo.h in the same folder\n"
+    "2. Filename must start with `foo` - namespace prefix\n"
+    "3. Each function in foo.c that you'd like to add to namespace must start with `foo_`\n"
+    "4. For adding sub-namespace use `foo__subname__` prefix\n"
+    "5. Only one level of sub-namespace is allowed\n"
+    "6. You may not declare function signature in header, and ony use .c static functions\n"
+    "7. Functions with `static inline` are not included into namespace\n" 
+    "8. Functions with prefix `foo__some` are considered internal and not included\n"
+    "9. New namespace is created when you use exact foo.c argument, `all` just for updates\n"
+
+    ;
+    // clang-format on
+
+    const char* ignore_kw = cexy$process_ignore_kw;
+    argparse_c
+        cmd_args = { .program_name = "./cex",
+                     .usage = "process [options] all|path/some_file.c",
+                     .description = process_help,
+                     .epilog = "Use `all` for updates, and exact path/some_file.c for creating new\n",
+                     .options = (argparse_opt_s[]){
+                         argparse$opt_group("Options"),
+                         argparse$opt_help(),
+                         argparse$opt(
+                             &ignore_kw,
+                             'i',
+                             "ignore",
+                             .help = "ignores `keyword` or `keyword()` from processed function signatures\n  uses cexy$process_ignore_kw"
+                         ),
+                         { 0 },
+                     } };
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* target = argparse.next(&cmd_args);
-    const char* usage = "usage: ./cex process all|path/some_file.c";
-    (void)usage;
 
     if (target == NULL) {
+        argparse.usage(&cmd_args);
         return e$raise(
             Error.argsparse,
-            "Invalid target: '%s', expected all or path/some_file.c\n%s",
-            target,
-            usage
+            "Invalid target: '%s', expected all or path/some_file.c",
+            target
         );
     }
     if (str.eq(target, "all")) {
