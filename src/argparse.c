@@ -26,7 +26,7 @@ argparse_usage(argparse_c* self)
 {
     uassert(self->argv != NULL && "usage before parse!");
 
-    fprintf(stdout, "Usage:\n");
+    io.printf("Usage:\n");
     if (self->usage) {
 
         for$iter(str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator))
@@ -37,9 +37,9 @@ argparse_usage(argparse_c* self)
 
             char* fn = strrchr(self->program_name, '/');
             if (fn != NULL) {
-                fprintf(stdout, "%s ", fn + 1);
+                io.printf("%s ", fn + 1);
             } else {
-                fprintf(stdout, "%s ", self->program_name);
+                io.printf("%s ", self->program_name);
             }
 
             if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) {
@@ -50,26 +50,26 @@ argparse_usage(argparse_c* self)
         }
     } else {
         if (self->commands) {
-            fprintf(stdout, "%s {", self->program_name);
+            io.printf("%s {", self->program_name);
             for$eachp(c, self->commands, self->commands_len)
             {
                 isize i = c - self->commands;
                 if (i == 0) {
-                    fprintf(stdout, "%s", c->name);
+                    io.printf("%s", c->name);
                 } else {
-                    fprintf(stdout, ",%s", c->name);
+                    io.printf(",%s", c->name);
                 }
             }
-            fprintf(stdout, "} [cmd_options] [cmd_args]\n");
+            io.printf("} [cmd_options] [cmd_args]\n");
 
         } else {
-            fprintf(stdout, "%s [options] [--] [arg1 argN]\n", self->program_name);
+            io.printf("%s [options] [--] [arg1 argN]\n", self->program_name);
         }
     }
 
     // print description
     if (self->description) {
-        fprintf(stdout, "%s\n", self->description);
+        io.printf("%s\n", self->description);
     }
 
     fputc('\n', stdout);
@@ -124,19 +124,19 @@ argparse_usage(argparse_c* self)
         usize pad = 0;
         if (opt->type == CexArgParseType__group) {
             fputc('\n', stdout);
-            fprintf(stdout, "%s", opt->help);
+            io.printf("%s", opt->help);
             fputc('\n', stdout);
             continue;
         }
-        pos = fprintf(stdout, "    ");
+        pos = io.printf("    ");
         if (opt->short_name) {
-            pos += fprintf(stdout, "-%c", opt->short_name);
+            pos += io.printf("-%c", opt->short_name);
         }
         if (opt->long_name && opt->short_name) {
-            pos += fprintf(stdout, ", ");
+            pos += io.printf(", ");
         }
         if (opt->long_name) {
-            pos += fprintf(stdout, "--%s", opt->long_name);
+            pos += io.printf("--%s", opt->long_name);
         }
 
         if (pos <= usage_opts_width) {
@@ -145,17 +145,67 @@ argparse_usage(argparse_c* self)
             fputc('\n', stdout);
             pad = usage_opts_width;
         }
-        fprintf(stdout, "%*s%s\n", (int)pad + 2, "", opt->help);
+        io.printf("%*s%s", (int)pad + 2, "", opt->help);
+
+        if (!opt->required && opt->value) {
+            io.printf(" (default: ");
+            switch (opt->type) {
+                case CexArgParseType__boolean:
+                    io.printf("%c", *(bool*)opt->value ? 'Y' : 'N');
+                    break;
+                case CexArgParseType__string:
+                    if (*(const char**)opt->value != NULL){
+                        io.printf("'%s'", *(const char**)opt->value);
+                    } else {
+                        io.printf("''");
+                    }
+                    break;
+                case CexArgParseType__i8:
+                    io.printf("%d", *(i8*)opt->value);
+                    break;
+                case CexArgParseType__i16:
+                    io.printf("%d", *(i16*)opt->value);
+                    break;
+                case CexArgParseType__i32:
+                    io.printf("%d", *(i32*)opt->value);
+                    break;
+                case CexArgParseType__u8:
+                    io.printf("%u", *(u8*)opt->value);
+                    break;
+                case CexArgParseType__u16:
+                    io.printf("%u", *(u16*)opt->value);
+                    break;
+                case CexArgParseType__u32:
+                    io.printf("%u", *(u32*)opt->value);
+                    break;
+                case CexArgParseType__i64:
+                    io.printf("%ld", *(i64*)opt->value);
+                    break;
+                case CexArgParseType__u64:
+                    io.printf("%lu", *(u64*)opt->value);
+                    break;
+                case CexArgParseType__f32:
+                    io.printf("%g", *(f32*)opt->value);
+                    break;
+                case CexArgParseType__f64:
+                    io.printf("%g", *(f64*)opt->value);
+                    break;
+                default:
+                    break;
+            }
+            io.printf(")");
+        }
+        io.printf("\n");
     }
 
     for$eachp(cmd, self->commands, self->commands_len)
     {
-        fprintf(stdout, "%-20s%s%s\n", cmd->name, cmd->help, cmd->is_default ? " (default)" : "");
+        io.printf("%-20s%s%s\n", cmd->name, cmd->help, cmd->is_default ? " (default)" : "");
     }
 
     // print epilog
     if (self->epilog) {
-        fprintf(stdout, "%s\n", self->epilog);
+        io.printf("%s\n", self->epilog);
     }
 }
 static Exception
@@ -376,7 +426,7 @@ argparse__report_error(argparse_c* self, Exc err)
 
     if (err == Error.not_found) {
         if (self->options != NULL) {
-            fprintf(stdout, "error: unknown option `%s`\n", self->argv[0]);
+            io.printf("error: unknown option `%s`\n", self->argv[0]);
         } else {
             fprintf(
                 stdout,
@@ -385,7 +435,7 @@ argparse__report_error(argparse_c* self, Exc err)
             );
         }
     } else if (err == Error.integrity) {
-        fprintf(stdout, "error: option `%s` follows argument\n", self->argv[0]);
+        io.printf("error: option `%s` follows argument\n", self->argv[0]);
     }
     return Error.argsparse;
 }
@@ -431,7 +481,7 @@ argparse__parse_commands(argparse_c* self)
     }
     if (cmd == NULL) {
         argparse_usage(self);
-        fprintf(stdout, "error: unknown command name '%s', try --help\n", (cmd_arg) ? cmd_arg : "");
+        io.printf("error: unknown command name '%s', try --help\n", (cmd_arg) ? cmd_arg : "");
         return Error.argsparse;
     }
     self->_ctx.current_command = cmd;
@@ -592,7 +642,7 @@ argparse_next(argparse_c* self)
         // After reaching argc=0, argv getting stack-overflowed (ASAN issues), we set to fake NULL
         static char* null_argv[] = { NULL };
         // reset NULL every call, because static null_argv may be overwritten in user code maybe
-        null_argv[0] = NULL; 
+        null_argv[0] = NULL;
         self->argv = null_argv;
     }
     return result;

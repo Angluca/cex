@@ -1187,4 +1187,59 @@ test$case(test_args_next_argc_argv)
     return EOK;
 }
 
+test$case(test_argparse_usage_default_options)
+{
+
+    bool bool_true = true;
+    bool bool_false = false;
+    char* str_null = NULL;
+    char* str_foo = "foo";
+    i8 _i8 = INT8_MIN;
+    u8 _u8 = UINT8_MAX;
+    i16 _i16 = INT16_MIN;
+    u16 _u16 = UINT16_MAX;
+    i32 _i32 = INT32_MIN;
+    u32 _u32 = UINT32_MAX;
+    i64 _i64 = INT64_MIN;
+    u64 _u64 = UINT64_MAX;
+    f32 _f32 = 123.1231231;
+    f64 _f64 = 223.1231231;
+    f64 _f64_small = 0.01231231;
+    f32 _f32_big = 12109223.1231231;
+
+    argparse_c argparse = {
+        .options =
+            (argparse_opt_s[]){
+                argparse$opt_help(),
+                argparse$opt_group("Basic options"),
+                argparse$opt(&bool_true, 'b', "bool-true", "bool-true"),
+                argparse$opt(&bool_false, 'b', "bool-false", "bool-false"),
+                argparse$opt(&str_null, 'n', "str_null", "str_null"),
+                argparse$opt(&str_foo, 'f', "str_foo", "str_foo"),
+                argparse$opt(&_i8, '1', "i8", "i8"),
+                argparse$opt(&_u8, '2', "u8", "u8"),
+                argparse$opt(&_i16, '3', "i16", "i16"),
+                argparse$opt(&_u16, '4', "u16", "u16"),
+                argparse$opt(&_i32, '5', "i32", "i32"),
+                argparse$opt(&_u32, '6', "u32", "u32"),
+                argparse$opt(&_i64, '7', "i64", "i64"),
+                argparse$opt(&_u64, '8', "u64", "u64"),
+                argparse$opt(&_f32, '5', "f32", "f32"),
+                argparse$opt(&_f64, '7', "f64", "f64"),
+                argparse$opt(&_f64_small, '7', "_f64_small", "_f64_small"),
+                argparse$opt(&_f32_big, '7', "_f32_big", "_f32_big"),
+                { 0 }, // array opt term
+            },
+   };
+
+    char* argv[] = {
+        "program_name", "-h"
+    };
+    int argc = arr$len(argv);
+
+    tassert_eq(EOK, argparse_parse(&argparse, argc, argv));
+    // tassert(false);
+
+    return EOK;
+}
 test$main();
