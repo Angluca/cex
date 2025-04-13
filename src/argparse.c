@@ -145,7 +145,22 @@ argparse_usage(argparse_c* self)
             fputc('\n', stdout);
             pad = usage_opts_width;
         }
-        io.printf("%*s%s", (int)pad + 2, "", opt->help);
+        if (!str.find(opt->help, "\n")) {
+            io.printf("%*s%s", (int)pad + 2, "", opt->help);
+        } else {
+            u32 i = 0;
+            for$iter(str_s, it, str.slice.iter_split(str.sstr(opt->help), "\n", &it.iterator)) {
+                str_s clean = str.slice.strip(it.val);
+                if (clean.len == 0) {
+                    continue;
+                }
+                if (i > 0) {
+                    io.printf("\n");
+                }
+                io.printf("%*s%S", (i==0) ? pad+2 : (int)usage_opts_width + 2, "", clean);
+                i++;
+            }
+        }
 
         if (!opt->required && opt->value) {
             io.printf(" (default: ");
