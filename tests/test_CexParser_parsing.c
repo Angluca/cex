@@ -400,6 +400,36 @@ test$case(test_funcs_def_parse_args)
     return EOK;
 }
 
+test$case(test_funcs_def_multiline)
+{
+    // clang-format off
+    char* code = 
+    "static char*\n"
+    "cexy_target_make(\n"
+        "IAllocator allocator\n"
+    ")\n"
+    "{}\n";
+    CexParser_c lx = CexParser_create(code, 0, true);
+    cex_token_s t;
+    mem$scope(tmem$, _){
+        arr$(cex_token_s) items = arr$new(items, _);
+
+        t = CexParser_next_entity(&lx, &items);
+        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        tassert_eq(t.type, CexTkn__func_def);
+
+
+        cex_decl_s* d = CexParser_decl_parse(t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__func_def);
+        tassert_eq(d->name, str$s("cexy_target_make"));
+        tassert_eq(d->args, "IAllocator allocator");
+
+    }
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    return EOK;
+}
+
 test$case(test_funcs_decl_parse_ret_type)
 {
     // clang-format off

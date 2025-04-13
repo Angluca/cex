@@ -21,15 +21,14 @@
 #define lx$skip_space(lx, c)                                                                       \
     while (c && isspace((c))) {                                                                    \
         lx$next(lx);                                                                               \
-        (c) = *lx->cur;                                                                            \
+        (c) = lx$peek(lx);                                                                            \
     }
 
 CexParser_c
 CexParser_create(char* content, u32 content_len, bool fold_scopes)
 {
-    uassert(content != NULL);
     if (content_len == 0) {
-        content_len = strlen(content);
+        content_len = str.len(content);
     }
     CexParser_c lx = { .content = content,
                        .content_end = content + content_len,
@@ -711,7 +710,8 @@ CexParser_decl_parse(
     // NOTE: parsing arguments of a function
     if (args_idx >= 0) {
         prev_t = children[args_idx];
-        CexParser_c lx = CexParser_create(prev_t.value.buf + 1, prev_t.value.len - 2, true);
+        str_s clean_paren_block = str.slice.sub(str.slice.strip(prev_t.value), 1, -1);
+        CexParser_c lx = CexParser_create(clean_paren_block.buf, clean_paren_block.len, true);
         cex_token_s t = { 0 };
         bool skip_next = false;
         while ((t = CexParser_next_token(&lx)).type) {
