@@ -127,4 +127,4 @@ struct {  // sub-module .fuzz >>>
 } fuzz;  // sub-module .fuzz <<<
     // clang-format on
 };
-extern const struct __cex_namespace__DST DST; // CEX Autogen
+extern const struct __cex_namespace__DST DST;

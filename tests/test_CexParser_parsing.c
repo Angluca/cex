@@ -218,7 +218,7 @@ test$case(test_cex_struct_def)
 {
     // clang-format off
     char* code = 
-        "__attribute__ ((visibility(\"hidden\"))) extern const struct __cex_namespace__io io; // CEX Autogen\n"
+        "__attribute__ ((visibility(\"hidden\"))) extern const struct __cex_namespace__io io;\n"
         "const struct __cex_namespace__io io = { };"
         "struct __cex_namespace__io { void            (*fclose)(FILE** file); };\n"
         "";

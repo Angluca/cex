@@ -67,4 +67,4 @@ Exception
 
     // clang-format on
 };
-extern const struct __cex_namespace__fsm fsm; // CEX Autogen
+extern const struct __cex_namespace__fsm fsm;

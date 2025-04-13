@@ -26,4 +26,4 @@ void
 
     // clang-format on
 };
-extern const struct __cex_namespace__App App; // CEX Autogen
+extern const struct __cex_namespace__App App;

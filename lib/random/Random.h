@@ -87,4 +87,4 @@ void
 
     // clang-format on
 };
-extern const struct __cex_namespace__Random Random; // CEX Autogen
+extern const struct __cex_namespace__Random Random;

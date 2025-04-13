@@ -53,4 +53,4 @@ IAllocator
 
     // clang-format on
 };
-extern const struct __cex_namespace__AllocatorStaticArena AllocatorStaticArena; // CEX Autogen
+extern const struct __cex_namespace__AllocatorStaticArena AllocatorStaticArena;

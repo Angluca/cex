@@ -40,4 +40,4 @@ void            (*shrink)(sbuf_c* self, u32 new_length);
 void            (*update_len)(sbuf_c* self);
     // clang-format on
 };
-__attribute__ ((visibility("hidden"))) extern const struct __cex_namespace__sbuf sbuf; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __cex_namespace__sbuf sbuf;

@@ -68,4 +68,4 @@ void            (*destroy)(IAllocator self);
 bool            (*sanitize)(IAllocator allc);
     // clang-format on
 };
-__attribute__ ((visibility("hidden"))) extern const struct __cex_namespace__AllocatorArena AllocatorArena; // CEX Autogen
+__attribute__ ((visibility("hidden"))) extern const struct __cex_namespace__AllocatorArena AllocatorArena;

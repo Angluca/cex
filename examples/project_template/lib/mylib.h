@@ -14,4 +14,4 @@ u32
 
     // clang-format on
 };
-extern const struct __cex_namespace__mylib mylib; // CEX Autogen
+extern const struct __cex_namespace__mylib mylib;

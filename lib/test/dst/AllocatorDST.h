@@ -40,4 +40,4 @@ IAllocator
 
     // clang-format on
 };
-extern const struct __cex_namespace__AllocatorDST AllocatorDST; // CEX Autogen
+extern const struct __cex_namespace__AllocatorDST AllocatorDST;

@@ -140,8 +140,8 @@ test$case(test_src_namespace_update_duplicate_code)
         $pn("");
 
         char* hdr_code =
-            "__attribute__((visibility(\"hidden\"))) extern const struct __cex_namespace__cexy cexy; // CEX Autogen\n"
-            "__attribute__((visibility(\"hidden\"))) extern const struct __cex_namespace__cexy cexy; // CEX Autogen\n";
+            "__attribute__((visibility(\"hidden\"))) extern const struct __cex_namespace__cexy cexy;\n"
+            "__attribute__((visibility(\"hidden\"))) extern const struct __cex_namespace__cexy cexy;\n";
 
         e$ret(io.file.save(src, buf));
         e$ret(io.file.save(hdr, hdr_code));

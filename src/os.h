@@ -140,4 +140,4 @@ struct {  // sub-module .cmd >>>
 } cmd;  // sub-module .cmd <<<
           // clang-format on
 };
-__attribute__((visibility("hidden"))) extern const struct __cex_namespace__os os; // CEX Autogen
+__attribute__((visibility("hidden"))) extern const struct __cex_namespace__os os;
