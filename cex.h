@@ -12901,6 +12901,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* target = argparse.next(&cmd_args);
     const char* usage = "usage: ./cex process all|path/some_file.c";
+    (void)usage;
 
     if (target == NULL) {
         return e$raise(
@@ -13726,7 +13727,6 @@ CexParser_decl_parse(
     if (args_idx >= 0) {
         prev_t = children[args_idx];
         str_s clean_paren_block = str.slice.sub(str.slice.strip(prev_t.value), 1, -1);
-        log$trace("Paren block: '%S'\n", clean_paren_block);
         CexParser_c lx = CexParser_create(clean_paren_block.buf, clean_paren_block.len, true);
         cex_token_s t = { 0 };
         bool skip_next = false;

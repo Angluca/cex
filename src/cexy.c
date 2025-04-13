@@ -635,6 +635,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* target = argparse.next(&cmd_args);
     const char* usage = "usage: ./cex process all|path/some_file.c";
+    (void)usage;
 
     if (target == NULL) {
         return e$raise(
