@@ -245,10 +245,10 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 break;
             // are we 64-bit (unix style)
             case 'l':
-                fl |= ((sizeof(long) == 8) ? CEXSP__INTMAX : 0);
+                // %ld/%lld - is always 64 bits 
+                fl |= CEXSP__INTMAX;
                 ++f;
                 if (f[0] == 'l') {
-                    fl |= CEXSP__INTMAX;
                     ++f;
                 }
                 break;
@@ -827,14 +827,14 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     i64 _i64 = va_arg(va, i64);
                     n64 = (u64)_i64;
                     if ((f[0] != 'u') && (_i64 < 0)) {
-                        n64 = (u64)-_i64;
+                        n64 = (_i64 != INT64_MIN) ? (u64)-_i64 : INT64_MIN;
                         fl |= CEXSP__NEGATIVE;
                     }
                 } else {
                     i32 i = va_arg(va, i32);
                     n64 = (u32)i;
                     if ((f[0] != 'u') && (i < 0)) {
-                        n64 = (u32)-i;
+                        n64 =  (i != INT32_MIN) ? (u32)-i : INT32_MIN;
                         fl |= CEXSP__NEGATIVE;
                     }
                 }

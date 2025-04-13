@@ -234,4 +234,82 @@ test$case(stb_sprintf_orig)
     return EOK;
 }
 
+test$case(stb_sprintf_integers_16bits)
+{
+    mem$scope(tmem$, _) {
+        i16 _i16 = 123;
+        u16 _u16 = 123;
+
+        tassert_eq("123", str.fmt(_, "%d", _i16));
+        tassert_eq("123", str.fmt(_, "%u", _u16));
+
+        tassert_eq("-123", str.fmt(_, "%d", -_i16));
+
+        _i16 = INT16_MAX;
+        _u16 = UINT16_MAX;
+        tassert_eq("32767", str.fmt(_, "%d", _i16));
+        tassert_eq("65535", str.fmt(_, "%u", _u16));
+
+        _i16 = INT16_MIN;
+        _u16 = UINT16_MAX;
+        tassert_eq("-32768", str.fmt(_, "%d", _i16));
+        tassert_eq("65535", str.fmt(_, "%u", _u16));
+        tassert_eq("65535", str.fmt(_, "%d", _u16));
+    }
+
+    return EOK;
+}
+
+test$case(stb_sprintf_integers_32bits)
+{
+    mem$scope(tmem$, _) {
+        i32 _i32 = 123;
+        u32 _u32 = 123;
+
+        tassert_eq("123", str.fmt(_, "%d", _i32));
+        tassert_eq("123", str.fmt(_, "%u", _u32));
+
+        tassert_eq("-123", str.fmt(_, "%d", -_i32));
+
+        _i32 = INT32_MAX;
+        _u32 = INT32_MAX;
+        tassert_eq("2147483647", str.fmt(_, "%d", _i32));
+        tassert_eq("2147483647", str.fmt(_, "%u", _u32));
+
+        _i32 = INT32_MIN;
+        _u32 = UINT32_MAX;
+        tassert_eq("-2147483648", str.fmt(_, "%d", _i32));
+        tassert_eq("4294967295", str.fmt(_, "%u", _u32));
+        tassert_eq("-1", str.fmt(_, "%d", _u32));
+    }
+
+    return EOK;
+}
+
+test$case(stb_sprintf_integers_64bits)
+{
+    mem$scope(tmem$, _) {
+        i64 _i64 = 123;
+        u64 _u64 = 123;
+
+        tassert_eq("123", str.fmt(_, "%ld", _i64));
+        tassert_eq("123", str.fmt(_, "%lu", _u64));
+
+        tassert_eq("-123", str.fmt(_, "%ld", -_i64));
+
+        _i64 = INT64_MAX;
+        _u64 = INT64_MAX;
+        tassert_eq("9223372036854775807", str.fmt(_, "%ld", _i64));
+        tassert_eq("9223372036854775807", str.fmt(_, "%lu", _u64));
+
+        _i64 = INT64_MIN;
+        _u64 = UINT64_MAX;
+        tassert_eq("-9223372036854775808", str.fmt(_, "%ld", _i64));
+        tassert_eq("18446744073709551615", str.fmt(_, "%lu", _u64));
+        tassert_eq("-1", str.fmt(_, "%ld", _u64));
+    }
+
+    return EOK;
+}
+
 test$main();
