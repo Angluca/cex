@@ -548,6 +548,7 @@ cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
 static Exception
 cexy__process_update_code(
     const char* code_file,
+    bool only_update,
     sbuf_c cex_h_struct,
     sbuf_c cex_h_var_decl,
     sbuf_c cex_c_var_def
@@ -611,17 +612,27 @@ cexy__process_update_code(
         }
         if (!is_header) {
             if (!has_module_def) {
+                if (only_update) {
+                    return EOK;
+                }
                 e$ret(sbuf.appendf(&new_code, "\n%s\n", cex_c_var_def));
             }
+            e$ret(io.file.save(code_file, new_code));
         } else {
             if (!has_module_struct) {
+                if (only_update) {
+                    return EOK;
+                }
                 e$ret(sbuf.appendf(&new_code, "\n%s\n", cex_h_struct));
             }
             if (!has_module_decl) {
+                if (only_update) {
+                    return EOK;
+                }
                 e$ret(sbuf.appendf(&new_code, "%s\n", cex_h_var_decl));
             }
+            e$ret(io.file.save(code_file, new_code));
         }
-        e$ret(io.file.save(code_file, new_code));
     }
 
 #undef $dump_prev
@@ -684,85 +695,121 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
             target
         );
     }
+
+
+    bool only_update = true;
     if (str.eq(target, "all")) {
         target = "*.c";
-        e$assert(false && "not supported yet");
+    } else {
+        if (!os.path.exists(target)) {
+            return e$raise(Error.not_found, "Target file not exists: '%s'", target);
+        }
+        only_update = false;
     }
 
 
     mem$scope(tmem$, _)
     {
-        const char* src_fn = target;
-        e$assert(str.ends_with(src_fn, ".c") && "file must end with .c");
+        for$each(src_fn, os.fs.find(target, true, _))
+        {
+            if (str.starts_with(src_fn, "test")) {
+                continue;
+            }
+            mem$scope(tmem$, _)
+            {
+                e$assert(str.ends_with(src_fn, ".c") && "file must end with .c");
 
-        char* hdr_fn = str.clone(src_fn, _);
-        hdr_fn[str.len(hdr_fn) - 1] = 'h'; // .c -> .h
+                char* hdr_fn = str.clone(src_fn, _);
+                hdr_fn[str.len(hdr_fn) - 1] = 'h'; // .c -> .h
 
-        str_s ns_prefix = str.sub(os.path.basename(src_fn, _), 0, -2); // src.c -> src
-        char* fn_sub_pattern = str.fmt(_, "%S__[a-zA-Z0-9+]__*", ns_prefix);
-        char* fn_pattern = str.fmt(_, "%S_*", ns_prefix);
-        char* fn_private = str.fmt(_, "%S__*", ns_prefix);
+                str_s ns_prefix = str.sub(os.path.basename(src_fn, _), 0, -2); // src.c -> src
+                char* fn_sub_pattern = str.fmt(_, "%S__[a-zA-Z0-9+]__*", ns_prefix);
+                char* fn_pattern = str.fmt(_, "%S_*", ns_prefix);
+                char* fn_private = str.fmt(_, "%S__*", ns_prefix);
 
-        log$debug("Cex Processing src: '%s' hdr: '%s' prefix: '%S'\n", src_fn, hdr_fn, ns_prefix);
-        if (!os.path.exists(hdr_fn)) {
-            return e$raise(Error.not_found, "Header file not exists: '%s'", hdr_fn);
-        }
-        char* code = io.file.load(src_fn, _);
-        e$assert(code && "failed loading code");
-        arr$(cex_token_s) items = arr$new(items, _);
-        arr$(cex_decl_s*) decls = arr$new(decls, _, .capacity = 128);
-
-        CexParser_c lx = CexParser.create(code, 0, true);
-        cex_token_s t;
-        while ((t = CexParser.next_entity(&lx, &items)).type) {
-            if (t.type == CexTkn__error) {
-                return e$raise(
-                    Error.integrity,
-                    "Error parsing file %s, at line: %d, cursor: %d",
+                log$debug(
+                    "Cex Processing src: '%s' hdr: '%s' prefix: '%S'\n",
                     src_fn,
-                    lx.line,
-                    (i32)(lx.cur - lx.content)
+                    hdr_fn,
+                    ns_prefix
                 );
+                if (!os.path.exists(hdr_fn)) {
+                    return e$raise(Error.not_found, "Header file not exists: '%s'", hdr_fn);
+                }
+                char* code = io.file.load(src_fn, _);
+                e$assert(code && "failed loading code");
+                arr$(cex_token_s) items = arr$new(items, _);
+                arr$(cex_decl_s*) decls = arr$new(decls, _, .capacity = 128);
+
+                CexParser_c lx = CexParser.create(code, 0, true);
+                cex_token_s t;
+                while ((t = CexParser.next_entity(&lx, &items)).type) {
+                    if (t.type == CexTkn__error) {
+                        return e$raise(
+                            Error.integrity,
+                            "Error parsing file %s, at line: %d, cursor: %d",
+                            src_fn,
+                            lx.line,
+                            (i32)(lx.cur - lx.content)
+                        );
+                    }
+                    cex_decl_s* d = CexParser.decl_parse(t, items, cexy$process_ignore_kw, _);
+                    if (d == NULL) {
+                        continue;
+                    }
+                    if (d->type != CexTkn__func_def) {
+                        continue;
+                    }
+                    if (d->is_inline && d->is_static) {
+                        continue;
+                    }
+                    if (str.slice.match(d->name, fn_sub_pattern)) {
+                        // OK use it!
+                    } else if (str.slice.match(d->name, fn_private) ||
+                               !str.slice.match(d->name, fn_pattern)) {
+                        continue;
+                    }
+                    log$trace("FN: %S ret_type: '%s' args: '%s'\n", d->name, d->ret_type, d->args);
+                    arr$push(decls, d);
+                }
+                if (arr$len(decls) == 0) {
+                    log$info("CEX process skipped (no cex decls found in : %s)\n", src_fn);
+                    continue;
+                }
+
+                qsort(decls, arr$len(decls), sizeof(*decls), cexy__decl_comparator);
+
+                sbuf_c cex_h_struct = sbuf.create(10 * 1024, _);
+                sbuf_c cex_h_var_decl = sbuf.create(1024, _);
+                sbuf_c cex_c_var_def = sbuf.create(10 * 1024, _);
+
+                e$ret(sbuf.appendf(
+                    &cex_h_var_decl,
+                    "__attribute__((visibility(\"hidden\"))) extern const struct __cex_namespace__%S %S;\n",
+                    ns_prefix,
+                    ns_prefix
+                ));
+                e$ret(cexy__process_gen_struct(ns_prefix, decls, &cex_h_struct));
+                e$ret(cexy__process_gen_var_def(ns_prefix, decls, &cex_c_var_def));
+                e$ret(cexy__process_update_code(
+                    src_fn,
+                    only_update,
+                    cex_h_struct,
+                    cex_h_var_decl,
+                    cex_c_var_def
+                ));
+                e$ret(cexy__process_update_code(
+                    hdr_fn,
+                    only_update,
+                    cex_h_struct,
+                    cex_h_var_decl,
+                    cex_c_var_def
+                ));
+
+                // log$info("cex_h_struct: \n%s\n", cex_h_struct);
+                log$info("CEX processed: %s\n", src_fn);
             }
-            cex_decl_s* d = CexParser.decl_parse(t, items, cexy$process_ignore_kw, _);
-            if (d == NULL) {
-                continue;
-            }
-            if (d->type != CexTkn__func_def) {
-                continue;
-            }
-            if (d->is_inline && d->is_static) {
-                continue;
-            }
-            if (str.slice.match(d->name, fn_sub_pattern)) {
-                // OK use it!
-            } else if (str.slice.match(d->name, fn_private) ||
-                       !str.slice.match(d->name, fn_pattern)) {
-                continue;
-            }
-            log$trace("FN: %S ret_type: '%s' args: '%s'\n", d->name, d->ret_type, d->args);
-            arr$push(decls, d);
         }
-
-        qsort(decls, arr$len(decls), sizeof(*decls), cexy__decl_comparator);
-
-        sbuf_c cex_h_struct = sbuf.create(10 * 1024, _);
-        sbuf_c cex_h_var_decl = sbuf.create(1024, _);
-        sbuf_c cex_c_var_def = sbuf.create(10 * 1024, _);
-
-        e$ret(sbuf.appendf(
-            &cex_h_var_decl,
-            "__attribute__((visibility(\"hidden\"))) extern const struct __cex_namespace__%S %S;\n",
-            ns_prefix,
-            ns_prefix
-        ));
-        e$ret(cexy__process_gen_struct(ns_prefix, decls, &cex_h_struct));
-        e$ret(cexy__process_gen_var_def(ns_prefix, decls, &cex_c_var_def));
-        e$ret(cexy__process_update_code(src_fn, cex_h_struct, cex_h_var_decl, cex_c_var_def));
-        e$ret(cexy__process_update_code(hdr_fn, cex_h_struct, cex_h_var_decl, cex_c_var_def));
-
-        // log$info("cex_h_struct: \n%s\n", cex_h_struct);
-        log$info("CEX processed: %s\n", src_fn);
     }
     return EOK;
 }
