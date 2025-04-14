@@ -48,7 +48,9 @@ cex_codegen_print_line(cex_codegen_s* cg, const char* format, ...)
     if (unlikely(cg->error != EOK)) {
         return;
     }
-    cex_codegen_indent(cg);
+    if (format[0] != '\n'){
+        cex_codegen_indent(cg);
+    }
     cg$printva(cg);
 }
 

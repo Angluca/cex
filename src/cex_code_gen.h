@@ -27,7 +27,9 @@ typedef struct cex_codegen_s
 /*
  *                  CODE MACROS
  */
-#define $pn(text) cex_codegen_print_line(cg$var, "%s\n", text)
+#define $pn(text)                                                                                  \
+    ((text && text[0] == '\0') ? cex_codegen_print_line(cg$var, "\n")                              \
+                               : cex_codegen_print_line(cg$var, "%s\n", text))
 #define $pf(format, ...) cex_codegen_print_line(cg$var, format "\n", __VA_ARGS__)
 #define $pa(format, ...) cex_codegen_print(cg$var, true, format, __VA_ARGS__)
 
