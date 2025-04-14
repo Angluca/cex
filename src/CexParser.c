@@ -21,7 +21,7 @@
 #define lx$skip_space(lx, c)                                                                       \
     while (c && isspace((c))) {                                                                    \
         lx$next(lx);                                                                               \
-        (c) = lx$peek(lx);                                                                            \
+        (c) = lx$peek(lx);                                                                         \
     }
 
 CexParser_c
@@ -96,9 +96,16 @@ CexParser__scan_string(CexParser_c* lx)
                 lx$next(lx);
                 t.value.len++;
                 break;
-            case '"':
             case '\'':
-                return t;
+                if (t.type == CexTkn__char) {
+                    return t;
+                }
+                break;
+            case '"':
+                if (t.type == CexTkn__string) {
+                    return t;
+                }
+                break;
         }
         t.value.len++;
     }
@@ -390,6 +397,11 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
 #ifdef CEXTEST
         log$trace("%02d: %-15s %S\n", i, CexTkn_str[t.type], t.value);
 #endif
+        if (unlikely(t.type == CexTkn__error)) {
+            arr$clear(*children);
+            return t;
+        }
+
         if (unlikely(!result.type)) {
             result.type = CexTkn__global_misc;
             result.value = t.value;

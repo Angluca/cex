@@ -132,6 +132,9 @@ test$case(test_token_string)
         { " \"hello \\\"world\" ", "hello \\\"world", CexTkn__string },
         { " \"hello \\world\" ", "hello \\world", CexTkn__string },
         { " 'h' ", "h", CexTkn__char },
+        { "'\\''", "\\'", CexTkn__char },
+        { "'\"'", "\"", CexTkn__char },
+        { " \"'\" ", "'", CexTkn__string },
     };
     for$each(it, tokens)
     {
@@ -509,10 +512,8 @@ test$case(test_token_idents)
     token_cmp_s tokens[] = {
         { "foo", "foo", CexTkn__ident },           { "foo_bar", "foo_bar", CexTkn__ident },
         { "_foo_bar", "_foo_bar", CexTkn__ident }, { "_foo$bar", "_foo$bar", CexTkn__ident },
-        { "$foo$bar", "$foo$bar", CexTkn__ident },
-        { "FOO", "FOO", CexTkn__ident },
-        { "FOO2", "FOO2", CexTkn__ident },
-        { "2FOO", "2FOO", CexTkn__number },
+        { "$foo$bar", "$foo$bar", CexTkn__ident }, { "FOO", "FOO", CexTkn__ident },
+        { "FOO2", "FOO2", CexTkn__ident },         { "2FOO", "2FOO", CexTkn__number },
         { "FOO2(", "FOO2", CexTkn__ident },
     };
     for$each(it, tokens)
@@ -539,4 +540,40 @@ test$case(test_token_idents)
 
     return EOK;
 }
+
+test$case(test_token_parser)
+{
+    // CexParser - has nasty edge cases of char special characters and escaping it's useful to check
+    char* code = io.file.load("src/CexParser.c", mem$);
+    tassert(code);
+    CexParser_c lx = CexParser_create(code, 0, true);
+    cex_token_s t;
+    u32 nit = 0;
+    char* prev_tok = lx.cur;
+    while ((t = CexParser_next_token(&lx)).type) {
+        io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
+        tassertf(t.type != CexTkn__unk, "step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
+        tassertf(t.type != CexTkn__error, "step: %d token error starts at: ...\n%s\n", prev_tok);
+        if (t.type == CexTkn__brace_block) {
+            tassert(str.slice.starts_with(t.value, str$s("{")));
+            tassert(str.slice.ends_with(t.value, str$s("}")));
+        }
+        if (t.type == CexTkn__paren_block) {
+            tassert(str.slice.starts_with(t.value, str$s("(")));
+            tassert(str.slice.ends_with(t.value, str$s(")")));
+        }
+        if (t.type == CexTkn__bracket_block) {
+            tassert(str.slice.starts_with(t.value, str$s("[")));
+            tassert(str.slice.ends_with(t.value, str$s("]")));
+        }
+        nit++;
+        prev_tok = lx.cur;
+    }
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    mem$free(mem$, code);
+    return EOK;
+}
+
 test$main();
