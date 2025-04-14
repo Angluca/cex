@@ -401,7 +401,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
     allocator_arena_page_s* page = self->last_page;
     while (page) {
         var tpage = page->prev_page;
-        if (page->used_start <= used_mark) {
+        if (page->used_start == 0 || page->used_start < used_mark) {
             // last page, just set mark and poison
             usize free_offset = (used_mark - page->used_start);
             uassert(page->cursor >= free_offset);
@@ -439,7 +439,7 @@ const Allocator_i*
 AllocatorArena_create(usize page_size)
 {
     if (page_size < 1024 || page_size >= UINT32_MAX) {
-        uassert(page_size > 1024 && "page size is too small");
+        uassert(page_size >= 1024 && "page size is too small");
         uassert(page_size < UINT32_MAX && "page size is too big");
         return NULL;
     }

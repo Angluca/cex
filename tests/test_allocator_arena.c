@@ -550,4 +550,34 @@ test$case(test_allocator_arena_realloc_last_pointer)
     return EOK;
 }
 
+test$case(test_allocator_mem_scope_exit_oversized_page)
+{
+
+    IAllocator arena = AllocatorArena_create(1024);
+    tassert(arena != NULL);
+
+    mem$scope(arena, _)
+    {
+        // allocate some memory
+        u8* p = mem$malloc(arena, 128);
+        allocator_arena_rec_s* rec = (allocator_arena_rec_s*)(p - sizeof(allocator_arena_rec_s));
+        tassert_eq(rec->size, 128);
+        memset(p, 0xAA, 128);
+        (void)p;
+        mem$scope(arena, _)
+        {
+            // allocate some with reallocating page
+            p = mem$malloc(arena, 4096);
+            memset(p, 0xBB, 4096);
+            memset(p, 0xab, 1);
+            (void)p;
+            allocator_arena_rec_s* rec = (allocator_arena_rec_s*)(p - sizeof(allocator_arena_rec_s));
+            tassert_eq(rec->size, 4096);
+        }
+    }
+
+    AllocatorArena_destroy(arena);
+    return EOK;
+}
+
 test$main();
