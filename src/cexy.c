@@ -577,11 +577,21 @@ cexy__process_update_code(
     if (code_buf.buf != NULL)                                                                      \
         e$ret(sbuf.appendf(&new_code, "%S\n", code_buf));                                          \
     code_buf = (str_s){ 0 }
+#define $dump_prev_comment()                                                                       \
+    for$each(it, items)                                                                            \
+    {                                                                                              \
+        if (it.type == CexTkn__comment_single || it.type == CexTkn__comment_multi) {               \
+            e$ret(sbuf.appendf(&new_code, "%S\n", it.value));                                      \
+        } else {                                                                                   \
+            break;                                                                                 \
+        }                                                                                          \
+    }
 
         while ((t = CexParser.next_entity(&lx, &items)).type) {
             if (t.type == CexTkn__cex_module_def) {
                 e$assert(!is_header && "expected in .c file buf got header");
                 $dump_prev();
+                $dump_prev_comment();
                 if (!has_module_def) {
                     e$ret(sbuf.appendf(&new_code, "%s\n", cex_c_var_def));
                 }
@@ -589,6 +599,7 @@ cexy__process_update_code(
             } else if (t.type == CexTkn__cex_module_decl) {
                 e$assert(is_header && "expected in .h file buf got source");
                 $dump_prev();
+                $dump_prev_comment();
                 if (!has_module_decl) {
                     e$ret(sbuf.appendf(&new_code, "%s\n", cex_h_var_decl));
                 }
@@ -596,6 +607,7 @@ cexy__process_update_code(
             } else if (t.type == CexTkn__cex_module_struct) {
                 e$assert(is_header && "expected in .h file buf got source");
                 $dump_prev();
+                $dump_prev_comment();
                 if (!has_module_struct) {
                     e$ret(sbuf.appendf(&new_code, "%s\n", cex_h_struct));
                 }
@@ -636,6 +648,7 @@ cexy__process_update_code(
     }
 
 #undef $dump_prev
+#undef $dump_prev_comment
     return EOK;
 }
 
