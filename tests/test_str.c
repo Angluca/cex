@@ -503,6 +503,22 @@ test$case(test_iter_split)
         tassert(false && "should not happen");
     }
     tassert_eq(nit, 0);
+
+    nit = 0;
+    const char* expected8[] = {
+        "",
+        "123",
+        "456",
+        "",
+    };
+    s = str.sstr("\n123\n456\n");
+    for$iter(str_s, it, str.slice.iter_split(s, "\n", &it.iterator))
+    {
+        tassert(it.val.buf);
+        tassert_eq(it.val, str.sstr(expected8[nit]));
+        nit++;
+    }
+    tassert_eq(nit, 4);
     return EOK;
 }
 
