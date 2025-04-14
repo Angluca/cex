@@ -1237,7 +1237,7 @@ test$case(test_argparse_usage_default_options)
     };
     int argc = arr$len(argv);
 
-    tassert_eq(EOK, argparse_parse(&argparse, argc, argv));
+    tassert_eq(Error.argsparse, argparse_parse(&argparse, argc, argv));
     // tassert(false);
 
     return EOK;

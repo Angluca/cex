@@ -4,7 +4,7 @@
 #define cexy$cc_include "-I.", "-I./lib/"
 #endif
 
-#define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
+#define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #define CEX_IMPLEMENTATION
 #define CEXBUILD
 #include "cex.h"

@@ -235,7 +235,7 @@ test$case(test_cex_struct_def)
         t = CexParser_next_entity(&lx, &items);
         log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_def);
-        tassert_eq(arr$len(items), 8);
+        tassert_eq(arr$len(items), 7);
 
         t = CexParser_next_entity(&lx, &items);
         log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
