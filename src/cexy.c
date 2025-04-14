@@ -725,7 +725,8 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     {
         for$each(src_fn, os.fs.find(target, true, _))
         {
-            if (str.starts_with(src_fn, "test")) {
+            char* basename = os.path.basename(src_fn, _);
+            if (str.starts_with(basename, "test") || str.eq(basename, "cex.c")) {
                 continue;
             }
             mem$scope(tmem$, _)
@@ -747,7 +748,12 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     ns_prefix
                 );
                 if (!os.path.exists(hdr_fn)) {
-                    return e$raise(Error.not_found, "Header file not exists: '%s'", hdr_fn);
+                    if (only_update) {
+                        log$debug("CEX skipped (no .h file for: %s)\n", src_fn);
+                        continue;
+                    } else {
+                        return e$raise(Error.not_found, "Header file not exists: '%s'", hdr_fn);
+                    }
                 }
                 char* code = io.file.load(src_fn, _);
                 e$assert(code && "failed loading code");
@@ -786,7 +792,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     arr$push(decls, d);
                 }
                 if (arr$len(decls) == 0) {
-                    log$info("CEX process skipped (no cex decls found in : %s)\n", src_fn);
+                    log$info("CEX skipped (no cex decls found in : %s)\n", src_fn);
                     continue;
                 }
 
