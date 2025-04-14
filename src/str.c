@@ -220,7 +220,7 @@ str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
     int result = cexsp__vsnprintf(dest, dest_len, format, va);
 
     if (result < 0 || (usize)result >= dest_len) {
-        dest[0] = '\0';
+        // NOTE: even with overflow, data is truncated and written to the dest + null term
         return Error.overflow;
     }
 

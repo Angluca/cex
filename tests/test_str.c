@@ -1705,12 +1705,12 @@ test$case(test_str_sprintf)
 
     memset(buffer, 'z', sizeof(buffer));
     tassert_er(Error.overflow, str.sprintf(buffer, sizeof(buffer), "%s", "1234567890"));
-    tassert_eq("", buffer);
+    tassert_eq("123456789", buffer);
     tassert_eq('\0', buffer[arr$len(buffer) - 1]);
 
     memset(buffer, 'z', sizeof(buffer));
     tassert_er(Error.overflow, str.sprintf(buffer, sizeof(buffer), "%s", "12345678900129830128308"));
-    tassert_eq("", buffer);
+    tassert_eq("123456789", buffer);
     tassert_eq('\0', buffer[arr$len(buffer) - 1]);
 
     memset(buffer, 'z', sizeof(buffer));
