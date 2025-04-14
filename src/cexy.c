@@ -438,6 +438,43 @@ cexy__decl_comparator(const void* a, const void* b)
 
     return str.slice.cmp(_a[0]->name, _b[0]->name);
 }
+static str_s
+cexy__process_make_brief_docs(cex_decl_s* decl)
+{
+    str_s brief_str = { 0 };
+    if (!decl->docs.buf) {
+        return brief_str;
+    }
+
+    if (str.slice.starts_with(decl->docs, str$s("///"))) {
+        // doxygen style ///
+        brief_str = str.slice.strip(str.slice.sub(decl->docs, 3, 0));
+    } else if (str.slice.match(decl->docs, "/\\*[\\*!]*")) {
+        // doxygen style /** or /*!
+        for$iter(
+            str_s,
+            it,
+            str.slice.iter_split(str.slice.sub(decl->docs, 3, -2), "\n", &it.iterator)
+        )
+        {
+            str_s line = str.slice.strip(it.val);
+            if (line.len == 0) {
+                continue;
+            }
+            brief_str = line;
+            break;
+        }
+    }
+    isize bridx = (str.slice.index_of(brief_str, str$s("@brief")));
+    if (bridx == -1) {
+        bridx = str.slice.index_of(brief_str, str$s("\\brief"));
+    }
+    if (bridx != -1) {
+        brief_str = str.slice.strip(str.slice.sub(brief_str, bridx + strlen("@brief"), 0));
+    }
+
+    return brief_str;
+}
 
 static Exception
 cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_buf)
@@ -472,6 +509,10 @@ cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_b
                     subn = new_ns;
                 }
                 clean_name = str.slice.sub(clean_name, 1 + subn.len + 2, 0);
+            }
+            str_s brief_str = cexy__process_make_brief_docs(it);
+            if (brief_str.len) {
+                $pf("/// %S", brief_str);
             }
             $pf("%-15s (*%S)(%s);", it->ret_type, clean_name, it->args);
         }
