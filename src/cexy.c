@@ -8,14 +8,16 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
     {
         uassert(str.ends_with(argv[0], "cex"));
         char* bin_path = argv[0];
+#ifdef CEX_SELF_BUILD
         log$trace("Checking self build for executable: %s\n", bin_path);
         if (!cexy.src_include_changed(bin_path, cex_source, NULL)) {
             log$trace("%s unchanged, skipping self build\n", cex_source);
             // cex.c/cex.h are up to date no rebuild needed
             return;
         }
+#endif
 
-        log$info("Building self: %s -> %s\n", cex_source, bin_path);
+        log$info("Rebuilding self: %s -> %s\n", cex_source, bin_path);
         char* old_name = str.fmt(_, "%s.old", bin_path);
         if (os.path.exists(bin_path)) {
             if (os.fs.remove(old_name)) {
@@ -26,7 +28,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
             }
         }
         arr$(const char*) args = arr$new(args, _);
-        arr$pushm(args, cexy$cc, "-o", bin_path, cex_source, NULL);
+        arr$pushm(args, cexy$cc, "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
         _os$args_print("CMD:", args, arr$len(args));
         os_cmd_c _cmd = { 0 };
         e$except(err, os.cmd.run(args, arr$len(args), &_cmd))
@@ -653,22 +655,24 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     // clang-format on
 
     const char* ignore_kw = cexy$process_ignore_kw;
-    argparse_c
-        cmd_args = { .program_name = "./cex",
-                     .usage = "process [options] all|path/some_file.c",
-                     .description = process_help,
-                     .epilog = "Use `all` for updates, and exact path/some_file.c for creating new\n",
-                     .options = (argparse_opt_s[]){
-                         argparse$opt_group("Options"),
-                         argparse$opt_help(),
-                         argparse$opt(
-                             &ignore_kw,
-                             'i',
-                             "ignore",
-                             .help = "ignores `keyword` or `keyword()` from processed function signatures\n  uses cexy$process_ignore_kw"
-                         ),
-                         { 0 },
-                     } };
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "process [options] all|path/some_file.c",
+        .description = process_help,
+        .epilog = "Use `all` for updates, and exact path/some_file.c for creating new\n",
+        .options =
+            (argparse_opt_s[]){
+                argparse$opt_group("Options"),
+                argparse$opt_help(),
+                argparse$opt(
+                    &ignore_kw,
+                    'i',
+                    "ignore",
+                    .help = "ignores `keyword` or `keyword()` from processed function signatures\n  uses cexy$process_ignore_kw"
+                ),
+                { 0 },
+            }
+    };
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* target = argparse.next(&cmd_args);
 
@@ -711,6 +715,15 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
         CexParser_c lx = CexParser.create(code, 0, true);
         cex_token_s t;
         while ((t = CexParser.next_entity(&lx, &items)).type) {
+            if (t.type == CexTkn__error) {
+                return e$raise(
+                    Error.integrity,
+                    "Error parsing file %s, at line: %d, cursor: %d",
+                    src_fn,
+                    lx.line,
+                    (i32)(lx.cur - lx.content)
+                );
+            }
             cex_decl_s* d = CexParser.decl_parse(t, items, cexy$process_ignore_kw, _);
             if (d == NULL) {
                 continue;
@@ -749,7 +762,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
         e$ret(cexy__process_update_code(hdr_fn, cex_h_struct, cex_h_var_decl, cex_c_var_def));
 
         // log$info("cex_h_struct: \n%s\n", cex_h_struct);
-        // log$info("new_code: \n%s\n", new_code);
+        log$info("CEX processed: %s\n", src_fn);
     }
     return EOK;
 }

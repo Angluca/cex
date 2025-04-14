@@ -77,10 +77,6 @@ string
     "* cexy$ld_libs              " cex$stringize(cexy$ld_libs) "\n"                                \
     "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
     "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"
-/* clang-format on */
-
-
-
 __attribute__((visibility("hidden"))) extern const struct __cex_namespace__cexy cexy;
 
 struct __cex_namespace__cexy {
@@ -105,5 +101,4 @@ struct __cex_namespace__cexy {
     
     // clang-format on
 };
-
 #endif // #if defined(CEXBUILD)
