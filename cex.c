@@ -18,13 +18,13 @@ void cex_bundle(void);
 int
 main(int argc, char** argv)
 {
-    cex_bundle();
-    cexy$initialize();
+    // cex_bundle();
+    // cexy$initialize();
 
     // clang-format off
     argparse_c args = {
         .description = cexy$description,
-        .epilog = cexy$epilog,
+        // .epilog = cexy$epilog,
         .commands = (argparse_cmd_s[]) {
                 cexy$cmd_all,
                 { .name = "check", .func = cmd_check, .help = "Validates build environment" },

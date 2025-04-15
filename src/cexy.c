@@ -939,7 +939,12 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     if (str.eq(target, "all")) {
         target = "*.h";
     } else {
+        if (str.eq(target, "cex")) {
+            target = "./cex.h";
+        }
     }
+
+    str_s item_filter_slice = str.sstr(item_filter);
 
     mem$arena(1024*100, arena)
     {
@@ -988,7 +993,9 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                             }
                         }
                     } else {
-                        uassert(false && "TODO");
+                        if (str.slice.index_of(d->name, item_filter_slice) != -1) {
+                            hm$set(names, d->name, d);
+                        }
                     }
                 }
                 if (arr$len(names) == 0) {
@@ -1021,7 +1028,13 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     it.value->line + 1
                 );
             } else {
-                io.printf("%-20s %S\n", CexTkn_str[it.value->type], it.key);
+                io.printf(
+                    "%-20s %-30S %s:%d\n",
+                    CexTkn_str[it.value->type],
+                    it.key,
+                    it.value->file,
+                    it.value->line + 1
+                );
             }
         }
     }
