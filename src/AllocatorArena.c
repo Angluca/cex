@@ -471,6 +471,8 @@ AllocatorArena_create(usize page_size)
     uassert(self->alloc.meta.magic_id == CEX_ALLOCATOR_ARENA_MAGIC);
     uassert(self->alloc.malloc == _cex_allocator_arena__malloc);
 
+    _cex_allocator_arena__scope_enter(&self->alloc);
+
     return &self->alloc;
 }
 
@@ -538,6 +540,10 @@ AllocatorArena_destroy(IAllocator self)
 {
     _cex_allocator_arena__validate(self);
     AllocatorArena_c* allc = (AllocatorArena_c*)self;
+
+    uassert(allc->scope_depth == 1 && "trying to destroy in mem$scope?");
+    _cex_allocator_arena__scope_exit(self);
+
 #ifdef CEXTEST
     uassert(AllocatorArena_sanitize(self));
 #endif

@@ -52,6 +52,10 @@ test$case(test_allocator_arena_create_destroy)
     tassert(arena != tmem$);
     tassert(arena != mem$);
     tassert(mem$aligned_pointer(arena, alignof(AllocatorArena_c)) == arena);
+    tassert_eq(arena->scope_depth(arena), 1);
+
+    u8* p = mem$malloc(arena, 100);
+    tassert(p != NULL);
 
 
     tassert_eq(mem$->scope_depth(mem$), 1);
@@ -59,26 +63,27 @@ test$case(test_allocator_arena_create_destroy)
 
     mem$scope(arena, tal)
     {
-        tassert_eq(allc->scope_depth, 1);
-        tassert_eq(arena->scope_depth(arena), 1);
+        tassert_eq(allc->scope_depth, 2);
+        tassert_eq(arena->scope_depth(arena), 2);
         tassert_eq(mem$->scope_depth(mem$), 1);
 
         mem$scope(arena, tal)
         {
-            tassert_eq(allc->scope_depth, 2);
-            tassert_eq(arena->scope_depth(arena), 2);
+            tassert_eq(allc->scope_depth, 3);
+            tassert_eq(arena->scope_depth(arena), 3);
             tassert_eq(mem$->scope_depth(mem$), 1);
             mem$scope(arena, tal)
             {
-                tassert_eq(allc->scope_depth, 3);
+                tassert_eq(allc->scope_depth, 4);
                 tassert_eq(mem$->scope_depth(mem$), 1);
-                tassert_eq(arena->scope_depth(arena), 3);
+                tassert_eq(arena->scope_depth(arena), 4);
             }
-            tassert_eq(allc->scope_depth, 2);
+            tassert_eq(allc->scope_depth, 3);
         }
-        tassert_eq(allc->scope_depth, 1);
+        tassert_eq(allc->scope_depth, 2);
     }
-    tassert_eq(allc->scope_depth, 0);
+    tassert_eq(allc->scope_depth, 1);
+    tassert_eq(arena->scope_depth(arena), 1);
 
     AllocatorArena_destroy(arena);
     return EOK;
@@ -106,7 +111,7 @@ test$case(test_allocator_arena_malloc)
         tassert_eq(allc->stats.bytes_alloc, 112);
         tassert_eq(allc->used, 112);
 
-        tassert_eq(allc->scope_depth, 1);
+        tassert_eq(allc->scope_depth, 2);
         tassert_eq(allc->scope_stack[0], 0);
         tassert_eq(allc->scope_stack[1], 0);
         tassert_eq(allc->scope_stack[2], 0);
@@ -116,10 +121,10 @@ test$case(test_allocator_arena_malloc)
 
         mem$scope(arena, _)
         {
-            tassert_eq(allc->scope_depth, 2);
+            tassert_eq(allc->scope_depth, 3);
             tassert_eq(allc->scope_stack[0], 0);
-            tassert_eq(allc->scope_stack[1], 112);
-            tassert_eq(allc->scope_stack[2], 0);
+            tassert_eq(allc->scope_stack[1], 0);
+            tassert_eq(allc->scope_stack[2], 112);
 
             char* p2 = mem$malloc(arena, 4);
             tassert(p2 != NULL);
@@ -136,10 +141,11 @@ test$case(test_allocator_arena_malloc)
                 tassert_eq(allc->used, 112 + 16 + 16);
                 tassert_eq(allc->last_page->cursor, 112 + 16 + 16);
 
-                tassert_eq(allc->scope_depth, 3);
+                tassert_eq(allc->scope_depth, 4);
                 tassert_eq(allc->scope_stack[0], 0);
-                tassert_eq(allc->scope_stack[1], 112);
-                tassert_eq(allc->scope_stack[2], 112 + 16);
+                tassert_eq(allc->scope_stack[1], 0);
+                tassert_eq(allc->scope_stack[2], 112);
+                tassert_eq(allc->scope_stack[3], 112 + 16);
                 tassert(allc->last_page->last_alloc == p3);
                 AllocatorArena_sanitize(arena);
             }
