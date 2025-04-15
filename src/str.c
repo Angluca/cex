@@ -3,17 +3,17 @@
 #include "all.h"
 
 static inline bool
-str__isvalid(const str_s* s)
+_cex_str__isvalid(const str_s* s)
 {
     return s->buf != NULL;
 }
 
 static inline isize
-str__index(str_s* s, const char* c, u8 clen)
+_cex_str__index(str_s* s, const char* c, u8 clen)
 {
     isize result = -1;
 
-    if (!str__isvalid(s)) {
+    if (!_cex_str__isvalid(s)) {
         return -1;
     }
 
@@ -39,7 +39,7 @@ str__index(str_s* s, const char* c, u8 clen)
  * @return
  */
 static str_s
-str_sstr(const char* ccharptr)
+cex_str_sstr(const char* ccharptr)
 {
     if (unlikely(ccharptr == NULL)) {
         return (str_s){ 0 };
@@ -53,7 +53,7 @@ str_sstr(const char* ccharptr)
 
 
 static str_s
-str_sbuf(char* s, usize length)
+cex_str_sbuf(char* s, usize length)
 {
     if (unlikely(s == NULL)) {
         return (str_s){ 0 };
@@ -66,7 +66,7 @@ str_sbuf(char* s, usize length)
 }
 
 static bool
-str_eq(const char* a, const char* b)
+cex_str_eq(const char* a, const char* b)
 {
     if (unlikely(a == NULL || b == NULL)) {
         return a == b;
@@ -75,7 +75,7 @@ str_eq(const char* a, const char* b)
 }
 
 bool
-str_eqi(const char* a, const char* b)
+cex_str_eqi(const char* a, const char* b)
 {
     if (unlikely(a == NULL || b == NULL)) {
         return a == b;
@@ -91,7 +91,7 @@ str_eqi(const char* a, const char* b)
 }
 
 static bool
-str__slice__eq(str_s a, str_s b)
+cex_str__slice__eq(str_s a, str_s b)
 {
     if (unlikely(a.buf == NULL || b.buf == NULL)) {
         return (a.buf == NULL && b.buf == NULL);
@@ -103,7 +103,7 @@ str__slice__eq(str_s a, str_s b)
 }
 
 static str_s
-str__slice__sub(str_s s, isize start, isize end)
+cex_str__slice__sub(str_s s, isize start, isize end)
 {
     slice$define(*s.buf) slice = { 0 };
     if (s.buf != NULL) {
@@ -117,14 +117,14 @@ str__slice__sub(str_s s, isize start, isize end)
 }
 
 static str_s
-str_sub(const char* s, isize start, isize end)
+cex_str_sub(const char* s, isize start, isize end)
 {
-    str_s slice = str_sstr(s);
-    return str__slice__sub(slice, start, end);
+    str_s slice = cex_str_sstr(s);
+    return cex_str__slice__sub(slice, start, end);
 }
 
 static Exception
-str_copy(char* dest, const char* src, usize destlen)
+cex_str_copy(char* dest, const char* src, usize destlen)
 {
     uassert(dest != src && "buffers overlap");
     if (unlikely(dest == NULL || destlen == 0)) {
@@ -146,7 +146,7 @@ str_copy(char* dest, const char* src, usize destlen)
 }
 
 char*
-str_replace(const char* str, const char* old_sub, const char* new_sub, IAllocator allc)
+cex_str_replace(const char* str, const char* old_sub, const char* new_sub, IAllocator allc)
 {
     if (str == NULL || old_sub == NULL || new_sub == NULL || old_sub[0] == '\0') {
         return NULL;
@@ -185,7 +185,7 @@ str_replace(const char* str, const char* old_sub, const char* new_sub, IAllocato
 }
 
 static Exception
-str__slice__copy(char* dest, str_s src, usize destlen)
+cex_str__slice__copy(char* dest, str_s src, usize destlen)
 {
     uassert(dest != src.buf && "buffers overlap");
     if (unlikely(dest == NULL || destlen == 0)) {
@@ -205,7 +205,7 @@ str__slice__copy(char* dest, str_s src, usize destlen)
 }
 
 static Exception
-str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
+cex_str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
 {
     if (unlikely(dest == NULL)) {
         return Error.argument;
@@ -228,18 +228,18 @@ str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
 }
 
 static Exception
-str_sprintf(char* dest, usize dest_len, const char* format, ...)
+cex_str_sprintf(char* dest, usize dest_len, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    Exc result = str_vsprintf(dest, dest_len, format, va);
+    Exc result = cex_str_vsprintf(dest, dest_len, format, va);
     va_end(va);
     return result;
 }
 
 
 static usize
-str_len(const char* s)
+cex_str_len(const char* s)
 {
     if (s == NULL) {
         return 0;
@@ -248,7 +248,7 @@ str_len(const char* s)
 }
 
 static char*
-str_find(const char* haystack, const char* needle)
+cex_str_find(const char* haystack, const char* needle)
 {
     if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) {
         return NULL;
@@ -257,7 +257,7 @@ str_find(const char* haystack, const char* needle)
 }
 
 char*
-str_findr(const char* haystack, const char* needle)
+cex_str_findr(const char* haystack, const char* needle)
 {
     if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) {
         return NULL;
@@ -278,7 +278,7 @@ str_findr(const char* haystack, const char* needle)
 }
 
 static isize
-str__slice__index_of(str_s str, str_s needle)
+cex_str__slice__index_of(str_s str, str_s needle)
 {
     if (unlikely(!str.buf || !needle.buf || needle.len == 0 || needle.len > str.len)) {
         return -1;
@@ -301,7 +301,7 @@ str__slice__index_of(str_s str, str_s needle)
 }
 
 static bool
-str__slice__starts_with(str_s str, str_s prefix)
+cex_str__slice__starts_with(str_s str, str_s prefix)
 {
     if (unlikely(!str.buf || !prefix.buf || prefix.len == 0 || prefix.len > str.len)) {
         return false;
@@ -309,7 +309,7 @@ str__slice__starts_with(str_s str, str_s prefix)
     return memcmp(str.buf, prefix.buf, prefix.len) == 0;
 }
 static bool
-str__slice__ends_with(str_s s, str_s suffix)
+cex_str__slice__ends_with(str_s s, str_s suffix)
 {
     if (unlikely(!s.buf || !suffix.buf || suffix.len == 0 || suffix.len > s.len)) {
         return false;
@@ -318,7 +318,7 @@ str__slice__ends_with(str_s s, str_s suffix)
 }
 
 static bool
-str_starts_with(const char* str, const char* prefix)
+cex_str_starts_with(const char* str, const char* prefix)
 {
     if (str == NULL || prefix == NULL || prefix[0] == '\0') {
         return false;
@@ -331,7 +331,7 @@ str_starts_with(const char* str, const char* prefix)
 }
 
 static bool
-str_ends_with(const char* str, const char* suffix)
+cex_str_ends_with(const char* str, const char* suffix)
 {
     if (str == NULL || suffix == NULL || suffix[0] == '\0') {
         return false;
@@ -343,9 +343,9 @@ str_ends_with(const char* str, const char* suffix)
 }
 
 static str_s
-str__slice__remove_prefix(str_s s, str_s prefix)
+cex_str__slice__remove_prefix(str_s s, str_s prefix)
 {
-    if (!str__slice__starts_with(s, prefix)) {
+    if (!cex_str__slice__starts_with(s, prefix)) {
         return s;
     }
 
@@ -356,9 +356,9 @@ str__slice__remove_prefix(str_s s, str_s prefix)
 }
 
 static str_s
-str__slice__remove_suffix(str_s s, str_s suffix)
+cex_str__slice__remove_suffix(str_s s, str_s suffix)
 {
-    if (!str__slice__ends_with(s, suffix)) {
+    if (!cex_str__slice__ends_with(s, suffix)) {
         return s;
     }
     return (str_s){
@@ -368,7 +368,7 @@ str__slice__remove_suffix(str_s s, str_s suffix)
 }
 
 static inline void
-str__strip_left(str_s* s)
+cex_str__strip_left(str_s* s)
 {
     char* cend = s->buf + s->len;
 
@@ -388,7 +388,7 @@ str__strip_left(str_s* s)
 }
 
 static inline void
-str__strip_right(str_s* s)
+cex_str__strip_right(str_s* s)
 {
     while (s->len > 0) {
         switch (s->buf[s->len - 1]) {
@@ -406,7 +406,7 @@ str__strip_right(str_s* s)
 
 
 static str_s
-str__slice__lstrip(str_s s)
+cex_str__slice__lstrip(str_s s)
 {
     if (s.buf == NULL) {
         return (str_s){
@@ -426,12 +426,12 @@ str__slice__lstrip(str_s s)
         .len = s.len,
     };
 
-    str__strip_left(&result);
+    cex_str__strip_left(&result);
     return result;
 }
 
 static str_s
-str__slice__rstrip(str_s s)
+cex_str__slice__rstrip(str_s s)
 {
     if (s.buf == NULL) {
         return (str_s){
@@ -451,12 +451,12 @@ str__slice__rstrip(str_s s)
         .len = s.len,
     };
 
-    str__strip_right(&result);
+    cex_str__strip_right(&result);
     return result;
 }
 
 static str_s
-str__slice__strip(str_s s)
+cex_str__slice__strip(str_s s)
 {
     if (s.buf == NULL) {
         return (str_s){
@@ -476,13 +476,13 @@ str__slice__strip(str_s s)
         .len = s.len,
     };
 
-    str__strip_left(&result);
-    str__strip_right(&result);
+    cex_str__strip_left(&result);
+    cex_str__strip_right(&result);
     return result;
 }
 
 static int
-str__slice__qscmp(const void* a, const void* b)
+cex_str__slice__qscmp(const void* a, const void* b)
 {
     str_s self = *(str_s*)a;
     str_s other = *(str_s*)b;
@@ -504,7 +504,7 @@ str__slice__qscmp(const void* a, const void* b)
 }
 
 static int
-str__slice__qscmpi(const void* a, const void* b)
+cex_str__slice__qscmpi(const void* a, const void* b)
 {
     str_s self = *(str_s*)a;
     str_s other = *(str_s*)b;
@@ -538,7 +538,7 @@ str__slice__qscmpi(const void* a, const void* b)
 }
 
 static str_s
-str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
+cex_str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
     uassert(split_by != NULL && "null split_by");
@@ -556,7 +556,7 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
     if (unlikely(!iterator->initialized)) {
         iterator->initialized = 1;
         // First run handling
-        if (unlikely(!str__isvalid(&s) || s.len == 0)) {
+        if (unlikely(!_cex_str__isvalid(&s) || s.len == 0)) {
             iterator->stopped = 1;
             return (str_s){ 0 };
         }
@@ -568,7 +568,7 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
         }
         uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
-        isize idx = str__index(&s, split_by, ctx->split_by_len);
+        isize idx = _cex_str__index(&s, split_by, ctx->split_by_len);
         if (idx < 0) {
             idx = s.len;
         }
@@ -595,7 +595,7 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 
         // Get remaining string after prev split_by char
         str_s tok = str.slice.sub(s, ctx->cursor, 0);
-        isize idx = str__index(&tok, split_by, ctx->split_by_len);
+        isize idx = _cex_str__index(&tok, split_by, ctx->split_by_len);
 
         iterator->idx.i++;
 
@@ -616,7 +616,7 @@ str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
 
 
 static Exception
-str__to_signed_num(const char* self, i64* num, i64 num_min, i64 num_max)
+cex_str__to_signed_num(const char* self, i64* num, i64 num_min, i64 num_max)
 {
     _Static_assert(sizeof(i64) == 8, "unexpected u64 size");
     uassert(num_min < num_max);
@@ -703,7 +703,7 @@ str__to_signed_num(const char* self, i64* num, i64 num_min, i64 num_max)
 }
 
 static Exception
-str__to_unsigned_num(const char* s, u64* num, u64 num_max)
+cex_str__to_unsigned_num(const char* s, u64* num, u64 num_max)
 {
     _Static_assert(sizeof(u64) == 8, "unexpected u64 size");
     uassert(num_max > 0);
@@ -784,7 +784,7 @@ str__to_unsigned_num(const char* s, u64* num, u64 num_max)
 }
 
 static Exception
-str__to_double(const char* self, double* num, i32 exp_min, i32 exp_max)
+cex_str__to_double(const char* self, double* num, i32 exp_min, i32 exp_max)
 {
     _Static_assert(sizeof(double) == 8, "unexpected double precision");
     if (unlikely(self == NULL)) {
@@ -960,107 +960,107 @@ str__to_double(const char* self, double* num, i32 exp_min, i32 exp_max)
 }
 
 static Exception
-str__convert__to_f32(const char* s, f32* num)
+cex_str__convert__to_f32(const char* s, f32* num)
 {
     uassert(num != NULL);
     f64 res = 0;
-    Exc r = str__to_double(s, &res, -37, 38);
+    Exc r = cex_str__to_double(s, &res, -37, 38);
     *num = (f32)res;
     return r;
 }
 
 static Exception
-str__convert__to_f64(const char* s, f64* num)
+cex_str__convert__to_f64(const char* s, f64* num)
 {
     uassert(num != NULL);
-    return str__to_double(s, num, -307, 308);
+    return cex_str__to_double(s, num, -307, 308);
 }
 
 static Exception
-str__convert__to_i8(const char* s, i8* num)
+cex_str__convert__to_i8(const char* s, i8* num)
 {
     uassert(num != NULL);
     i64 res = 0;
-    Exc r = str__to_signed_num(s, &res, INT8_MIN, INT8_MAX);
+    Exc r = cex_str__to_signed_num(s, &res, INT8_MIN, INT8_MAX);
     *num = res;
     return r;
 }
 
 static Exception
-str__convert__to_i16(const char* s, i16* num)
+cex_str__convert__to_i16(const char* s, i16* num)
 {
     uassert(num != NULL);
     i64 res = 0;
-    var r = str__to_signed_num(s, &res, INT16_MIN, INT16_MAX);
+    var r = cex_str__to_signed_num(s, &res, INT16_MIN, INT16_MAX);
     *num = res;
     return r;
 }
 
 static Exception
-str__convert__to_i32(const char* s, i32* num)
+cex_str__convert__to_i32(const char* s, i32* num)
 {
     uassert(num != NULL);
     i64 res = 0;
-    var r = str__to_signed_num(s, &res, INT32_MIN, INT32_MAX);
+    var r = cex_str__to_signed_num(s, &res, INT32_MIN, INT32_MAX);
     *num = res;
     return r;
 }
 
 
 static Exception
-str__convert__to_i64(const char* s, i64* num)
+cex_str__convert__to_i64(const char* s, i64* num)
 {
     uassert(num != NULL);
     i64 res = 0;
     // NOTE:INT64_MIN+1 because negating of INT64_MIN leads to UB!
-    var r = str__to_signed_num(s, &res, INT64_MIN + 1, INT64_MAX);
+    var r = cex_str__to_signed_num(s, &res, INT64_MIN + 1, INT64_MAX);
     *num = res;
     return r;
 }
 
 static Exception
-str__convert__to_u8(const char* s, u8* num)
+cex_str__convert__to_u8(const char* s, u8* num)
 {
     uassert(num != NULL);
     u64 res = 0;
-    Exc r = str__to_unsigned_num(s, &res, UINT8_MAX);
+    Exc r = cex_str__to_unsigned_num(s, &res, UINT8_MAX);
     *num = res;
     return r;
 }
 
 static Exception
-str__convert__to_u16(const char* s, u16* num)
+cex_str__convert__to_u16(const char* s, u16* num)
 {
     uassert(num != NULL);
     u64 res = 0;
-    Exc r = str__to_unsigned_num(s, &res, UINT16_MAX);
+    Exc r = cex_str__to_unsigned_num(s, &res, UINT16_MAX);
     *num = res;
     return r;
 }
 
 static Exception
-str__convert__to_u32(const char* s, u32* num)
+cex_str__convert__to_u32(const char* s, u32* num)
 {
     uassert(num != NULL);
     u64 res = 0;
-    Exc r = str__to_unsigned_num(s, &res, UINT32_MAX);
+    Exc r = cex_str__to_unsigned_num(s, &res, UINT32_MAX);
     *num = res;
     return r;
 }
 
 static Exception
-str__convert__to_u64(const char* s, u64* num)
+cex_str__convert__to_u64(const char* s, u64* num)
 {
     uassert(num != NULL);
     u64 res = 0;
-    Exc r = str__to_unsigned_num(s, &res, UINT64_MAX);
+    Exc r = cex_str__to_unsigned_num(s, &res, UINT64_MAX);
     *num = res;
 
     return r;
 }
 
 static char*
-str__fmt_callback(const char* buf, void* user, u32 len)
+_cex_str__fmt_callback(const char* buf, void* user, u32 len)
 {
     (void)buf;
     cexsp__context* ctx = user;
@@ -1112,7 +1112,7 @@ str__fmt_callback(const char* buf, void* user, u32 len)
 }
 
 static char*
-str_fmt(IAllocator allc, const char* format, ...)
+cex_str_fmt(IAllocator allc, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -1121,7 +1121,7 @@ str_fmt(IAllocator allc, const char* format, ...)
         .allc = allc,
     };
     // TODO: add optional flag, to check if any va is null?
-    cexsp__vsprintfcb(str__fmt_callback, &ctx, ctx.tmp, format, va);
+    cexsp__vsprintfcb(_cex_str__fmt_callback, &ctx, ctx.tmp, format, va);
     va_end(va);
 
     if (unlikely(ctx.has_error)) {
@@ -1147,7 +1147,7 @@ str_fmt(IAllocator allc, const char* format, ...)
 }
 
 static char*
-str__slice__clone(str_s s, IAllocator allc)
+cex_str__slice__clone(str_s s, IAllocator allc)
 {
     if (s.buf == NULL) {
         return NULL;
@@ -1161,7 +1161,7 @@ str__slice__clone(str_s s, IAllocator allc)
 }
 
 static char*
-str_clone(const char* s, IAllocator allc)
+cex_str_clone(const char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1178,7 +1178,7 @@ str_clone(const char* s, IAllocator allc)
 }
 
 static char*
-str_lower(const char* s, IAllocator allc)
+cex_str_lower(const char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1197,7 +1197,7 @@ str_lower(const char* s, IAllocator allc)
 }
 
 static char*
-str_upper(const char* s, IAllocator allc)
+cex_str_upper(const char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1215,9 +1215,9 @@ str_upper(const char* s, IAllocator allc)
     return result;
 }
 
-static arr$(char*) str_split(const char* s, const char* split_by, IAllocator allc)
+static arr$(char*) cex_str_split(const char* s, const char* split_by, IAllocator allc)
 {
-    str_s src = str_sstr(s);
+    str_s src = cex_str_sstr(s);
     if (src.buf == NULL || split_by == NULL) {
         return NULL;
     }
@@ -1226,16 +1226,16 @@ static arr$(char*) str_split(const char* s, const char* split_by, IAllocator all
         return NULL;
     }
 
-    for$iter(str_s, it, str__slice__iter_split(src, split_by, &it.iterator))
+    for$iter(str_s, it, cex_str__slice__iter_split(src, split_by, &it.iterator))
     {
-        char* tok = str__slice__clone(it.val, allc);
+        char* tok = cex_str__slice__clone(it.val, allc);
         arr$push(result, tok);
     }
 
     return result;
 }
 
-static arr$(char*) str_split_lines(const char* s, IAllocator allc)
+static arr$(char*) cex_str_split_lines(const char* s, IAllocator allc)
 {
     uassert(allc != NULL);
     if (s == NULL) {
@@ -1262,7 +1262,7 @@ static arr$(char*) str_split_lines(const char* s, IAllocator allc)
                 if (line.len > 0 && line.buf[line.len - 1] == '\r') {
                     line.len--;
                 }
-                char* tok = str__slice__clone(line, allc);
+                char* tok = cex_str__slice__clone(line, allc);
                 arr$push(result, tok);
                 line_start = cur + 1;
                 fallthrough();
@@ -1276,7 +1276,7 @@ static arr$(char*) str_split_lines(const char* s, IAllocator allc)
 }
 
 static char*
-str_join(const char** str_arr, usize str_arr_len, const char* join_by, IAllocator allc)
+cex_str_join(const char** str_arr, usize str_arr_len, const char* join_by, IAllocator allc)
 {
     if (str_arr == NULL || join_by == NULL) {
         return NULL;
@@ -1324,7 +1324,7 @@ str_join(const char** str_arr, usize str_arr_len, const char* join_by, IAllocato
 
 
 static bool
-_str_match(const char* str, isize str_len, const char* pattern)
+_cex_str_match(const char* str, isize str_len, const char* pattern)
 {
     if (unlikely(str == NULL || str_len <= 0)) {
         return false;
@@ -1350,7 +1350,7 @@ _str_match(const char* str, isize str_len, const char* pattern)
                 }
 
                 while (str_len > 0) {
-                    if (_str_match(str, str_len, pattern)) {
+                    if (_cex_str_match(str, str_len, pattern)) {
                         return true;
                     }
                     str++;
@@ -1525,18 +1525,18 @@ _str_match(const char* str, isize str_len, const char* pattern)
 }
 
 static bool
-str__slice__match(str_s s, const char* pattern)
+cex_str__slice__match(str_s s, const char* pattern)
 {
-    return _str_match(s.buf, s.len, pattern);
+    return _cex_str_match(s.buf, s.len, pattern);
 }
 static bool
-str_match(const char* s, const char* pattern)
+cex_str_match(const char* s, const char* pattern)
 {
-    return _str_match(s, str.len(s), pattern);
+    return _cex_str_match(s, str.len(s), pattern);
 }
 
 static int
-str_qscmp(const void* a, const void* b)
+cex_str_qscmp(const void* a, const void* b)
 {
     const char* _a = *(const char**)a;
     const char* _b = *(const char**)b;
@@ -1548,7 +1548,7 @@ str_qscmp(const void* a, const void* b)
 }
 
 static int
-str_qscmpi(const void* a, const void* b)
+cex_str_qscmpi(const void* a, const void* b)
 {
     const char* _a = *(const char**)a;
     const char* _b = *(const char**)b;
@@ -1578,61 +1578,61 @@ const struct __cex_namespace__str str = {
     // Autogenerated by CEX
     // clang-format off
 
-    .clone = str_clone,
-    .copy = str_copy,
-    .ends_with = str_ends_with,
-    .eq = str_eq,
-    .eqi = str_eqi,
-    .find = str_find,
-    .findr = str_findr,
-    .fmt = str_fmt,
-    .join = str_join,
-    .len = str_len,
-    .lower = str_lower,
-    .match = str_match,
-    .qscmp = str_qscmp,
-    .qscmpi = str_qscmpi,
-    .replace = str_replace,
-    .sbuf = str_sbuf,
-    .split = str_split,
-    .split_lines = str_split_lines,
-    .sprintf = str_sprintf,
-    .sstr = str_sstr,
-    .starts_with = str_starts_with,
-    .sub = str_sub,
-    .upper = str_upper,
-    .vsprintf = str_vsprintf,
+    .clone = cex_str_clone,
+    .copy = cex_str_copy,
+    .ends_with = cex_str_ends_with,
+    .eq = cex_str_eq,
+    .eqi = cex_str_eqi,
+    .find = cex_str_find,
+    .findr = cex_str_findr,
+    .fmt = cex_str_fmt,
+    .join = cex_str_join,
+    .len = cex_str_len,
+    .lower = cex_str_lower,
+    .match = cex_str_match,
+    .qscmp = cex_str_qscmp,
+    .qscmpi = cex_str_qscmpi,
+    .replace = cex_str_replace,
+    .sbuf = cex_str_sbuf,
+    .split = cex_str_split,
+    .split_lines = cex_str_split_lines,
+    .sprintf = cex_str_sprintf,
+    .sstr = cex_str_sstr,
+    .starts_with = cex_str_starts_with,
+    .sub = cex_str_sub,
+    .upper = cex_str_upper,
+    .vsprintf = cex_str_vsprintf,
 
     .convert = {
-        .to_f32 = str__convert__to_f32,
-        .to_f64 = str__convert__to_f64,
-        .to_i16 = str__convert__to_i16,
-        .to_i32 = str__convert__to_i32,
-        .to_i64 = str__convert__to_i64,
-        .to_i8 = str__convert__to_i8,
-        .to_u16 = str__convert__to_u16,
-        .to_u32 = str__convert__to_u32,
-        .to_u64 = str__convert__to_u64,
-        .to_u8 = str__convert__to_u8,
+        .to_f32 = cex_str__convert__to_f32,
+        .to_f64 = cex_str__convert__to_f64,
+        .to_i16 = cex_str__convert__to_i16,
+        .to_i32 = cex_str__convert__to_i32,
+        .to_i64 = cex_str__convert__to_i64,
+        .to_i8 = cex_str__convert__to_i8,
+        .to_u16 = cex_str__convert__to_u16,
+        .to_u32 = cex_str__convert__to_u32,
+        .to_u64 = cex_str__convert__to_u64,
+        .to_u8 = cex_str__convert__to_u8,
     },
 
     .slice = {
-        .clone = str__slice__clone,
-        .copy = str__slice__copy,
-        .ends_with = str__slice__ends_with,
-        .eq = str__slice__eq,
-        .index_of = str__slice__index_of,
-        .iter_split = str__slice__iter_split,
-        .lstrip = str__slice__lstrip,
-        .match = str__slice__match,
-        .qscmp = str__slice__qscmp,
-        .qscmpi = str__slice__qscmpi,
-        .remove_prefix = str__slice__remove_prefix,
-        .remove_suffix = str__slice__remove_suffix,
-        .rstrip = str__slice__rstrip,
-        .starts_with = str__slice__starts_with,
-        .strip = str__slice__strip,
-        .sub = str__slice__sub,
+        .clone = cex_str__slice__clone,
+        .copy = cex_str__slice__copy,
+        .ends_with = cex_str__slice__ends_with,
+        .eq = cex_str__slice__eq,
+        .index_of = cex_str__slice__index_of,
+        .iter_split = cex_str__slice__iter_split,
+        .lstrip = cex_str__slice__lstrip,
+        .match = cex_str__slice__match,
+        .qscmp = cex_str__slice__qscmp,
+        .qscmpi = cex_str__slice__qscmpi,
+        .remove_prefix = cex_str__slice__remove_prefix,
+        .remove_suffix = cex_str__slice__remove_suffix,
+        .rstrip = cex_str__slice__rstrip,
+        .starts_with = cex_str__slice__starts_with,
+        .strip = cex_str__slice__strip,
+        .sub = cex_str__slice__sub,
     },
 
     // clang-format on

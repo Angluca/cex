@@ -781,7 +781,9 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 
                 str_s ns_prefix = str.sub(os.path.basename(src_fn, _), 0, -2); // src.c -> src
                 char* fn_sub_pattern = str.fmt(_, "%S__[a-zA-Z0-9+]__*", ns_prefix);
+                char* fn_sub_pattern_cex = str.fmt(_, "cex_%S__[a-zA-Z0-9+]__*", ns_prefix);
                 char* fn_pattern = str.fmt(_, "%S_*", ns_prefix);
+                char* fn_pattern_cex = str.fmt(_, "cex_%S_*", ns_prefix);
                 char* fn_private = str.fmt(_, "%S__*", ns_prefix);
 
                 log$debug(
@@ -825,10 +827,11 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     if (d->is_inline && d->is_static) {
                         continue;
                     }
-                    if (str.slice.match(d->name, fn_sub_pattern)) {
+                    if (str.slice.match(d->name, fn_sub_pattern) || str.slice.match(d->name, fn_pattern_cex)) {
                         // OK use it!
                     } else if (str.slice.match(d->name, fn_private) ||
-                               !str.slice.match(d->name, fn_pattern)) {
+                               (!str.slice.match(d->name, fn_pattern_cex) &&
+                                !str.slice.match(d->name, fn_pattern) )) {
                         continue;
                     }
                     log$trace("FN: %S ret_type: '%s' args: '%s'\n", d->name, d->ret_type, d->args);
