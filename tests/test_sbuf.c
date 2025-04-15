@@ -280,7 +280,7 @@ test$case(test_sbuf_appendf_long_growth)
         str_s sub1 = str.sub(s, i * 4, i * 4 + 4);
 
         tassert_eq(EOK, str.slice.copy(svbuf, sub1, 16));
-        tassertf(str.slice.cmp(sub1, str.sstr(buf)) == 0, "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
+        tassertf(str.slice.eq(sub1, str.sstr(buf)), "i=%d, buf=%s sub1=%s", i, buf, sub1.buf);
     }
 
     sbuf.destroy(&s);
@@ -309,7 +309,7 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
 
     var sv2 = str.sstr(s);
     str_s sv = str.sstr(s);
-    tassert_eq(str.slice.cmp(sv2, sv), 0);
+    tassert_eq(str.slice.eq(sv2, sv), 1);
     tassert_eq(sv2.len, sv.len);
     tassert(sv2.buf == sv.buf);
 

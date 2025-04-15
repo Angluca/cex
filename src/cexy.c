@@ -28,7 +28,8 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
             }
         }
         arr$(const char*) args = arr$new(args, _);
-        arr$pushm(args, cexy$cc, "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
+        // arr$pushm(args, cexy$cc, "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
+        arr$pushm(args, cexy$cc, "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined", "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
         _os$args_print("CMD:", args, arr$len(args));
         os_cmd_c _cmd = { 0 };
         e$except(err, os.cmd.run(args, arr$len(args), &_cmd))
@@ -436,7 +437,7 @@ cexy__decl_comparator(const void* a, const void* b)
         }
     }
 
-    return str.slice.cmp(_a[0]->name, _b[0]->name);
+    return str.slice.qscmp(&_a[0]->name, &_b[0]->name);
 }
 static str_s
 cexy__process_make_brief_docs(cex_decl_s* decl)
@@ -837,7 +838,8 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     continue;
                 }
 
-                qsort(decls, arr$len(decls), sizeof(*decls), cexy__decl_comparator);
+                // qsort(decls, arr$len(decls), sizeof(*decls), cexy__decl_comparator);
+                arr$sort(decls, cexy__decl_comparator);
 
                 sbuf_c cex_h_struct = sbuf.create(10 * 1024, _);
                 sbuf_c cex_h_var_decl = sbuf.create(1024, _);
@@ -874,6 +876,119 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     return EOK;
 }
 
+static Exception
+cexy__cmd__help(int argc, char** argv, void* user_ctx)
+{
+    (void)user_ctx;
+
+    // clang-format off
+    const char* process_help = "(TODO: help commands)"
+
+    ;
+    // clang-format on
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "help [options] all|path/some_file.c [item_filter_pattern]",
+        .description = process_help,
+        // .options =
+        //     (argparse_opt_s[]){
+        //         argparse$opt_group("Options"),
+        //         argparse$opt_help(),
+        //         argparse$opt(
+        //             &ignore_kw,
+        //             'i',
+        //             "ignore",
+        //             .help = "ignores `keyword` or `keyword()` from processed function
+        //             signatures\n  uses cexy$process_ignore_kw"
+        //         ),
+        //         { 0 },
+        //     }
+    };
+    e$ret(argparse.parse(&cmd_args, argc, argv));
+    const char* target = argparse.next(&cmd_args);
+    const char* item_filter = argparse.next(&cmd_args);
+
+    if (target == NULL) {
+        argparse.usage(&cmd_args);
+        return e$raise(
+            Error.argsparse,
+            "Invalid target: '%s', expected all or namespace name or path/some_file.h",
+            target
+        );
+    }
+
+
+    if (str.eq(target, "all")) {
+        target = "*.h";
+    } else {
+    }
+
+
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) sources = os.fs.find(target, true, _);
+        arr$sort(sources, str.qscmp);
+
+        for$each(src_fn, sources)
+        {
+            var basename = os.path.basename(src_fn, _);
+            if (str.starts_with(basename, "_")) {
+                continue;
+            }
+            mem$scope(tmem$, _)
+            {
+                log$debug("Loading: %s\n", src_fn);
+
+                char* code = io.file.load(src_fn, _);
+                if (code == NULL) {
+                    return e$raise(Error.not_found, "Error loading: %s\n", src_fn);
+                }
+
+                arr$(cex_token_s) items = arr$new(items, _);
+                hm$(str_s, bool) names = hm$new(names, _, .capacity = 128);
+
+                CexParser_c lx = CexParser.create(code, 0, true);
+                cex_token_s t;
+                while ((t = CexParser.next_entity(&lx, &items)).type) {
+                    if (t.type == CexTkn__error){
+                        return e$raise(Error.integrity, "Error parsing: %s\n", src_fn);
+                    }
+                    cex_decl_s* d = CexParser.decl_parse(t, items, NULL, _);
+                    if (d == NULL) {
+                        continue;
+                    }
+                    if (d->name.buf == NULL) {
+                        log$debug("Name is null in %s\n", src_fn);
+                        continue;
+                    }
+                    if (item_filter == NULL) {
+                        if(d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
+                            isize dollar = str.slice.index_of(d->name, str$s("$"));
+                            if (dollar > 0) {
+                                hm$set(names, str.slice.sub(d->name, 0, dollar + 1), true);
+                            }
+                        } else if (d->type == CexTkn__typedef){
+                            hm$set(names, d->name, true);
+                        }
+                    } else {
+                        uassert(false && "TODO");
+                    }
+                }
+
+                // TODO: sort names!
+                for$each(it, names) {
+                    (void)it;
+                    log$debug(
+                        "File: %s name: %S\n",
+                        src_fn,
+                        it.key
+                    );
+                }
+            }
+        }
+    }
+    return EOK;
+}
 
 const struct __cex_namespace__cexy cexy = {
     // Autogenerated by CEX
@@ -885,6 +1000,7 @@ const struct __cex_namespace__cexy cexy = {
     .target_make = cexy_target_make,
 
     .cmd = {
+        .help = cexy__cmd__help,
         .process = cexy__cmd__process,
     },
 

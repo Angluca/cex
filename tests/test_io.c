@@ -480,7 +480,7 @@ test$case(test_write)
     str_s content;
     io.rewind(file);
     tassert_eq(EOK, io.fread_all(file, &content, mem$));
-    tassert_eq(0, str.slice.cmp(content, str$s("1234")));
+    tassert_eq(1, str.slice.eq(content, str$s("1234")));
 
     mem$free(mem$, content.buf);
     io.fclose(&file);

@@ -58,9 +58,13 @@ string
     { .name = "process",                                                                           \
       .func = cexy.cmd.process,                                                                    \
       .help = "Creates CEX namespaces from project source code" }
+#define cexy$cmd_help                                                                           \
+    { .name = "help",                                                                           \
+      .func = cexy.cmd.help,                                                                    \
+      .help = "Searches cex.h and project sources and extracts help metadata" }
 
 
-#define cexy$cmd_all cexy$cmd_process
+#define cexy$cmd_all cexy$cmd_process, cexy$cmd_help
 
 #define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
@@ -88,6 +92,7 @@ struct __cex_namespace__cexy {
     char*           (*target_make)(const char* src_path, const char* build_dir, const char* name_or_extension, IAllocator allocator);
 
     struct {
+        Exception       (*help)(int argc, char** argv, void* user_ctx);
         Exception       (*process)(int argc, char** argv, void* user_ctx);
     } cmd;
 

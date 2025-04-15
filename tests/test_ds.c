@@ -823,7 +823,7 @@ test$case(test_hashmap_hash)
     str_s key_str = str.sbuf(key_buf2, sizeof(key_buf2));
 
     // Make sure pointers are different
-    tassert(str.slice.cmp(key_str, str$s("foobar")) == 0);
+    tassert(str.slice.eq(key_str, str$s("foobar")));
     tassert_eq(sizeof(key_buf2), 6);
     tassert(key_str.buf != key);
     tassert(key_buf != key);

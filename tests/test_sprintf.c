@@ -48,7 +48,7 @@ test$case(stb_sprintf_str)
 
     str_s sv = str.sstr("45678");
     str_s sv_sub = str.slice.sub(sv, 1, 3);
-    tassert_eq(str.slice.cmp(sv_sub, str$s("56")), 0);
+    tassert_eq(str.slice.eq(sv_sub, str$s("56")), 1);
 
     _Static_assert(sizeof(char*) == sizeof(usize), "size");
 

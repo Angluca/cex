@@ -41,6 +41,7 @@ void
 CexParser_reset(CexParser_c* lx)
 {
     uassert(lx != NULL);
+    lx->module = (str_s){ 0 };
     lx->cur = lx->content;
     lx->line = 0;
 }
@@ -387,6 +388,9 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
     uassert(*children != NULL && "non initialized arr$");
     cex_token_s result = { 0 };
 
+#ifdef CEXTEST
+    log$trace("New entity check...\n");
+#endif
     arr$clear(*children);
     cex_token_s t;
     cex_token_s* prev_t = NULL;
@@ -420,7 +424,21 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                 if (str.slice.match(t.value, "define *\\(*\\)*")) {
                     result.type = CexTkn__macro_func;
                 } else if (str.slice.match(t.value, "define *")) {
-                    result.type = CexTkn__macro_const;
+                    if (str.slice.match(t.value, "define CEX_MODULE *")) {
+                        isize qstart = str.slice.index_of(t.value, str$s("\""));
+                        if (qstart > 0) {
+                            lx->module = str.slice.sub(t.value, qstart + 1, 0);
+                            isize qend = str.slice.index_of(t.value, str$s("\""));
+                            if (qend > 0) {
+                                lx->module = str.slice.sub(lx->module, 0, qend-1);
+                            }
+                        }
+                    } else {
+                        result.type = CexTkn__macro_const;
+                    }
+                } else if (str.slice.match(t.value, "undef CEX_MODULE")) {
+                    lx->module = (str_s){ 0 };
+                    result.type = CexTkn__preproc;
                 } else {
                     result.type = CexTkn__preproc;
                 }
@@ -510,16 +528,14 @@ CexParser_decl_parse(
         case CexTkn__func_def:
         case CexTkn__macro_func:
         case CexTkn__macro_const:
+        case CexTkn__typedef:
             break;
         default:
             return NULL;
     }
     cex_decl_s* result = mem$new(alloc, cex_decl_s);
-    if (decl_token.type == CexTkn__func_decl || decl_token.type == CexTkn__func_def ||
-        decl_token.type == CexTkn__macro_func) {
-        result->args = sbuf.create(128, alloc);
-        result->ret_type = sbuf.create(128, alloc);
-    }
+    result->args = sbuf.create(128, alloc);
+    result->ret_type = sbuf.create(128, alloc);
     result->type = decl_token.type;
     const char* ignore_pattern =
         "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec|noreturn|_Noreturn)";
@@ -550,6 +566,18 @@ CexParser_decl_parse(
                 if (ignore_keywords_pattern && str.slice.match(it.value, ignore_keywords_pattern)) {
                     prev_skipped = true;
                     continue;
+                }
+                if (decl_token.type == CexTkn__typedef) {
+                    if (str.slice.match(prev_t.value, "(struct|enum|union)")) {
+                        result->name = it.value;
+                        e$goto(sbuf.appendf(&result->ret_type, "%S", prev_t.value), fail);
+                    }
+                }
+                if (decl_token.type == CexTkn__func_decl) {
+                    // Function pointer typedef
+                    if (str.slice.eq(it.value, str$s("typedef"))) {
+                        result->type = CexTkn__typedef;
+                    }
                 }
                 prev_skipped = false;
                 break;
@@ -612,6 +640,9 @@ CexParser_decl_parse(
                 if (prev_t.type == CexTkn__paren_block) {
                     args_idx = prev_idx;
                 }
+                if (decl_token.type == CexTkn__typedef && prev_t.type == CexTkn__ident) {
+                    result->name = prev_t.value;
+                }
                 break;
             }
             case CexTkn__paren_block: {
@@ -673,9 +704,14 @@ CexParser_decl_parse(
     e$goto(sbuf.appendf(&(buf), "%S", (tok).value), fail);
     //  <<<<<  #define $append_fmt
 
-    // NOTE: parsing return type
+    // Exclude items with starting _ or special functions or other stuff
+    if (str.slice.starts_with(result->name, str$s("_")) ||
+        str.slice.match(result->name, "(_Static_assert|static_assert)")) {
+        goto fail;
+    }
 
     if (name_idx > 0) {
+        // NOTE: parsing return type
         prev_skipped = false;
         for$each(it, children, name_idx - 1)
         {

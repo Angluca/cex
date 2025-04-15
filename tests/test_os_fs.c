@@ -476,29 +476,29 @@ test$case(test_os_path_split)
 {
 
     // dir part
-    tassert_eq(str.slice.cmp(os.path.split("foo.bar", true), str$s("")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("foo", true), str$s("")), 0);
-    tassert_eq(str.slice.cmp(os.path.split(".", true), str$s("")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("..", true), str$s("")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("./", true), str$s(".")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("../", true), str$s("..")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("/my", true), str$s("/")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("/", true), str$s("/")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("asd/a", true), str$s("asd")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("\\foo\\bar\\baz", true), str$s("\\foo\\bar")), 0);
+    tassert_eq(str.slice.eq(os.path.split("foo.bar", true), str$s("")), 1);
+    tassert_eq(str.slice.eq(os.path.split("foo", true), str$s("")), 1);
+    tassert_eq(str.slice.eq(os.path.split(".", true), str$s("")), 1);
+    tassert_eq(str.slice.eq(os.path.split("..", true), str$s("")), 1);
+    tassert_eq(str.slice.eq(os.path.split("./", true), str$s(".")), 1);
+    tassert_eq(str.slice.eq(os.path.split("../", true), str$s("..")), 1);
+    tassert_eq(str.slice.eq(os.path.split("/my", true), str$s("/")), 1);
+    tassert_eq(str.slice.eq(os.path.split("/", true), str$s("/")), 1);
+    tassert_eq(str.slice.eq(os.path.split("asd/a", true), str$s("asd")), 1);
+    tassert_eq(str.slice.eq(os.path.split("\\foo\\bar\\baz", true), str$s("\\foo\\bar")), 1);
 
     // file part
-    tassert_eq(str.slice.cmp(os.path.split("foo.bar", false), str$s("foo.bar")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("foo", false), str$s("foo")), 0);
-    tassert_eq(str.slice.cmp(os.path.split(".", false), str$s(".")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("..", false), str$s("..")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("./", false), str$s("")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("../", false), str$s("")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("/my", false), str$s("my")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("/", false), str$s("")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("asd/", false), str$s("")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("asd/a", false), str$s("a")), 0);
-    tassert_eq(str.slice.cmp(os.path.split("\\foo\\bar\\baz", false), str$s("baz")), 0);
+    tassert_eq(str.slice.eq(os.path.split("foo.bar", false), str$s("foo.bar")), 1);
+    tassert_eq(str.slice.eq(os.path.split("foo", false), str$s("foo")), 1);
+    tassert_eq(str.slice.eq(os.path.split(".", false), str$s(".")), 1);
+    tassert_eq(str.slice.eq(os.path.split("..", false), str$s("..")), 1);
+    tassert_eq(str.slice.eq(os.path.split("./", false), str$s("")), 1);
+    tassert_eq(str.slice.eq(os.path.split("../", false), str$s("")), 1);
+    tassert_eq(str.slice.eq(os.path.split("/my", false), str$s("my")), 1);
+    tassert_eq(str.slice.eq(os.path.split("/", false), str$s("")), 1);
+    tassert_eq(str.slice.eq(os.path.split("asd/", false), str$s("")), 1);
+    tassert_eq(str.slice.eq(os.path.split("asd/a", false), str$s("a")), 1);
+    tassert_eq(str.slice.eq(os.path.split("\\foo\\bar\\baz", false), str$s("baz")), 1);
 
     return EOK;
 }

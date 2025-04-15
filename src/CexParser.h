@@ -65,6 +65,7 @@ typedef struct CexParser_c
     char* content;
     char* cur;
     char* content_end;
+    str_s module;
     u32 line;
     bool fold_scopes;
 } CexParser_c;
@@ -74,6 +75,7 @@ typedef struct cex_decl_s
     str_s name;      // function/macro/const/var name
     str_s docs;      // reference to closest /// or /** block
     str_s body;      // reference to code {} if applicable
+    str_s module;    // module of decl
     sbuf_c ret_type; // refined return type
     sbuf_c args;     // refined argument list
     CexTkn_e type;   // decl type (typedef, func, macro, etc)
