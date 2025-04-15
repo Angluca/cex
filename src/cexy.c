@@ -29,7 +29,8 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         }
         arr$(const char*) args = arr$new(args, _);
         arr$pushm(args, cexy$cc, "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
-        // arr$pushm(args, cexy$cc, "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined", "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
+        // arr$pushm(args, cexy$cc, "-fsanitize-address-use-after-scope", "-fsanitize=address",
+        // "-fsanitize=undefined", "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
         _os$args_print("CMD:", args, arr$len(args));
         os_cmd_c _cmd = { 0 };
         e$except(err, os.cmd.run(args, arr$len(args), &_cmd))
@@ -877,13 +878,14 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 }
 
 static int
-cexy__help_qscmp_decls_type(const void* a, const void* b) {
+cexy__help_qscmp_decls_type(const void* a, const void* b)
+{
     // this struct fields must match to cexy.cmd.help() hm$
-    const struct                                                                                         \
-    {                                                                                              \
-        str_s key;                                                                              \
-        cex_decl_s* value;                                                                            \
-    }* _a = a; 
+    const struct
+    {
+        str_s key;
+        cex_decl_s* value;
+    }* _a = a;
     typeof(_a) _b = b;
     if (_a->value->type != _b->value->type) {
         return _b->value->type - _a->value->type;
@@ -939,50 +941,49 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     } else {
     }
 
-
-    mem$scope(tmem$, _)
+    mem$arena(1024*100, arena)
     {
-        arr$(char*) sources = os.fs.find(target, true, _);
+        hm$(str_s, cex_decl_s*) names = hm$new(names, arena, .capacity = 1024);
+        arr$(char*) sources = os.fs.find(target, true, arena);
         arr$sort(sources, str.qscmp);
 
         for$each(src_fn, sources)
         {
-            var basename = os.path.basename(src_fn, _);
-            if (str.starts_with(basename, "_")) {
-                continue;
-            }
             mem$scope(tmem$, _)
             {
+                var basename = os.path.basename(src_fn, _);
+                if (str.starts_with(basename, "_")) {
+                    continue;
+                }
                 log$trace("Loading: %s\n", src_fn);
 
-                char* code = io.file.load(src_fn, _);
+                char* code = io.file.load(src_fn, arena);
                 if (code == NULL) {
                     return e$raise(Error.not_found, "Error loading: %s\n", src_fn);
                 }
-
                 arr$(cex_token_s) items = arr$new(items, _);
-                hm$(str_s, cex_decl_s*) names = hm$new(names, _, .capacity = 128);
 
                 CexParser_c lx = CexParser.create(code, 0, true);
                 cex_token_s t;
                 while ((t = CexParser.next_entity(&lx, &items)).type) {
-                    if (t.type == CexTkn__error){
+                    if (t.type == CexTkn__error) {
                         return e$raise(Error.integrity, "Error parsing: %s\n", src_fn);
                     }
-                    cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
+                    cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, arena);
                     if (d == NULL) {
                         continue;
                     }
                     d->file = src_fn;
                     if (item_filter == NULL) {
-                        if(d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
+                        if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
                             isize dollar = str.slice.index_of(d->name, str$s("$"));
                             str_s macro_ns = str.slice.sub(d->name, 0, dollar + 1);
                             if (dollar > 0 && !hm$getp(names, macro_ns)) {
                                 hm$set(names, macro_ns, d);
                             }
-                        } else if (d->type == CexTkn__typedef || d->type == CexTkn__cex_module_struct){
-                            if(!hm$getp(names, d->name)) {
+                        } else if (d->type == CexTkn__typedef ||
+                                   d->type == CexTkn__cex_module_struct) {
+                            if (!hm$getp(names, d->name)) {
                                 hm$set(names, d->name, d);
                             }
                         }
@@ -993,20 +994,38 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                 if (arr$len(names) == 0) {
                     continue;
                 }
+            }
+        }
 
-                // WARNING: sorting of hashmap items is a dead end, hash indexes get invalidated
-                qsort(names, hm$len(names), sizeof(*names), cexy__help_qscmp_decls_type);
+        // WARNING: sorting of hashmap items is a dead end, hash indexes get invalidated
+        qsort(names, hm$len(names), sizeof(*names), cexy__help_qscmp_decls_type);
 
-                for$each(it, names) {
-                    if (item_filter == NULL) {
-                        io.printf("%-20s %-30S %s:%d\n", CexTkn_str[it.value->type], it.key, it.value->file, it.value->line+1);
-                    } else {
-                        io.printf("%-20s %S\n", CexTkn_str[it.value->type], it.key);
-                    }
+        for$each(it, names)
+        {
+            if (item_filter == NULL) {
+                switch(it.value->type) {
+                    case CexTkn__cex_module_struct:
+                        io.printf("%-20s", "cex namespace");
+                        break;
+                    case CexTkn__macro_func:
+                    case CexTkn__macro_const:
+                        io.printf("%-20s", "macro namespace");
+                        break;
+                    default:
+                        io.printf("%-20s", CexTkn_str[it.value->type]);
                 }
+                io.printf(
+                    " %-30S %s:%d\n",
+                    it.key,
+                    it.value->file,
+                    it.value->line + 1
+                );
+            } else {
+                io.printf("%-20s %S\n", CexTkn_str[it.value->type], it.key);
             }
         }
     }
+
     return EOK;
 }
 
