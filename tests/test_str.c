@@ -2143,6 +2143,11 @@ test$case(test_str_match)
     tassert(str.match("_", "[a-c_A-C1-9]"));
     tassert(str.match("-", "[a-z-]"));
     tassert(str.match("*", "[a-c*]"));
+    tassert(str.match("?", "[?]"));
+    tassert(str.match("-", "[?-]"));
+    tassert(str.match("*", "[*-]"));
+    tassert(str.match(")", "[)]"));
+    tassert(str.match("(", "[(]"));
     tassert(!str.match("d", "[a-c*]")); // * - is literal
     tassert(str.match("*", "[*a-z]"));
     tassert(str.match("*", "[a-z\\*]"));
