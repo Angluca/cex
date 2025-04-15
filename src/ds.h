@@ -158,6 +158,12 @@ struct cexds_arr_new_kwargs_s
         }                                                                                          \
     })
 
+#define arr$sort(a, qsort_cmp)                                                                                                \
+    ({                                                                                                                        \
+        cexds_arr_integrity(a, CEXDS_ARR_MAGIC);                                                                              \
+        qsort((a), arr$len(a), sizeof(*a), qsort_cmp); \
+    })
+
 
 #define arr$ins(a, i, value...)                                                                    \
     do {                                                                                           \

@@ -60,6 +60,8 @@ struct __cex_namespace__str {
     usize           (*len)(const char* s);
     char*           (*lower)(const char* s, IAllocator allc);
     bool            (*match)(const char* s, const char* pattern);
+    int             (*qscmp)(const void* a, const void* b);
+    int             (*qscmpi)(const void* a, const void* b);
     char*           (*replace)(const char* str, const char* old_sub, const char* new_sub, IAllocator allc);
     str_s           (*sbuf)(char* s, usize length);
     arr$(char*)     (*split)(const char* s, const char* split_by, IAllocator allc);
@@ -87,8 +89,6 @@ struct __cex_namespace__str {
 
     struct {
         char*           (*clone)(str_s s, IAllocator allc);
-        int             (*cmp)(str_s self, str_s other);
-        int             (*cmpi)(str_s self, str_s other);
         Exception       (*copy)(char* dest, str_s src, usize destlen);
         bool            (*ends_with)(str_s s, str_s suffix);
         bool            (*eq)(str_s a, str_s b);
@@ -96,6 +96,8 @@ struct __cex_namespace__str {
         str_s           (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
         str_s           (*lstrip)(str_s s);
         bool            (*match)(str_s s, const char* pattern);
+        int             (*qscmp)(const void* a, const void* b);
+        int             (*qscmpi)(const void* a, const void* b);
         str_s           (*remove_prefix)(str_s s, str_s prefix);
         str_s           (*remove_suffix)(str_s s, str_s suffix);
         str_s           (*rstrip)(str_s s);
@@ -108,4 +110,3 @@ struct __cex_namespace__str {
 };
 __attribute__((visibility("hidden"))) extern const struct __cex_namespace__str str;
 
-// CEX Autogen

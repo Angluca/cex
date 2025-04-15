@@ -389,7 +389,7 @@ test$case(test_iter_split)
     {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(it.val, str.sstr(expected1[nit])), 0);
+        tassert_eq(str.slice.eq(it.val, str.sstr(expected1[nit])), 1);
         nit++;
     }
     tassert_eq(nit, 1);
@@ -404,7 +404,7 @@ test$case(test_iter_split)
     {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(it.val, str.sstr(expected2[nit])), 0);
+        tassert_eq(str.slice.eq(it.val, str.sstr(expected2[nit])), 1);
         nit++;
     }
     tassert_eq(nit, 2);
@@ -421,7 +421,7 @@ test$case(test_iter_split)
     {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(it.val, str.sstr(expected3[nit])), 0);
+        tassert_eq(str.slice.eq(it.val, str.sstr(expected3[nit])), 1);
         nit++;
     }
     tassert_eq(nit, 4);
@@ -438,7 +438,7 @@ test$case(test_iter_split)
     {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(it.val, str.sstr(expected4[nit])), 0);
+        tassert_eq(str.slice.eq(it.val, str.sstr(expected4[nit])), 1);
         tassert_eq(it.idx.i, nit);
         nit++;
     }
@@ -456,7 +456,7 @@ test$case(test_iter_split)
     {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(it.val, str.sstr(expected5[nit])), 0);
+        tassert_eq(str.slice.eq(it.val, str.sstr(expected5[nit])), 1);
         tassert_eq(it.idx.i, nit);
         nit++;
     }
@@ -473,7 +473,7 @@ test$case(test_iter_split)
     {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
-        tassert_eq(str.slice.cmp(it.val, str.sstr(expected6[nit])), 0);
+        tassert_eq(str.slice.eq(it.val, str.sstr(expected6[nit])), 1);
         nit++;
     }
     tassert_eq(nit, 3);
@@ -689,23 +689,23 @@ test$case(test_remove_prefix)
     str_s out;
 
     out = str.slice.remove_prefix(str$s("prefix_str_prefix"), str$s("prefix"));
-    tassert_eq(str.slice.cmp(out, str$s("_str_prefix")), 0);
+    tassert_eq(str.slice.eq(out, str$s("_str_prefix")), 1);
 
     // no exact match skipped
     out = str.slice.remove_prefix(str$s(" prefix_str_prefix"), str$s("prefix"));
-    tassert_eq(str.slice.cmp(out, str$s(" prefix_str_prefix")), 0);
+    tassert_eq(str.slice.eq(out, str$s(" prefix_str_prefix")), 1);
 
     // empty prefix
     out = str.slice.remove_prefix(str$s("prefix_str_prefix"), str$s(""));
-    tassert_eq(str.slice.cmp(out, str$s("prefix_str_prefix")), 0);
+    tassert_eq(str.slice.eq(out, str$s("prefix_str_prefix")), 1);
 
     // bad prefix
     out = str.slice.remove_prefix(str$s("prefix_str_prefix"), str.sstr(NULL));
-    tassert_eq(str.slice.cmp(out, str$s("prefix_str_prefix")), 0);
+    tassert_eq(str.slice.eq(out, str$s("prefix_str_prefix")), 1);
 
     // no match
     out = str.slice.remove_prefix(str$s("prefix_str_prefix"), str$s("prefi_"));
-    tassert_eq(str.slice.cmp(out, str$s("prefix_str_prefix")), 0);
+    tassert_eq(str.slice.eq(out, str$s("prefix_str_prefix")), 1);
 
     return EOK;
 }
@@ -715,23 +715,23 @@ test$case(test_remove_suffix)
     str_s out;
 
     out = str.slice.remove_suffix(str$s("suffix_str_suffix"), str$s("suffix"));
-    tassert_eq(str.slice.cmp(out, str$s("suffix_str_")), 0);
+    tassert_eq(str.slice.eq(out, str$s("suffix_str_")), 1);
 
     // no exact match skipped
     out = str.slice.remove_suffix(str$s("suffix_str_suffix "), str$s("suffix"));
-    tassert_eq(str.slice.cmp(out, str$s("suffix_str_suffix ")), 0);
+    tassert_eq(str.slice.eq(out, str$s("suffix_str_suffix ")), 1);
 
     // empty suffix
     out = str.slice.remove_suffix(str$s("suffix_str_suffix"), str$s(""));
-    tassert_eq(str.slice.cmp(out, str$s("suffix_str_suffix")), 0);
+    tassert_eq(str.slice.eq(out, str$s("suffix_str_suffix")), 1);
 
     // bad suffix
     out = str.slice.remove_suffix(str$s("suffix_str_suffix"), str.sstr(NULL));
-    tassert_eq(str.slice.cmp(out, str$s("suffix_str_suffix")), 0);
+    tassert_eq(str.slice.eq(out, str$s("suffix_str_suffix")), 1);
 
     // no match
     out = str.slice.remove_suffix(str$s("suffix_str_suffix"), str$s("_uffix"));
-    tassert_eq(str.slice.cmp(out, str$s("suffix_str_suffix")), 0);
+    tassert_eq(str.slice.eq(out, str$s("suffix_str_suffix")), 1);
 
     return EOK;
 }
@@ -778,7 +778,7 @@ test$case(test_strip)
     s = str.sstr("\n\t \r\r\n\t");
     out = str.slice.rstrip(s);
     tassert_eq(out.len, 0);
-    tassert_eq(str.slice.cmp(out, str$s("")), 0);
+    tassert_eq(str.slice.eq(out, str$s("")), 1);
 
     // BOTH
     out = str.slice.strip(str.sstr(NULL));
@@ -798,54 +798,6 @@ test$case(test_strip)
     out = str.slice.strip(s);
     tassert_eq(out.len, 0);
     tassert_eq("", out.buf);
-    return EOK;
-}
-
-test$case(test_cmp)
-{
-
-    tassert_eq(str.slice.cmp(str.sstr("123456"), str.sstr("123456")), 0);
-    tassert_eq(str.slice.cmp(str.sstr(NULL), str.sstr(NULL)), 0);
-    tassert_eq(str.slice.cmp(str.sstr(""), str.sstr("")), 0);
-    tassert_eq(str.slice.cmp(str.sstr("ABC"), str.sstr("AB")), 67);
-#ifdef CEX_ENV32BIT
-    tassert(str.slice.cmp(str.sstr("ABA"), str.sstr("ABZ")) < 0);
-#else
-    tassert_eq(str.slice.cmp(str.sstr("ABA"), str.sstr("ABZ")), -25);
-#endif
-    tassert_eq(str.slice.cmp(str.sstr("AB"), str.sstr("ABC")), -67);
-    tassert_eq(str.slice.cmp(str.sstr("A"), str.sstr("")), (int)'A');
-    tassert_eq(str.slice.cmp(str.sstr(""), str.sstr("A")), -1 * ((int)'A'));
-    tassert_eq(str.slice.cmp(str.sstr(""), str.sstr(NULL)), 1);
-    tassert_eq(str.slice.cmp(str.sstr(NULL), str.sstr("ABC")), -1);
-
-    return EOK;
-}
-
-test$case(test_cmpi)
-{
-
-    tassert_eq(str.slice.cmpi(str.sstr("123456"), str.sstr("123456")), 0);
-    tassert_eq(str.slice.cmpi(str.sstr(NULL), str.sstr(NULL)), 0);
-    tassert_eq(str.slice.cmpi(str.sstr(""), str.sstr("")), 0);
-
-    tassert_eq(str.slice.cmpi(str.sstr("ABC"), str.sstr("ABC")), 0);
-    tassert_eq(str.slice.cmpi(str.sstr("abc"), str.sstr("ABC")), 0);
-    tassert_eq(str.slice.cmpi(str.sstr("ABc"), str.sstr("ABC")), 0);
-    tassert_eq(str.slice.cmpi(str.sstr("ABC"), str.sstr("aBC")), 0);
-
-    tassert_eq(str.slice.cmpi(str.sstr("ABC"), str.sstr("AB")), 67);
-    tassert_eq(str.slice.cmpi(str.sstr("ABA"), str.sstr("ABZ")), -25);
-    tassert_eq(str.slice.cmpi(str.sstr("AB"), str.sstr("ABC")), -67);
-    tassert_eq(str.slice.cmpi(str.sstr("A"), str.sstr("")), (int)'A');
-    tassert_eq(str.slice.cmpi(str.sstr(""), str.sstr("A")), -1 * ((int)'A'));
-    tassert_eq(str.slice.cmpi(str.sstr(""), str.sstr(NULL)), 1);
-    tassert_eq(str.slice.cmpi(str.sstr(NULL), str.sstr("ABC")), -1);
-
-
-    tassert(str.slice.cmpi(str.sstr("PFIRM"), str.sstr("PCOMM")) != 0);
-    tassert(str.slice.cmpi(str.sstr("PCLASS"), str.sstr("PCLOSE")) != 0);
-
     return EOK;
 }
 
@@ -1744,7 +1696,7 @@ test$case(test_s_macros)
     s2 = str$s("");
     tassert(s2.buf);
     tassert_eq(s2.len, 0);
-    tassert_eq(str.slice.cmp(s2, str$s("")), 0);
+    tassert_eq(str.slice.eq(s2, str$s("")), 1);
 
     str_s m = str$s("\
 foo\n\
@@ -2295,4 +2247,195 @@ test$case(test_slice_index_of)
 
     return EOK;
 }
+test$case(test_cmp_str)
+{
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "2", "1", "", "5");
+        char* expected[] = {"", "1", "2", "5"};
+        arr$sort(items, str.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "2", NULL, "", "5");
+        char* expected[] = {"", "2", "5", NULL};
+        arr$sort(items, str.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "2", "1", "", "");
+        char* expected[] = {"", "", "1", "2"};
+        arr$sort(items, str.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "2", NULL, "", NULL, "foo");
+        char* expected[] = {"", "2", "foo", NULL, NULL};
+        arr$sort(items, str.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "A", "1", "a", "Z", "z",);
+        char* expected[] = {"1", "A", "Z", "a", "z"};
+        arr$sort(items, str.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "aaaAA", "aaaA", "aaaAAc");
+        char* expected[] = {"aaaA", "aaaAA", "aaaAAc"};
+        arr$sort(items, str.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    return EOK;
+}
+
+test$case(test_cmp_str_ignore_case)
+{
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "2", "1", "", "5");
+        char* expected[] = {"", "1", "2", "5"};
+        arr$sort(items, str.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "2", NULL, "", "5");
+        char* expected[] = {"", "2", "5", NULL};
+        arr$sort(items, str.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "2", NULL, "", NULL, "foo");
+        char* expected[] = {"", "2", "foo", NULL, NULL};
+        arr$sort(items, str.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(char*) items = arr$new(items, _); 
+        arr$pushm(items, "A", "1", "a", "Z", "z",);
+        char* expected[] = {"1", "A", "a", "Z", "z"};
+        arr$sort(items, str.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+    return EOK;
+}
+
+test$case(test_cmp_slice)
+{
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, str$s("2"), str$s("1"), str$s(""), str$s("5"));
+        str_s expected[] = {str$s(""), str$s("1"), str$s("2"), str$s("5")};
+        arr$sort(items, str.slice.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, {0}, str$s("1"), str$s(""), str$s("5"));
+        str_s expected[] = {str$s(""), str$s("1"), str$s("5"), {0}};
+        arr$sort(items, str.slice.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, {0}, str$s("1"), {0}, str$s("5"));
+        str_s expected[] = {str$s("1"), str$s("5"), {0}, {0}};
+        arr$sort(items, str.slice.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, str$s("A"), str$s("1"), str$s("z"), str$s("a"), str$s("Z"));
+        str_s expected[] = {str$s("1"), str$s("A"), str$s("Z"), str$s("a"), str$s("z")};
+        arr$sort(items, str.slice.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, str$s("aaaAA"), str$s("aaaA"), str$s("aaaAAc"));
+        str_s expected[] = {str$s("aaaA"), str$s("aaaAA"), str$s("aaaAAc")};
+        arr$sort(items, str.slice.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, str$s(""), str$s("1"), str$s("z"), str$s(""), str$s(""));
+        str_s expected[] = {str$s(""), str$s(""), str$s(""), str$s("1"), str$s("z")};
+        arr$sort(items, str.slice.qscmp);
+        tassert_eq_arr(items, expected);
+    }
+    return EOK;
+}
+
+test$case(test_cmp_slice_ignore_case)
+{
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, str$s("2"), str$s("1"), str$s(""), str$s("5"));
+        str_s expected[] = {str$s(""), str$s("1"), str$s("2"), str$s("5")};
+        arr$sort(items, str.slice.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, {0}, str$s("1"), str$s(""), str$s("5"));
+        str_s expected[] = {str$s(""), str$s("1"), str$s("5"), {0}};
+        arr$sort(items, str.slice.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, {0}, str$s("1"), {0}, str$s("5"));
+        str_s expected[] = {str$s("1"), str$s("5"), {0}, {0}};
+        arr$sort(items, str.slice.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, str$s("A"), str$s("1"), str$s("z"), str$s("a"), str$s("Z"));
+        str_s expected[] = {str$s("1"), str$s("A"), str$s("a"), str$s("z"), str$s("Z")};
+        arr$sort(items, str.slice.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, str$s("aaaAA"), str$s("aaaA"), str$s("aaaAAc"));
+        str_s expected[] = {str$s("aaaA"), str$s("aaaAA"), str$s("aaaAAc")};
+        arr$sort(items, str.slice.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+    mem$scope(tmem$, _) {
+        arr$(str_s) items = arr$new(items, _); 
+        arr$pushm(items, str$s(""), str$s("1"), str$s("z"), str$s(""), str$s(""));
+        str_s expected[] = {str$s(""), str$s(""), str$s(""), str$s("1"), str$s("z")};
+        arr$sort(items, str.slice.qscmpi);
+        tassert_eq_arr(items, expected);
+    }
+    return EOK;
+}
+
 test$main();
