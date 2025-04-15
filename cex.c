@@ -18,8 +18,8 @@ void cex_bundle(void);
 int
 main(int argc, char** argv)
 {
-    // cex_bundle();
-    // cexy$initialize();
+    cex_bundle();
+    cexy$initialize();
 
     // clang-format off
     argparse_c args = {
