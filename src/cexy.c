@@ -491,14 +491,16 @@ cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_b
         $pn("");
         for$each(it, decls)
         {
-            if (str.slice.starts_with(it->name, str$s("cex_"))) {
-                it->name = str.slice.sub(it->name, 4, 0);
+            str_s clean_name = it->name;
+            if (str.slice.starts_with(clean_name, str$s("cex_"))) {
+                clean_name = str.slice.sub(clean_name, 4, 0);
             }
-            str_s clean_name = str.slice.sub(it->name, ns_prefix.len + 1, 0);
+            clean_name = str.slice.sub(clean_name, ns_prefix.len + 1, 0);
+
             if (str.slice.starts_with(clean_name, str$s("_"))) {
                 // sub-namespace
                 isize ns_end = str.slice.index_of(clean_name, str$s("__"));
-                e$assert(ns_end >= 0);
+                uassert(ns_end >= 0);
                 str_s new_ns = str.slice.sub(clean_name, 1, ns_end);
                 if (!str.slice.eq(new_ns, subn)) {
                     if (subn.buf != NULL) {
@@ -551,10 +553,12 @@ cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
         $pn("");
         for$each(it, decls)
         {
-            if (str.slice.starts_with(it->name, str$s("cex_"))) {
-                it->name = str.slice.sub(it->name, 4, 0);
+            str_s clean_name = it->name;
+            if (str.slice.starts_with(clean_name, str$s("cex_"))) {
+                clean_name = str.slice.sub(clean_name, 4, 0);
             }
-            str_s clean_name = str.slice.sub(it->name, ns_prefix.len + 1, 0);
+            clean_name = str.slice.sub(clean_name, ns_prefix.len + 1, 0);
+
             if (str.slice.starts_with(clean_name, str$s("_"))) {
                 // sub-namespace
                 isize ns_end = str.slice.index_of(clean_name, str$s("__"));
@@ -700,6 +704,35 @@ cexy__process_update_code(
 #undef $dump_prev_comment
     return EOK;
 }
+static bool
+cexy__fn_match(str_s fn_name, str_s ns_prefix)
+{
+
+    mem$scope(tmem$, _)
+    {
+        char* fn_sub_pattern = str.fmt(_, "%S__[a-zA-Z0-9+]__*", ns_prefix);
+        char* fn_sub_pattern_cex = str.fmt(_, "cex_%S__[a-zA-Z0-9+]__*", ns_prefix);
+        char* fn_pattern = str.fmt(_, "%S_*", ns_prefix);
+        char* fn_pattern_cex = str.fmt(_, "cex_%S_*", ns_prefix);
+        char* fn_private = str.fmt(_, "%S__*", ns_prefix);
+        char* fn_private_cex = str.fmt(_, "cex_%S__*", ns_prefix);
+
+        if (str.slice.starts_with(fn_name, str$s("_"))) {
+            continue;
+        }
+        if (str.slice.match(fn_name, fn_sub_pattern) ||
+            str.slice.match(fn_name, fn_sub_pattern_cex)) {
+            return true;
+        } else if ((str.slice.match(fn_name, fn_private) ||
+                    str.slice.match(fn_name, fn_private_cex)) ||
+                   (!str.slice.match(fn_name, fn_pattern_cex) &&
+                    !str.slice.match(fn_name, fn_pattern))) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 static Exception
 cexy__cmd__process(int argc, char** argv, void* user_ctx)
@@ -786,12 +819,6 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                 hdr_fn[str.len(hdr_fn) - 1] = 'h'; // .c -> .h
 
                 str_s ns_prefix = str.sub(os.path.basename(src_fn, _), 0, -2); // src.c -> src
-                char* fn_sub_pattern = str.fmt(_, "%S__[a-zA-Z0-9+]__*", ns_prefix);
-                char* fn_sub_pattern_cex = str.fmt(_, "cex_%S__[a-zA-Z0-9+]__*", ns_prefix);
-                char* fn_pattern = str.fmt(_, "%S_*", ns_prefix);
-                char* fn_pattern_cex = str.fmt(_, "cex_%S_*", ns_prefix);
-                char* fn_private = str.fmt(_, "%S__*", ns_prefix);
-
                 log$debug(
                     "Cex Processing src: '%s' hdr: '%s' prefix: '%S'\n",
                     src_fn,
@@ -833,12 +860,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     if (d->is_inline && d->is_static) {
                         continue;
                     }
-                    if (str.slice.match(d->name, fn_sub_pattern) ||
-                        str.slice.match(d->name, fn_sub_pattern_cex)) {
-                        // OK use it!
-                    } else if (str.slice.match(d->name, fn_private) ||
-                               (!str.slice.match(d->name, fn_pattern_cex) &&
-                                !str.slice.match(d->name, fn_pattern))) {
+                    if(!cexy__fn_match(d->name, ns_prefix)){
                         continue;
                     }
                     log$trace("FN: %S ret_type: '%s' args: '%s'\n", d->name, d->ret_type, d->args);
@@ -849,7 +871,6 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     continue;
                 }
 
-                // qsort(decls, arr$len(decls), sizeof(*decls), cexy__decl_comparator);
                 arr$sort(decls, cexy__decl_comparator);
 
                 sbuf_c cex_h_struct = sbuf.create(10 * 1024, _);
