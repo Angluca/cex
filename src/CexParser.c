@@ -13,7 +13,7 @@
         if (lx->cur > lx->content) {                                                               \
             lx->cur--;                                                                             \
             if (*lx->cur == '\n') {                                                                \
-                lx->line++;                                                                        \
+                lx->line--;                                                                        \
             }                                                                                      \
         }                                                                                          \
     })
@@ -516,6 +516,7 @@ CexParser_decl_free(cex_decl_s* decl, IAllocator alloc)
 
 cex_decl_s*
 CexParser_decl_parse(
+    CexParser_c* lx,
     cex_token_s decl_token,
     arr$(cex_token_s) children,
     const char* ignore_keywords_pattern,
@@ -529,6 +530,7 @@ CexParser_decl_parse(
         case CexTkn__macro_func:
         case CexTkn__macro_const:
         case CexTkn__typedef:
+        case CexTkn__cex_module_struct:
             break;
         default:
             return NULL;
@@ -537,6 +539,10 @@ CexParser_decl_parse(
     result->args = sbuf.create(128, alloc);
     result->ret_type = sbuf.create(128, alloc);
     result->type = decl_token.type;
+
+    // CexParser line is at the end of token, find, the beginning
+    result->line = lx->line;
+
     const char* ignore_pattern =
         "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec|noreturn|_Noreturn)";
 
@@ -578,6 +584,12 @@ CexParser_decl_parse(
                     if (str.slice.eq(it.value, str$s("typedef"))) {
                         result->type = CexTkn__typedef;
                     }
+                } else if (decl_token.type == CexTkn__cex_module_struct) {
+                    str_s ns_prefix = str$s("__cex_namespace__"); 
+                    if (str.slice.starts_with(it.value, ns_prefix)) {
+                        result->name = str.slice.sub(it.value, ns_prefix.len, 0);
+                    }
+
                 }
                 prev_skipped = false;
                 break;
@@ -801,6 +813,18 @@ CexParser_decl_parse(
             }
             $append_fmt(result->args, t);
             skip_next = false;
+        }
+    }
+
+    if (decl_token.value.len > 0 && result->name.buf) {
+        char* cur = lx->cur-1;
+        while(cur > result->name.buf) {
+            if (*cur == '\n') {
+                if (result->line > 0) {
+                    result->line--;
+                }
+            }
+            cur--;
         }
     }
 #undef $append_fmt
