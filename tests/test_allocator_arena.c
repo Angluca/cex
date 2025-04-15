@@ -559,10 +559,7 @@ test$case(test_allocator_arena_realloc_last_pointer)
 test$case(test_allocator_mem_scope_exit_oversized_page)
 {
 
-    IAllocator arena = AllocatorArena_create(1024);
-    tassert(arena != NULL);
-
-    mem$scope(arena, _)
+    mem$arena(1024, arena)
     {
         // allocate some memory
         u8* p = mem$malloc(arena, 128);
@@ -573,7 +570,7 @@ test$case(test_allocator_mem_scope_exit_oversized_page)
         mem$scope(arena, _)
         {
             // allocate some with reallocating page
-            p = mem$malloc(arena, 4096);
+            p = mem$malloc(_, 4096);
             memset(p, 0xBB, 4096);
             memset(p, 0xab, 1);
             (void)p;
@@ -581,8 +578,41 @@ test$case(test_allocator_mem_scope_exit_oversized_page)
             tassert_eq(rec->size, 4096);
         }
     }
+    return EOK;
+}
 
-    AllocatorArena_destroy(arena);
+test$case(test_mem_arena)
+{
+
+    mem$arena(4096, arena) {
+        u8* p = mem$malloc(arena, 100);
+        tassert(p != NULL);
+        AllocatorArena_c* allc = (AllocatorArena_c*)arena;
+        mem$scope(arena, tal)
+        {
+            tassert_eq(allc->scope_depth, 2);
+            u8* p = mem$malloc(arena, 100);
+            tassert(p != NULL);
+        }
+    }
+    return EOK;
+}
+
+test$case(test_mem_arena_with_return)
+{
+
+    mem$arena(4096, arena) {
+        u8* p = mem$malloc(arena, 100);
+        tassert(p != NULL);
+        AllocatorArena_c* allc = (AllocatorArena_c*)arena;
+        mem$scope(arena, tal)
+        {
+            tassert_eq(allc->scope_depth, 2);
+            u8* p = mem$malloc(arena, 10040);
+            tassert(p != NULL);
+            return EOK;
+        }
+    }
     return EOK;
 }
 

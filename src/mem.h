@@ -32,6 +32,7 @@ _Static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
 
 
 void _cex_allocator_memscope_cleanup(IAllocator* allc);
+void _cex_allocator_arena_cleanup(IAllocator* allc);
 
 #define tmem$ ((IAllocator)(&_cex__default_global__allocator_temp.alloc))
 #define mem$ _cex__default_global__allocator_heap__allc
@@ -76,6 +77,14 @@ void _cex_allocator_memscope_cleanup(IAllocator* allc);
     for (IAllocator allc_var  \
         __attribute__ ((__cleanup__(_cex_allocator_memscope_cleanup))) =  \
                                                         (alloc)->scope_enter(alloc); \
+        cex$tmpname(tallc_cnt) < 1; \
+        cex$tmpname(tallc_cnt)++)
+
+#define mem$arena(page_size, allc_var)                                                                                                                                           \
+    u32 cex$tmpname(tallc_cnt) = 0;                                                                                                                                \
+    for (IAllocator allc_var  \
+        __attribute__ ((__cleanup__(_cex_allocator_arena_cleanup))) =  \
+                                                        AllocatorArena.create(page_size); \
         cex$tmpname(tallc_cnt) < 1; \
         cex$tmpname(tallc_cnt)++)
 // clang-format on
