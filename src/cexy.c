@@ -944,15 +944,16 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 }
 
 static bool
-cexy__is_str_pattern(const char* s) {
+cexy__is_str_pattern(const char* s)
+{
     if (s == NULL) {
         return false;
     }
-    char pat[] = {'*', '?', '(', '['};
+    char pat[] = { '*', '?', '(', '[' };
 
-    while(*s) {
-        for(u32 i = 0; i < arr$len(pat); i++) {
-            if (unlikely(pat[i] == *s)){
+    while (*s) {
+        for (u32 i = 0; i < arr$len(pat); i++) {
+            if (unlikely(pat[i] == *s)) {
                 return true;
             }
         }
@@ -979,36 +980,70 @@ cexy__help_qscmp_decls_type(const void* a, const void* b)
 }
 
 static Exception
+_cexy__display_full_info(cex_decl_s* d, char* base_ns)
+{
+    str_s name = d->name;
+    mem$scope(tmem$, _)
+    {
+        io.printf("Symbol found at %s:%d\n", d->file, d->line+1);
+        if (d->type == CexTkn__func_def) {
+            name = cexy__fn_dotted(d->name, base_ns, _);
+            if (!name.buf) {
+                // error converting to dotted name (fallback)
+                name = d->name;
+            }
+        }
+        if (d->docs.buf) {
+            io.printf("%S\n", d->docs);
+        }
+        if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
+            io.printf("#define ");
+        }
+
+        if (sbuf.len(&d->ret_type)) {
+            io.printf("%s ", d->ret_type);
+        }
+
+        io.printf("%S ", name);
+
+        if (sbuf.len(&d->args)) {
+            io.printf("(%s)", d->args);
+        }
+        if (d->type == CexTkn__func_def) {
+            io.printf(";");
+        } else if (d->body.buf) {
+            io.printf("%S;", d->body);
+        }
+        io.printf("\n");
+    }
+    return EOK;
+}
+
+static Exception
 cexy__cmd__help(int argc, char** argv, void* user_ctx)
 {
     (void)user_ctx;
 
     // clang-format off
     const char* process_help = "(TODO: help commands)";
-    const char* filter = "./*.[hc]"; 
+    const char* filter = "./*.[hc]";
 
     // clang-format on
     argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "help [options] [query]",
         .description = process_help,
-        .options =
-            (argparse_opt_s[]){
-                argparse$opt_group("Options"),
-                argparse$opt_help(),
-                argparse$opt(
-                    &filter,
-                    'f',
-                    "filter",
-                    .help = "File pattern for searching"
-                ),
-                { 0 }
-            },
+        .options = (argparse_opt_s[]
+        ){ argparse$opt_group("Options"),
+           argparse$opt_help(),
+           argparse$opt(&filter, 'f', "filter", .help = "File pattern for searching"),
+           { 0 } },
     };
-    if(argparse.parse(&cmd_args, argc, argv)) {
+    if (argparse.parse(&cmd_args, argc, argv)) {
         return Error.argsparse;
     }
     const char* query = argparse.next(&cmd_args);
+    str_s query_s = str.sstr(query);
 
     mem$arena(1024 * 100, arena)
     {
@@ -1021,7 +1056,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         if (str.match(query, "[a-zA-Z0-9+].")) {
             query_pattern = str.fmt(arena, "%S[._$]*", str.sub(query, 0, -1));
             is_namespace_filter = true;
-        } else if(cexy__is_str_pattern(query)){
+        } else if (cexy__is_str_pattern(query)) {
             query_pattern = query;
         } else {
             query_pattern = str.fmt(arena, "*%s*", query);
@@ -1080,13 +1115,19 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         }
                     } else {
                         if (d->type == CexTkn__func_def) {
-                            if (str.eq(query, "cex.") && str.slice.starts_with(d->name, str$s("cex_"))){
+                            if (str.eq(query, "cex.") &&
+                                str.slice.starts_with(d->name, str$s("cex_"))) {
                                 continue;
                             }
                         }
                         str_s fndotted = (d->type == CexTkn__func_def)
                                            ? cexy__fn_dotted(d->name, base_ns, _)
                                            : d->name;
+
+                        if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
+                            // We have full match display full help
+                            return _cexy__display_full_info(d, base_ns);
+                        }
 
                         bool has_match = false;
                         if (str.slice.match(d->name, query_pattern)) {
@@ -1140,7 +1181,8 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     name = cexy__fn_dotted(name, cex_ns, arena);
                     if (!name.buf) {
                         // something weird happened, fallback
-                        // log$warn("Failed to make dotted name from %S, cex_ns: %s\n", it.key, cex_ns);
+                        // log$warn("Failed to make dotted name from %S, cex_ns: %s\n", it.key,
+                        // cex_ns);
                         name = it.key;
                     }
                 }

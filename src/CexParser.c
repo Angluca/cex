@@ -46,7 +46,7 @@ CexParser_reset(CexParser_c* lx)
 }
 
 static cex_token_s
-CexParser__scan_ident(CexParser_c* lx)
+_CexParser__scan_ident(CexParser_c* lx)
 {
     cex_token_s t = { .type = CexTkn__ident, .value = { .buf = lx->cur, .len = 0 } };
     char c;
@@ -61,7 +61,7 @@ CexParser__scan_ident(CexParser_c* lx)
 }
 
 static cex_token_s
-CexParser__scan_number(CexParser_c* lx)
+_CexParser__scan_number(CexParser_c* lx)
 {
     cex_token_s t = { .type = CexTkn__number, .value = { .buf = lx->cur, .len = 0 } };
     char c;
@@ -84,7 +84,7 @@ CexParser__scan_number(CexParser_c* lx)
 }
 
 static cex_token_s
-CexParser__scan_string(CexParser_c* lx)
+_CexParser__scan_string(CexParser_c* lx)
 {
     cex_token_s t = { .type = (*lx->cur == '"' ? CexTkn__string : CexTkn__char),
                       .value = { .buf = lx->cur + 1, .len = 0 } };
@@ -113,7 +113,7 @@ CexParser__scan_string(CexParser_c* lx)
 }
 
 static cex_token_s
-CexParser__scan_comment(CexParser_c* lx)
+_CexParser__scan_comment(CexParser_c* lx)
 {
     cex_token_s t = { .type = lx->cur[1] == '/' ? CexTkn__comment_single : CexTkn__comment_multi,
                       .value = { .buf = lx->cur, .len = 2 } };
@@ -144,7 +144,7 @@ CexParser__scan_comment(CexParser_c* lx)
 }
 
 static cex_token_s
-CexParser__scan_preproc(CexParser_c* lx)
+_CexParser__scan_preproc(CexParser_c* lx)
 {
     lx$next(lx);
     char c = *lx->cur;
@@ -167,7 +167,7 @@ CexParser__scan_preproc(CexParser_c* lx)
 }
 
 static cex_token_s
-CexParser__scan_scope(CexParser_c* lx)
+_CexParser__scan_scope(CexParser_c* lx)
 {
     cex_token_s t = { .type = CexTkn__unk, .value = { .buf = lx->cur, .len = 0 } };
 
@@ -240,13 +240,13 @@ CexParser__scan_scope(CexParser_c* lx)
                     break;
                 case '"':
                 case '\'': {
-                    var s = CexParser__scan_string(lx);
+                    var s = _CexParser__scan_string(lx);
                     t.value.len += s.value.len + 2;
                     continue;
                 }
                 case '/': {
                     if (lx->cur[1] == '/' || lx->cur[1] == '*') {
-                        var s = CexParser__scan_comment(lx);
+                        var s = _CexParser__scan_comment(lx);
                         t.value.len += s.value.len;
                         continue;
                     }
@@ -254,7 +254,7 @@ CexParser__scan_scope(CexParser_c* lx)
                 }
                 case '#': {
                     char* ppstart = lx->cur;
-                    var s = CexParser__scan_preproc(lx);
+                    var s = _CexParser__scan_preproc(lx);
                     if (s.value.buf) {
                         t.value.len += s.value.len + (s.value.buf - ppstart) + 1;
                     }
@@ -299,19 +299,19 @@ CexParser_next_token(CexParser_c* lx)
         }
 
         if (isalpha(c) || c == '_' || c == '$') {
-            return CexParser__scan_ident(lx);
+            return _CexParser__scan_ident(lx);
         }
         if (isdigit(c)) {
-            return CexParser__scan_number(lx);
+            return _CexParser__scan_number(lx);
         }
 
         switch (c) {
             case '\'':
             case '"':
-                return CexParser__scan_string(lx);
+                return _CexParser__scan_string(lx);
             case '/':
                 if (lx->cur[1] == '/' || lx->cur[1] == '*') {
-                    return CexParser__scan_comment(lx);
+                    return _CexParser__scan_comment(lx);
                 } else {
                     break;
                 }
@@ -357,7 +357,7 @@ CexParser_next_token(CexParser_c* lx)
             case '{':
             case '(':
             case '[':
-                return CexParser__scan_scope(lx);
+                return _CexParser__scan_scope(lx);
             case '}':
                 return tok$new(CexTkn__rbrace);
             case ')':
@@ -365,7 +365,7 @@ CexParser_next_token(CexParser_c* lx)
             case ']':
                 return tok$new(CexTkn__rbracket);
             case '#':
-                return CexParser__scan_preproc(lx);
+                return _CexParser__scan_preproc(lx);
             default:
                 break;
         }
@@ -425,7 +425,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                     cex_token_s _t = CexParser.next_token(&_lx);
 
                     _t = CexParser.next_token(&_lx);
-                    if(_t.type != CexTkn__ident) {
+                    if (_t.type != CexTkn__ident) {
                         log$trace("Expected ident at %S line: %d\n", t.value, lx->line);
                         result.type = CexTkn__error;
                         goto end;
@@ -433,7 +433,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                     result.type = CexTkn__macro_const;
 
                     _t = CexParser.next_token(&_lx);
-                    if(_t.type == CexTkn__paren_block) {
+                    if (_t.type == CexTkn__paren_block) {
                         result.type = CexTkn__macro_func;
                     }
                 } else {
@@ -582,12 +582,12 @@ CexParser_decl_parse(
                     if (str.slice.eq(it.value, str$s("typedef"))) {
                         result->type = CexTkn__typedef;
                     }
-                } else if (decl_token.type == CexTkn__cex_module_struct || decl_token.type == CexTkn__cex_module_def) {
-                    str_s ns_prefix = str$s("__cex_namespace__"); 
+                } else if (decl_token.type == CexTkn__cex_module_struct ||
+                           decl_token.type == CexTkn__cex_module_def) {
+                    str_s ns_prefix = str$s("__cex_namespace__");
                     if (str.slice.starts_with(it.value, ns_prefix)) {
                         result->name = str.slice.sub(it.value, ns_prefix.len, 0);
                     }
-
                 }
                 prev_skipped = false;
                 break;
@@ -600,36 +600,37 @@ CexParser_decl_parse(
                 break;
             }
             case CexTkn__preproc: {
-                if (decl_token.type == CexTkn__macro_func) {
+                if (decl_token.type == CexTkn__macro_func ||
+                    decl_token.type == CexTkn__macro_const) {
                     args_idx = -1;
                     CexParser_c _lx = CexParser.create(it.value.buf, it.value.len, true);
                     cex_token_s _t = CexParser.next_token(&_lx);
                     uassert(str.slice.starts_with(_t.value, str$s("define")));
 
                     _t = CexParser.next_token(&_lx);
-                    if(_t.type != CexTkn__ident) {
+                    if (_t.type != CexTkn__ident) {
                         log$trace("Expected ident at %S\n", it.value);
                         goto fail;
                     }
                     result->name = _t.value;
-
+                    char* prev_end = _t.value.buf + _t.value.len;
                     _t = CexParser.next_token(&_lx);
-                    if(_t.type == CexTkn__paren_block) {
-                        e$goto(sbuf.appendf(&result->args, "%S", _t.value), fail);
+                    if (_t.type == CexTkn__paren_block) {
+                        var _args = str.slice.sub(_t.value, 1, -1);
+                        e$goto(sbuf.appendf(&result->args, "%S", _args), fail);
+                        prev_end = _t.value.buf + _t.value.len;
+                        _t = CexParser.next_token(&_lx);
+                    } // Macro body
+                    if (_t.type) {
+                        isize decl_len = decl_token.value.len - (prev_end - decl_token.value.buf);
+                        uassert(decl_len > 0);
+                        result->body = (str_s){
+                            .buf = prev_end,
+                            .len = decl_len,
+                        };
                     }
-                } else if (decl_token.type == CexTkn__macro_const) {
-                    uassert(str.slice.starts_with(it.value, str$s("define")));
-                    isize iname_start = str.slice.index_of(it.value, str$s(" "));
-                    if (iname_start < 0) {
-                        goto fail;
-                    }
-                    var mconst = str.slice.sub(it.value, iname_start + 1, 0);
-                    iname_start = str.slice.index_of(mconst, str$s(" "));
-                    if (iname_start < 0) {
-                        goto fail;
-                    }
-                    result->name = str.slice.sub(mconst, 0, iname_start);
                 }
+
                 break;
             }
             case CexTkn__comment_multi:
@@ -813,8 +814,8 @@ CexParser_decl_parse(
     }
 
     if (decl_token.value.len > 0 && result->name.buf) {
-        char* cur = lx->cur-1;
-        while(cur > result->name.buf) {
+        char* cur = lx->cur - 1;
+        while (cur > result->name.buf) {
             if (*cur == '\n') {
                 if (result->line > 0) {
                     result->line--;
