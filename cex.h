@@ -13402,23 +13402,29 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 
 
     if (str.eq(target, "all")) {
-        target = "*.h";
+        target = "*.[hc]";
     } else {
         if (str.eq(target, "cex")) {
             target = "./cex.h";
         }
     }
 
-    str_s item_filter_slice = str.sstr(item_filter);
-
     mem$arena(1024 * 100, arena)
     {
-        hm$(str_s, cex_decl_s*) names = hm$new(names, arena, .capacity = 1024);
-        hm$(char*, char*) cex_ns_map = hm$new(cex_ns_map, arena, .capacity = 256);
-        hm$set(cex_ns_map, "./cexy.h", "cex");
 
         arr$(char*) sources = os.fs.find(target, true, arena);
         arr$sort(sources, str.qscmp);
+
+        char* item_filter_pattern = NULL;
+        if (str.match(item_filter, "[a-zA-Z0-9+].")) {
+            item_filter_pattern = str.fmt(arena, "%S[._$]*", str.sub(item_filter, 0, -1));
+        } else {
+            item_filter_pattern = str.fmt(arena, "*%s*", item_filter);
+        }
+
+        hm$(str_s, cex_decl_s*) names = hm$new(names, arena, .capacity = 1024);
+        hm$(char*, char*) cex_ns_map = hm$new(cex_ns_map, arena, .capacity = 256);
+        hm$set(cex_ns_map, "./cexy.h", "cex");
 
         for$each(src_fn, sources)
         {
@@ -13471,8 +13477,8 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         str_s fndotted = (d->type == CexTkn__func_def)
                                            ? cexy__fn_dotted(d->name, base_ns, _)
                                            : d->name;
-                        if (str.slice.index_of(d->name, item_filter_slice) != -1 ||
-                            str.slice.index_of(fndotted, item_filter_slice) != -1) {
+                        if (str.slice.match(d->name, item_filter_pattern) ||
+                            str.slice.match(fndotted, item_filter_pattern)) {
                             hm$set(names, d->name, d);
                         }
                     }

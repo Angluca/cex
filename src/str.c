@@ -93,13 +93,13 @@ cex_str_eqi(const char* a, const char* b)
 static bool
 cex_str__slice__eq(str_s a, str_s b)
 {
-    if (unlikely(a.buf == NULL || b.buf == NULL)) {
-        return (a.buf == NULL && b.buf == NULL);
-    }
-    if (a.len != b.len) {
-        return false;
-    }
-    return memcmp(a.buf, b.buf, a.len) == 0;
+    return str.slice.qscmp(&a, &b) == 0;
+}
+
+static bool
+cex_str__slice__eqi(str_s a, str_s b)
+{
+    return str.slice.qscmpi(&a, &b) == 0;
 }
 
 static str_s
