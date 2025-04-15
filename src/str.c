@@ -93,12 +93,18 @@ cex_str_eqi(const char* a, const char* b)
 static bool
 cex_str__slice__eq(str_s a, str_s b)
 {
+    if (a.len != b.len) {
+        return false;
+    }
     return str.slice.qscmp(&a, &b) == 0;
 }
 
 static bool
 cex_str__slice__eqi(str_s a, str_s b)
 {
+    if (a.len != b.len) {
+        return false;
+    }
     return str.slice.qscmpi(&a, &b) == 0;
 }
 
@@ -1621,6 +1627,7 @@ const struct __cex_namespace__str str = {
         .copy = cex_str__slice__copy,
         .ends_with = cex_str__slice__ends_with,
         .eq = cex_str__slice__eq,
+        .eqi = cex_str__slice__eqi,
         .index_of = cex_str__slice__index_of,
         .iter_split = cex_str__slice__iter_split,
         .lstrip = cex_str__slice__lstrip,

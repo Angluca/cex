@@ -92,6 +92,7 @@ struct __cex_namespace__str {
         Exception       (*copy)(char* dest, str_s src, usize destlen);
         bool            (*ends_with)(str_s s, str_s suffix);
         bool            (*eq)(str_s a, str_s b);
+        bool            (*eqi)(str_s a, str_s b);
         isize           (*index_of)(str_s str, str_s needle);
         str_s           (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
         str_s           (*lstrip)(str_s s);
