@@ -65,7 +65,6 @@ typedef struct CexParser_c
     char* content;     // full content
     char* cur;         // current cursor in the source
     char* content_end; // last pointer of the source
-    str_s module;      // intermediate module name if #define CEX_MODULE found
     u32 line;          // current cursor line relative to content beginning 
     bool fold_scopes;  // count all {} / () / [] as a single token CexTkn_*_block
 } CexParser_c;
@@ -75,7 +74,6 @@ typedef struct cex_decl_s
     str_s name;       // function/macro/const/var name
     str_s docs;       // reference to closest /// or /** block
     str_s body;       // reference to code {} if applicable
-    str_s module;     // module of decl
     sbuf_c ret_type;  // refined return type
     sbuf_c args;      // refined argument list
     const char* file; // decl file (must be set externally)

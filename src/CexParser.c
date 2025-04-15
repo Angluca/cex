@@ -41,7 +41,6 @@ void
 CexParser_reset(CexParser_c* lx)
 {
     uassert(lx != NULL);
-    lx->module = (str_s){ 0 };
     lx->cur = lx->content;
     lx->line = 0;
 }
@@ -421,24 +420,22 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
         arr$push(*children, t);
         switch (t.type) {
             case CexTkn__preproc: {
-                if (str.slice.match(t.value, "define *\\(*\\)*")) {
-                    result.type = CexTkn__macro_func;
-                } else if (str.slice.match(t.value, "define *")) {
-                    if (str.slice.match(t.value, "define CEX_MODULE *")) {
-                        isize qstart = str.slice.index_of(t.value, str$s("\""));
-                        if (qstart > 0) {
-                            lx->module = str.slice.sub(t.value, qstart + 1, 0);
-                            isize qend = str.slice.index_of(t.value, str$s("\""));
-                            if (qend > 0) {
-                                lx->module = str.slice.sub(lx->module, 0, qend-1);
-                            }
-                        }
-                    } else {
-                        result.type = CexTkn__macro_const;
+                if (str.slice.starts_with(t.value, str$s("define"))) {
+                    CexParser_c _lx = CexParser.create(t.value.buf, t.value.len, true);
+                    cex_token_s _t = CexParser.next_token(&_lx);
+
+                    _t = CexParser.next_token(&_lx);
+                    if(_t.type != CexTkn__ident) {
+                        log$trace("Expected ident at %S line: %d\n", t.value, lx->line);
+                        result.type = CexTkn__error;
+                        goto end;
                     }
-                } else if (str.slice.match(t.value, "undef CEX_MODULE")) {
-                    lx->module = (str_s){ 0 };
-                    result.type = CexTkn__preproc;
+                    result.type = CexTkn__macro_const;
+
+                    _t = CexParser.next_token(&_lx);
+                    if(_t.type == CexTkn__paren_block) {
+                        result.type = CexTkn__macro_func;
+                    }
                 } else {
                     result.type = CexTkn__preproc;
                 }
@@ -531,6 +528,7 @@ CexParser_decl_parse(
         case CexTkn__macro_const:
         case CexTkn__typedef:
         case CexTkn__cex_module_struct:
+        case CexTkn__cex_module_def:
             break;
         default:
             return NULL;
@@ -584,7 +582,7 @@ CexParser_decl_parse(
                     if (str.slice.eq(it.value, str$s("typedef"))) {
                         result->type = CexTkn__typedef;
                     }
-                } else if (decl_token.type == CexTkn__cex_module_struct) {
+                } else if (decl_token.type == CexTkn__cex_module_struct || decl_token.type == CexTkn__cex_module_def) {
                     str_s ns_prefix = str$s("__cex_namespace__"); 
                     if (str.slice.starts_with(it.value, ns_prefix)) {
                         result->name = str.slice.sub(it.value, ns_prefix.len, 0);
@@ -604,22 +602,20 @@ CexParser_decl_parse(
             case CexTkn__preproc: {
                 if (decl_token.type == CexTkn__macro_func) {
                     args_idx = -1;
-                    uassert(str.slice.starts_with(it.value, str$s("define")));
-                    isize iname_start = str.slice.index_of(it.value, str$s(" "));
-                    isize iarg_start = str.slice.index_of(it.value, str$s("("));
-                    isize iarg_end = str.slice.index_of(it.value, str$s(")"));
+                    CexParser_c _lx = CexParser.create(it.value.buf, it.value.len, true);
+                    cex_token_s _t = CexParser.next_token(&_lx);
+                    uassert(str.slice.starts_with(_t.value, str$s("define")));
 
-                    if (iname_start < 0 || iarg_start < 0 || iarg_end < 0 ||
-                        iname_start > iarg_start || iarg_start > iarg_end) {
-#if defined(CEXTEST)
-                        log$error("bad macro function: %S\n", it.value);
-#endif
+                    _t = CexParser.next_token(&_lx);
+                    if(_t.type != CexTkn__ident) {
+                        log$trace("Expected ident at %S\n", it.value);
                         goto fail;
                     }
-                    result->name = str.slice.sub(it.value, iname_start + 1, iarg_start);
-                    var margs = str.slice.sub(it.value, iarg_start + 1, iarg_end);
-                    if (margs.len > 0) {
-                        e$goto(sbuf.appendf(&result->args, "%S", margs), fail);
+                    result->name = _t.value;
+
+                    _t = CexParser.next_token(&_lx);
+                    if(_t.type == CexTkn__paren_block) {
+                        e$goto(sbuf.appendf(&result->args, "%S", _t.value), fail);
                     }
                 } else if (decl_token.type == CexTkn__macro_const) {
                     uassert(str.slice.starts_with(it.value, str$s("define")));
