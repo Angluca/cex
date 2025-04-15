@@ -491,6 +491,9 @@ cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_b
         $pn("");
         for$each(it, decls)
         {
+            if (str.slice.starts_with(it->name, str$s("cex_"))) {
+                it->name = str.slice.sub(it->name, 4, 0);
+            }
             str_s clean_name = str.slice.sub(it->name, ns_prefix.len + 1, 0);
             if (str.slice.starts_with(clean_name, str$s("_"))) {
                 // sub-namespace
@@ -548,6 +551,9 @@ cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
         $pn("");
         for$each(it, decls)
         {
+            if (str.slice.starts_with(it->name, str$s("cex_"))) {
+                it->name = str.slice.sub(it->name, 4, 0);
+            }
             str_s clean_name = str.slice.sub(it->name, ns_prefix.len + 1, 0);
             if (str.slice.starts_with(clean_name, str$s("_"))) {
                 // sub-namespace
@@ -827,11 +833,12 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     if (d->is_inline && d->is_static) {
                         continue;
                     }
-                    if (str.slice.match(d->name, fn_sub_pattern) || str.slice.match(d->name, fn_pattern_cex)) {
+                    if (str.slice.match(d->name, fn_sub_pattern) ||
+                        str.slice.match(d->name, fn_sub_pattern_cex)) {
                         // OK use it!
                     } else if (str.slice.match(d->name, fn_private) ||
                                (!str.slice.match(d->name, fn_pattern_cex) &&
-                                !str.slice.match(d->name, fn_pattern) )) {
+                                !str.slice.match(d->name, fn_pattern))) {
                         continue;
                     }
                     log$trace("FN: %S ret_type: '%s' args: '%s'\n", d->name, d->ret_type, d->args);
@@ -949,7 +956,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 
     str_s item_filter_slice = str.sstr(item_filter);
 
-    mem$arena(1024*100, arena)
+    mem$arena(1024 * 100, arena)
     {
         hm$(str_s, cex_decl_s*) names = hm$new(names, arena, .capacity = 1024);
         arr$(char*) sources = os.fs.find(target, true, arena);
@@ -1013,7 +1020,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         for$each(it, names)
         {
             if (item_filter == NULL) {
-                switch(it.value->type) {
+                switch (it.value->type) {
                     case CexTkn__cex_module_struct:
                         io.printf("%-20s", "cex namespace");
                         break;
@@ -1024,12 +1031,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     default:
                         io.printf("%-20s", CexTkn_str[it.value->type]);
                 }
-                io.printf(
-                    " %-30S %s:%d\n",
-                    it.key,
-                    it.value->file,
-                    it.value->line + 1
-                );
+                io.printf(" %-30S %s:%d\n", it.key, it.value->file, it.value->line + 1);
             } else {
                 io.printf(
                     "%-20s %-30S %s:%d\n",
