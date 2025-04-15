@@ -1483,6 +1483,7 @@ struct __cex_namespace__str {
         Exception       (*copy)(char* dest, str_s src, usize destlen);
         bool            (*ends_with)(str_s s, str_s suffix);
         bool            (*eq)(str_s a, str_s b);
+        bool            (*eqi)(str_s a, str_s b);
         isize           (*index_of)(str_s str, str_s needle);
         str_s           (*iter_split)(str_s s, const char* split_by, cex_iterator_s* iterator);
         str_s           (*lstrip)(str_s s);
@@ -7601,13 +7602,19 @@ cex_str_eqi(const char* a, const char* b)
 static bool
 cex_str__slice__eq(str_s a, str_s b)
 {
-    if (unlikely(a.buf == NULL || b.buf == NULL)) {
-        return (a.buf == NULL && b.buf == NULL);
-    }
     if (a.len != b.len) {
         return false;
     }
-    return memcmp(a.buf, b.buf, a.len) == 0;
+    return str.slice.qscmp(&a, &b) == 0;
+}
+
+static bool
+cex_str__slice__eqi(str_s a, str_s b)
+{
+    if (a.len != b.len) {
+        return false;
+    }
+    return str.slice.qscmpi(&a, &b) == 0;
 }
 
 static str_s
@@ -9129,6 +9136,7 @@ const struct __cex_namespace__str str = {
         .copy = cex_str__slice__copy,
         .ends_with = cex_str__slice__ends_with,
         .eq = cex_str__slice__eq,
+        .eqi = cex_str__slice__eqi,
         .index_of = cex_str__slice__index_of,
         .iter_split = cex_str__slice__iter_split,
         .lstrip = cex_str__slice__lstrip,
@@ -13416,10 +13424,13 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         arr$sort(sources, str.qscmp);
 
         char* item_filter_pattern = NULL;
+        bool is_namespace_filter = false;
         if (str.match(item_filter, "[a-zA-Z0-9+].")) {
             item_filter_pattern = str.fmt(arena, "%S[._$]*", str.sub(item_filter, 0, -1));
+            is_namespace_filter = true;
         } else {
             item_filter_pattern = str.fmt(arena, "*%s*", item_filter);
+            is_namespace_filter = false;
         }
 
         hm$(str_s, cex_decl_s*) names = hm$new(names, arena, .capacity = 1024);
@@ -13477,8 +13488,23 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         str_s fndotted = (d->type == CexTkn__func_def)
                                            ? cexy__fn_dotted(d->name, base_ns, _)
                                            : d->name;
-                        if (str.slice.match(d->name, item_filter_pattern) ||
-                            str.slice.match(fndotted, item_filter_pattern)) {
+
+                        bool has_match = false;
+                        if (str.slice.match(d->name, item_filter_pattern)) {
+                            has_match = true;
+                        }
+                        if (str.slice.match(fndotted, item_filter_pattern)) {
+                            has_match = true;
+                        }
+                        if (is_namespace_filter) {
+                            str_s prefix = str.sub(item_filter, 0, -1);
+                            str_s sub_name = str.slice.sub(d->name, 0, prefix.len);
+                            if (str.slice.eqi(sub_name, prefix) &&
+                                sub_name.buf[prefix.len] == '_') {
+                                has_match = true;
+                            }
+                        }
+                        if (has_match) {
                             hm$set(names, d->name, d);
                         }
                     }

@@ -1081,21 +1081,25 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         str_s fndotted = (d->type == CexTkn__func_def)
                                            ? cexy__fn_dotted(d->name, base_ns, _)
                                            : d->name;
-                        if (!str.slice.match(d->name, item_filter_pattern)) {
-                            continue;
+
+                        bool has_match = false;
+                        if (str.slice.match(d->name, item_filter_pattern)) {
+                            has_match = true;
                         }
-                        if (!str.slice.match(fndotted, item_filter_pattern)) {
-                            continue;
+                        if (str.slice.match(fndotted, item_filter_pattern)) {
+                            has_match = true;
                         }
                         if (is_namespace_filter) {
-                            str_s prefix = str.sub(item_filter_pattern, 0, -1);
+                            str_s prefix = str.sub(item_filter, 0, -1);
                             str_s sub_name = str.slice.sub(d->name, 0, prefix.len);
-                            // if (str.slice.eqi())
-
-
-                            continue;
+                            if (str.slice.eqi(sub_name, prefix) &&
+                                sub_name.buf[prefix.len] == '_') {
+                                has_match = true;
+                            }
                         }
-                        hm$set(names, d->name, d);
+                        if (has_match) {
+                            hm$set(names, d->name, d);
+                        }
                     }
                 }
                 if (arr$len(names) == 0) {
