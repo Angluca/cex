@@ -14229,13 +14229,6 @@ CexParser_decl_parse(
                 prev_skipped = false;
                 break;
             }
-            case CexTkn__bracket_block: {
-                if (str.slice.starts_with(it.value, str$s("[["))) {
-                    // Clang/C23 attribute
-                    continue;
-                }
-                break;
-            }
             case CexTkn__preproc: {
                 if (decl_token.type == CexTkn__macro_func ||
                     decl_token.type == CexTkn__macro_const) {
@@ -14281,6 +14274,13 @@ CexParser_decl_parse(
                     }
                 }
                 break;
+            }
+            case CexTkn__bracket_block: {
+                if (str.slice.starts_with(it.value, str$s("[["))) {
+                    // Clang/C23 attribute
+                    continue;
+                }
+                fallthrough();
             }
             case CexTkn__brace_block: {
                 result->body = it.value;
@@ -14469,6 +14469,14 @@ CexParser_decl_parse(
             }
             cur--;
         }
+    }
+    if (!result->name.buf) {
+        log$trace(
+            "Decl without name of type %s, at line: %d\n",
+            CexTkn_str[result->type],
+            result->line
+        );
+        goto fail;
     }
 #undef $append_fmt
     return result;
