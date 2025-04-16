@@ -36,7 +36,7 @@ test$case(test_sbuf_new)
     sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
-    sbuf_head_s* head = sbuf__head(s);
+    sbuf_head_s* head = _sbuf__head(s);
     tassert_eq(head->length, 0);
     tassert_eq(head->capacity, 64 - sizeof(sbuf_head_s) - 1);
     tassert_eq(head->header.elsize, 1);
@@ -60,7 +60,7 @@ test$case(test_sbuf_static)
     tassert(s != buf);
     tassert(s == buf + sizeof(sbuf_head_s));
 
-    sbuf_head_s* head = sbuf__head(s);
+    sbuf_head_s* head = _sbuf__head(s);
     tassert_eq(head->length, 0);
     tassert_eq(head->capacity, arr$len(buf) - sizeof(sbuf_head_s) - 1);
     tassert_eq(head->header.elsize, 1);
@@ -370,7 +370,7 @@ test$case(test_sbuf__is_valid__no_null_term)
     sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
-    sbuf_head_s* head = sbuf__head(s);
+    sbuf_head_s* head = _sbuf__head(s);
     tassert_eq(sbuf.isvalid(&s), true);
 
     head->header.nullterm = 1;
@@ -386,7 +386,7 @@ test$case(test_sbuf__is_valid__len_gt_cap)
     sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
-    sbuf_head_s* head = sbuf__head(s);
+    sbuf_head_s* head = _sbuf__head(s);
     tassert_eq(sbuf.isvalid(&s), true);
 
     head->length = 10;
@@ -403,7 +403,7 @@ test$case(test_sbuf__is_valid__zero_cap)
     sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
-    sbuf_head_s* head = sbuf__head(s);
+    sbuf_head_s* head = _sbuf__head(s);
     tassert_eq(sbuf.isvalid(&s), true);
 
     head->capacity = 0;
@@ -419,7 +419,7 @@ test$case(test_sbuf__is_valid__bad_magic)
     sbuf_c s = sbuf.create(20, mem$);
     tassert(s != NULL);
 
-    sbuf_head_s* head = sbuf__head(s);
+    sbuf_head_s* head = _sbuf__head(s);
     tassert_eq(sbuf.isvalid(&s), true);
 
     head->header.magic = 1098;

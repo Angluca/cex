@@ -9170,7 +9170,7 @@ struct _sbuf__sprintf_ctx
 };
 
 static inline sbuf_head_s*
-sbuf__head(sbuf_c self)
+_sbuf__head(sbuf_c self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = (sbuf_head_s*)(self - sizeof(sbuf_head_s));
@@ -9183,7 +9183,7 @@ sbuf__head(sbuf_c self)
     return head;
 }
 static inline usize
-sbuf__alloc_capacity(usize capacity)
+_sbuf__alloc_capacity(usize capacity)
 {
     uassert(capacity < INT32_MAX && "requested capacity exceeds 2gb, maybe overflow?");
 
@@ -9201,7 +9201,7 @@ sbuf__alloc_capacity(usize capacity)
     }
 }
 static inline Exception
-sbuf__grow_buffer(sbuf_c* self, u32 length)
+_sbuf__grow_buffer(sbuf_c* self, u32 length)
 {
     sbuf_head_s* head = (sbuf_head_s*)(*self - sizeof(sbuf_head_s));
 
@@ -9210,7 +9210,7 @@ sbuf__grow_buffer(sbuf_c* self, u32 length)
         return Error.overflow;
     }
 
-    u32 new_capacity = sbuf__alloc_capacity(length);
+    u32 new_capacity = _sbuf__alloc_capacity(length);
     head = mem$realloc(head->allocator, head, new_capacity);
     if (unlikely(head == NULL)) {
         *self = NULL;
@@ -9224,7 +9224,7 @@ sbuf__grow_buffer(sbuf_c* self, u32 length)
 }
 
 static sbuf_c
-sbuf_create(u32 capacity, IAllocator allocator)
+cex_sbuf_create(u32 capacity, IAllocator allocator)
 {
     if (unlikely(allocator == NULL)) {
         uassert(allocator != NULL);
@@ -9232,7 +9232,7 @@ sbuf_create(u32 capacity, IAllocator allocator)
     }
 
     if (capacity < 512) {
-        capacity = sbuf__alloc_capacity(capacity);
+        capacity = _sbuf__alloc_capacity(capacity);
     }
 
     char* buf = mem$malloc(allocator, capacity);
@@ -9258,16 +9258,16 @@ sbuf_create(u32 capacity, IAllocator allocator)
 }
 
 static sbuf_c
-sbuf_create_temp(void)
+cex_sbuf_create_temp(void)
 {
     uassert(
         tmem$->scope_depth(tmem$) > 0 && "trying create tmem$ allocator outside mem$scope(tmem$)"
     );
-    return sbuf_create(100, tmem$);
+    return cex_sbuf_create(100, tmem$);
 }
 
 static sbuf_c
-sbuf_create_static(char* buf, usize buf_size)
+cex_sbuf_create_static(char* buf, usize buf_size)
 {
     if (unlikely(buf == NULL)) {
         uassert(buf != NULL);
@@ -9299,21 +9299,21 @@ sbuf_create_static(char* buf, usize buf_size)
 }
 
 static Exception
-sbuf_grow(sbuf_c* self, u32 new_capacity)
+cex_sbuf_grow(sbuf_c* self, u32 new_capacity)
 {
-    sbuf_head_s* head = sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
     if (new_capacity <= head->capacity) {
         // capacity is enough, no need to grow
         return Error.ok;
     }
-    return sbuf__grow_buffer(self, new_capacity);
+    return _sbuf__grow_buffer(self, new_capacity);
 }
 
 static void
-sbuf_update_len(sbuf_c* self)
+cex_sbuf_update_len(sbuf_c* self)
 {
     uassert(self != NULL);
-    sbuf_head_s* head = sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
 
     uassert((*self)[head->capacity] == '\0' && "capacity null term smashed!");
 
@@ -9322,19 +9322,19 @@ sbuf_update_len(sbuf_c* self)
 }
 
 static void
-sbuf_clear(sbuf_c* self)
+cex_sbuf_clear(sbuf_c* self)
 {
     uassert(self != NULL);
-    sbuf_head_s* head = sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
     head->length = 0;
     (*self)[head->length] = '\0';
 }
 
 static void
-sbuf_shrink(sbuf_c* self, u32 new_length)
+cex_sbuf_shrink(sbuf_c* self, u32 new_length)
 {
     uassert(self != NULL);
-    sbuf_head_s* head = sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
     uassert(new_length <= head->length);
     uassert(new_length <= head->capacity);
     head->length = new_length;
@@ -9342,31 +9342,31 @@ sbuf_shrink(sbuf_c* self, u32 new_length)
 }
 
 static u32
-sbuf_len(const sbuf_c* self)
+cex_sbuf_len(const sbuf_c* self)
 {
     uassert(self != NULL);
     if (*self == NULL) {
         return 0;
     }
-    sbuf_head_s* head = sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
     return head->length;
 }
 
 static u32
-sbuf_capacity(const sbuf_c* self)
+cex_sbuf_capacity(const sbuf_c* self)
 {
     uassert(self != NULL);
-    sbuf_head_s* head = sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
     return head->capacity;
 }
 
 static sbuf_c
-sbuf_destroy(sbuf_c* self)
+cex_sbuf_destroy(sbuf_c* self)
 {
     uassert(self != NULL);
 
     if (*self != NULL) {
-        sbuf_head_s* head = sbuf__head(*self);
+        sbuf_head_s* head = _sbuf__head(*self);
 
         // NOTE: null-terminate string to avoid future usage,
         // it will appear as empty string if references anywhere else
@@ -9384,7 +9384,7 @@ sbuf_destroy(sbuf_c* self)
 }
 
 static char*
-sbuf__sprintf_callback(const char* buf, void* user, u32 len)
+_sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 {
     struct _sbuf__sprintf_ctx* ctx = (struct _sbuf__sprintf_ctx*)user;
     sbuf_c sbuf = ((char*)ctx->head + sizeof(sbuf_head_s));
@@ -9404,7 +9404,7 @@ sbuf__sprintf_callback(const char* buf, void* user, u32 len)
         }
 
         // sbuf likely changed after realloc
-        e$except_silent(err, sbuf__grow_buffer(&sbuf, ctx->length + len + 1))
+        e$except_silent(err, _sbuf__grow_buffer(&sbuf, ctx->length + len + 1))
         {
             ctx->err = err;
             return NULL;
@@ -9433,12 +9433,12 @@ sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 }
 
 static Exception
-sbuf_appendfva(sbuf_c* self, const char* format, va_list va)
+cex_sbuf_appendfva(sbuf_c* self, const char* format, va_list va)
 {
     if (unlikely(self == NULL)) {
         return Error.argument;
     }
-    sbuf_head_s* head = sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
 
     struct _sbuf__sprintf_ctx ctx = {
         .head = head,
@@ -9449,9 +9449,9 @@ sbuf_appendfva(sbuf_c* self, const char* format, va_list va)
     };
 
     cexsp__vsprintfcb(
-        sbuf__sprintf_callback,
+        _sbuf__sprintf_callback,
         &ctx,
-        sbuf__sprintf_callback(NULL, &ctx, 0),
+        _sbuf__sprintf_callback(NULL, &ctx, 0),
         format,
         va
     );
@@ -9467,21 +9467,21 @@ sbuf_appendfva(sbuf_c* self, const char* format, va_list va)
 }
 
 static Exception
-sbuf_appendf(sbuf_c* self, const char* format, ...)
+cex_sbuf_appendf(sbuf_c* self, const char* format, ...)
 {
 
     va_list va;
     va_start(va, format);
-    Exc result = sbuf_appendfva(self, format, va);
+    Exc result = cex_sbuf_appendfva(self, format, va);
     va_end(va);
     return result;
 }
 
 static Exception
-sbuf_append(sbuf_c* self, const char* s)
+cex_sbuf_append(sbuf_c* self, const char* s)
 {
     uassert(self != NULL);
-    sbuf_head_s* head = sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
 
     if (unlikely(s == NULL)) {
         return Error.argument;
@@ -9495,7 +9495,7 @@ sbuf_append(sbuf_c* self, const char* s)
 
     // Try resize
     if (length + slen > capacity - 1) {
-        e$except_silent(err, sbuf__grow_buffer(self, length + slen))
+        e$except_silent(err, _sbuf__grow_buffer(self, length + slen))
         {
             return err;
         }
@@ -9514,7 +9514,7 @@ sbuf_append(sbuf_c* self, const char* s)
 }
 
 static bool
-sbuf_isvalid(sbuf_c* self)
+cex_sbuf_isvalid(sbuf_c* self)
 {
     if (self == NULL) {
         return false;
@@ -9541,43 +9541,24 @@ sbuf_isvalid(sbuf_c* self)
     return true;
 }
 
-// static inline isize
-// sbuf__index(const char* self, usize self_len, const char* c, u8 clen)
-// {
-//     isize result = -1;
-//
-//     u8 split_by_idx[UINT8_MAX] = { 0 };
-//     for (u8 i = 0; i < clen; i++) {
-//         split_by_idx[(u8)c[i]] = 1;
-//     }
-//
-//     for (usize i = 0; i < self_len; i++) {
-//         if (split_by_idx[(u8)self[i]]) {
-//             result = i;
-//             break;
-//         }
-//     }
-//
-//     return result;
-// }
 const struct __cex_namespace__sbuf sbuf = {
     // Autogenerated by CEX
     // clang-format off
 
-    .append = sbuf_append,
-    .appendf = sbuf_appendf,
-    .appendfva = sbuf_appendfva,
-    .capacity = sbuf_capacity,
-    .clear = sbuf_clear,
-    .create = sbuf_create,
-    .create_static = sbuf_create_static,
-    .create_temp = sbuf_create_temp,
-    .destroy = sbuf_destroy,
-    .grow = sbuf_grow,
-    .isvalid = sbuf_isvalid,
-    .len = sbuf_len,
-    .shrink = sbuf_shrink,
-    .update_len = sbuf_update_len,
+    .append = cex_sbuf_append,
+    .appendf = cex_sbuf_appendf,
+    .appendfva = cex_sbuf_appendfva,
+    .capacity = cex_sbuf_capacity,
+    .clear = cex_sbuf_clear,
+    .create = cex_sbuf_create,
+    .create_static = cex_sbuf_create_static,
+    .create_temp = cex_sbuf_create_temp,
+    .destroy = cex_sbuf_destroy,
+    .grow = cex_sbuf_grow,
+    .isvalid = cex_sbuf_isvalid,
+    .len = cex_sbuf_len,
+    .shrink = cex_sbuf_shrink,
+    .update_len = cex_sbuf_update_len,
 
     // clang-format on
 };
