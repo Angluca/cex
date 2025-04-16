@@ -14288,8 +14288,15 @@ CexParser_decl_parse(
                     sbuf.len(&result->args) == 0) {
                     str_s cmt = str.slice.strip(it.value);
                     // Use only doxygen style comments for docs
-                    if (str.slice.match(cmt, "(/**|/*!|///)*")) {
+                    if (str.slice.match(cmt, "(/**|/*!)*")) {
                         result->docs = cmt;
+                    } else if (str.slice.starts_with(cmt, str$s("///"))){
+                        if (prev_t.type == CexTkn__comment_single && result->docs.buf) {
+                            // Trying extend previous /// comment
+                            result->docs.len = (cmt.buf - result->docs.buf) + cmt.len;
+                        } else {
+                            result->docs = cmt;
+                        }
                     }
                 }
                 break;

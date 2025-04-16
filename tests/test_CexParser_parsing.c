@@ -1,7 +1,7 @@
 #define CEX_LOG_LVL 8
 #include "src/all.c"
 
-#define $code(...) cex$stringize(__VA_ARGS__)                                                                               \
+#define $code(...) cex$stringize(__VA_ARGS__)
 
 // test$setup_case() {return EOK;}
 // test$teardown_case() {return EOK;}
@@ -950,15 +950,23 @@ test$case(test_unnamed_types_typedef)
     // clang-format off
     char* code = 
         "typedef int CEXDS_SIPHASH_2[sizeof(size_t) == 8 ? 1 : -1];";
+    // clang-format on
     CexParser_c lx = CexParser_create(code, 0, true);
     cex_token_s t;
-    mem$scope(tmem$, _){
+    mem$scope(tmem$, _)
+    {
         cex_decl_s* d = NULL;
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug(
+            "Entity:  type: %d type_str: '%s' children: %ld\n%S\n",
+            t.type,
+            CexTkn_str[t.type],
+            arr$len(items),
+            t.value
+        );
         tassert_eq(t.type, CexTkn__typedef);
         tassert(d != NULL);
         tassert_eq(d->name, str$s("CEXDS_SIPHASH_2"));
@@ -970,5 +978,45 @@ test$case(test_unnamed_types_typedef)
     return EOK;
 }
 
+test$case(test_multiline_single_docstr)
+{
+    // clang-format off
+    char* code = 
+        "/// A \n"
+        "/// B \n"
+        "/// C \n"
+        "typedef struct\n"
+        "{} sbuf_c;\n"
+    ;
+    // clang-format on
+    CexParser_c lx = CexParser_create(code, 0, true);
+    cex_token_s t;
+    mem$scope(tmem$, _)
+    {
+        cex_decl_s* d = NULL;
+        arr$(cex_token_s) items = arr$new(items, _);
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser.decl_parse(&lx, t, items, NULL, _);
+        log$debug(
+            "Entity:  type: %d type_str: '%s' children: %ld\n%S\n",
+            t.type,
+            CexTkn_str[t.type],
+            arr$len(items),
+            t.value
+        );
+        tassert_eq(t.type, CexTkn__typedef);
+        tassert(d != NULL);
+
+        tassert_eq(d->type, CexTkn__typedef);
+        tassert_eq(d->name, str$s("sbuf_c"));
+        tassert_eq(d->args, "");
+        tassert_eq(d->ret_type, "typedef struct");
+        tassert_gt(d->body.len, 0);
+        tassert_eq(d->docs, str$s("/// A \n/// B \n/// C"));
+    }
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    return EOK;
+}
 
 test$main();
