@@ -12827,7 +12827,7 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
 }
 
 static int
-cexy__decl_comparator(const void* a, const void* b)
+_cexy__decl_comparator(const void* a, const void* b)
 {
     cex_decl_s** _a = (cex_decl_s**)a;
     cex_decl_s** _b = (cex_decl_s**)b;
@@ -12845,8 +12845,9 @@ cexy__decl_comparator(const void* a, const void* b)
 
     return str.slice.qscmp(&_a[0]->name, &_b[0]->name);
 }
+
 static str_s
-cexy__process_make_brief_docs(cex_decl_s* decl)
+_cexy__process_make_brief_docs(cex_decl_s* decl)
 {
     str_s brief_str = { 0 };
     if (!decl->docs.buf) {
@@ -12884,7 +12885,7 @@ cexy__process_make_brief_docs(cex_decl_s* decl)
 }
 
 static Exception
-cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_buf)
+_cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_buf)
 {
     cg$init(out_buf);
     str_s subn = { 0 };
@@ -12922,7 +12923,7 @@ cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_b
                 }
                 clean_name = str.slice.sub(clean_name, 1 + subn.len + 2, 0);
             }
-            str_s brief_str = cexy__process_make_brief_docs(it);
+            str_s brief_str = _cexy__process_make_brief_docs(it);
             if (brief_str.len) {
                 $pf("/// %S", brief_str);
             }
@@ -12946,7 +12947,7 @@ cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_b
 }
 
 static Exception
-cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_buf)
+_cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_buf)
 {
     cg$init(out_buf);
     str_s subn = { 0 };
@@ -13004,7 +13005,7 @@ cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
 }
 
 static Exception
-cexy__process_update_code(
+_cexy__process_update_code(
     const char* code_file,
     bool only_update,
     sbuf_c cex_h_struct,
@@ -13109,8 +13110,9 @@ cexy__process_update_code(
 #undef $dump_prev_comment
     return EOK;
 }
+
 static bool
-cexy__fn_match(str_s fn_name, str_s ns_prefix)
+_cexy__fn_match(str_s fn_name, str_s ns_prefix)
 {
 
     mem$scope(tmem$, _)
@@ -13138,8 +13140,9 @@ cexy__fn_match(str_s fn_name, str_s ns_prefix)
 
     return true;
 }
+
 static str_s
-cexy__fn_dotted(str_s fn_name, const char* expected_ns, IAllocator alloc)
+_cexy__fn_dotted(str_s fn_name, const char* expected_ns, IAllocator alloc)
 {
     str_s clean_name = fn_name;
     if (str.slice.starts_with(clean_name, str$s("cex_"))) {
@@ -13300,7 +13303,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     if (d->is_inline && d->is_static) {
                         continue;
                     }
-                    if (!cexy__fn_match(d->name, ns_prefix)) {
+                    if (!_cexy__fn_match(d->name, ns_prefix)) {
                         continue;
                     }
                     log$trace("FN: %S ret_type: '%s' args: '%s'\n", d->name, d->ret_type, d->args);
@@ -13311,7 +13314,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     continue;
                 }
 
-                arr$sort(decls, cexy__decl_comparator);
+                arr$sort(decls, _cexy__decl_comparator);
 
                 sbuf_c cex_h_struct = sbuf.create(10 * 1024, _);
                 sbuf_c cex_h_var_decl = sbuf.create(1024, _);
@@ -13323,16 +13326,16 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                     ns_prefix,
                     ns_prefix
                 ));
-                e$ret(cexy__process_gen_struct(ns_prefix, decls, &cex_h_struct));
-                e$ret(cexy__process_gen_var_def(ns_prefix, decls, &cex_c_var_def));
-                e$ret(cexy__process_update_code(
+                e$ret(_cexy__process_gen_struct(ns_prefix, decls, &cex_h_struct));
+                e$ret(_cexy__process_gen_var_def(ns_prefix, decls, &cex_c_var_def));
+                e$ret(_cexy__process_update_code(
                     src_fn,
                     only_update,
                     cex_h_struct,
                     cex_h_var_decl,
                     cex_c_var_def
                 ));
-                e$ret(cexy__process_update_code(
+                e$ret(_cexy__process_update_code(
                     hdr_fn,
                     only_update,
                     cex_h_struct,
@@ -13349,7 +13352,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 }
 
 static bool
-cexy__is_str_pattern(const char* s)
+_cexy__is_str_pattern(const char* s)
 {
     if (s == NULL) {
         return false;
@@ -13368,7 +13371,7 @@ cexy__is_str_pattern(const char* s)
 }
 
 static int
-cexy__help_qscmp_decls_type(const void* a, const void* b)
+_cexy__help_qscmp_decls_type(const void* a, const void* b)
 {
     // this struct fields must match to cexy.cmd.help() hm$
     const struct
@@ -13392,7 +13395,7 @@ _cexy__display_full_info(cex_decl_s* d, char* base_ns)
     {
         io.printf("Symbol found at %s:%d\n", d->file, d->line+1);
         if (d->type == CexTkn__func_def) {
-            name = cexy__fn_dotted(d->name, base_ns, _);
+            name = _cexy__fn_dotted(d->name, base_ns, _);
             if (!name.buf) {
                 // error converting to dotted name (fallback)
                 name = d->name;
@@ -13461,7 +13464,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         if (str.match(query, "[a-zA-Z0-9+].")) {
             query_pattern = str.fmt(arena, "%S[._$]*", str.sub(query, 0, -1));
             is_namespace_filter = true;
-        } else if (cexy__is_str_pattern(query)) {
+        } else if (_cexy__is_str_pattern(query)) {
             query_pattern = query;
         } else {
             query_pattern = str.fmt(arena, "*%s*", query);
@@ -13526,7 +13529,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                             }
                         }
                         str_s fndotted = (d->type == CexTkn__func_def)
-                                           ? cexy__fn_dotted(d->name, base_ns, _)
+                                           ? _cexy__fn_dotted(d->name, base_ns, _)
                                            : d->name;
 
                         if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
@@ -13561,7 +13564,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         }
 
         // WARNING: sorting of hashmap items is a dead end, hash indexes get invalidated
-        qsort(names, hm$len(names), sizeof(*names), cexy__help_qscmp_decls_type);
+        qsort(names, hm$len(names), sizeof(*names), _cexy__help_qscmp_decls_type);
 
         for$each(it, names)
         {
@@ -13583,7 +13586,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                 str_s name = it.key;
                 const char* cex_ns = hm$get(cex_ns_map, (char*)it.value->file);
                 if (cex_ns && it.value->type == CexTkn__func_def) {
-                    name = cexy__fn_dotted(name, cex_ns, arena);
+                    name = _cexy__fn_dotted(name, cex_ns, arena);
                     if (!name.buf) {
                         // something weird happened, fallback
                         // log$warn("Failed to make dotted name from %S, cex_ns: %s\n", it.key,

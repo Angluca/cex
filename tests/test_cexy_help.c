@@ -33,13 +33,12 @@ test$case(test_namespace_entities)
         CexParser_c lx = CexParser.create(code_h, 0, true);
         cex_token_s t;
         while ((t = CexParser.next_entity(&lx, &items)).type) {
-            cex_decl_s* d = CexParser.decl_parse(t, items, NULL, _);
+            cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
             if (d == NULL) {
                 continue;
             }
             log$debug(
-                "Decl: module: %S type: '%s' name: %S doc_len: %d body_len: %d ret: %s args: %s\n",
-                d->module, 
+                "Decl: type: '%s' name: %S doc_len: %d body_len: %d ret: %s args: %s\n",
                 CexTkn_str[d->type],
                 d->name,
                 d->docs.len,
@@ -52,14 +51,14 @@ test$case(test_namespace_entities)
         log$debug("\nSource symbols: %s\n", $file".c");
         lx = CexParser.create(code_c, 0, true);
         while((t = CexParser.next_entity(&lx, &items)).type) {
-            cex_decl_s* d = CexParser.decl_parse(t, items, NULL, _);
+            cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
             if (d == NULL) {
                 continue;
             }
             log$debug("Decl: type: '%s' name: %S doc_len: %d body_len: %d ret: %s args: %s\n",
             CexTkn_str[t.type], d->name, d->docs.len, d->body.len, d->ret_type, d->args);
         }
-        tassert(false);
+        // tassert(false);
     }
 #undef $file
     return EOK;

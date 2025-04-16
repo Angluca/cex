@@ -328,8 +328,8 @@ test$case(test_sub_negative_start)
 
     s = str.sstr("()");
     sub = str.slice.sub(s, 1, -1);
-    tassert_eq(s.buf, NULL);
-    tassert_eq(s.len, 0);
+    tassert_eq(sub.buf, NULL);
+    tassert_eq(sub.len, 0);
 
     return EOK;
 }
