@@ -14210,8 +14210,8 @@ CexParser_decl_parse(
                 }
                 if (decl_token.type == CexTkn__typedef) {
                     if (str.slice.match(prev_t.value, "(struct|enum|union)")) {
+                        name_idx = idx;
                         result->name = it.value;
-                        e$goto(sbuf.appendf(&result->ret_type, "%S", prev_t.value), fail);
                     }
                 }
                 if (decl_token.type == CexTkn__func_decl) {
@@ -14275,6 +14275,7 @@ CexParser_decl_parse(
                 if (result->name.buf == NULL && sbuf.len(&result->ret_type) == 0 &&
                     sbuf.len(&result->args) == 0) {
                     str_s cmt = str.slice.strip(it.value);
+                    // Use only doxygen style comments for docs
                     if (str.slice.match(cmt, "(/**|/*!|///)*")) {
                         result->docs = cmt;
                     }
@@ -14289,7 +14290,11 @@ CexParser_decl_parse(
                 if (prev_t.type == CexTkn__paren_block) {
                     args_idx = prev_idx;
                 }
-                if (decl_token.type == CexTkn__typedef && prev_t.type == CexTkn__ident) {
+                if (decl_token.type == CexTkn__typedef && prev_t.type == CexTkn__ident &&
+                    !str.slice.match(prev_t.value, "(struct|enum|union)")) {
+                    if (name_idx < 0) {
+                        name_idx = idx;
+                    }
                     result->name = prev_t.value;
                 }
                 break;
@@ -14387,6 +14392,7 @@ CexParser_decl_parse(
                     }
                     break;
                 }
+                case CexTkn__brace_block:
                 case CexTkn__comment_multi:
                 case CexTkn__comment_single:
                     continue;
