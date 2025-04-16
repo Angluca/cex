@@ -1,5 +1,5 @@
-#include "src/all.h"
 #include "src/all.c"
+#include "src/all.h"
 
 
 static void
@@ -650,7 +650,7 @@ test$case(test_hashmap_basic)
     hm$del(intmap, 100);
     tassert_eq(hm$len(intmap), 0);
 
-    var h = cexds_header(intmap);
+    var h = _cexds__header(intmap);
     tassert(h->hm_seed != 0);
 
     hm$free(intmap);
@@ -795,13 +795,13 @@ test$case(test_hashmap_keytype)
 
     hm$(str_s, int) map5 = hm$new(map5, mem$);
 
-    tassert_eq(cexds_header(intmap)->hm_key_type, _CexDsKeyType__generic);
-    tassert_eq(cexds_header(intmap64)->hm_key_type, _CexDsKeyType__generic);
-    tassert_eq(cexds_header(map1)->hm_key_type, _CexDsKeyType__generic);
-    tassert_eq(cexds_header(map2)->hm_key_type, _CexDsKeyType__charptr);
-    tassert_eq(cexds_header(map3)->hm_key_type, _CexDsKeyType__charptr);
-    tassert_eq(cexds_header(map4)->hm_key_type, _CexDsKeyType__charbuf);
-    tassert_eq(cexds_header(map5)->hm_key_type, _CexDsKeyType__cexstr);
+    tassert_eq(_cexds__header(intmap)->hm_key_type, _CexDsKeyType__generic);
+    tassert_eq(_cexds__header(intmap64)->hm_key_type, _CexDsKeyType__generic);
+    tassert_eq(_cexds__header(map1)->hm_key_type, _CexDsKeyType__generic);
+    tassert_eq(_cexds__header(map2)->hm_key_type, _CexDsKeyType__charptr);
+    tassert_eq(_cexds__header(map3)->hm_key_type, _CexDsKeyType__charptr);
+    tassert_eq(_cexds__header(map4)->hm_key_type, _CexDsKeyType__charbuf);
+    tassert_eq(_cexds__header(map5)->hm_key_type, _CexDsKeyType__cexstr);
 
     hm$free(intmap);
     hm$free(intmap64);
@@ -833,13 +833,13 @@ test$case(test_hashmap_hash)
     const char* keyvar[1] = { key };
 
     size_t seed = 27361;
-    size_t hash_key = cexds_hash(_CexDsKeyType__charptr, keyvar, 10000, seed);
+    size_t hash_key = _cexds__hash(_CexDsKeyType__charptr, keyvar, 10000, seed);
     tassert(hash_key > 0);
 
-    tassert_eq(cexds_hash(_CexDsKeyType__charbuf, key_buf, sizeof(key_buf), seed), hash_key);
-    tassert_eq(cexds_hash(_CexDsKeyType__cexstr, &key_str, sizeof(key_str), seed), hash_key);
+    tassert_eq(_cexds__hash(_CexDsKeyType__charbuf, key_buf, sizeof(key_buf), seed), hash_key);
+    tassert_eq(_cexds__hash(_CexDsKeyType__cexstr, &key_str, sizeof(key_str), seed), hash_key);
     // NOTE: This case is non \0 terminated buffer!
-    tassert_eq(cexds_hash(_CexDsKeyType__charbuf, key_buf2, sizeof(key_buf2), seed), hash_key);
+    tassert_eq(_cexds__hash(_CexDsKeyType__charbuf, key_buf2, sizeof(key_buf2), seed), hash_key);
 
     return EOK;
 }
@@ -1053,27 +1053,30 @@ test$case(test_hashmap_basic_iteration)
     tassert_eq(arr$len(intmap), 3);
 
     u32 nit = 1;
-    for$each(it, intmap) {
+    for$each(it, intmap)
+    {
         tassert_eq(it.key, nit);
-        tassert_eq(it.value, nit*10);
+        tassert_eq(it.value, nit * 10);
         nit++;
     }
-    tassert_eq(nit-1, arr$len(intmap));
+    tassert_eq(nit - 1, arr$len(intmap));
 
     nit = 1;
-    for$eachp(it, intmap) {
+    for$eachp(it, intmap)
+    {
         tassert_eq(it->key, nit);
-        tassert_eq(it->value, nit*10);
+        tassert_eq(it->value, nit * 10);
         nit++;
     }
-    tassert_eq(nit-1, arr$len(intmap));
+    tassert_eq(nit - 1, arr$len(intmap));
 
     hm$free(intmap);
     tassert_eq(0, arr$len(intmap));
     tassert_eq(0, hm$len(intmap));
     tassert(intmap == NULL);
 
-    for$eachp(it, intmap) {
+    for$eachp(it, intmap)
+    {
         (void)it;
         tassert(false && "should never happen");
     }
@@ -1153,7 +1156,7 @@ test$case(test_mem_scope_lifetime_test)
         }
         // WARNING: mem$scope exited => new allocation for arr$pushm marked as poisoned
         //          you'll trigger weird use-after-poison ASAN failure
-        tassert(mem$asan_poison_check(&arr[18], sizeof(u32)*3));
+        tassert(mem$asan_poison_check(&arr[18], sizeof(u32) * 3));
     }
     return EOK;
 }
