@@ -25,7 +25,7 @@ main(int argc, char** argv)
         .epilog = cexy$epilog,
         argparse$cmd_list(
             cexy$cmd_all,
-            { .name = "test", .func = cmd_test, .help = "Test running" },
+            { .name = "test", .func = cexy.cmd.simple_test, .help = "Test running" },
         ),
     };
     // clang-format on
@@ -153,75 +153,3 @@ cex_bundle(void)
     }
 }
 
-Exception
-cmd_test(int argc, char** argv, void* user_ctx)
-{
-    (void)user_ctx;
-    uassert(argc > 0);
-    uassert(argv != NULL);
-
-    argparse_c cmd_args = { 0 };
-    e$ret(argparse.parse(&cmd_args, argc, argv));
-    const char* cmd = argparse.next(&cmd_args);
-    const char* target = argparse.next(&cmd_args);
-    const char* usage =
-        "usage: ./cex test {run,build,create,clean,debug} all|test/test_file.c [--test-options]";
-
-    if (!str.match(cmd, "(run|build|create|clean|debug)") || target == NULL) {
-        return e$raise(
-            Error.argsparse,
-            "Invalid command: '%s' or target: '%s'\n%s",
-            cmd,
-            target,
-            usage
-        );
-    }
-
-    if (str.eq(cmd, "create")) {
-        e$ret(cexy.test.create(target));
-        return EOK;
-    } else if (str.eq(cmd, "clean")) {
-        e$ret(cexy.test.clean(target));
-        return EOK;
-    }
-    e$ret(cexy.test.make_target_pattern(&target)); // validation + convert 'all' -> "tests/test_*.c"
-
-    log$info("Tests building: %s\n", target);
-    // Build stage
-    u32 n_tests = 0;
-    u32 n_built = 0;
-    mem$scope(tmem$, _)
-    {
-        for$each(test_src, os.fs.find(target, true, _))
-        {
-            char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
-            log$trace("Test src: %s -> %s\n", test_src, test_target);
-            n_tests++;
-            if (!cexy.src_include_changed(test_target, test_src, NULL)) {
-                continue;
-            }
-            arr$(char*) args = arr$new(args, _);
-            arr$pushm(
-                args,
-                cexy$cc,
-                cexy$cc_args_test,
-                cexy$cc_include,
-                // cexy$ld_args,
-                test_src,
-                // cexy$ld_libs,
-                "-o",
-                test_target,
-            );
-            arr$push(args, NULL);
-            e$ret(os$cmda(args));
-            n_built++;
-        }
-    }
-
-    log$info("Tests building: %d tests processed, %d tests built\n", n_tests, n_built);
-
-    if (str.match(cmd, "(run|debug)")) {
-        e$ret(cexy.test.run(target, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
-    }
-    return EOK;
-}

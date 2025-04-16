@@ -3616,11 +3616,11 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #endif
 
 #ifndef cexy$ld_args
-#define cexy$ld_args ""
+#define cexy$ld_args
 #endif
 
 #ifndef cexy$ld_libs
-#define cexy$ld_libs ""
+#define cexy$ld_libs
 #endif
 
 #ifndef cexy$debug_cmd
@@ -3652,32 +3652,78 @@ string
     { .name = "help",                                                                              \
       .func = cexy.cmd.help,                                                                       \
       .help = "Search cex.h and project symbols and extract help" }
-#define cexy$cmd_check                                                                             \
-    { .name = "check", .func = cexy.cmd.check, .help = "Check project and system environment" }
+#define cexy$cmd_config                                                                             \
+    { .name = "config", .func = cexy.cmd.config, .help = "Check project and system environment and config" }
 
 
-#define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_check
+#define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_config
 
 #define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
 #define cexy$description "Cex build system"
-/* clang-format off */
+
 #define cexy$epilog                                                                                \
     "\nYou may try to get help for commands as well, try `cex process --help`\n"
 
-#define cexy$env                                                                                \
-    "\nList of #define cexy$* variables used in build system (you may redefine them)\n"            \
-    "* cexy$build_dir            " cexy$build_dir "\n"                                             \
-    "* cexy$cc                   " cexy$cc "\n"                                                    \
-    "* cexy$cc_include           " cex$stringize(cexy$cc_include) "\n"                             \
-    "* cexy$cc_args              " cex$stringize(cexy$cc_args) "\n"                                \
-    "* cexy$cc_args_test         " cex$stringize(cexy$cc_args_test) "\n"                           \
-    "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
-    "* cexy$ld_libs              " cex$stringize(cexy$ld_libs) "\n"                                \
-    "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
-    "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"
+// clang-format off
+#define _cexy$cmd_test_help (\
+        "CEX built-in simple test runner\n"\
+        "\nEach cexy test is self-sufficient and unity build, which allows you to test\n"\
+        "static funcions, apply mocks to some selected modules and functions, have more\n"\
+        "control over your code. See `cex config --help` for customization/config info.\n"\
+\
+        "\nCEX test runner keep checking include modified time to track changes in the\n"\
+        "source files. It expects that each #include \"myfile.c\" has \"myfile.h\" in \n" \
+        "the same folder. Test runner uses cexy$cc_include for searching.\n"\
+\
+        "\nCEX is a test-centric language, it enables additional sanity checks then in\n" \
+        "test suite, all warnings are enabled -Wall -Wextra. Sanitizers are enabled by\n"\
+        "default.\n"\
+\
+        "\nCode requirements:\n"\
+        "1. You should include all your source files directly using #include \"path/src.c\"\n"\
+        "2. If needed provide linker options via cexy$ld_libs / cexy$ld_args\n"\
+        "3. If needed provide compiler options via cexy$cc_args_test\n"\
+        "4. All tests have to be in tests/ folder, and start with `test_` prefix \n"\
+        "5. Only #include with \"\" checked for modification \n"\
+\
+        "\nTest suite setup/teardown:\n"\
+        "// setup before every case  \n"\
+        "test$setup_case() {return EOK;} \n"\
+        "// teardown after every case \ntest$setup_case() {return EOK;} \n"\
+        "// setup before suite (only once) \ntest$setup_suite() {return EOK;} \n"\
+        "// teardown after suite (only once) \ntest$setup_suite() {return EOK;} \n"\
+\
+        "\nTest case:\n"\
+        "\ntest$case(my_test_case_name) {\n"\
+        "    // run `cex help tassert_` / `cex help tassert_eq` to get more info \n" \
+        "    tassert(0 == 1);\n"\
+        "    tassertf(0 == 1, \"this is a failure msg: %d\", 3);\n"\
+        "    tassert_eq(buf, \"foo\");\n"\
+        "    tassert_eq(1, true);\n"\
+        "    tassert_eq(str.sstr(\"bar\"), str$s(\"bar\"));\n"\
+        "    tassert_ne(1, 0);\n"\
+        "    tassert_le(0, 1);\n"\
+        "    tassert_lt(0, 1);\n"\
+        "    return EOK;\n"\
+        "}\n"\
+        \
+        "\nIf you need more control you can build your own test runner. Just use cex help\n"\
+        "and get source code `./cex help --source cexy.cmd.simple_test`\n")
+        
+#define _cexy$cmd_test_epilog \
+        "\nTest running examples: \n"\
+        "cex test create tests/test_file.c        - creates new test file from template\n"\
+        "cex test build all                       - build all tests\n"\
+        "cex test run all                         - build and run all tests\n"\
+        "cex test run tests/test_file.c           - run test by path\n"\
+        "cex test debug tests/test_file.c         - run test via `cexy$debug_cmd` program\n"\
+        "cex test clean all                       - delete all test executables in `cexy$build_dir`\n"\
+        "cex test clean test/test_file.c          - delete specific test executable\n"\
+        "cex test run tests/test_file.c [--help]  - run test with passing arguments to the test runner program\n"\
 
-/* clang-format off */
+
+// clang-format on
 struct __cex_namespace__cexy {
     // Autogenerated by CEX
     // clang-format off
@@ -3688,9 +3734,10 @@ struct __cex_namespace__cexy {
     char*           (*target_make)(const char* src_path, const char* build_dir, const char* name_or_extension, IAllocator allocator);
 
     struct {
-        Exception       (*check)(int argc, char** argv, void* user_ctx);
+        Exception       (*config)(int argc, char** argv, void* user_ctx);
         Exception       (*help)(int argc, char** argv, void* user_ctx);
         Exception       (*process)(int argc, char** argv, void* user_ctx);
+        Exception       (*simple_test)(int argc, char** argv, void* user_ctx);
     } cmd;
 
     struct {
@@ -10767,8 +10814,8 @@ _cex_argparse__parse_options(argparse_c* self)
         // short option
         if (arg[1] != '-') {
             if (self->_ctx.has_argument) {
-                // options are not allowed after arguments
-                return _cex_argparse__report_error(self, Error.integrity);
+                // Breaking when first argument appears (more flexible support of subcommands)
+                break;
             }
 
             self->_ctx.optvalue = arg + 1;
@@ -10794,8 +10841,8 @@ _cex_argparse__parse_options(argparse_c* self)
         }
         // long option
         if (self->_ctx.has_argument) {
-            // options are not allowed after arguments
-            return _cex_argparse__report_error(self, Error.integrity);
+            // Breaking when first argument appears (more flexible support of subcommands)
+            break;
         }
         e$except_silent(err, _cex_argparse__long_opt(self, self->options))
         {
@@ -11109,12 +11156,7 @@ cex_os__fs__remove(const char* path)
 }
 
 Exception
-cex_os__fs__dir_walk(
-    const char* path,
-    bool is_recursive,
-    os_fs_dir_walk_f callback_fn,
-    void* user_ctx
-)
+cex_os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
 {
     (void)user_ctx;
     if (path == NULL || path[0] == '\0') {
@@ -11260,8 +11302,7 @@ _os__fs__find_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
         return EOK; // just skip when patten not matched
     }
 
-    // allocate new string because path is stack allocated buffer in
-    // os__fs__dir_walk()
+    // allocate new string because path is stack allocated buffer in os__fs__dir_walk()
     char* new_path = str.clone(path, ctx->allc);
     if (new_path == NULL) {
         return Error.memory;
@@ -11293,8 +11334,7 @@ static arr$(char*) cex_os__fs__find(const char* path, bool is_recursive, IAlloca
     if (!is_recursive) {
         var f = os.fs.stat(path);
         if (f.is_valid && f.is_file) {
-            // Find used with exact file path, we still have to return array +
-            // allocated path copy
+            // Find used with exact file path, we still have to return array + allocated path copy
             arr$(char*) result = arr$new(result, allc);
             char* it = str.clone(path, allc);
             arr$push(result, it);
@@ -11478,8 +11518,7 @@ cex_os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_fl
     }
     for (u32 i = 0; i < args_len - 1; i++) {
         if (args[i] == NULL) {
-            return "one of `args` items is NULL, which may indicate string operation "
-                   "failure";
+            return "one of `args` items is NULL, which may indicate string operation failure";
         }
     }
 
@@ -11669,8 +11708,7 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
         if (args[i] == NULL || args[i][0] == '\0') {
             return e$raise(
                 Error.argument,
-                "`args` item[%d] is NULL/empty, which may indicate string "
-                "operation failure",
+                "`args` item[%d] is NULL/empty, which may indicate string operation failure",
                 i
             );
         }
@@ -12564,14 +12602,14 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
     {
         uassert(str.ends_with(argv[0], "cex"));
         char* bin_path = argv[0];
-#ifdef CEX_SELF_BUILD
+    #ifdef CEX_SELF_BUILD
         log$trace("Checking self build for executable: %s\n", bin_path);
         if (!cexy.src_include_changed(bin_path, cex_source, NULL)) {
             log$trace("%s unchanged, skipping self build\n", cex_source);
             // cex.c/cex.h are up to date no rebuild needed
             return;
         }
-#endif
+    #endif
 
         log$info("Rebuilding self: %s -> %s\n", cex_source, bin_path);
         char* old_name = str.fmt(_, "%s.old", bin_path);
@@ -13182,20 +13220,20 @@ _cexy__process_update_code(
         bool has_module_struct = false;
         arr$(cex_token_s) items = arr$new(items, _);
 
-#define $dump_prev()                                                                               \
-    code_buf.len = t.value.buf - code_buf.buf - ((t.value.buf > lx.content) ? 1 : 0);              \
-    if (code_buf.buf != NULL)                                                                      \
-        e$ret(sbuf.appendf(&new_code, "%S\n", code_buf));                                          \
-    code_buf = (str_s){ 0 }
-#define $dump_prev_comment()                                                                       \
-    for$each(it, items)                                                                            \
-    {                                                                                              \
-        if (it.type == CexTkn__comment_single || it.type == CexTkn__comment_multi) {               \
-            e$ret(sbuf.appendf(&new_code, "%S\n", it.value));                                      \
-        } else {                                                                                   \
-            break;                                                                                 \
-        }                                                                                          \
-    }
+    #define $dump_prev()                                                                           \
+        code_buf.len = t.value.buf - code_buf.buf - ((t.value.buf > lx.content) ? 1 : 0);          \
+        if (code_buf.buf != NULL)                                                                  \
+            e$ret(sbuf.appendf(&new_code, "%S\n", code_buf));                                      \
+        code_buf = (str_s){ 0 }
+    #define $dump_prev_comment()                                                                   \
+        for$each(it, items)                                                                        \
+        {                                                                                          \
+            if (it.type == CexTkn__comment_single || it.type == CexTkn__comment_multi) {           \
+                e$ret(sbuf.appendf(&new_code, "%S\n", it.value));                                  \
+            } else {                                                                               \
+                break;                                                                             \
+            }                                                                                      \
+        }
 
         while ((t = CexParser.next_entity(&lx, &items)).type) {
             if (t.type == CexTkn__cex_module_def) {
@@ -13257,8 +13295,8 @@ _cexy__process_update_code(
         }
     }
 
-#undef $dump_prev
-#undef $dump_prev_comment
+    #undef $dump_prev
+    #undef $dump_prev_comment
     return EOK;
 }
 
@@ -13537,7 +13575,7 @@ _cexy__help_qscmp_decls_type(const void* a, const void* b)
 }
 
 static Exception
-_cexy__display_full_info(cex_decl_s* d, char* base_ns)
+_cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source)
 {
     str_s name = d->name;
     mem$scope(tmem$, _)
@@ -13566,7 +13604,7 @@ _cexy__display_full_info(cex_decl_s* d, char* base_ns)
         if (sbuf.len(&d->args)) {
             io.printf("(%s)", d->args);
         }
-        if (d->type == CexTkn__func_def) {
+        if (!show_source && d->type == CexTkn__func_def) {
             io.printf(";");
         } else if (d->body.buf) {
             io.printf("%S;", d->body);
@@ -13596,6 +13634,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         "cex help str_s          - display type info and documentation if exactly matched\n"
     ;
     const char* filter = "./*.[hc]";
+    bool show_source = false;
 
     // clang-format on
     argparse_c cmd_args = {
@@ -13607,6 +13646,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
             argparse$opt_group("Options"),
             argparse$opt_help(),
             argparse$opt(&filter, 'f', "filter", .help = "file pattern for searching"),
+            argparse$opt(&show_source, 's', "source", .help = "show full source on match"),
         ),
     };
     if (argparse.parse(&cmd_args, argc, argv)) {
@@ -13696,7 +13736,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 
                         if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
                             // We have full match display full help
-                            return _cexy__display_full_info(d, base_ns);
+                            return _cexy__display_full_info(d, base_ns, show_source);
                         }
 
                         bool has_match = false;
@@ -13774,12 +13814,124 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 }
 
 static Exception
-cexy__cmd__check(int argc, char** argv, void* user_ctx)
+cexy__cmd__config(int argc, char** argv, void* user_ctx)
 {
     (void)argc;
     (void)argv;
     (void)user_ctx;
 
+    // clang-format off
+    const char* process_help = "Check project and system environment";
+    const char* epilog_help = 
+        "\nProject setup examples: \n"
+    ;
+
+    // clang-format on
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "check [options]",
+        .description = process_help,
+        .epilog = epilog_help,
+        argparse$opt_list(argparse$opt_help(), ),
+    };
+    if (argparse.parse(&cmd_args, argc, argv)) {
+        return Error.argsparse;
+    }
+
+    // clang-format off
+#define $env                                                                                \
+    "\ncexy$* variables used in build system, see `cex check --help` for more info\n"            \
+    "* cexy$build_dir            " cexy$build_dir "\n"                                             \
+    "* cexy$cc                   " cexy$cc "\n"                                                    \
+    "* cexy$cc_include           " cex$stringize(cexy$cc_include) "\n"                             \
+    "* cexy$cc_args              " cex$stringize(cexy$cc_args) "\n"                                \
+    "* cexy$cc_args_test         " cex$stringize(cexy$cc_args_test) "\n"                           \
+    "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
+    "* cexy$ld_libs              " cex$stringize(cexy$ld_libs) "\n"                                \
+    "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
+    "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"
+    // clang-format on
+
+    io.printf("%s", $env);
+
+    #undef $env
+
+    return EOK;
+}
+
+static Exception
+cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
+{
+    (void)user_ctx;
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "test [options] {run,build,create,clean,debug} all|tests/test_file.c [--test-options]",
+        .description = _cexy$cmd_test_help,
+        .epilog = _cexy$cmd_test_epilog,
+        argparse$opt_list(argparse$opt_help(), ),
+    };
+
+    e$ret(argparse.parse(&cmd_args, argc, argv));
+    const char* cmd = argparse.next(&cmd_args);
+    const char* target = argparse.next(&cmd_args);
+
+    if (!str.match(cmd, "(run|build|create|clean|debug)") || target == NULL) {
+        argparse.usage(&cmd_args);
+        return e$raise(Error.argsparse, "Invalid command: '%s' or target: '%s'", cmd, target);
+    }
+
+    if (str.eq(cmd, "create")) {
+        e$ret(cexy.test.create(target));
+        return EOK;
+    } else if (str.eq(cmd, "clean")) {
+        e$ret(cexy.test.clean(target));
+        return EOK;
+    }
+    e$ret(cexy.test.make_target_pattern(&target)); // validation + convert 'all' -> "tests/test_*.c"
+
+    log$info("Tests building: %s\n", target);
+    // Build stage
+    u32 n_tests = 0;
+    u32 n_built = 0;
+    mem$scope(tmem$, _)
+    {
+        for$each(test_src, os.fs.find(target, true, _))
+        {
+            char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
+            log$trace("Test src: %s -> %s\n", test_src, test_target);
+            n_tests++;
+            if (!cexy.src_include_changed(test_target, test_src, NULL)) {
+                continue;
+            }
+            arr$(char*) args = arr$new(args, _);
+            arr$pushm(
+                args,
+                cexy$cc,
+            );
+            // NOTE: reconstructing char*[] because some cexy$ variables might be empty
+            char* cc_args_test[] = { cexy$cc_args_test };
+            char* cc_include[] = { cexy$cc_include };
+            char* cc_ld_args[] = { cexy$ld_args };
+            char* cc_ld_libs[] = { cexy$ld_libs };
+            arr$pusha(args, cc_args_test);
+            arr$pusha(args, cc_include);
+            arr$pusha(args, cc_ld_args);
+            arr$push(args, test_src);
+            arr$pusha(args, cc_ld_libs);
+            arr$pushm(args, "-o", test_target);
+
+
+            arr$push(args, NULL);
+            e$ret(os$cmda(args));
+            n_built++;
+        }
+    }
+
+    log$info("Tests building: %d tests processed, %d tests built\n", n_tests, n_built);
+
+    if (str.match(cmd, "(run|debug)")) {
+        e$ret(cexy.test.run(target, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
+    }
     return EOK;
 }
 
@@ -13793,9 +13945,10 @@ const struct __cex_namespace__cexy cexy = {
     .target_make = cexy_target_make,
 
     .cmd = {
-        .check = cexy__cmd__check,
+        .config = cexy__cmd__config,
         .help = cexy__cmd__help,
         .process = cexy__cmd__process,
+        .simple_test = cexy__cmd__simple_test,
     },
 
     .test = {
