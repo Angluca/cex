@@ -12,9 +12,9 @@ test$case(test_cex_argparse_init_short)
     const char* usage = "basic [options] [[--] args]\n"
                         "basic [options]\n";
 
-    cex_argparse_c argparse = {
+    argparse_c argparse = {
         .options =
-            (cex_argparse_opt_s[]){
+            (argparse_opt_s[]){
                 argparse$opt_help(),
                 argparse$opt_group("Basic options"),
                 argparse$opt(&force, 'f', "force", "force to do"),
@@ -53,7 +53,7 @@ test$case(test_cex_argparse_init_long)
     float flt_num = 0.f;
     const char* path = NULL;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
@@ -66,7 +66,7 @@ test$case(test_cex_argparse_init_long)
     const char* usage = "basic [options] [[--] args]\n"
                         "basic [options]\n";
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
         .usage = usage,
@@ -97,13 +97,13 @@ test$case(test_cex_argparse_required)
 {
     int force = 100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do", .required = true),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -125,13 +125,13 @@ test$case(test_cex_argparse_bad_opts_help)
 {
     int force = 100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -152,13 +152,13 @@ test$case(test_cex_argparse_bad_opts_long)
 {
     int force = 100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', NULL),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -178,13 +178,13 @@ test$case(test_cex_argparse_bad_opts_short)
 {
     int force = 100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, '\0', "foo"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -204,13 +204,13 @@ test$case(test_cex_argparse_bad_opts_both_no_long_short)
 {
     int force = 100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, '\0', NULL),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -229,12 +229,12 @@ test$case(test_cex_argparse_bad_opts_both_no_long_short)
 
 test$case(test_cex_argparse_help_print)
 {
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -250,12 +250,12 @@ test$case(test_cex_argparse_help_print)
 
 test$case(test_cex_argparse_help_print_long)
 {
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -274,13 +274,13 @@ test$case(test_cex_argparse_arguments)
 {
     int force = 100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -310,14 +310,14 @@ test$case(test_cex_argparse_arguments_after_options)
     bool force = 0;
     int int_num = 2000;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
         argparse$opt(&int_num, 'i', "int", "selected integer"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -349,7 +349,7 @@ test$case(test_cex_argparse_arguments_stacked_short_opt)
     bool int_num = 1;
     int int_num2 = -100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
@@ -357,7 +357,7 @@ test$case(test_cex_argparse_arguments_stacked_short_opt)
         argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -390,7 +390,7 @@ test$case(test_cex_argparse_arguments_double_dash)
     bool int_num = 0;
     int int_num2 = -100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
@@ -398,7 +398,7 @@ test$case(test_cex_argparse_arguments_double_dash)
         argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -434,7 +434,7 @@ test$case(test_cex_argparse_arguments__option_follows_argument_not_allowed)
     int int_num = -100;
     int int_num2 = -100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
@@ -442,7 +442,7 @@ test$case(test_cex_argparse_arguments__option_follows_argument_not_allowed)
         argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -474,12 +474,12 @@ test$case(test_cex_argparse_arguments__parsing_error)
 {
     int int_num2 = -100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&int_num2, 'z', "int", "selected integer"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -499,7 +499,7 @@ test$case(test_cex_argparse_arguments__parsing_error)
 //     int int_num = -100;
 //     int int_num2 = -100;
 //
-//     cex_argparse_opt_s options[] = {
+//     argparse_opt_s options[] = {
 //         argparse$opt_help(),
 //         argparse$opt_group("Basic options"),
 //         argparse$opt(&force, 'f', "force", "force to do"),
@@ -507,7 +507,7 @@ test$case(test_cex_argparse_arguments__parsing_error)
 //         argparse$opt(&int_num2, 'z', "int", "selected integer"),
 //     };
 //
-//     cex_argparse_c
+//     argparse_c
 //         args = { .options = options,
 //                  .options_len = arr$len(options),
 //                  };
@@ -531,7 +531,7 @@ test$case(test_cex_argparse_arguments__parsing_error)
 //     bool int_num = 1;
 //     int int_num2 = -100;
 //
-//     cex_argparse_opt_s options[] = {
+//     argparse_opt_s options[] = {
 //         argparse$opt_help(),
 //         argparse$opt_group("Basic options"),
 //         argparse$opt(&force, 'f', "force", "force to do"),
@@ -539,7 +539,7 @@ test$case(test_cex_argparse_arguments__parsing_error)
 //         argparse$opt(&int_num2, 'z', "int", "selected integer"),
 //     };
 //
-//     cex_argparse_c
+//     argparse_c
 //         args = { .options = options,
 //                  .options_len = arr$len(options),
 //                  };
@@ -560,7 +560,7 @@ test$case(test_cex_argparse_arguments__parsing_error)
 //     tassert_eq(args.argv[2], "--int=100");
 //     tassert_eq(args.argv[3], "cmd_arg_something");
 //
-//     cex_argparse_c cmd_args = {
+//     argparse_c cmd_args = {
 //         .options = options,
 //         .options_len = arr$len(options),
 //     };
@@ -583,7 +583,7 @@ test$case(test_cex_argparse_arguments__parsing_error)
 //     int int_num = -100;
 //     int int_num2 = -100;
 //
-//     cex_argparse_opt_s options[] = {
+//     argparse_opt_s options[] = {
 //         argparse$opt_help(),
 //         argparse$opt_group("Basic options"),
 //         argparse$opt(&force, 'f', "force", "force to do"),
@@ -591,13 +591,13 @@ test$case(test_cex_argparse_arguments__parsing_error)
 //         argparse$opt(&int_num2, 'z', "int", "selected integer"),
 //     };
 //
-//     cex_argparse_opt_s cmd_options[] = {
+//     argparse_opt_s cmd_options[] = {
 //         argparse$opt_help(),
 //         argparse$opt_group("Command  options"),
 //         argparse$opt(&int_num2, 'z', "int", "some cmd int"),
 //     };
 //
-//     cex_argparse_c
+//     argparse_c
 //         args = { .options = options,
 //                  .options_len = arr$len(options),
 //                  };
@@ -607,7 +607,7 @@ test$case(test_cex_argparse_arguments__parsing_error)
 //
 //     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
 //
-//     cex_argparse_c cmd_args = {
+//     argparse_c cmd_args = {
 //         .options = cmd_options,
 //         .options_len = arr$len(cmd_options),
 //         .description = "this is a command description",
@@ -626,12 +626,12 @@ test$case(test_cex_argparse_arguments__int_parsing)
 {
     int int_num2 = -100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&int_num2, 'i', "int", "selected integer"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -683,12 +683,12 @@ test$case(test_cex_argparse_arguments__float_parsing)
 {
     f32 fnum = -100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&fnum, 'f', "flt", "selected float"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -756,12 +756,12 @@ test$case(test_cex_argparse_arguments__double_parsing)
 {
     f64 fnum = -100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&fnum, 'f', "flt", "selected float"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -830,13 +830,13 @@ test$case(test_cex_argparse_int_short_arg__argc_remainder)
 {
     int force = 100;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -860,13 +860,13 @@ test$case(test_cex_argparse_str_short_arg__argc_remainder)
 {
     const char* force = NULL;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -890,13 +890,13 @@ test$case(test_cex_argparse_float_short_arg__argc_remainder)
 {
     f32 force = 0.0;
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
         argparse$opt(&force, 'f', "force", "force to do"),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
     };
@@ -927,36 +927,36 @@ test$case(test_cex_argparse_float_short_arg__argc_remainder)
 
 
 Exception
-cex_argparse_command_test(int argc, char** argv, void* user_ctx)
+argparse_command_test(int argc, char** argv, void* user_ctx)
 {
     e$assert(argc > 0);
     e$assert(argv != NULL);
-    printf("cex_argparse_command_test: %d, %p, %s\n", argc, argv, (char*)user_ctx);
+    printf("argparse_command_test: %d, %p, %s\n", argc, argv, (char*)user_ctx);
     return EOK;
 }
 Exception
-cex_argparse_command_test2(int argc, char** argv, void* user_ctx)
+argparse_command_test2(int argc, char** argv, void* user_ctx)
 {
     e$assert(argc > 0);
     e$assert(argv != NULL);
-    printf("cex_argparse_command_test2: %d, %p, %s\n", argc, argv, (char*)user_ctx);
+    printf("argparse_command_test2: %d, %p, %s\n", argc, argv, (char*)user_ctx);
     return EOK;
 }
 Exception
-cex_argparse_command_test3(int argc, char** argv, void* user_ctx)
+argparse_command_test3(int argc, char** argv, void* user_ctx)
 {
     e$assert(argc > 0);
     e$assert(argv != NULL);
-    printf("cex_argparse_command_test3: %d, %p, %s\n", argc, argv, (char*)user_ctx);
+    printf("argparse_command_test3: %d, %p, %s\n", argc, argv, (char*)user_ctx);
     return EOK;
 }
 
-test$case(test_cex_argparse_commands_bad)
+test$case(test_argparse_commands_bad)
 {
-    cex_argparse_c args = {
+    argparse_c args = {
         .commands =
-            (cex_argparse_cmd_s[]){
-                { .name = "foo", .func = cex_argparse_command_test, .help = "foo command" },
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
                 { 0 }, // null term
             },
     };
@@ -969,18 +969,18 @@ test$case(test_cex_argparse_commands_bad)
     return EOK;
 }
 
-test$case(test_cex_argparse_commands_and_option_mutually_exclusive)
+test$case(test_argparse_commands_and_option_mutually_exclusive)
 {
-    cex_argparse_c args = {
+    argparse_c args = {
         .options =
-            (cex_argparse_opt_s[]){
+            (argparse_opt_s[]){
                 argparse$opt_help(),
                 { 0 }, // null term
             },
         .commands =
-            (cex_argparse_cmd_s[]){
+            (argparse_cmd_s[]){
                 { .name = "foo",
-                  .func = cex_argparse_command_test,
+                  .func = argparse_command_test,
                   .help = "foo command",
                   .is_default = 1 },
                 { 0 }, // null term
@@ -996,17 +996,17 @@ test$case(test_cex_argparse_commands_and_option_mutually_exclusive)
     return EOK;
 }
 
-test$case(test_cex_argparse_commands_usage)
+test$case(test_argparse_commands_usage)
 {
-    cex_argparse_c args = {
+    argparse_c args = {
         .commands =
-            (cex_argparse_cmd_s[]){
-                { .name = "foo", .func = cex_argparse_command_test, .help = "foo command" },
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
                 { .name = "bar",
-                  .func = cex_argparse_command_test,
+                  .func = argparse_command_test,
                   .help = "bar command",
                   .is_default = 1 },
-                { .name = "baz", .func = cex_argparse_command_test, .help = "baz command" },
+                { .name = "baz", .func = argparse_command_test, .help = "baz command" },
                 { 0 }, // null term
             },
     };
@@ -1019,17 +1019,17 @@ test$case(test_cex_argparse_commands_usage)
     return EOK;
 }
 
-test$case(test_cex_argparse_commands_usage_short_h)
+test$case(test_argparse_commands_usage_short_h)
 {
-    cex_argparse_c args = {
+    argparse_c args = {
         .commands =
-            (cex_argparse_cmd_s[]){
-                { .name = "foo", .func = cex_argparse_command_test, .help = "foo command" },
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
                 { .name = "bar",
-                  .func = cex_argparse_command_test,
+                  .func = argparse_command_test,
                   .help = "bar command",
                   .is_default = 1 },
-                { .name = "baz", .func = cex_argparse_command_test, .help = "baz command" },
+                { .name = "baz", .func = argparse_command_test, .help = "baz command" },
                 { 0 }, // null term
             },
     };
@@ -1043,17 +1043,17 @@ test$case(test_cex_argparse_commands_usage_short_h)
     return EOK;
 }
 
-test$case(test_cex_argparse_commands_default)
+test$case(test_argparse_commands_default)
 {
-    cex_argparse_c args = {
+    argparse_c args = {
         .commands =
-            (cex_argparse_cmd_s[]){
-                { .name = "foo", .func = cex_argparse_command_test, .help = "foo command" },
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
                 { .name = "bar",
-                  .func = cex_argparse_command_test2,
+                  .func = argparse_command_test2,
                   .help = "bar command",
                   .is_default = 1 },
-                { .name = "baz", .func = cex_argparse_command_test3, .help = "baz command" },
+                { .name = "baz", .func = argparse_command_test3, .help = "baz command" },
                 { 0 }, // null term
             },
     };
@@ -1062,23 +1062,23 @@ test$case(test_cex_argparse_commands_default)
     int argc = arr$len(argv);
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
-    tassert_eq_ptr(args._ctx.current_command->func, cex_argparse_command_test2);
+    tassert_eq_ptr(args._ctx.current_command->func, argparse_command_test2);
     tassert_er(EOK, argparse.run_command(&args, "cool"));
 
     return EOK;
 }
 
-test$case(test_cex_argparse_commands_name)
+test$case(test_argparse_commands_name)
 {
-    cex_argparse_c args = {
+    argparse_c args = {
         .commands =
-            (cex_argparse_cmd_s[]){
-                { .name = "foo", .func = cex_argparse_command_test, .help = "foo command" },
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
                 { .name = "bar",
-                  .func = cex_argparse_command_test2,
+                  .func = argparse_command_test2,
                   .help = "bar command",
                   .is_default = 1 },
-                { .name = "baz", .func = cex_argparse_command_test3, .help = "baz command" },
+                { .name = "baz", .func = argparse_command_test3, .help = "baz command" },
                 { 0 }, // null term
             },
     };
@@ -1087,7 +1087,7 @@ test$case(test_cex_argparse_commands_name)
     int argc = arr$len(argv);
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
-    tassert_eq_ptr(args._ctx.current_command->func, cex_argparse_command_test);
+    tassert_eq_ptr(args._ctx.current_command->func, argparse_command_test);
     tassert_eq(args.argc, 1);
     tassert_eq(args.argv[0], "foo");
 
@@ -1096,17 +1096,17 @@ test$case(test_cex_argparse_commands_name)
     return EOK;
 }
 
-test$case(test_cex_argparse_commands_name_with_args)
+test$case(test_argparse_commands_name_with_args)
 {
-    cex_argparse_c args = {
+    argparse_c args = {
         .commands =
-            (cex_argparse_cmd_s[]){
-                { .name = "foo", .func = cex_argparse_command_test, .help = "foo command" },
+            (argparse_cmd_s[]){
+                { .name = "foo", .func = argparse_command_test, .help = "foo command" },
                 { .name = "bar",
-                  .func = cex_argparse_command_test2,
+                  .func = argparse_command_test2,
                   .help = "bar command",
                   .is_default = 1 },
-                { .name = "baz", .func = cex_argparse_command_test3, .help = "baz command" },
+                { .name = "baz", .func = argparse_command_test3, .help = "baz command" },
                 { 0 }, // null term
             },
     };
@@ -1115,7 +1115,7 @@ test$case(test_cex_argparse_commands_name_with_args)
     int argc = arr$len(argv);
 
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
-    tassert_eq_ptr(args._ctx.current_command->func, cex_argparse_command_test);
+    tassert_eq_ptr(args._ctx.current_command->func, argparse_command_test);
     tassert_eq(args.argc, 3);
     tassert_eq(args.argv[0], "foo");
     tassert_eq(args.argv[1], "-h");
@@ -1130,7 +1130,7 @@ test$case(test_args_next)
 {
     char* argv[] = { "some", "a", "b", "c" };
     int argc = arr$len(argv);
-    cex_argparse_c args = { 0 };
+    argparse_c args = { 0 };
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eq("some", args.program_name);
     tassert_eq("a", argparse.next(&args));
@@ -1147,7 +1147,7 @@ test$case(test_args_next_double_dash)
 {
     char* argv[] = { "some", "a", "--b=foo", "--c", "zoo" };
     int argc = arr$len(argv);
-    cex_argparse_c args = { 0 };
+    argparse_c args = { 0 };
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eq("some", args.program_name);
     tassert_eq("a", argparse.next(&args));
@@ -1164,7 +1164,7 @@ test$case(test_args_next_argc_argv)
 {
     char* argv[] = { "some", "a", "b", "c" };
     int argc = arr$len(argv);
-    cex_argparse_c args = { 0 };
+    argparse_c args = { 0 };
     tassert_er(Error.ok, argparse.parse(&args, argc, argv));
     tassert_eq("some", args.program_name);
 
@@ -1207,9 +1207,9 @@ test$case(test_cex_argparse_usage_default_options)
     f64 _f64_small = 0.01231231;
     f32 _f32_big = 12109223.1231231;
 
-    cex_argparse_c argparse = {
+    argparse_c argparse = {
         .options =
-            (cex_argparse_opt_s[]){
+            (argparse_opt_s[]){
                 argparse$opt_help(),
                 argparse$opt_group("Basic options"),
                 argparse$opt(&bool_true, 'b', "bool-true", "bool-true"),

@@ -22,7 +22,7 @@ main(int argc, char** argv)
     cexy$initialize();
 
     // clang-format off
-    cex_argparse_c args = {
+    argparse_c args = {
         .description = cexy$description,
         // .epilog = cexy$epilog,
         argparse$cmd_list(
@@ -164,7 +164,7 @@ cmd_test(int argc, char** argv, void* user_ctx)
     uassert(argc > 0);
     uassert(argv != NULL);
 
-    cex_argparse_c cmd_args = { 0 };
+    argparse_c cmd_args = { 0 };
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* cmd = argparse.next(&cmd_args);
     const char* target = argparse.next(&cmd_args);

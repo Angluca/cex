@@ -332,7 +332,7 @@ cex_test_main_fn(int argc, char** argv)
     ctx->quiet_mode = false;
     ctx->has_ansi = io.isatty(stdout);
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
         argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
@@ -345,7 +345,7 @@ cex_test_main_fn(int argc, char** argv)
         ),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
         .description = "Test runner program",

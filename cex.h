@@ -1597,18 +1597,18 @@ __attribute__((visibility("hidden"))) extern const struct __cex_namespace__io io
 *                          src/argparse.h
 */
 
-struct cex_argparse_c;
-struct cex_argparse_opt_s;
+struct argparse_c;
+struct argparse_opt_s;
 
-typedef Exception (*cex_argparse_callback_f)(
-    struct cex_argparse_c* self,
-    const struct cex_argparse_opt_s* option,
+typedef Exception (*argparse_callback_f)(
+    struct argparse_c* self,
+    const struct argparse_opt_s* option,
     void* ctx
 );
-typedef Exception (*cex_argparse_convert_f)(const char* s, void* out_val);
-typedef Exception (*cex_argparse_command_f)(int argc, char** argv, void* user_ctx);
+typedef Exception (*argparse_convert_f)(const char* s, void* out_val);
+typedef Exception (*argparse_command_f)(int argc, char** argv, void* user_ctx);
 
-typedef struct cex_argparse_opt_s
+typedef struct argparse_opt_s
 {
     u8 type;
     void* value;
@@ -1616,19 +1616,19 @@ typedef struct cex_argparse_opt_s
     const char* long_name;
     const char* help;
     bool required;
-    cex_argparse_callback_f callback;
+    argparse_callback_f callback;
     void* callback_data;
-    cex_argparse_convert_f convert;
+    argparse_convert_f convert;
     bool is_present; // also setting in in argparse$opt* macro, allows optional parameter sugar
-} cex_argparse_opt_s;
+} argparse_opt_s;
 
-typedef struct cex_argparse_cmd_s
+typedef struct argparse_cmd_s
 {
     const char* name;
-    cex_argparse_command_f func;
+    argparse_command_f func;
     const char* help;
     bool is_default;
-} cex_argparse_cmd_s;
+} argparse_cmd_s;
 
 enum CexArgParseType_e
 {
@@ -1652,13 +1652,13 @@ enum CexArgParseType_e
 /**
  * argpparse
  */
-typedef struct cex_argparse_c
+typedef struct argparse_c
 {
     // user supplied options
-    cex_argparse_opt_s* options;
+    argparse_opt_s* options;
     u32 options_len;
 
-    cex_argparse_cmd_s* commands;
+    argparse_cmd_s* commands;
     u32 commands_len;
 
     const char* usage;        // usage text (can be multiline), each line prepended by program_name
@@ -1676,9 +1676,9 @@ typedef struct cex_argparse_c
         int cpidx;
         const char* optvalue; // current option value
         bool has_argument;
-        cex_argparse_cmd_s* current_command;
+        argparse_cmd_s* current_command;
     } _ctx;
-} cex_argparse_c;
+} argparse_c;
 
 
 // built-in option macros
@@ -1701,38 +1701,38 @@ typedef struct cex_argparse_c
             char**: CexArgParseType__string,                                                       \
             default: CexArgParseType__generic                                                      \
         );                                                                                         \
-        cex_argparse_convert_f conv_f = _Generic(                                                      \
+        argparse_convert_f conv_f = _Generic(                                                      \
             (value),                                                                               \
             bool*: NULL,                                                                           \
             const char**: NULL,                                                                    \
             char**: NULL,                                                                          \
-            i8*: (cex_argparse_convert_f)str.convert.to_i8,                                            \
-            u8*: (cex_argparse_convert_f)str.convert.to_u8,                                            \
-            i16*: (cex_argparse_convert_f)str.convert.to_i16,                                          \
-            u16*: (cex_argparse_convert_f)str.convert.to_u16,                                          \
-            i32*: (cex_argparse_convert_f)str.convert.to_i32,                                          \
-            u32*: (cex_argparse_convert_f)str.convert.to_u32,                                          \
-            i64*: (cex_argparse_convert_f)str.convert.to_i64,                                          \
-            u64*: (cex_argparse_convert_f)str.convert.to_u64,                                          \
-            f32*: (cex_argparse_convert_f)str.convert.to_f32,                                          \
-            f64*: (cex_argparse_convert_f)str.convert.to_f64,                                          \
+            i8*: (argparse_convert_f)str.convert.to_i8,                                            \
+            u8*: (argparse_convert_f)str.convert.to_u8,                                            \
+            i16*: (argparse_convert_f)str.convert.to_i16,                                          \
+            u16*: (argparse_convert_f)str.convert.to_u16,                                          \
+            i32*: (argparse_convert_f)str.convert.to_i32,                                          \
+            u32*: (argparse_convert_f)str.convert.to_u32,                                          \
+            i64*: (argparse_convert_f)str.convert.to_i64,                                          \
+            u64*: (argparse_convert_f)str.convert.to_u64,                                          \
+            f32*: (argparse_convert_f)str.convert.to_f32,                                          \
+            f64*: (argparse_convert_f)str.convert.to_f64,                                          \
             default: NULL                                                                          \
         );                                                                                         \
-        (cex_argparse_opt_s){ val_type,                                                                \
+        (argparse_opt_s){ val_type,                                                                \
                           (value),                                                                 \
                           __VA_ARGS__,                                                             \
-                          .convert = (cex_argparse_convert_f)conv_f,                                   \
+                          .convert = (argparse_convert_f)conv_f,                                   \
                           .is_present = 0 };                                                       \
     })
 // clang-format off
 
-#define argparse$opt_list(...) .options = (cex_argparse_opt_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
+#define argparse$opt_list(...) .options = (argparse_opt_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
 #define argparse$opt_group(h)     { CexArgParseType__group, NULL, '\0', NULL, h, false, NULL, 0, 0, .is_present=0 }
 #define argparse$opt_help()       {CexArgParseType__boolean, NULL, 'h', "help",                           \
                                         "show this help message and exit", false,    \
                                         NULL, 0, .is_present = 0}
 #define argparse$pop(argc, argv) ((argc > 0) ? (--argc, (*argv)++) : NULL)
-#define argparse$cmd_list(...) .commands = (cex_argparse_cmd_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
+#define argparse$cmd_list(...) .commands = (argparse_cmd_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
 
 __attribute__((visibility("hidden"))) extern const struct __cex_namespace__argparse argparse;
 
@@ -1740,10 +1740,10 @@ struct __cex_namespace__argparse {
     // Autogenerated by CEX
     // clang-format off
 
-    const char*     (*next)(cex_argparse_c* self);
-    Exception       (*parse)(cex_argparse_c* self, int argc, char** argv);
-    Exception       (*run_command)(cex_argparse_c* self, void* user_ctx);
-    void            (*usage)(cex_argparse_c* self);
+    const char*     (*next)(argparse_c* self);
+    Exception       (*parse)(argparse_c* self, int argc, char** argv);
+    Exception       (*run_command)(argparse_c* self, void* user_ctx);
+    void            (*usage)(argparse_c* self);
 
     // clang-format on
 };
@@ -10168,7 +10168,7 @@ _cex_argparse__prefix_skip(const char* str, const char* prefix)
 }
 
 static Exception
-_cex_argparse__error(cex_argparse_c* self, const cex_argparse_opt_s* opt, const char* reason, bool is_long)
+_cex_argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason, bool is_long)
 {
     (void)self;
     if (is_long) {
@@ -10181,7 +10181,7 @@ _cex_argparse__error(cex_argparse_c* self, const cex_argparse_opt_s* opt, const 
 }
 
 static void
-cex_argparse_usage(cex_argparse_c* self)
+cex_argparse_usage(argparse_c* self)
 {
     uassert(self->argv != NULL && "usage before parse!");
 
@@ -10383,7 +10383,7 @@ cex_argparse_usage(cex_argparse_c* self)
     }
 }
 static Exception
-_cex_argparse__getvalue(cex_argparse_c* self, cex_argparse_opt_s* opt, bool is_long)
+_cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
 {
     if (!opt->value) {
         goto skipped;
@@ -10481,7 +10481,7 @@ skipped:
 }
 
 static Exception
-_cex_argparse__options_check(cex_argparse_c* self, bool reset)
+_cex_argparse__options_check(argparse_c* self, bool reset)
 {
     for$eachp(opt, self->options, self->options_len)
     {
@@ -10551,7 +10551,7 @@ _cex_argparse__options_check(cex_argparse_c* self, bool reset)
 }
 
 static Exception
-_cex_argparse__short_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
+_cex_argparse__short_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         if (options->short_name == *self->_ctx.optvalue) {
@@ -10563,7 +10563,7 @@ _cex_argparse__short_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
 }
 
 static Exception
-_cex_argparse__long_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
+_cex_argparse__long_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         const char* rest;
@@ -10593,7 +10593,7 @@ _cex_argparse__long_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
 
 
 static Exception
-_cex_argparse__report_error(cex_argparse_c* self, Exc err)
+_cex_argparse__report_error(argparse_c* self, Exc err)
 {
     // invalidate argc
     self->argc = 0;
@@ -10615,11 +10615,11 @@ _cex_argparse__report_error(cex_argparse_c* self, Exc err)
 }
 
 static Exception
-_cex_argparse__parse_commands(cex_argparse_c* self)
+_cex_argparse__parse_commands(argparse_c* self)
 {
     uassert(self->_ctx.current_command == NULL);
     if (self->commands_len == 0) {
-        cex_argparse_cmd_s* _cmd = self->commands;
+        argparse_cmd_s* _cmd = self->commands;
         while (_cmd != NULL) {
             if (_cmd->name == NULL) {
                 break;
@@ -10629,7 +10629,7 @@ _cex_argparse__parse_commands(cex_argparse_c* self)
         }
     }
 
-    cex_argparse_cmd_s* cmd = NULL;
+    argparse_cmd_s* cmd = NULL;
     const char* cmd_arg = (self->argc > 0) ? self->argv[0] : NULL;
 
     if (str.eq(cmd_arg, "-h") || str.eq(cmd_arg, "--help")) {
@@ -10648,7 +10648,7 @@ _cex_argparse__parse_commands(cex_argparse_c* self)
             }
         } else {
             if (c->is_default) {
-                uassert(cmd == NULL && "multiple default commands in cex_argparse_c");
+                uassert(cmd == NULL && "multiple default commands in argparse_c");
                 cmd = c;
             }
         }
@@ -10665,10 +10665,10 @@ _cex_argparse__parse_commands(cex_argparse_c* self)
 }
 
 static Exception
-_cex_argparse__parse_options(cex_argparse_c* self)
+_cex_argparse__parse_options(argparse_c* self)
 {
     if (self->options_len == 0) {
-        cex_argparse_opt_s* _opt = self->options;
+        argparse_opt_s* _opt = self->options;
         while (_opt != NULL) {
             if (_opt->type == CexArgParseType__na) {
                 break;
@@ -10749,7 +10749,7 @@ _cex_argparse__parse_options(cex_argparse_c* self)
 }
 
 static Exception
-cex_argparse_parse(cex_argparse_c* self, int argc, char** argv)
+cex_argparse_parse(argparse_c* self, int argc, char** argv)
 {
     if (self->options != NULL && self->commands != NULL) {
         uassert(false && "options and commands are mutually exclusive");
@@ -10779,7 +10779,7 @@ cex_argparse_parse(cex_argparse_c* self, int argc, char** argv)
 }
 
 static const char*
-cex_argparse_next(cex_argparse_c* self)
+cex_argparse_next(argparse_c* self)
 {
     uassert(self != NULL);
     uassert(self->argv != NULL && "forgot argparse.parse() call?");
@@ -10823,7 +10823,7 @@ cex_argparse_next(cex_argparse_c* self)
 }
 
 static Exception
-cex_argparse_run_command(cex_argparse_c* self, void* user_ctx)
+cex_argparse_run_command(argparse_c* self, void* user_ctx)
 {
     uassert(self->_ctx.current_command != NULL && "not parsed/parse error?");
     if (self->argc == 0) {
@@ -12063,7 +12063,7 @@ cex_test_main_fn(int argc, char** argv)
     ctx->quiet_mode = false;
     ctx->has_ansi = io.isatty(stdout);
 
-    cex_argparse_opt_s options[] = {
+    argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
         argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
@@ -12076,7 +12076,7 @@ cex_test_main_fn(int argc, char** argv)
         ),
     };
 
-    cex_argparse_c args = {
+    argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
         .description = "Test runner program",
@@ -13191,7 +13191,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     // clang-format on
 
     const char* ignore_kw = cexy$process_ignore_kw;
-    cex_argparse_c cmd_args = {
+    argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "process [options] all|path/some_file.c",
         .description = process_help,
@@ -13422,7 +13422,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     const char* filter = "./*.[hc]";
 
     // clang-format on
-    cex_argparse_c cmd_args = {
+    argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "help [options] [query]",
         .description = process_help,

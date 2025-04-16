@@ -9,7 +9,7 @@ _cex_argparse__prefix_skip(const char* str, const char* prefix)
 }
 
 static Exception
-_cex_argparse__error(cex_argparse_c* self, const cex_argparse_opt_s* opt, const char* reason, bool is_long)
+_cex_argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason, bool is_long)
 {
     (void)self;
     if (is_long) {
@@ -22,7 +22,7 @@ _cex_argparse__error(cex_argparse_c* self, const cex_argparse_opt_s* opt, const 
 }
 
 static void
-cex_argparse_usage(cex_argparse_c* self)
+cex_argparse_usage(argparse_c* self)
 {
     uassert(self->argv != NULL && "usage before parse!");
 
@@ -224,7 +224,7 @@ cex_argparse_usage(cex_argparse_c* self)
     }
 }
 static Exception
-_cex_argparse__getvalue(cex_argparse_c* self, cex_argparse_opt_s* opt, bool is_long)
+_cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
 {
     if (!opt->value) {
         goto skipped;
@@ -322,7 +322,7 @@ skipped:
 }
 
 static Exception
-_cex_argparse__options_check(cex_argparse_c* self, bool reset)
+_cex_argparse__options_check(argparse_c* self, bool reset)
 {
     for$eachp(opt, self->options, self->options_len)
     {
@@ -392,7 +392,7 @@ _cex_argparse__options_check(cex_argparse_c* self, bool reset)
 }
 
 static Exception
-_cex_argparse__short_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
+_cex_argparse__short_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         if (options->short_name == *self->_ctx.optvalue) {
@@ -404,7 +404,7 @@ _cex_argparse__short_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
 }
 
 static Exception
-_cex_argparse__long_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
+_cex_argparse__long_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         const char* rest;
@@ -434,7 +434,7 @@ _cex_argparse__long_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
 
 
 static Exception
-_cex_argparse__report_error(cex_argparse_c* self, Exc err)
+_cex_argparse__report_error(argparse_c* self, Exc err)
 {
     // invalidate argc
     self->argc = 0;
@@ -456,11 +456,11 @@ _cex_argparse__report_error(cex_argparse_c* self, Exc err)
 }
 
 static Exception
-_cex_argparse__parse_commands(cex_argparse_c* self)
+_cex_argparse__parse_commands(argparse_c* self)
 {
     uassert(self->_ctx.current_command == NULL);
     if (self->commands_len == 0) {
-        cex_argparse_cmd_s* _cmd = self->commands;
+        argparse_cmd_s* _cmd = self->commands;
         while (_cmd != NULL) {
             if (_cmd->name == NULL) {
                 break;
@@ -470,7 +470,7 @@ _cex_argparse__parse_commands(cex_argparse_c* self)
         }
     }
 
-    cex_argparse_cmd_s* cmd = NULL;
+    argparse_cmd_s* cmd = NULL;
     const char* cmd_arg = (self->argc > 0) ? self->argv[0] : NULL;
 
     if (str.eq(cmd_arg, "-h") || str.eq(cmd_arg, "--help")) {
@@ -489,7 +489,7 @@ _cex_argparse__parse_commands(cex_argparse_c* self)
             }
         } else {
             if (c->is_default) {
-                uassert(cmd == NULL && "multiple default commands in cex_argparse_c");
+                uassert(cmd == NULL && "multiple default commands in argparse_c");
                 cmd = c;
             }
         }
@@ -506,10 +506,10 @@ _cex_argparse__parse_commands(cex_argparse_c* self)
 }
 
 static Exception
-_cex_argparse__parse_options(cex_argparse_c* self)
+_cex_argparse__parse_options(argparse_c* self)
 {
     if (self->options_len == 0) {
-        cex_argparse_opt_s* _opt = self->options;
+        argparse_opt_s* _opt = self->options;
         while (_opt != NULL) {
             if (_opt->type == CexArgParseType__na) {
                 break;
@@ -590,7 +590,7 @@ _cex_argparse__parse_options(cex_argparse_c* self)
 }
 
 static Exception
-cex_argparse_parse(cex_argparse_c* self, int argc, char** argv)
+cex_argparse_parse(argparse_c* self, int argc, char** argv)
 {
     if (self->options != NULL && self->commands != NULL) {
         uassert(false && "options and commands are mutually exclusive");
@@ -620,7 +620,7 @@ cex_argparse_parse(cex_argparse_c* self, int argc, char** argv)
 }
 
 static const char*
-cex_argparse_next(cex_argparse_c* self)
+cex_argparse_next(argparse_c* self)
 {
     uassert(self != NULL);
     uassert(self->argv != NULL && "forgot argparse.parse() call?");
@@ -664,7 +664,7 @@ cex_argparse_next(cex_argparse_c* self)
 }
 
 static Exception
-cex_argparse_run_command(cex_argparse_c* self, void* user_ctx)
+cex_argparse_run_command(argparse_c* self, void* user_ctx)
 {
     uassert(self->_ctx.current_command != NULL && "not parsed/parse error?");
     if (self->argc == 0) {

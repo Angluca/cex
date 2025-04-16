@@ -799,7 +799,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     // clang-format on
 
     const char* ignore_kw = cexy$process_ignore_kw;
-    cex_argparse_c cmd_args = {
+    argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "process [options] all|path/some_file.c",
         .description = process_help,
@@ -1030,7 +1030,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     const char* filter = "./*.[hc]";
 
     // clang-format on
-    cex_argparse_c cmd_args = {
+    argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "help [options] [query]",
         .description = process_help,
