@@ -2,7 +2,7 @@
 #include "all.h"
 
 Exception
-io_fopen(FILE** file, const char* filename, const char* mode)
+cex_io_fopen(FILE** file, const char* filename, const char* mode)
 {
     if (file == NULL) {
         uassert(file != NULL);
@@ -32,14 +32,14 @@ io_fopen(FILE** file, const char* filename, const char* mode)
 }
 
 int
-io_fileno(FILE* file)
+cex_io_fileno(FILE* file)
 {
     uassert(file != NULL);
     return fileno(file);
 }
 
 bool
-io_isatty(FILE* file)
+cex_io_isatty(FILE* file)
 {
     uassert(file != NULL);
     // TODO: add windows version
@@ -47,7 +47,7 @@ io_isatty(FILE* file)
 }
 
 Exception
-io_fflush(FILE* file)
+cex_io_fflush(FILE* file)
 {
     uassert(file != NULL);
 
@@ -60,7 +60,7 @@ io_fflush(FILE* file)
 }
 
 Exception
-io_fseek(FILE* file, long offset, int whence)
+cex_io_fseek(FILE* file, long offset, int whence)
 {
     uassert(file != NULL);
 
@@ -77,14 +77,14 @@ io_fseek(FILE* file, long offset, int whence)
 }
 
 void
-io_rewind(FILE* file)
+cex_io_rewind(FILE* file)
 {
     uassert(file != NULL);
     rewind(file);
 }
 
 Exception
-io_ftell(FILE* file, usize* size)
+cex_io_ftell(FILE* file, usize* size)
 {
     uassert(file != NULL);
 
@@ -103,26 +103,26 @@ io_ftell(FILE* file, usize* size)
 }
 
 usize
-io__file__size(FILE* file)
+cex_io__file__size(FILE* file)
 {
     uassert(file != NULL);
 
     usize fsize = 0;
     usize old_pos = 0;
 
-    e$except_silent(err, io_ftell(file, &old_pos))
+    e$except_silent(err, cex_io_ftell(file, &old_pos))
     {
         return 0;
     }
-    e$except_silent(err, io_fseek(file, 0, SEEK_END))
+    e$except_silent(err, cex_io_fseek(file, 0, SEEK_END))
     {
         return 0;
     }
-    e$except_silent(err, io_ftell(file, &fsize))
+    e$except_silent(err, cex_io_ftell(file, &fsize))
     {
         return 0;
     }
-    e$except_silent(err, io_fseek(file, old_pos, SEEK_SET))
+    e$except_silent(err, cex_io_fseek(file, old_pos, SEEK_SET))
     {
         return 0;
     }
@@ -131,7 +131,7 @@ io__file__size(FILE* file)
 }
 
 Exception
-io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
+cex_io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
 {
     if (file == NULL) {
         return Error.argument;
@@ -162,7 +162,7 @@ io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_co
 }
 
 Exception
-io_fread_all(FILE* file, str_s* s, IAllocator allc)
+cex_io_fread_all(FILE* file, str_s* s, IAllocator allc)
 {
     Exc result = Error.runtime;
     usize buf_size = 0;
@@ -177,12 +177,12 @@ io_fread_all(FILE* file, str_s* s, IAllocator allc)
     uassert(allc != NULL);
 
     // Forbid console and stdin
-    if (unlikely(io_isatty(file))) {
+    if (unlikely(cex_io_isatty(file))) {
         result = "io.fread_all() not allowed for pipe/socket/std[in/out/err]";
         goto fail;
     }
 
-    usize _fsize = io__file__size(file);
+    usize _fsize = cex_io__file__size(file);
     if (unlikely(_fsize > INT32_MAX)) {
         result = "io.fread_all() file is too big.";
         goto fail;
@@ -257,7 +257,7 @@ fail:
         .len = 0,
     };
 
-    if (io_fseek(file, 0, SEEK_END)) {
+    if (cex_io_fseek(file, 0, SEEK_END)) {
         // unused result
     }
 
@@ -268,7 +268,7 @@ fail:
 }
 
 Exception
-io_fread_line(FILE* file, str_s* s, IAllocator allc)
+cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
 {
     Exc result = Error.runtime;
     usize cursor = 0;
@@ -369,7 +369,7 @@ fail:
 }
 
 Exc
-io_fprintf(FILE* stream, const char* format, ...)
+cex_io_fprintf(FILE* stream, const char* format, ...)
 {
     uassert(stream != NULL);
 
@@ -386,7 +386,7 @@ io_fprintf(FILE* stream, const char* format, ...)
 }
 
 int
-io_printf(const char* format, ...)
+cex_io_printf(const char* format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -396,7 +396,7 @@ io_printf(const char* format, ...)
 }
 
 Exception
-io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize obj_count)
+cex_io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize obj_count)
 {
     if (file == NULL) {
         uassert(file != NULL);
@@ -423,7 +423,7 @@ io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize 
 }
 
 Exception
-io__file__writeln(FILE* file, char* line)
+cex_io__file__writeln(FILE* file, char* line)
 {
     errno = 0;
     if (file == NULL) {
@@ -449,7 +449,7 @@ io__file__writeln(FILE* file, char* line)
 }
 
 void
-io_fclose(FILE** file)
+cex_io_fclose(FILE** file)
 {
     uassert(file != NULL);
 
@@ -461,7 +461,7 @@ io_fclose(FILE** file)
 
 
 Exception
-io__file__save(const char* path, const char* contents)
+cex_io__file__save(const char* path, const char* contents)
 {
     if (path == NULL) {
         return Error.argument;
@@ -472,26 +472,26 @@ io__file__save(const char* path, const char* contents)
     }
 
     FILE* file;
-    e$except_silent(err, io_fopen(&file, path, "w"))
+    e$except_silent(err, cex_io_fopen(&file, path, "w"))
     {
         return err;
     }
 
     usize contents_len = strlen(contents);
     if (contents_len > 0) {
-        e$except_silent(err, io_fwrite(file, contents, 1, contents_len))
+        e$except_silent(err, cex_io_fwrite(file, contents, 1, contents_len))
         {
-            io_fclose(&file);
+            cex_io_fclose(&file);
             return err;
         }
     }
 
-    io_fclose(&file);
+    cex_io_fclose(&file);
     return EOK;
 }
 
 char*
-io__file__load(const char* path, IAllocator allc)
+cex_io__file__load(const char* path, IAllocator allc)
 {
     errno = 0;
     uassert(allc != NULL);
@@ -500,13 +500,13 @@ io__file__load(const char* path, IAllocator allc)
         return NULL;
     }
     FILE* file;
-    e$except_silent(err, io_fopen(&file, path, "r"))
+    e$except_silent(err, cex_io_fopen(&file, path, "r"))
     {
         return NULL;
     }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, io_fread_all(file, &out_content, allc))
+    e$except_silent(err, cex_io_fread_all(file, &out_content, allc))
     {
         if (err == Error.eof) {
             uassert(out_content.buf == NULL);
@@ -525,7 +525,7 @@ io__file__load(const char* path, IAllocator allc)
 }
 
 char*
-io__file__readln(FILE* file, IAllocator allc)
+cex_io__file__readln(FILE* file, IAllocator allc)
 {
     errno = 0;
     uassert(allc != NULL);
@@ -535,7 +535,7 @@ io__file__readln(FILE* file, IAllocator allc)
     }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, io_fread_line(file, &out_content, allc))
+    e$except_silent(err, cex_io_fread_line(file, &out_content, allc))
     {
         if (err == Error.eof) {
             return NULL;
@@ -553,27 +553,27 @@ const struct __cex_namespace__io io = {
     // Autogenerated by CEX
     // clang-format off
 
-    .fclose = io_fclose,
-    .fflush = io_fflush,
-    .fileno = io_fileno,
-    .fopen = io_fopen,
-    .fprintf = io_fprintf,
-    .fread = io_fread,
-    .fread_all = io_fread_all,
-    .fread_line = io_fread_line,
-    .fseek = io_fseek,
-    .ftell = io_ftell,
-    .fwrite = io_fwrite,
-    .isatty = io_isatty,
-    .printf = io_printf,
-    .rewind = io_rewind,
+    .fclose = cex_io_fclose,
+    .fflush = cex_io_fflush,
+    .fileno = cex_io_fileno,
+    .fopen = cex_io_fopen,
+    .fprintf = cex_io_fprintf,
+    .fread = cex_io_fread,
+    .fread_all = cex_io_fread_all,
+    .fread_line = cex_io_fread_line,
+    .fseek = cex_io_fseek,
+    .ftell = cex_io_ftell,
+    .fwrite = cex_io_fwrite,
+    .isatty = cex_io_isatty,
+    .printf = cex_io_printf,
+    .rewind = cex_io_rewind,
 
     .file = {
-        .load = io__file__load,
-        .readln = io__file__readln,
-        .save = io__file__save,
-        .size = io__file__size,
-        .writeln = io__file__writeln,
+        .load = cex_io__file__load,
+        .readln = cex_io__file__readln,
+        .save = cex_io__file__save,
+        .size = cex_io__file__size,
+        .writeln = cex_io__file__writeln,
     },
 
     // clang-format on

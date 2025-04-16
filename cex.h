@@ -9577,7 +9577,7 @@ const struct __cex_namespace__sbuf sbuf = {
 */
 
 Exception
-io_fopen(FILE** file, const char* filename, const char* mode)
+cex_io_fopen(FILE** file, const char* filename, const char* mode)
 {
     if (file == NULL) {
         uassert(file != NULL);
@@ -9607,14 +9607,14 @@ io_fopen(FILE** file, const char* filename, const char* mode)
 }
 
 int
-io_fileno(FILE* file)
+cex_io_fileno(FILE* file)
 {
     uassert(file != NULL);
     return fileno(file);
 }
 
 bool
-io_isatty(FILE* file)
+cex_io_isatty(FILE* file)
 {
     uassert(file != NULL);
     // TODO: add windows version
@@ -9622,7 +9622,7 @@ io_isatty(FILE* file)
 }
 
 Exception
-io_fflush(FILE* file)
+cex_io_fflush(FILE* file)
 {
     uassert(file != NULL);
 
@@ -9635,7 +9635,7 @@ io_fflush(FILE* file)
 }
 
 Exception
-io_fseek(FILE* file, long offset, int whence)
+cex_io_fseek(FILE* file, long offset, int whence)
 {
     uassert(file != NULL);
 
@@ -9652,14 +9652,14 @@ io_fseek(FILE* file, long offset, int whence)
 }
 
 void
-io_rewind(FILE* file)
+cex_io_rewind(FILE* file)
 {
     uassert(file != NULL);
     rewind(file);
 }
 
 Exception
-io_ftell(FILE* file, usize* size)
+cex_io_ftell(FILE* file, usize* size)
 {
     uassert(file != NULL);
 
@@ -9678,26 +9678,26 @@ io_ftell(FILE* file, usize* size)
 }
 
 usize
-io__file__size(FILE* file)
+cex_io__file__size(FILE* file)
 {
     uassert(file != NULL);
 
     usize fsize = 0;
     usize old_pos = 0;
 
-    e$except_silent(err, io_ftell(file, &old_pos))
+    e$except_silent(err, cex_io_ftell(file, &old_pos))
     {
         return 0;
     }
-    e$except_silent(err, io_fseek(file, 0, SEEK_END))
+    e$except_silent(err, cex_io_fseek(file, 0, SEEK_END))
     {
         return 0;
     }
-    e$except_silent(err, io_ftell(file, &fsize))
+    e$except_silent(err, cex_io_ftell(file, &fsize))
     {
         return 0;
     }
-    e$except_silent(err, io_fseek(file, old_pos, SEEK_SET))
+    e$except_silent(err, cex_io_fseek(file, old_pos, SEEK_SET))
     {
         return 0;
     }
@@ -9706,7 +9706,7 @@ io__file__size(FILE* file)
 }
 
 Exception
-io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
+cex_io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
 {
     if (file == NULL) {
         return Error.argument;
@@ -9737,7 +9737,7 @@ io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_co
 }
 
 Exception
-io_fread_all(FILE* file, str_s* s, IAllocator allc)
+cex_io_fread_all(FILE* file, str_s* s, IAllocator allc)
 {
     Exc result = Error.runtime;
     usize buf_size = 0;
@@ -9752,12 +9752,12 @@ io_fread_all(FILE* file, str_s* s, IAllocator allc)
     uassert(allc != NULL);
 
     // Forbid console and stdin
-    if (unlikely(io_isatty(file))) {
+    if (unlikely(cex_io_isatty(file))) {
         result = "io.fread_all() not allowed for pipe/socket/std[in/out/err]";
         goto fail;
     }
 
-    usize _fsize = io__file__size(file);
+    usize _fsize = cex_io__file__size(file);
     if (unlikely(_fsize > INT32_MAX)) {
         result = "io.fread_all() file is too big.";
         goto fail;
@@ -9832,7 +9832,7 @@ fail:
         .len = 0,
     };
 
-    if (io_fseek(file, 0, SEEK_END)) {
+    if (cex_io_fseek(file, 0, SEEK_END)) {
         // unused result
     }
 
@@ -9843,7 +9843,7 @@ fail:
 }
 
 Exception
-io_fread_line(FILE* file, str_s* s, IAllocator allc)
+cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
 {
     Exc result = Error.runtime;
     usize cursor = 0;
@@ -9944,7 +9944,7 @@ fail:
 }
 
 Exc
-io_fprintf(FILE* stream, const char* format, ...)
+cex_io_fprintf(FILE* stream, const char* format, ...)
 {
     uassert(stream != NULL);
 
@@ -9961,7 +9961,7 @@ io_fprintf(FILE* stream, const char* format, ...)
 }
 
 int
-io_printf(const char* format, ...)
+cex_io_printf(const char* format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -9971,7 +9971,7 @@ io_printf(const char* format, ...)
 }
 
 Exception
-io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize obj_count)
+cex_io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize obj_count)
 {
     if (file == NULL) {
         uassert(file != NULL);
@@ -9998,7 +9998,7 @@ io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize 
 }
 
 Exception
-io__file__writeln(FILE* file, char* line)
+cex_io__file__writeln(FILE* file, char* line)
 {
     errno = 0;
     if (file == NULL) {
@@ -10024,7 +10024,7 @@ io__file__writeln(FILE* file, char* line)
 }
 
 void
-io_fclose(FILE** file)
+cex_io_fclose(FILE** file)
 {
     uassert(file != NULL);
 
@@ -10036,7 +10036,7 @@ io_fclose(FILE** file)
 
 
 Exception
-io__file__save(const char* path, const char* contents)
+cex_io__file__save(const char* path, const char* contents)
 {
     if (path == NULL) {
         return Error.argument;
@@ -10047,26 +10047,26 @@ io__file__save(const char* path, const char* contents)
     }
 
     FILE* file;
-    e$except_silent(err, io_fopen(&file, path, "w"))
+    e$except_silent(err, cex_io_fopen(&file, path, "w"))
     {
         return err;
     }
 
     usize contents_len = strlen(contents);
     if (contents_len > 0) {
-        e$except_silent(err, io_fwrite(file, contents, 1, contents_len))
+        e$except_silent(err, cex_io_fwrite(file, contents, 1, contents_len))
         {
-            io_fclose(&file);
+            cex_io_fclose(&file);
             return err;
         }
     }
 
-    io_fclose(&file);
+    cex_io_fclose(&file);
     return EOK;
 }
 
 char*
-io__file__load(const char* path, IAllocator allc)
+cex_io__file__load(const char* path, IAllocator allc)
 {
     errno = 0;
     uassert(allc != NULL);
@@ -10075,13 +10075,13 @@ io__file__load(const char* path, IAllocator allc)
         return NULL;
     }
     FILE* file;
-    e$except_silent(err, io_fopen(&file, path, "r"))
+    e$except_silent(err, cex_io_fopen(&file, path, "r"))
     {
         return NULL;
     }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, io_fread_all(file, &out_content, allc))
+    e$except_silent(err, cex_io_fread_all(file, &out_content, allc))
     {
         if (err == Error.eof) {
             uassert(out_content.buf == NULL);
@@ -10100,7 +10100,7 @@ io__file__load(const char* path, IAllocator allc)
 }
 
 char*
-io__file__readln(FILE* file, IAllocator allc)
+cex_io__file__readln(FILE* file, IAllocator allc)
 {
     errno = 0;
     uassert(allc != NULL);
@@ -10110,7 +10110,7 @@ io__file__readln(FILE* file, IAllocator allc)
     }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, io_fread_line(file, &out_content, allc))
+    e$except_silent(err, cex_io_fread_line(file, &out_content, allc))
     {
         if (err == Error.eof) {
             return NULL;
@@ -10128,27 +10128,27 @@ const struct __cex_namespace__io io = {
     // Autogenerated by CEX
     // clang-format off
 
-    .fclose = io_fclose,
-    .fflush = io_fflush,
-    .fileno = io_fileno,
-    .fopen = io_fopen,
-    .fprintf = io_fprintf,
-    .fread = io_fread,
-    .fread_all = io_fread_all,
-    .fread_line = io_fread_line,
-    .fseek = io_fseek,
-    .ftell = io_ftell,
-    .fwrite = io_fwrite,
-    .isatty = io_isatty,
-    .printf = io_printf,
-    .rewind = io_rewind,
+    .fclose = cex_io_fclose,
+    .fflush = cex_io_fflush,
+    .fileno = cex_io_fileno,
+    .fopen = cex_io_fopen,
+    .fprintf = cex_io_fprintf,
+    .fread = cex_io_fread,
+    .fread_all = cex_io_fread_all,
+    .fread_line = cex_io_fread_line,
+    .fseek = cex_io_fseek,
+    .ftell = cex_io_ftell,
+    .fwrite = cex_io_fwrite,
+    .isatty = cex_io_isatty,
+    .printf = cex_io_printf,
+    .rewind = cex_io_rewind,
 
     .file = {
-        .load = io__file__load,
-        .readln = io__file__readln,
-        .save = io__file__save,
-        .size = io__file__size,
-        .writeln = io__file__writeln,
+        .load = cex_io__file__load,
+        .readln = cex_io__file__readln,
+        .save = cex_io__file__save,
+        .size = cex_io__file__size,
+        .writeln = cex_io__file__writeln,
     },
 
     // clang-format on
@@ -10861,7 +10861,7 @@ const struct __cex_namespace__argparse argparse = {
 
 
 static void
-os_sleep(u32 period_millisec)
+cex_os_sleep(u32 period_millisec)
 {
 #ifdef _WIN32
     Sleep(period_millisec);
@@ -10871,7 +10871,7 @@ os_sleep(u32 period_millisec)
 }
 
 static Exception
-os__fs__rename(const char* old_path, const char* new_path)
+cex_os__fs__rename(const char* old_path, const char* new_path)
 {
     if (old_path == NULL || old_path[0] == '\0') {
         return Error.argument;
@@ -10898,7 +10898,7 @@ os__fs__rename(const char* old_path, const char* new_path)
 }
 
 static Exception
-os__fs__mkdir(const char* path)
+cex_os__fs__mkdir(const char* path)
 {
     if (path == NULL || path[0] == '\0') {
         return Error.argument;
@@ -10919,7 +10919,7 @@ os__fs__mkdir(const char* path)
 }
 
 static Exception
-os__fs__mkpath(const char* path)
+cex_os__fs__mkpath(const char* path)
 {
     if (path == NULL || path[0] == '\0') {
         return Error.argument;
@@ -10947,7 +10947,7 @@ os__fs__mkpath(const char* path)
 }
 
 static os_fs_stat_s
-os__fs__stat(const char* path)
+cex_os__fs__stat(const char* path)
 {
     os_fs_stat_s result = { .error = Error.argument };
     if (path == NULL || path[0] == '\0') {
@@ -11022,7 +11022,7 @@ os__fs__stat(const char* path)
 
 
 static Exception
-os__fs__remove(const char* path)
+cex_os__fs__remove(const char* path)
 {
     if (path == NULL || path[0] == '\0') {
         return Error.argument;
@@ -11041,7 +11041,7 @@ os__fs__remove(const char* path)
 }
 
 Exception
-os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
+cex_os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
 {
     (void)user_ctx;
     if (path == NULL || path[0] == '\0') {
@@ -11103,7 +11103,7 @@ os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_
         }
 
         if (is_recursive && ftype.is_directory && !ftype.is_symlink) {
-            e$except_silent(err, os__fs__dir_walk(path_buf, is_recursive, callback_fn, user_ctx))
+            e$except_silent(err, cex_os__fs__dir_walk(path_buf, is_recursive, callback_fn, user_ctx))
             {
                 result = err;
                 goto end;
@@ -11143,13 +11143,14 @@ _os__fs__remove_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx
 {
     (void)user_ctx;
     (void)ftype;
-    e$except_silent(err, os__fs__remove(path)){
+    e$except_silent(err, cex_os__fs__remove(path)){
         return err;
     }
     return EOK;
 }
+
 static Exception
-os__fs__remove_tree(const char* path)
+cex_os__fs__remove_tree(const char* path)
 {
     if (path == NULL || path[0] == '\0') {
         return Error.argument;
@@ -11157,11 +11158,11 @@ os__fs__remove_tree(const char* path)
     if (!os.path.exists(path)){
         return EOK;
     }
-    e$except_silent(err, os__fs__dir_walk(path, true, _os__fs__remove_tree_walker, NULL))
+    e$except_silent(err, cex_os__fs__dir_walk(path, true, _os__fs__remove_tree_walker, NULL))
     {
         return err;
     }
-    e$except_silent(err, os__fs__remove(path)){
+    e$except_silent(err, cex_os__fs__remove(path)){
         return err;
     }
     return EOK;
@@ -11199,7 +11200,7 @@ _os__fs__find_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
     return EOK;
 }
 
-static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator allc)
+static arr$(char*) cex_os__fs__find(const char* path, bool is_recursive, IAllocator allc)
 {
 
     if (unlikely(allc == NULL)) {
@@ -11255,7 +11256,7 @@ static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator 
         return NULL;
     }
 
-    e$except_silent(err, os__fs__dir_walk(dir_name, is_recursive, _os__fs__find_walker, &ctx))
+    e$except_silent(err, cex_os__fs__dir_walk(dir_name, is_recursive, _os__fs__find_walker, &ctx))
     {
         for$each(it, ctx.result)
         {
@@ -11270,7 +11271,7 @@ static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator 
 }
 
 static Exception
-os__fs__getcwd(sbuf_c* out)
+cex_os__fs__getcwd(sbuf_c* out)
 {
 
     uassert(sbuf.isvalid(out) && "out is not valid sbuf_c (or missing initialization)");
@@ -11292,7 +11293,7 @@ os__fs__getcwd(sbuf_c* out)
 }
 
 static const char*
-os__env__get(const char* name, const char* deflt)
+cex_os__env__get(const char* name, const char* deflt)
 {
     const char* result = getenv(name);
 
@@ -11304,33 +11305,33 @@ os__env__get(const char* name, const char* deflt)
 }
 
 static void
-os__env__set(const char* name, const char* value, bool overwrite)
+cex_os__env__set(const char* name, const char* value, bool overwrite)
 {
     setenv(name, value, overwrite);
 }
 
 static void
-os__env__unset(const char* name)
+cex_os__env__unset(const char* name)
 {
     unsetenv(name);
 }
 
 static bool
-os__path__exists(const char* file_path)
+cex_os__path__exists(const char* file_path)
 {
     var ftype = os.fs.stat(file_path);
     return ftype.is_valid;
 }
 
 static char*
-os__path__join(const char** parts, u32 parts_len, IAllocator allc)
+cex_os__path__join(const char** parts, u32 parts_len, IAllocator allc)
 {
     char sep[2] = { os$PATH_SEP, '\0' };
     return str.join(parts, parts_len, sep, allc);
 }
 
 static str_s
-os__path__split(const char* path, bool return_dir)
+cex_os__path__split(const char* path, bool return_dir)
 {
     if (path == NULL) {
         return (str_s){ 0 };
@@ -11369,28 +11370,28 @@ os__path__split(const char* path, bool return_dir)
 }
 
 static char*
-os__path__basename(const char* path, IAllocator allc)
+cex_os__path__basename(const char* path, IAllocator allc)
 {
     if (path == NULL || path[0] == '\0') {
         return NULL;
     }
-    str_s fname = os__path__split(path, false);
+    str_s fname = cex_os__path__split(path, false);
     return str.slice.clone(fname, allc);
 }
 
 static char*
-os__path__dirname(const char* path, IAllocator allc)
+cex_os__path__dirname(const char* path, IAllocator allc)
 {
     if (path == NULL || path[0] == '\0') {
         return NULL;
     }
-    str_s fname = os__path__split(path, true);
+    str_s fname = cex_os__path__split(path, true);
     return str.slice.clone(fname, allc);
 }
 
 
 static Exception
-os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags)
+cex_os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags)
 {
     (void)env;
     uassert(self != NULL);
@@ -11436,13 +11437,13 @@ os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_
 }
 
 static bool
-os__cmd__is_alive(os_cmd_c* self)
+cex_os__cmd__is_alive(os_cmd_c* self)
 {
     return subprocess_alive(&self->_subpr);
 }
 
 static Exception
-os__cmd__kill(os_cmd_c* self)
+cex_os__cmd__kill(os_cmd_c* self)
 {
     if (subprocess_alive(&self->_subpr)) {
         if (subprocess_terminate(&self->_subpr) != 0) {
@@ -11453,7 +11454,7 @@ os__cmd__kill(os_cmd_c* self)
 }
 
 static Exception
-os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
+cex_os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
 {
     uassert(self != NULL);
     Exc result = Error.os;
@@ -11472,8 +11473,8 @@ os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
         u64 timeout_elapsed_ms = 0;
         u64 timeout_ms = timeout_sec * 1000;
         do {
-            if (os__cmd__is_alive(self)) {
-                os_sleep(100); // 100 ms sleep
+            if (cex_os__cmd__is_alive(self)) {
+                cex_os_sleep(100); // 100 ms sleep
             } else {
                 subprocess_join(&self->_subpr, &ret_code);
                 break;
@@ -11483,7 +11484,7 @@ os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
 
         if (timeout_elapsed_ms >= timeout_ms) {
             result = Error.timeout;
-            if (os__cmd__kill(self)) { // discard
+            if (cex_os__cmd__kill(self)) { // discard
             }
             subprocess_join(&self->_subpr, NULL);
             ret_code = -1;
@@ -11508,26 +11509,26 @@ end:
 }
 
 static FILE*
-os__cmd__stdout(os_cmd_c* self)
+cex_os__cmd__stdout(os_cmd_c* self)
 {
     return self->_subpr.stdout_file;
 }
 
 
 static FILE*
-os__cmd__stderr(os_cmd_c* self)
+cex_os__cmd__stderr(os_cmd_c* self)
 {
     return self->_subpr.stderr_file;
 }
 
 static FILE*
-os__cmd__stdin(os_cmd_c* self)
+cex_os__cmd__stdin(os_cmd_c* self)
 {
     return self->_subpr.stdin_file;
 }
 
 static char*
-os__cmd__read_all(os_cmd_c* self, IAllocator allc)
+cex_os__cmd__read_all(os_cmd_c* self, IAllocator allc)
 {
     uassert(self != NULL);
     uassert(allc != NULL);
@@ -11542,7 +11543,7 @@ os__cmd__read_all(os_cmd_c* self, IAllocator allc)
 }
 
 static char*
-os__cmd__read_line(os_cmd_c* self, IAllocator allc)
+cex_os__cmd__read_line(os_cmd_c* self, IAllocator allc)
 {
     uassert(self != NULL);
     uassert(allc != NULL);
@@ -11557,7 +11558,7 @@ os__cmd__read_line(os_cmd_c* self, IAllocator allc)
 }
 
 static Exception
-os__cmd__write_line(os_cmd_c* self, char* line)
+cex_os__cmd__write_line(os_cmd_c* self, char* line)
 {
     uassert(self != NULL);
     if (line == NULL) {
@@ -11579,7 +11580,7 @@ os__cmd__write_line(os_cmd_c* self, char* line)
 
 
 static Exception
-os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
+cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 {
     uassert(out_cmd != NULL);
     memset(out_cmd, 0, sizeof(os_cmd_c));
@@ -11680,46 +11681,46 @@ const struct __cex_namespace__os os = {
     // Autogenerated by CEX
     // clang-format off
 
-    .sleep = os_sleep,
+    .sleep = cex_os_sleep,
 
     .cmd = {
-        .create = os__cmd__create,
-        .is_alive = os__cmd__is_alive,
-        .join = os__cmd__join,
-        .kill = os__cmd__kill,
-        .read_all = os__cmd__read_all,
-        .read_line = os__cmd__read_line,
-        .run = os__cmd__run,
-        .stderr = os__cmd__stderr,
-        .stdin = os__cmd__stdin,
-        .stdout = os__cmd__stdout,
-        .write_line = os__cmd__write_line,
+        .create = cex_os__cmd__create,
+        .is_alive = cex_os__cmd__is_alive,
+        .join = cex_os__cmd__join,
+        .kill = cex_os__cmd__kill,
+        .read_all = cex_os__cmd__read_all,
+        .read_line = cex_os__cmd__read_line,
+        .run = cex_os__cmd__run,
+        .stderr = cex_os__cmd__stderr,
+        .stdin = cex_os__cmd__stdin,
+        .stdout = cex_os__cmd__stdout,
+        .write_line = cex_os__cmd__write_line,
     },
 
     .env = {
-        .get = os__env__get,
-        .set = os__env__set,
-        .unset = os__env__unset,
+        .get = cex_os__env__get,
+        .set = cex_os__env__set,
+        .unset = cex_os__env__unset,
     },
 
     .fs = {
-        .dir_walk = os__fs__dir_walk,
-        .find = os__fs__find,
-        .getcwd = os__fs__getcwd,
-        .mkdir = os__fs__mkdir,
-        .mkpath = os__fs__mkpath,
-        .remove = os__fs__remove,
-        .remove_tree = os__fs__remove_tree,
-        .rename = os__fs__rename,
-        .stat = os__fs__stat,
+        .dir_walk = cex_os__fs__dir_walk,
+        .find = cex_os__fs__find,
+        .getcwd = cex_os__fs__getcwd,
+        .mkdir = cex_os__fs__mkdir,
+        .mkpath = cex_os__fs__mkpath,
+        .remove = cex_os__fs__remove,
+        .remove_tree = cex_os__fs__remove_tree,
+        .rename = cex_os__fs__rename,
+        .stat = cex_os__fs__stat,
     },
 
     .path = {
-        .basename = os__path__basename,
-        .dirname = os__path__dirname,
-        .exists = os__path__exists,
-        .join = os__path__join,
-        .split = os__path__split,
+        .basename = cex_os__path__basename,
+        .dirname = cex_os__path__dirname,
+        .exists = cex_os__path__exists,
+        .join = cex_os__path__join,
+        .split = cex_os__path__split,
     },
 
     // clang-format on
