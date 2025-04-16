@@ -1,5 +1,5 @@
 #include "all.h"
-#if defined(CEXBUILD)
+#if defined(CEX_BUILD)
 
 static void
 cexy_build_self(int argc, char** argv, const char* cex_source)
@@ -1227,4 +1227,4 @@ const struct __cex_namespace__cexy cexy = {
 
     // clang-format on
 };
-#endif // defined(CEXBUILD)
+#endif // defined(CEX_BUILD)

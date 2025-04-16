@@ -28,7 +28,7 @@ __cex__panic(void)
     fflush(stderr);
     sanitizer_stack_trace();
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     raise(SIGTRAP);
 #else
     abort();

@@ -224,7 +224,7 @@ void __sanitizer_print_stack_trace();
 #define __cex_test_postmortem_exists() 0
 #else
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
 int __cex_test_uassert_enabled = 1;
 #define uassert_disable() __cex_test_uassert_enabled = 0
@@ -232,13 +232,13 @@ int __cex_test_uassert_enabled = 1;
 #define uassert_is_enabled() (__cex_test_uassert_enabled)
 #else
 #define uassert_disable()                                                                          \
-    _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEXTEST")
+    _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
 #define uassert_enable() (void)0
 #define uassert_is_enabled() true
 #define __cex_test_postmortem_ctx NULL
 #define __cex_test_postmortem_exists() 0
 #define __cex_test_postmortem_f(ctx)
-#endif // #ifdef CEXTEST
+#endif // #ifdef CEX_TEST
 
 
 /**
@@ -315,7 +315,7 @@ __attribute__((noinline)) void __cex__panic(void);
          unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                    \
          _var_name = EOK)
 
-#if defined(CEXTEST) || defined(CEXBUILD)
+#if defined(CEX_TEST) || defined(CEX_BUILD)
 #define e$except_silent(_var_name, _func) e$except(_var_name, _func)
 #else
 #define e$except_silent(_var_name, _func)                                                          \

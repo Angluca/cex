@@ -387,7 +387,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
     uassert(*children != NULL && "non initialized arr$");
     cex_token_s result = { 0 };
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     log$trace("New entity check...\n");
 #endif
     arr$clear(*children);
@@ -397,7 +397,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
     u32 i = 0;
     (void)i;
     while ((t = CexParser_next_token(lx)).type) {
-#ifdef CEXTEST
+#ifdef CEX_TEST
         log$trace("%02d: %-15s %S\n", i, CexTkn_str[t.type], t.value);
 #endif
         if (unlikely(t.type == CexTkn__error)) {
@@ -671,7 +671,7 @@ CexParser_decl_parse(
                 if (prev_t.type == CexTkn__ident) {
                     if (result->name.buf == NULL) {
                         if (str.slice.match(it.value, "\\(\\**\\)")) {
-#if defined(CEXTEST)
+#if defined(CEX_TEST)
                             // this looks a function returning function pointer,
                             // we intentionally don't support this, use typedef func ptr
                             log$error(
@@ -781,7 +781,7 @@ CexParser_decl_parse(
         cex_token_s t = { 0 };
         bool skip_next = false;
         while ((t = CexParser_next_token(&lx)).type) {
-#ifdef CEXTEST
+#ifdef CEX_TEST
             log$trace("arg token: type: %s '%S'\n", CexTkn_str[t.type], t.value);
 #endif
             switch (t.type) {

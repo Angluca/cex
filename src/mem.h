@@ -119,7 +119,7 @@ void _cex_allocator_arena_cleanup(IAllocator* allc);
 #define mem$asan_enabled() 0
 #endif
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
 #define _mem$asan_poison_mark(addr, c, size) memset(addr, c, size)
 #define _mem$asan_poison_check_mark(addr, len)                                                     \
     ({                                                                                             \
@@ -135,7 +135,7 @@ void _cex_allocator_arena_cleanup(IAllocator* allc);
         result;                                                                                    \
     })
 
-#else // #ifdef CEXTEST
+#else // #ifdef CEX_TEST
 #define _mem$asan_poison_mark(addr, c, size) (void)0
 #define _mem$asan_poison_check_mark(addr, len) (1)
 #endif
@@ -151,7 +151,7 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
         void* _addr = (addr);                                                                      \
         size_t _size = (size);                                                                     \
         if (__asan_region_is_poisoned(_addr, (size)) == NULL) {                                    \
-            _mem$asan_poison_mark(_addr, 0xf7, _size); /* Marks are only enabled in CEXTEST */     \
+            _mem$asan_poison_mark(_addr, 0xf7, _size); /* Marks are only enabled in CEX_TEST */     \
         }                                                                                          \
         __asan_poison_memory_region(_addr, _size);                                                 \
     })
@@ -160,7 +160,7 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
         void* _addr = (addr);                                                                      \
         size_t _size = (size);                                                                     \
         __asan_unpoison_memory_region(_addr, _size);                                               \
-        _mem$asan_poison_mark(_addr, 0x00, _size); /* Marks are only enabled in CEXTEST */         \
+        _mem$asan_poison_mark(_addr, 0x00, _size); /* Marks are only enabled in CEX_TEST */         \
     })
 #define mem$asan_poison_check(addr, size)                                                          \
     ({                                                                                             \
@@ -174,9 +174,9 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
 #define mem$asan_poison(addr, len) _mem$asan_poison_mark((addr), 0xf7, (len))
 #define mem$asan_unpoison(addr, len) _mem$asan_poison_mark((addr), 0x00, (len))
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
 #define mem$asan_poison_check(addr, len) _mem$asan_poison_check_mark((addr), (len))
-#else // #ifdef CEXTEST
+#else // #ifdef CEX_TEST
 #define mem$asan_poison_check(addr, len) (1)
 #endif
 

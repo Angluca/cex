@@ -1,7 +1,7 @@
 #pragma once
 #include "all.h"
 
-#if defined(CEXBUILD)
+#if defined(CEX_BUILD)
 
 #ifndef cexy$cc
 #if defined(__clang__)
@@ -48,7 +48,7 @@ string
 
 #ifndef cexy$cc_args_test
 #define cexy$cc_args_test                                                                          \
-    "-DCEXTEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3", "-Itests/",         \
+    "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3", "-Itests/",         \
         "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined",        \
         "-fsanitize=leak", "-fstack-protector-strong"
 
@@ -107,4 +107,4 @@ struct __cex_namespace__cexy {
 };
 __attribute__((visibility("hidden"))) extern const struct __cex_namespace__cexy cexy;
 
-#endif // #if defined(CEXBUILD)
+#endif // #if defined(CEX_BUILD)

@@ -1,6 +1,6 @@
 #pragma once
 #include "all.h"
-#ifdef CEXBUILD
+#ifdef CEX_BUILD
 
 typedef struct cex_codegen_s
 {
@@ -84,4 +84,4 @@ cex_codegen_s* cex_codegen_print_case_enter(cex_codegen_s* cg, const char* forma
 void cex_codegen_print_case_exit(cex_codegen_s** cgptr);
 void cex_codegen_indent(cex_codegen_s* cg);
 
-#endif // ifdef CEXBUILD
+#endif // ifdef CEX_BUILD

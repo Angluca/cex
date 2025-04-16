@@ -228,7 +228,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(((usize)(result) & ((rec.ptr_alignment) - 1)) == 0);
 
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     // intentionally set malloc to 0xf7 pattern to mark uninitialized data
     memset(result, 0xf7, rec.size);
 #endif
@@ -334,7 +334,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
             //   but currently we have spare capacity for growth
             u32 extra_bytes = size - rec->size;
             mem$asan_unpoison((char*)old_ptr + rec->size, extra_bytes);
-#ifdef CEXTEST
+#ifdef CEX_TEST
             memset((char*)old_ptr + rec->size, 0xf7, extra_bytes);
 #endif
             extra_bytes += (nrec.ptr_padding - rec->ptr_padding);
@@ -386,7 +386,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     uassert(self->scope_depth > 0);
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     bool AllocatorArena_sanitize(IAllocator allc);
     uassert(AllocatorArena_sanitize(allc));
 #endif
@@ -544,7 +544,7 @@ AllocatorArena_destroy(IAllocator self)
     uassert(allc->scope_depth == 1 && "trying to destroy in mem$scope?");
     _cex_allocator_arena__scope_exit(self);
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     uassert(AllocatorArena_sanitize(self));
 #endif
 

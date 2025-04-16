@@ -293,7 +293,7 @@ void __sanitizer_print_stack_trace();
 #define __cex_test_postmortem_exists() 0
 #else
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
 int __cex_test_uassert_enabled = 1;
 #define uassert_disable() __cex_test_uassert_enabled = 0
@@ -301,13 +301,13 @@ int __cex_test_uassert_enabled = 1;
 #define uassert_is_enabled() (__cex_test_uassert_enabled)
 #else
 #define uassert_disable()                                                                          \
-    _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEXTEST")
+    _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
 #define uassert_enable() (void)0
 #define uassert_is_enabled() true
 #define __cex_test_postmortem_ctx NULL
 #define __cex_test_postmortem_exists() 0
 #define __cex_test_postmortem_f(ctx)
-#endif // #ifdef CEXTEST
+#endif // #ifdef CEX_TEST
 
 
 /**
@@ -384,7 +384,7 @@ __attribute__((noinline)) void __cex__panic(void);
          unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                    \
          _var_name = EOK)
 
-#if defined(CEXTEST) || defined(CEXBUILD)
+#if defined(CEX_TEST) || defined(CEX_BUILD)
 #define e$except_silent(_var_name, _func) e$except(_var_name, _func)
 #else
 #define e$except_silent(_var_name, _func)                                                          \
@@ -677,7 +677,7 @@ void _cex_allocator_arena_cleanup(IAllocator* allc);
 #define mem$asan_enabled() 0
 #endif
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
 #define _mem$asan_poison_mark(addr, c, size) memset(addr, c, size)
 #define _mem$asan_poison_check_mark(addr, len)                                                     \
     ({                                                                                             \
@@ -693,7 +693,7 @@ void _cex_allocator_arena_cleanup(IAllocator* allc);
         result;                                                                                    \
     })
 
-#else // #ifdef CEXTEST
+#else // #ifdef CEX_TEST
 #define _mem$asan_poison_mark(addr, c, size) (void)0
 #define _mem$asan_poison_check_mark(addr, len) (1)
 #endif
@@ -709,7 +709,7 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
         void* _addr = (addr);                                                                      \
         size_t _size = (size);                                                                     \
         if (__asan_region_is_poisoned(_addr, (size)) == NULL) {                                    \
-            _mem$asan_poison_mark(_addr, 0xf7, _size); /* Marks are only enabled in CEXTEST */     \
+            _mem$asan_poison_mark(_addr, 0xf7, _size); /* Marks are only enabled in CEX_TEST */     \
         }                                                                                          \
         __asan_poison_memory_region(_addr, _size);                                                 \
     })
@@ -718,7 +718,7 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
         void* _addr = (addr);                                                                      \
         size_t _size = (size);                                                                     \
         __asan_unpoison_memory_region(_addr, _size);                                               \
-        _mem$asan_poison_mark(_addr, 0x00, _size); /* Marks are only enabled in CEXTEST */         \
+        _mem$asan_poison_mark(_addr, 0x00, _size); /* Marks are only enabled in CEX_TEST */         \
     })
 #define mem$asan_poison_check(addr, size)                                                          \
     ({                                                                                             \
@@ -732,9 +732,9 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
 #define mem$asan_poison(addr, len) _mem$asan_poison_mark((addr), 0xf7, (len))
 #define mem$asan_unpoison(addr, len) _mem$asan_poison_mark((addr), 0x00, (len))
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
 #define mem$asan_poison_check(addr, len) _mem$asan_poison_check_mark((addr), (len))
-#else // #ifdef CEXTEST
+#else // #ifdef CEX_TEST
 #define mem$asan_poison_check(addr, len) (1)
 #endif
 
@@ -3000,7 +3000,7 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* u
 #define os$PATH_SEP '/'
 #endif
 
-#if defined(CEXBUILD) && CEX_LOG_LVL > 3
+#if defined(CEX_BUILD) && CEX_LOG_LVL > 3
 #define _os$args_print(msg, args, args_len)                                                        \
     log$debug(msg "");                                                                             \
     for (u32 i = 0; i < args_len - 1; i++) {                                                       \
@@ -3110,7 +3110,7 @@ __attribute__((visibility("hidden"))) extern const struct __cex_namespace__os os
 
 typedef Exception (*_cex_test_case_f)(void);
 
-#define CEXTEST_AMSG_MAX_LEN 512
+#define CEX_TEST_AMSG_MAX_LEN 512
 struct _cex_test_case_s
 {
     _cex_test_case_f test_fn;
@@ -3137,7 +3137,7 @@ struct _cex_test_context_s
     bool breakpoint;
     const char* const suite_file;
     char* case_filter;
-    char str_buf[CEXTEST_AMSG_MAX_LEN];
+    char str_buf[CEX_TEST_AMSG_MAX_LEN];
 };
 
 #if defined(__clang__)
@@ -3177,9 +3177,9 @@ struct _cex_test_context_s
     Exception test$NOOPT cext_test_##NAME(void)
 
 
-#ifndef CEXTEST
+#ifndef CEX_TEST
 #define test$env_check()                                                                           \
-    fprintf(stderr, "CEXTEST was not defined, pass -DCEXTEST or #define CEXTEST");                 \
+    fprintf(stderr, "CEX_TEST was not defined, pass -DCEX_TEST or #define CEX_TEST");                 \
     exit(1);
 #else
 #define test$env_check() (void)0
@@ -3275,7 +3275,7 @@ struct _cex_test_context_s
            _test$tassert_breakpoint();                                                             \
            if (str.sprintf(                                                                        \
                    _cex_test__mainfn_state.str_buf,                                                \
-                   CEXTEST_AMSG_MAX_LEN - 1,                                                       \
+                   CEX_TEST_AMSG_MAX_LEN - 1,                                                       \
                    _test$log_err(M),                                                               \
                    ##__VA_ARGS__                                                                   \
                )) {                                                                                \
@@ -3331,7 +3331,7 @@ struct _cex_test_context_s
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
                     _cex_test__mainfn_state.str_buf,                                               \
-                    CEXTEST_AMSG_MAX_LEN - 1,                                                      \
+                    CEX_TEST_AMSG_MAX_LEN - 1,                                                      \
                     _test$log_err("a and b are not binary equal")                                  \
                 )) {                                                                               \
             }                                                                                      \
@@ -3355,7 +3355,7 @@ struct _cex_test_context_s
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
                     _cex_test__mainfn_state.str_buf,                                               \
-                    CEXTEST_AMSG_MAX_LEN - 1,                                                      \
+                    CEX_TEST_AMSG_MAX_LEN - 1,                                                      \
                     _test$log_err("array length is different %ld != %ld"),                         \
                     _alen,                                                                         \
                     _blen                                                                          \
@@ -3368,7 +3368,7 @@ struct _cex_test_context_s
                     _test$tassert_breakpoint();                                                    \
                     if (str.sprintf(                                                               \
                             _cex_test__mainfn_state.str_buf,                                       \
-                            CEXTEST_AMSG_MAX_LEN - 1,                                              \
+                            CEX_TEST_AMSG_MAX_LEN - 1,                                              \
                             _test$log_err("array element at index [%d] is different"),             \
                             i                                                                      \
                         )) {                                                                       \
@@ -3434,7 +3434,7 @@ struct _cex_test_context_s
 /*
 *                          src/cex_code_gen.h
 */
-#ifdef CEXBUILD
+#ifdef CEX_BUILD
 
 typedef struct cex_codegen_s
 {
@@ -3518,7 +3518,7 @@ cex_codegen_s* cex_codegen_print_case_enter(cex_codegen_s* cg, const char* forma
 void cex_codegen_print_case_exit(cex_codegen_s** cgptr);
 void cex_codegen_indent(cex_codegen_s* cg);
 
-#endif // ifdef CEXBUILD
+#endif // ifdef CEX_BUILD
 
 
 
@@ -3526,7 +3526,7 @@ void cex_codegen_indent(cex_codegen_s* cg);
 *                          src/cexy.h
 */
 
-#if defined(CEXBUILD)
+#if defined(CEX_BUILD)
 
 #ifndef cexy$cc
 #if defined(__clang__)
@@ -3573,7 +3573,7 @@ string
 
 #ifndef cexy$cc_args_test
 #define cexy$cc_args_test                                                                          \
-    "-DCEXTEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3", "-Itests/",         \
+    "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3", "-Itests/",         \
         "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined",        \
         "-fsanitize=leak", "-fstack-protector-strong"
 
@@ -3632,7 +3632,7 @@ struct __cex_namespace__cexy {
 };
 __attribute__((visibility("hidden"))) extern const struct __cex_namespace__cexy cexy;
 
-#endif // #if defined(CEXBUILD)
+#endif // #if defined(CEX_BUILD)
 
 
 
@@ -3783,7 +3783,7 @@ __cex__panic(void)
     fflush(stderr);
     sanitizer_stack_trace();
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     raise(SIGTRAP);
 #else
     abort();
@@ -3955,7 +3955,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
         uassert(mem$aligned_pointer(result, 8) == result);
         uassert(mem$aligned_pointer(result, alignment) == result);
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
         a->stats.n_allocs++;
         // intentionally set malloc to 0xf7 pattern to mark uninitialized data
         if (fill_val != 0) {
@@ -4055,7 +4055,7 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     uassert(ptr_offset <= old_alignment + sizeof(u64) * 2);
     uassert(ptr_offset + size <= new_full_size);
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     a->stats.n_reallocs++;
     if (old_size < size) {
         // intentionally set unallocated to 0xf7 pattern to mark uninitialized data
@@ -4099,7 +4099,7 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
         uassert(offset >= 16 && "corrupted header?");
         uassert(offset <= 64 && "corrupted header?");
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
         a->stats.n_free++;
         u64 size = _cex_allocator_heap__hdr_get_size(hdr);
         u32 padding = mem$aligned_round(size + offset, alignment) - size - offset;
@@ -4373,7 +4373,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(((usize)(result) & ((rec.ptr_alignment) - 1)) == 0);
 
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     // intentionally set malloc to 0xf7 pattern to mark uninitialized data
     memset(result, 0xf7, rec.size);
 #endif
@@ -4479,7 +4479,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
             //   but currently we have spare capacity for growth
             u32 extra_bytes = size - rec->size;
             mem$asan_unpoison((char*)old_ptr + rec->size, extra_bytes);
-#ifdef CEXTEST
+#ifdef CEX_TEST
             memset((char*)old_ptr + rec->size, 0xf7, extra_bytes);
 #endif
             extra_bytes += (nrec.ptr_padding - rec->ptr_padding);
@@ -4531,7 +4531,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     uassert(self->scope_depth > 0);
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     bool AllocatorArena_sanitize(IAllocator allc);
     uassert(AllocatorArena_sanitize(allc));
 #endif
@@ -4689,7 +4689,7 @@ AllocatorArena_destroy(IAllocator self)
     uassert(allc->scope_depth == 1 && "trying to destroy in mem$scope?");
     _cex_allocator_arena__scope_exit(self);
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     uassert(AllocatorArena_sanitize(self));
 #endif
 
@@ -11221,7 +11221,7 @@ static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator 
 
     str_s dir_part = os.path.split(path, true);
     if (dir_part.buf == NULL) {
-#if defined(CEXTEST) || defined(CEXBUILD)
+#if defined(CEX_TEST) || defined(CEX_BUILD)
         (void)e$raise(Error.argument, "Bad path: os.fn.find('%s')", path);
 #endif
         return NULL;
@@ -11742,7 +11742,7 @@ const struct __cex_namespace__os os = {
 /*
 *                          src/test.c
 */
-#ifdef CEXTEST
+#ifdef CEX_TEST
 #include <math.h>
 
 enum _cex_test_eq_op_e
@@ -11921,7 +11921,7 @@ _check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
     if (!passed) {
         snprintf(
             _cex_test__mainfn_state.str_buf,
-            CEXTEST_AMSG_MAX_LEN - 1,
+            CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> '%s' %s '%s'",
             _cex_test__mainfn_state.suite_file,
             line,
@@ -11943,7 +11943,7 @@ _check_eq_err(const char* a, const char* b, int line)
         const char* eb = (b == EOK) ? "Error.ok" : b;
         snprintf(
             _cex_test__mainfn_state.str_buf,
-            CEXTEST_AMSG_MAX_LEN - 1,
+            CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> Exc mismatch '%s' != '%s'",
             _cex_test__mainfn_state.suite_file,
             line,
@@ -11963,7 +11963,7 @@ _check_eq_ptr(const void* a, const void* b, int line)
     if (a != b) {
         snprintf(
             _cex_test__mainfn_state.str_buf,
-            CEXTEST_AMSG_MAX_LEN - 1,
+            CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> %p != %p (ptr_diff: %ld)",
             _cex_test__mainfn_state.suite_file,
             line,
@@ -11997,7 +11997,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
     if (!passed) {
         if (str.sprintf(
                 _cex_test__mainfn_state.str_buf,
-                CEXTEST_AMSG_MAX_LEN - 1,
+                CEX_TEST_AMSG_MAX_LEN - 1,
                 "%s:%d -> '%S' %s '%S'",
                 _cex_test__mainfn_state.suite_file,
                 line,
@@ -12283,14 +12283,14 @@ cex_test_main_fn(int argc, char** argv)
     } // Return code, logic is inversed
     return ctx->tests_run == 0 || ctx->tests_failed > 0;
 }
-#endif // ifdef CEXTEST
+#endif // ifdef CEX_TEST
 
 
 
 /*
 *                          src/cex_code_gen.c
 */
-#ifdef CEXBUILD
+#ifdef CEX_BUILD
 
 void
 cex_codegen_indent(cex_codegen_s* cg)
@@ -12397,14 +12397,14 @@ cex_codegen_print_case_exit(cex_codegen_s** cgptr)
 }
 
 #undef cg$printva
-#endif // #ifdef CEXBUILD
+#endif // #ifdef CEX_BUILD
 
 
 
 /*
 *                          src/cexy.c
 */
-#if defined(CEXBUILD)
+#if defined(CEX_BUILD)
 
 static void
 cexy_build_self(int argc, char** argv, const char* cex_source)
@@ -13632,7 +13632,7 @@ const struct __cex_namespace__cexy cexy = {
 
     // clang-format on
 };
-#endif // defined(CEXBUILD)
+#endif // defined(CEX_BUILD)
 
 
 
@@ -14027,7 +14027,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
     uassert(*children != NULL && "non initialized arr$");
     cex_token_s result = { 0 };
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     log$trace("New entity check...\n");
 #endif
     arr$clear(*children);
@@ -14037,7 +14037,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
     u32 i = 0;
     (void)i;
     while ((t = CexParser_next_token(lx)).type) {
-#ifdef CEXTEST
+#ifdef CEX_TEST
         log$trace("%02d: %-15s %S\n", i, CexTkn_str[t.type], t.value);
 #endif
         if (unlikely(t.type == CexTkn__error)) {
@@ -14311,7 +14311,7 @@ CexParser_decl_parse(
                 if (prev_t.type == CexTkn__ident) {
                     if (result->name.buf == NULL) {
                         if (str.slice.match(it.value, "\\(\\**\\)")) {
-#if defined(CEXTEST)
+#if defined(CEX_TEST)
                             // this looks a function returning function pointer,
                             // we intentionally don't support this, use typedef func ptr
                             log$error(
@@ -14421,7 +14421,7 @@ CexParser_decl_parse(
         cex_token_s t = { 0 };
         bool skip_next = false;
         while ((t = CexParser_next_token(&lx)).type) {
-#ifdef CEXTEST
+#ifdef CEX_TEST
             log$trace("arg token: type: %s '%S'\n", CexTkn_str[t.type], t.value);
 #endif
             switch (t.type) {

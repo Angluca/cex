@@ -365,7 +365,7 @@ class CEXTestBuilder:
             self.force_rebuild = True
 
         compiler_args = [
-            "-DCEXTEST",
+            "-DCEX_TEST",
             "-O0",
             "-g3",
             "-ggdb3",

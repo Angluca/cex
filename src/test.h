@@ -4,7 +4,7 @@
 
 typedef Exception (*_cex_test_case_f)(void);
 
-#define CEXTEST_AMSG_MAX_LEN 512
+#define CEX_TEST_AMSG_MAX_LEN 512
 struct _cex_test_case_s
 {
     _cex_test_case_f test_fn;
@@ -31,7 +31,7 @@ struct _cex_test_context_s
     bool breakpoint;
     const char* const suite_file;
     char* case_filter;
-    char str_buf[CEXTEST_AMSG_MAX_LEN];
+    char str_buf[CEX_TEST_AMSG_MAX_LEN];
 };
 
 #if defined(__clang__)
@@ -71,9 +71,9 @@ struct _cex_test_context_s
     Exception test$NOOPT cext_test_##NAME(void)
 
 
-#ifndef CEXTEST
+#ifndef CEX_TEST
 #define test$env_check()                                                                           \
-    fprintf(stderr, "CEXTEST was not defined, pass -DCEXTEST or #define CEXTEST");                 \
+    fprintf(stderr, "CEX_TEST was not defined, pass -DCEX_TEST or #define CEX_TEST");                 \
     exit(1);
 #else
 #define test$env_check() (void)0
@@ -169,7 +169,7 @@ struct _cex_test_context_s
            _test$tassert_breakpoint();                                                             \
            if (str.sprintf(                                                                        \
                    _cex_test__mainfn_state.str_buf,                                                \
-                   CEXTEST_AMSG_MAX_LEN - 1,                                                       \
+                   CEX_TEST_AMSG_MAX_LEN - 1,                                                       \
                    _test$log_err(M),                                                               \
                    ##__VA_ARGS__                                                                   \
                )) {                                                                                \
@@ -225,7 +225,7 @@ struct _cex_test_context_s
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
                     _cex_test__mainfn_state.str_buf,                                               \
-                    CEXTEST_AMSG_MAX_LEN - 1,                                                      \
+                    CEX_TEST_AMSG_MAX_LEN - 1,                                                      \
                     _test$log_err("a and b are not binary equal")                                  \
                 )) {                                                                               \
             }                                                                                      \
@@ -249,7 +249,7 @@ struct _cex_test_context_s
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
                     _cex_test__mainfn_state.str_buf,                                               \
-                    CEXTEST_AMSG_MAX_LEN - 1,                                                      \
+                    CEX_TEST_AMSG_MAX_LEN - 1,                                                      \
                     _test$log_err("array length is different %ld != %ld"),                         \
                     _alen,                                                                         \
                     _blen                                                                          \
@@ -262,7 +262,7 @@ struct _cex_test_context_s
                     _test$tassert_breakpoint();                                                    \
                     if (str.sprintf(                                                               \
                             _cex_test__mainfn_state.str_buf,                                       \
-                            CEXTEST_AMSG_MAX_LEN - 1,                                              \
+                            CEX_TEST_AMSG_MAX_LEN - 1,                                              \
                             _test$log_err("array element at index [%d] is different"),             \
                             i                                                                      \
                         )) {                                                                       \

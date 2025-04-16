@@ -138,7 +138,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
         uassert(mem$aligned_pointer(result, 8) == result);
         uassert(mem$aligned_pointer(result, alignment) == result);
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
         a->stats.n_allocs++;
         // intentionally set malloc to 0xf7 pattern to mark uninitialized data
         if (fill_val != 0) {
@@ -238,7 +238,7 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     uassert(ptr_offset <= old_alignment + sizeof(u64) * 2);
     uassert(ptr_offset + size <= new_full_size);
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
     a->stats.n_reallocs++;
     if (old_size < size) {
         // intentionally set unallocated to 0xf7 pattern to mark uninitialized data
@@ -282,7 +282,7 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
         uassert(offset >= 16 && "corrupted header?");
         uassert(offset <= 64 && "corrupted header?");
 
-#ifdef CEXTEST
+#ifdef CEX_TEST
         a->stats.n_free++;
         u64 size = _cex_allocator_heap__hdr_get_size(hdr);
         u32 padding = mem$aligned_round(size + offset, alignment) - size - offset;

@@ -41,7 +41,7 @@ typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* u
 #define os$PATH_SEP '/'
 #endif
 
-#if defined(CEXBUILD) && CEX_LOG_LVL > 3
+#if defined(CEX_BUILD) && CEX_LOG_LVL > 3
 #define _os$args_print(msg, args, args_len)                                                        \
     log$debug(msg "");                                                                             \
     for (u32 i = 0; i < args_len - 1; i++) {                                                       \

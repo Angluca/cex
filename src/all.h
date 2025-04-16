@@ -1,7 +1,7 @@
 // clang-format off
-#define CEXBUILD
-#ifndef CEXTEST
-#define CEXTEST
+#define CEX_BUILD
+#ifndef CEX_TEST
+#define CEX_TEST
 #endif
 #pragma once
 #include "src/cex_header.h"

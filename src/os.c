@@ -351,7 +351,7 @@ static arr$(char*) os__fs__find(const char* path, bool is_recursive, IAllocator 
 
     str_s dir_part = os.path.split(path, true);
     if (dir_part.buf == NULL) {
-#if defined(CEXTEST) || defined(CEXBUILD)
+#if defined(CEX_TEST) || defined(CEX_BUILD)
         (void)e$raise(Error.argument, "Bad path: os.fn.find('%s')", path);
 #endif
         return NULL;

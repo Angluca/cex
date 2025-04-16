@@ -1,5 +1,5 @@
 #include "all.h"
-#ifdef CEXTEST
+#ifdef CEX_TEST
 #include <math.h>
 
 enum _cex_test_eq_op_e
@@ -178,7 +178,7 @@ _check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
     if (!passed) {
         snprintf(
             _cex_test__mainfn_state.str_buf,
-            CEXTEST_AMSG_MAX_LEN - 1,
+            CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> '%s' %s '%s'",
             _cex_test__mainfn_state.suite_file,
             line,
@@ -200,7 +200,7 @@ _check_eq_err(const char* a, const char* b, int line)
         const char* eb = (b == EOK) ? "Error.ok" : b;
         snprintf(
             _cex_test__mainfn_state.str_buf,
-            CEXTEST_AMSG_MAX_LEN - 1,
+            CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> Exc mismatch '%s' != '%s'",
             _cex_test__mainfn_state.suite_file,
             line,
@@ -220,7 +220,7 @@ _check_eq_ptr(const void* a, const void* b, int line)
     if (a != b) {
         snprintf(
             _cex_test__mainfn_state.str_buf,
-            CEXTEST_AMSG_MAX_LEN - 1,
+            CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> %p != %p (ptr_diff: %ld)",
             _cex_test__mainfn_state.suite_file,
             line,
@@ -254,7 +254,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
     if (!passed) {
         if (str.sprintf(
                 _cex_test__mainfn_state.str_buf,
-                CEXTEST_AMSG_MAX_LEN - 1,
+                CEX_TEST_AMSG_MAX_LEN - 1,
                 "%s:%d -> '%S' %s '%S'",
                 _cex_test__mainfn_state.suite_file,
                 line,
@@ -540,4 +540,4 @@ cex_test_main_fn(int argc, char** argv)
     } // Return code, logic is inversed
     return ctx->tests_run == 0 || ctx->tests_failed > 0;
 }
-#endif // ifdef CEXTEST
+#endif // ifdef CEX_TEST
