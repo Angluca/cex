@@ -1,7 +1,6 @@
 #pragma once
 #include "all.h"
 
-
 static void
 cex_os_sleep(u32 period_millisec)
 {
@@ -67,16 +66,17 @@ cex_os__fs__mkpath(const char* path)
         return Error.argument;
     }
     str_s dir = os.path.split(path, true);
-    char dir_path[PATH_MAX] = {0};
+    char dir_path[PATH_MAX] = { 0 };
     e$ret(str.slice.copy(dir_path, dir, sizeof(dir_path)));
     if (os.path.exists(dir_path)) {
         return EOK;
     }
     usize dir_path_len = 0;
 
-    for$iter(str_s, it, str.slice.iter_split(dir, "\\/", &it.iterator)) {
+    for$iter(str_s, it, str.slice.iter_split(dir, "\\/", &it.iterator))
+    {
         if (dir_path_len > 0) {
-            uassert(dir_path_len < sizeof(dir_path)-2);
+            uassert(dir_path_len < sizeof(dir_path) - 2);
             dir_path[dir_path_len] = os$PATH_SEP;
             dir_path_len++;
             dir_path[dir_path_len] = '\0';
@@ -161,7 +161,6 @@ cex_os__fs__stat(const char* path)
     return result;
 #endif
 }
-
 
 static Exception
 cex_os__fs__remove(const char* path)
@@ -250,8 +249,7 @@ cex_os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callb
                 result = err;
                 goto end;
             }
-
-        } 
+        }
         // After recursive call make a callback on a directory itself
         e$except_silent(err, callback_fn(path_buf, ftype, user_ctx))
         {
@@ -285,7 +283,8 @@ _os__fs__remove_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx
 {
     (void)user_ctx;
     (void)ftype;
-    e$except_silent(err, cex_os__fs__remove(path)){
+    e$except_silent(err, cex_os__fs__remove(path))
+    {
         return err;
     }
     return EOK;
@@ -297,14 +296,15 @@ cex_os__fs__remove_tree(const char* path)
     if (path == NULL || path[0] == '\0') {
         return Error.argument;
     }
-    if (!os.path.exists(path)){
+    if (!os.path.exists(path)) {
         return EOK;
     }
     e$except_silent(err, cex_os__fs__dir_walk(path, true, _os__fs__remove_tree_walker, NULL))
     {
         return err;
     }
-    e$except_silent(err, cex_os__fs__remove(path)){
+    e$except_silent(err, cex_os__fs__remove(path))
+    {
         return err;
     }
     return EOK;
@@ -348,7 +348,6 @@ static arr$(char*) cex_os__fs__find(const char* path, bool is_recursive, IAlloca
     if (unlikely(allc == NULL)) {
         return NULL;
     }
-
 
     str_s dir_part = os.path.split(path, true);
     if (dir_part.buf == NULL) {
@@ -531,7 +530,6 @@ cex_os__path__dirname(const char* path, IAllocator allc)
     return str.slice.clone(fname, allc);
 }
 
-
 static Exception
 cex_os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags)
 {
@@ -656,7 +654,6 @@ cex_os__cmd__stdout(os_cmd_c* self)
     return self->_subpr.stdout_file;
 }
 
-
 static FILE*
 cex_os__cmd__stderr(os_cmd_c* self)
 {
@@ -720,7 +717,6 @@ cex_os__cmd__write_line(os_cmd_c* self, char* line)
     return EOK;
 }
 
-
 static Exception
 cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 {
@@ -735,7 +731,7 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
     }
 
     for (u32 i = 0; i < args_len - 1; i++) {
-        if (args[i] == NULL || args[i][0] == '\0' ) {
+        if (args[i] == NULL || args[i][0] == '\0') {
             return e$raise(
                 Error.argument,
                 "`args` item[%d] is NULL/empty, which may indicate string operation failure",
@@ -743,7 +739,6 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
             );
         }
     }
-
 
 #ifdef _WIN32
     // FIX:  WIN32 uncompilable
@@ -818,6 +813,87 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 #endif
 }
 
+static OSPlatform_e
+cex_os__platform__current(void)
+{
+#ifdef _WIN32
+    return OSPlatform__win;
+#elif __linux__
+    return OSPlatform__linux;
+#elif __APPLE__ && __MACH__
+    return OSPlatform__macos;
+#elif __unix__
+    #ifdef __FreeBSD__
+    return OSPlatform__freebsd;
+    #elif __NetBSD__
+    return OSPlatform__netbsd;
+    #elif __OpenBSD__
+    return OSPlatform__openbsd;
+    #elif __ANDROID__
+    return OSPlatform__android;
+    #else
+        #error "Untested platform. Need more?"
+    #endif
+#elif __wasm__
+    return OSPlatform__wasm;
+#else
+    #error "Untested platform. Need more?"
+#endif
+}
+
+static const char*
+cex_os__platform__current_str(void)
+{
+    return os.platform.to_str(os.platform.current());
+}
+
+static OSPlatform_e
+cex_os__platform__from_str(const char* name)
+{
+    if (name == NULL || name[0] == '\0') {
+        return OSPlatform__unknown;
+    }
+    for (u32 i = 1; i < OSPlatform__count; i++) {
+        if (str.eq(OSPlatform_str[i], name)) {
+            return (OSPlatform_e)i;
+        }
+    }
+    return OSPlatform__unknown;
+    ;
+}
+
+static const char*
+cex_os__platform__to_str(OSPlatform_e platform)
+{
+    if (unlikely(platform <= OSPlatform__unknown || platform >= OSPlatform__count)) {
+        return NULL;
+    }
+    return OSPlatform_str[platform];
+}
+
+static OSArch_e
+cex_os__platform__arch_from_str(const char* name)
+{
+    if (name == NULL || name[0] == '\0') {
+        return OSArch__unknown;
+    }
+    for (u32 i = 1; i < OSArch__count; i++) {
+        if (str.eq(OSArch_str[i], name)) {
+            return (OSArch_e)i;
+        }
+    }
+    return OSArch__unknown;
+    ;
+}
+
+static const char*
+cex_os__platform__arch_to_str(OSArch_e platform)
+{
+    if (unlikely(platform <= OSArch__unknown || platform >= OSArch__count)) {
+        return NULL;
+    }
+    return OSArch_str[platform];
+}
 
 const struct __cex_namespace__os os = {
     // Autogenerated by CEX
@@ -863,6 +939,15 @@ const struct __cex_namespace__os os = {
         .exists = cex_os__path__exists,
         .join = cex_os__path__join,
         .split = cex_os__path__split,
+    },
+
+    .platform = {
+        .arch_from_str = cex_os__platform__arch_from_str,
+        .arch_to_str = cex_os__platform__arch_to_str,
+        .current = cex_os__platform__current,
+        .current_str = cex_os__platform__current_str,
+        .from_str = cex_os__platform__from_str,
+        .to_str = cex_os__platform__to_str,
     },
 
     // clang-format on

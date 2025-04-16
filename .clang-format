@@ -23,5 +23,6 @@ MaxEmptyLinesToKeep: 2
 InsertBraces: true
 BreakStringLiterals: false
 BreakBeforeTernaryOperators: true
+IndentPPDirectives: BeforeHash
 ...
 
