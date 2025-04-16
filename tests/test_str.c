@@ -326,6 +326,11 @@ test$case(test_sub_negative_start)
     tassert_eq(s.len, 6);
     tassert(memcmp(sub.buf, "123456", sub.len) == 0);
 
+    s = str.sstr("()");
+    sub = str.slice.sub(s, 1, -1);
+    tassert_eq(s.buf, NULL);
+    tassert_eq(s.len, 0);
+
     return EOK;
 }
 
@@ -2148,6 +2153,7 @@ test$case(test_str_match)
     tassert(str.match("*", "[*-]"));
     tassert(str.match(")", "[)]"));
     tassert(str.match("(", "[(]"));
+    tassert(str.match("e$*", "*[*]"));
     tassert(!str.match("d", "[a-c*]")); // * - is literal
     tassert(str.match("*", "[*a-z]"));
     tassert(str.match("*", "[a-z\\*]"));

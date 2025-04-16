@@ -14253,7 +14253,7 @@ CexParser_decl_parse(
                     char* prev_end = _t.value.buf + _t.value.len;
                     _t = CexParser.next_token(&_lx);
                     if (_t.type == CexTkn__paren_block) {
-                        var _args = str.slice.sub(_t.value, 1, -1);
+                        var _args = _t.value.len > 2 ? str.slice.sub(_t.value, 1, -1) : str$s("");
                         e$goto(sbuf.appendf(&result->args, "%S", _args), fail);
                         prev_end = _t.value.buf + _t.value.len;
                         _t = CexParser.next_token(&_lx);
@@ -14274,7 +14274,10 @@ CexParser_decl_parse(
             case CexTkn__comment_single: {
                 if (result->name.buf == NULL && sbuf.len(&result->ret_type) == 0 &&
                     sbuf.len(&result->args) == 0) {
-                    result->docs = it.value;
+                    str_s cmt = str.slice.strip(it.value);
+                    if (str.slice.match(cmt, "(/**|/*!|///)*")) {
+                        result->docs = cmt;
+                    }
                 }
                 break;
             }

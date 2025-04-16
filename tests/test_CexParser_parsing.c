@@ -571,6 +571,9 @@ test$case(test_funcs_decl_parse_macros)
         "/** my doc */ \n#define my$macro() asdadkja \n"
         "/// my doc \n#define my_macro(a, b, ...) a+b\n"
         "#define my$CONST 220981\n"
+        "// some comment\n#define my$CONST 220981\n"
+        "/* some comment */\n#define my$CONST 220981\n"
+        "/*! some comment */  \n#define my$CONST 220981\n"
         "";
     CexParser_c lx = CexParser_create(code, 0, true);
     cex_token_s t;
@@ -587,7 +590,7 @@ test$case(test_funcs_decl_parse_macros)
         tassert_eq(d->type, CexTkn__macro_func);
         tassert_eq(d->name, str$s("my$macro"));
         tassert_eq(d->args, "");
-        tassert_eq(d->body.buf, NULL);
+        tassert_eq(d->body, str$s(" asdadkja "));
         tassert_eq(d->docs, str$s("/** my doc */"));
         
         t = CexParser_next_entity(&lx, &items);
@@ -596,8 +599,8 @@ test$case(test_funcs_decl_parse_macros)
         tassert_eq(d->type, CexTkn__macro_func);
         tassert_eq(d->name, str$s("my_macro"));
         tassert_eq(d->args, "a, b, ...");
-        tassert_eq(d->body.buf, NULL);
-        tassert_eq(d->docs, str$s("/// my doc "));
+        tassert_eq(d->body, str$s(" a+b"));
+        tassert_eq(d->docs, str$s("/// my doc"));
 
 
         t = CexParser_next_entity(&lx, &items);
@@ -607,9 +610,39 @@ test$case(test_funcs_decl_parse_macros)
         tassert_eq(d->type, CexTkn__macro_const);
         tassert_eq(d->name, str$s("my$CONST"));
         tassert_eq(d->args, "");
-        tassert_eq(d->body.buf, NULL);
+        tassert_eq(d->body, str$s(" 220981"));
         tassert_eq(d->docs.buf, NULL);
 
+
+        t = CexParser_next_entity(&lx, &items);
+        tassert_eq(t.type, CexTkn__macro_const);
+        d = CexParser.decl_parse(&lx, t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__macro_const);
+        tassert_eq(d->name, str$s("my$CONST"));
+        tassert_eq(d->args, "");
+        tassert_eq(d->body, str$s(" 220981"));
+        tassert_eq(d->docs.buf, NULL);
+
+        t = CexParser_next_entity(&lx, &items);
+        tassert_eq(t.type, CexTkn__macro_const);
+        d = CexParser.decl_parse(&lx, t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__macro_const);
+        tassert_eq(d->name, str$s("my$CONST"));
+        tassert_eq(d->args, "");
+        tassert_eq(d->body, str$s(" 220981"));
+        tassert_eq(d->docs.buf, NULL);
+
+        t = CexParser_next_entity(&lx, &items);
+        tassert_eq(t.type, CexTkn__macro_const);
+        d = CexParser.decl_parse(&lx, t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__macro_const);
+        tassert_eq(d->name, str$s("my$CONST"));
+        tassert_eq(d->args, "");
+        tassert_eq(d->body, str$s(" 220981"));
+        tassert_eq(d->docs, str$s("/*! some comment */"));
 
     }
     tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
@@ -761,7 +794,12 @@ test$case(test_cex_struct_def_decl)
         log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_def);
         tassert_eq(arr$len(items), 7);
-        tassert(d == NULL);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__cex_module_def);
+        tassert_eq(d->name, str$s("io"));
+        tassert_eq(d->args, "");
+        tassert_eq(d->ret_type, "");
+        tassert_gt(d->body.len, 0);
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
@@ -805,6 +843,28 @@ test$case(test_cex_decl_multiline)
         tassert_eq(t.type, CexTkn__cex_module_struct);
         tassert(d != NULL);
         tassert_eq(d->line, 6);
+    }
+    tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
+    return EOK;
+}
+
+test$case(test_struct_decl_with_attr)
+{
+    // clang-format off
+    char* code = 
+        "typedef struct {u32 length; u32 capacity;  const Allocator_i* allocator;} __attribute__((packed)) sbuf_head_s;"
+        "";
+    CexParser_c lx = CexParser_create(code, 0, true);
+    cex_token_s t;
+    mem$scope(tmem$, _){
+        cex_decl_s* d = NULL;
+        arr$(cex_token_s) items = arr$new(items, _);
+
+        t = CexParser_next_entity(&lx, &items);
+        d = CexParser.decl_parse(&lx, t, items, NULL, _);
+        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        tassert_eq(t.type, CexTkn__typedef);
+        tassert(d != NULL);
     }
     tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
     return EOK;
