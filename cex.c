@@ -10,8 +10,6 @@
 #include "cex.h"
 
 
-Exception cmd_check(int argc, char** argv, void* user_ctx);
-Exception cmd_build(int argc, char** argv, void* user_ctx);
 Exception cmd_test(int argc, char** argv, void* user_ctx);
 void cex_bundle(void);
 
@@ -24,11 +22,9 @@ main(int argc, char** argv)
     // clang-format off
     argparse_c args = {
         .description = cexy$description,
-        // .epilog = cexy$epilog,
+        .epilog = cexy$epilog,
         argparse$cmd_list(
             cexy$cmd_all,
-            { .name = "check", .func = cmd_check, .help = "Validates build environment" },
-            { .name = "build", .func = cmd_build, .help = "Builds project"},
             { .name = "test", .func = cmd_test, .help = "Test running" },
         ),
     };
@@ -226,41 +222,6 @@ cmd_test(int argc, char** argv, void* user_ctx)
 
     if (str.match(cmd, "(run|debug)")) {
         e$ret(cexy.test.run(target, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
-    }
-    return EOK;
-}
-
-Exception
-cmd_check(int argc, char** argv, void* user_ctx)
-{
-    (void)argc;
-    (void)argv;
-    (void)user_ctx;
-    io.printf("CEX health report\n");
-    io.printf("cexy$cc: %s\n", cexy$cc);
-    io.printf("cexy$cc_args: %s\n", cex$stringize(cexy$cc_args));
-    return EOK;
-}
-
-Exception
-cmd_build(int argc, char** argv, void* user_ctx)
-{
-    (void)argc;
-    (void)argv;
-    (void)user_ctx;
-    log$debug("Start building something\n");
-    e$ret(os.fs.mkdir(cexy$build_dir));
-    e$assert(false && "foo");
-
-    mem$scope(tmem$, _)
-    {
-        arr$(char*) args = arr$new(args, _);
-        // arr$pushm(args, cexy$cc, cexy$cc_args, "", "-o", target, str.fmt(_, "%s.c", target));
-        // arr$pushm(args, "boo", "bar");
-        // os$cmda(args);
-        os$cmd(cexy$cc, "-Wall", "-Wextra", "-o", "cex", "cex.c");
-        const char* arg[] = { "ls", NULL };
-        os$cmda(arg);
     }
     return EOK;
 }
