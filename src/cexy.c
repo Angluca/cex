@@ -1177,15 +1177,14 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
             if (query == NULL) {
                 switch (it.value->type) {
                     case CexTkn__cex_module_struct:
-                        io.printf("%-5s", "C");
+                        io.printf("%-20s", "cexy namespace");
                         break;
                     case CexTkn__macro_func:
                     case CexTkn__macro_const:
-                        io.printf("%-5s", "M");
+                        io.printf("%-20s", "macro namespace");
                         break;
                     default:
-                        // io.printf("%-20s", CexTkn_str[it.value->type]);
-                        io.printf("%-5s", "T");
+                        io.printf("%-20s", CexTkn_str[it.value->type]);
                 }
                 io.printf(" %-30S %s:%d\n", it.key, it.value->file, it.value->line + 1);
             } else {
@@ -1195,8 +1194,11 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     name = _cexy__fn_dotted(name, cex_ns, arena);
                     if (!name.buf) {
                         // something weird happened, fallback
-                        // log$warn("Failed to make dotted name from %S, cex_ns: %s\n", it.key,
-                        // cex_ns);
+                        log$trace(
+                            "Failed to make dotted name from %S, cex_ns: %s\n",
+                            it.key,
+                            cex_ns
+                        );
                         name = it.key;
                     }
                 }
@@ -1221,6 +1223,7 @@ cexy__cmd__check(int argc, char** argv, void* user_ctx)
     (void)argc;
     (void)argv;
     (void)user_ctx;
+
     return EOK;
 }
 
