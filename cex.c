@@ -22,16 +22,15 @@ main(int argc, char** argv)
     cexy$initialize();
 
     // clang-format off
-    argparse_c args = {
+    cex_argparse_c args = {
         .description = cexy$description,
         // .epilog = cexy$epilog,
-        .commands = (argparse_cmd_s[]) {
-                cexy$cmd_all,
-                { .name = "check", .func = cmd_check, .help = "Validates build environment" },
-                { .name = "build", .func = cmd_build, .help = "Builds project"},
-                { .name = "test", .func = cmd_test, .help = "Test running" },
-                { 0 }, // null term
-            },
+        argparse$cmd_list(
+            cexy$cmd_all,
+            { .name = "check", .func = cmd_check, .help = "Validates build environment" },
+            { .name = "build", .func = cmd_build, .help = "Builds project"},
+            { .name = "test", .func = cmd_test, .help = "Test running" },
+        ),
     };
     // clang-format on
 
@@ -165,7 +164,7 @@ cmd_test(int argc, char** argv, void* user_ctx)
     uassert(argc > 0);
     uassert(argv != NULL);
 
-    argparse_c cmd_args = { 0 };
+    cex_argparse_c cmd_args = { 0 };
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* cmd = argparse.next(&cmd_args);
     const char* target = argparse.next(&cmd_args);

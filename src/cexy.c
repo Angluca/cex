@@ -799,23 +799,21 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     // clang-format on
 
     const char* ignore_kw = cexy$process_ignore_kw;
-    argparse_c cmd_args = {
+    cex_argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "process [options] all|path/some_file.c",
         .description = process_help,
         .epilog = "Use `all` for updates, and exact path/some_file.c for creating new\n",
-        .options =
-            (argparse_opt_s[]){
-                argparse$opt_group("Options"),
-                argparse$opt_help(),
-                argparse$opt(
-                    &ignore_kw,
-                    'i',
-                    "ignore",
-                    .help = "ignores `keyword` or `keyword()` from processed function signatures\n  uses cexy$process_ignore_kw"
-                ),
-                { 0 },
-            }
+        argparse$opt_list(
+            argparse$opt_group("Options"),
+            argparse$opt_help(),
+            argparse$opt(
+                &ignore_kw,
+                'i',
+                "ignore",
+                .help = "ignores `keyword` or `keyword()` from processed function signatures\n  uses cexy$process_ignore_kw"
+            ),
+        ),
     };
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* target = argparse.next(&cmd_args);
@@ -988,7 +986,7 @@ _cexy__display_full_info(cex_decl_s* d, char* base_ns)
     str_s name = d->name;
     mem$scope(tmem$, _)
     {
-        io.printf("Symbol found at %s:%d\n", d->file, d->line+1);
+        io.printf("Symbol found at %s:%d\n", d->file, d->line + 1);
         if (d->type == CexTkn__func_def) {
             name = _cexy__fn_dotted(d->name, base_ns, _);
             if (!name.buf) {
@@ -1032,15 +1030,15 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     const char* filter = "./*.[hc]";
 
     // clang-format on
-    argparse_c cmd_args = {
+    cex_argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "help [options] [query]",
         .description = process_help,
-        .options = (argparse_opt_s[]
-        ){ argparse$opt_group("Options"),
-           argparse$opt_help(),
-           argparse$opt(&filter, 'f', "filter", .help = "File pattern for searching"),
-           { 0 } },
+        argparse$opt_list(
+            argparse$opt_group("Options"),
+            argparse$opt_help(),
+            argparse$opt(&filter, 'f', "filter", .help = "File pattern for searching"),
+        ),
     };
     if (argparse.parse(&cmd_args, argc, argv)) {
         return Error.argsparse;

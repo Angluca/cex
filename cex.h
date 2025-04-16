@@ -927,8 +927,8 @@ struct _cexds__arr_new_kwargs_s
     ({                                                                                             \
         _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
         uassert(allocator != NULL);                                                                \
-        struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                        \
-        (a) = (typeof(*a)*)_cexds__arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);       \
+        struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                      \
+        (a) = (typeof(*a)*)_cexds__arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);     \
     })
 
 #define arr$free(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__arrfreef((a)), (a) = NULL)
@@ -939,37 +939,37 @@ struct _cexds__arr_new_kwargs_s
 
 #define arr$del(a, i)                                                                              \
     ({                                                                                             \
-        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                   \
-        uassert((usize)i < _cexds__header(a)->length && "out of bounds");                            \
-        memmove(&(a)[i], &(a)[(i) + 1], sizeof *(a) * (_cexds__header(a)->length - 1 - (i)));        \
-        _cexds__header(a)->length--;                                                                 \
+        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
+        uassert((usize)i < _cexds__header(a)->length && "out of bounds");                          \
+        memmove(&(a)[i], &(a)[(i) + 1], sizeof *(a) * (_cexds__header(a)->length - 1 - (i)));      \
+        _cexds__header(a)->length--;                                                               \
     })
 #define arr$delswap(a, i)                                                                          \
     ({                                                                                             \
-        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                   \
-        uassert((usize)i < _cexds__header(a)->length && "out of bounds");                            \
+        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
+        uassert((usize)i < _cexds__header(a)->length && "out of bounds");                          \
         (a)[i] = arr$last(a);                                                                      \
-        _cexds__header(a)->length -= 1;                                                              \
+        _cexds__header(a)->length -= 1;                                                            \
     })
 
 #define arr$last(a)                                                                                \
     ({                                                                                             \
-        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                   \
-        uassert(_cexds__header(a)->length > 0 && "empty array");                                     \
-        (a)[_cexds__header(a)->length - 1];                                                          \
+        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
+        uassert(_cexds__header(a)->length > 0 && "empty array");                                   \
+        (a)[_cexds__header(a)->length - 1];                                                        \
     })
 #define arr$at(a, i)                                                                               \
     ({                                                                                             \
-        _cexds__arr_integrity(a, 0); /* may work also on hm$ */                                      \
-        uassert((usize)i < _cexds__header(a)->length && "out of bounds");                            \
+        _cexds__arr_integrity(a, 0); /* may work also on hm$ */                                    \
+        uassert((usize)i < _cexds__header(a)->length && "out of bounds");                          \
         (a)[i];                                                                                    \
     })
 
 #define arr$pop(a)                                                                                 \
     ({                                                                                             \
-        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                   \
-        _cexds__header(a)->length--;                                                                 \
-        (a)[_cexds__header(a)->length];                                                              \
+        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
+        _cexds__header(a)->length--;                                                               \
+        (a)[_cexds__header(a)->length];                                                            \
     })
 
 #define arr$push(a, value...)                                                                      \
@@ -978,7 +978,7 @@ struct _cexds__arr_new_kwargs_s
             uassert(false && "arr$push memory error");                                             \
             abort();                                                                               \
         }                                                                                          \
-        (a)[_cexds__header(a)->length++] = (value);                                                  \
+        (a)[_cexds__header(a)->length++] = (value);                                                \
     })
 
 #define arr$pushm(a, items...)                                                                     \
@@ -993,7 +993,7 @@ struct _cexds__arr_new_kwargs_s
 #define arr$pusha(a, array, array_len...)                                                          \
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
-        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                   \
+        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
         uassert(array != NULL);                                                                    \
         usize _arr_len_va[] = { array_len };                                                       \
         (void)_arr_len_va;                                                                         \
@@ -1005,14 +1005,14 @@ struct _cexds__arr_new_kwargs_s
         }                                                                                          \
         /* NOLINTEND */                                                                            \
         for (usize i = 0; i < arr_len; i++) {                                                      \
-            (a)[_cexds__header(a)->length++] = ((array)[i]);                                         \
+            (a)[_cexds__header(a)->length++] = ((array)[i]);                                       \
         }                                                                                          \
     })
 
-#define arr$sort(a, qsort_cmp)                                                                                                \
-    ({                                                                                                                        \
-        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                                              \
-        qsort((a), arr$len(a), sizeof(*a), qsort_cmp); \
+#define arr$sort(a, qsort_cmp)                                                                     \
+    ({                                                                                             \
+        _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
+        qsort((a), arr$len(a), sizeof(*a), qsort_cmp);                                             \
     })
 
 
@@ -1022,15 +1022,15 @@ struct _cexds__arr_new_kwargs_s
             uassert(false && "arr$ins memory error");                                              \
             abort();                                                                               \
         }                                                                                          \
-        _cexds__header(a)->length++;                                                                 \
-        uassert((usize)i < _cexds__header(a)->length && "i out of bounds");                          \
-        memmove(&(a)[(i) + 1], &(a)[i], sizeof(*(a)) * (_cexds__header(a)->length - 1 - (i)));       \
+        _cexds__header(a)->length++;                                                               \
+        uassert((usize)i < _cexds__header(a)->length && "i out of bounds");                        \
+        memmove(&(a)[(i) + 1], &(a)[i], sizeof(*(a)) * (_cexds__header(a)->length - 1 - (i)));     \
         (a)[i] = (value);                                                                          \
     } while (0)
 
 #define arr$grow_check(a, add_extra)                                                               \
-    ((_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC) &&                                                   \
-      _cexds__header(a)->length + (add_extra) > _cexds__header(a)->capacity)                           \
+    ((_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC) &&                                                \
+      _cexds__header(a)->length + (add_extra) > _cexds__header(a)->capacity)                       \
          ? (arr$grow(a, add_extra, 0), a != NULL)                                                  \
          : true)
 
@@ -1046,7 +1046,7 @@ struct _cexds__arr_new_kwargs_s
         _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\"");                                \
         /* NOLINTBEGIN */                                                                          \
         __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0])) /* check if array or ptr */   \
-            ? _cexds__arr_len(arr)                                     /* some pointer or arr$ */    \
+            ? _cexds__arr_len(arr)                                   /* some pointer or arr$ */    \
             : (sizeof(arr) / sizeof((arr)[0])                        /* static array[] */          \
               );                                                                                   \
         /* NOLINTEND */                                                                            \
@@ -1117,15 +1117,15 @@ struct _cexds__hm_new_kwargs_s
             const char(*)[]: _CexDsKeyType__charbuf,                                               \
             default: _CexDsKeyType__generic                                                        \
         );                                                                                         \
-        struct _cexds__hm_new_kwargs_s _kwargs = { kwargs };                                         \
-        (t) = (typeof(*t)*)_cexds__hminit(sizeof(*t), (allocator), _key_type, &_kwargs);             \
+        struct _cexds__hm_new_kwargs_s _kwargs = { kwargs };                                       \
+        (t) = (typeof(*t)*)_cexds__hminit(sizeof(*t), (allocator), _key_type, &_kwargs);           \
     })
 
 
 #define hm$set(t, k, v...)                                                                         \
     ({                                                                                             \
         typeof(t) result = NULL;                                                                   \
-        (t) = _cexds__hmput_key(                                                                     \
+        (t) = _cexds__hmput_key(                                                                   \
             (t),                                                                                   \
             sizeof(*t),                     /* size of hashmap item */                             \
             ((typeof((t)->key)[1]){ (k) }), /* temp on stack pointer to (k) value */               \
@@ -1142,7 +1142,7 @@ struct _cexds__hm_new_kwargs_s
 #define hm$setp(t, k)                                                                              \
     ({                                                                                             \
         typeof(t) result = NULL;                                                                   \
-        (t) = _cexds__hmput_key(                                                                     \
+        (t) = _cexds__hmput_key(                                                                   \
             (t),                                                                                   \
             sizeof(*t),                     /* size of hashmap item */                             \
             ((typeof((t)->key)[1]){ (k) }), /* temp on stack pointer to (k) value */               \
@@ -1158,7 +1158,7 @@ struct _cexds__hm_new_kwargs_s
     ({                                                                                             \
         typeof(t) result = NULL;                                                                   \
         typeof(*t) _val = (v);                                                                     \
-        (t) = _cexds__hmput_key(                                                                     \
+        (t) = _cexds__hmput_key(                                                                   \
             (t),                                                                                   \
             sizeof(*t),                /* size of hashmap item */                                  \
             &_val.key,                 /* temp on stack pointer to (k) value */                    \
@@ -1172,7 +1172,7 @@ struct _cexds__hm_new_kwargs_s
 
 #define hm$get(t, k, def...)                                                                       \
     ({                                                                                             \
-        typeof(t) result = _cexds__hmget_key(                                                        \
+        typeof(t) result = _cexds__hmget_key(                                                      \
             (t),                                                                                   \
             sizeof(*t),                     /* size of hashmap item */                             \
             ((typeof((t)->key)[1]){ (k) }), /* temp on stack pointer to (k) value */               \
@@ -1185,7 +1185,7 @@ struct _cexds__hm_new_kwargs_s
 
 #define hm$getp(t, k)                                                                              \
     ({                                                                                             \
-        typeof(t) result = _cexds__hmget_key(                                                        \
+        typeof(t) result = _cexds__hmget_key(                                                      \
             (t),                                                                                   \
             sizeof *(t),                                                                           \
             ((typeof((t)->key)[1]){ (k) }),                                                        \
@@ -1197,7 +1197,7 @@ struct _cexds__hm_new_kwargs_s
 
 #define hm$gets(t, k)                                                                              \
     ({                                                                                             \
-        typeof(t) result = _cexds__hmget_key(                                                        \
+        typeof(t) result = _cexds__hmget_key(                                                      \
             (t),                                                                                   \
             sizeof *(t),                                                                           \
             ((typeof((t)->key)[1]){ (k) }),                                                        \
@@ -1209,15 +1209,15 @@ struct _cexds__hm_new_kwargs_s
 
 #define hm$clear(t)                                                                                \
     ({                                                                                             \
-        _cexds__arr_integrity(t, _CEXDS_HM_MAGIC);                                                    \
-        _cexds__hmclear_func(_cexds__header((t))->hash_table, NULL, _cexds__header(t)->hm_seed);         \
-        _cexds__header(t)->length = 0;                                                               \
+        _cexds__arr_integrity(t, _CEXDS_HM_MAGIC);                                                 \
+        _cexds__hmclear_func(_cexds__header((t))->hash_table, NULL, _cexds__header(t)->hm_seed);   \
+        _cexds__header(t)->length = 0;                                                             \
         true;                                                                                      \
     })
 
 #define hm$del(t, k)                                                                               \
     ({                                                                                             \
-        _cexds__hmdel_key(                                                                           \
+        _cexds__hmdel_key(                                                                         \
             (t),                                                                                   \
             sizeof *(t),                                                                           \
             ((typeof((t)->key)[1]){ (k) }),                                                        \
@@ -1232,9 +1232,9 @@ struct _cexds__hm_new_kwargs_s
 #define hm$len(t)                                                                                  \
     ({                                                                                             \
         if (t != NULL) {                                                                           \
-            _cexds__arr_integrity(t, _CEXDS_HM_MAGIC);                                                \
+            _cexds__arr_integrity(t, _CEXDS_HM_MAGIC);                                             \
         }                                                                                          \
-        (t) ? _cexds__header((t))->length : 0;                                                       \
+        (t) ? _cexds__header((t))->length : 0;                                                     \
     })
 
 typedef struct _cexds__string_block
@@ -1597,18 +1597,18 @@ __attribute__((visibility("hidden"))) extern const struct __cex_namespace__io io
 *                          src/argparse.h
 */
 
-struct argparse_c;
-struct argparse_opt_s;
+struct cex_argparse_c;
+struct cex_argparse_opt_s;
 
-typedef Exception (*argparse_callback_f)(
-    struct argparse_c* self,
-    const struct argparse_opt_s* option,
+typedef Exception (*cex_argparse_callback_f)(
+    struct cex_argparse_c* self,
+    const struct cex_argparse_opt_s* option,
     void* ctx
 );
-typedef Exception (*argparse_convert_f)(const char* s, void* out_val);
-typedef Exception (*argparse_command_f)(int argc, char** argv, void* user_ctx);
+typedef Exception (*cex_argparse_convert_f)(const char* s, void* out_val);
+typedef Exception (*cex_argparse_command_f)(int argc, char** argv, void* user_ctx);
 
-typedef struct argparse_opt_s
+typedef struct cex_argparse_opt_s
 {
     u8 type;
     void* value;
@@ -1616,19 +1616,19 @@ typedef struct argparse_opt_s
     const char* long_name;
     const char* help;
     bool required;
-    argparse_callback_f callback;
+    cex_argparse_callback_f callback;
     void* callback_data;
-    argparse_convert_f convert;
+    cex_argparse_convert_f convert;
     bool is_present; // also setting in in argparse$opt* macro, allows optional parameter sugar
-} argparse_opt_s;
+} cex_argparse_opt_s;
 
-typedef struct argparse_cmd_s
+typedef struct cex_argparse_cmd_s
 {
     const char* name;
-    argparse_command_f func;
+    cex_argparse_command_f func;
     const char* help;
     bool is_default;
-} argparse_cmd_s;
+} cex_argparse_cmd_s;
 
 enum CexArgParseType_e
 {
@@ -1652,13 +1652,13 @@ enum CexArgParseType_e
 /**
  * argpparse
  */
-typedef struct argparse_c
+typedef struct cex_argparse_c
 {
     // user supplied options
-    argparse_opt_s* options;
+    cex_argparse_opt_s* options;
     u32 options_len;
 
-    argparse_cmd_s* commands;
+    cex_argparse_cmd_s* commands;
     u32 commands_len;
 
     const char* usage;        // usage text (can be multiline), each line prepended by program_name
@@ -1676,9 +1676,9 @@ typedef struct argparse_c
         int cpidx;
         const char* optvalue; // current option value
         bool has_argument;
-        argparse_cmd_s* current_command;
+        cex_argparse_cmd_s* current_command;
     } _ctx;
-} argparse_c;
+} cex_argparse_c;
 
 
 // built-in option macros
@@ -1701,35 +1701,38 @@ typedef struct argparse_c
             char**: CexArgParseType__string,                                                       \
             default: CexArgParseType__generic                                                      \
         );                                                                                         \
-        argparse_convert_f conv_f = _Generic(                                                      \
+        cex_argparse_convert_f conv_f = _Generic(                                                      \
             (value),                                                                               \
             bool*: NULL,                                                                           \
             const char**: NULL,                                                                    \
             char**: NULL,                                                                          \
-            i8*: (argparse_convert_f)str.convert.to_i8,                                            \
-            u8*: (argparse_convert_f)str.convert.to_u8,                                            \
-            i16*: (argparse_convert_f)str.convert.to_i16,                                          \
-            u16*: (argparse_convert_f)str.convert.to_u16,                                          \
-            i32*: (argparse_convert_f)str.convert.to_i32,                                          \
-            u32*: (argparse_convert_f)str.convert.to_u32,                                          \
-            i64*: (argparse_convert_f)str.convert.to_i64,                                          \
-            u64*: (argparse_convert_f)str.convert.to_u64,                                          \
-            f32*: (argparse_convert_f)str.convert.to_f32,                                          \
-            f64*: (argparse_convert_f)str.convert.to_f64,                                          \
+            i8*: (cex_argparse_convert_f)str.convert.to_i8,                                            \
+            u8*: (cex_argparse_convert_f)str.convert.to_u8,                                            \
+            i16*: (cex_argparse_convert_f)str.convert.to_i16,                                          \
+            u16*: (cex_argparse_convert_f)str.convert.to_u16,                                          \
+            i32*: (cex_argparse_convert_f)str.convert.to_i32,                                          \
+            u32*: (cex_argparse_convert_f)str.convert.to_u32,                                          \
+            i64*: (cex_argparse_convert_f)str.convert.to_i64,                                          \
+            u64*: (cex_argparse_convert_f)str.convert.to_u64,                                          \
+            f32*: (cex_argparse_convert_f)str.convert.to_f32,                                          \
+            f64*: (cex_argparse_convert_f)str.convert.to_f64,                                          \
             default: NULL                                                                          \
         );                                                                                         \
-        (argparse_opt_s){ val_type,                                                                \
+        (cex_argparse_opt_s){ val_type,                                                                \
                           (value),                                                                 \
                           __VA_ARGS__,                                                             \
-                          .convert = (argparse_convert_f)conv_f,                                   \
+                          .convert = (cex_argparse_convert_f)conv_f,                                   \
                           .is_present = 0 };                                                       \
     })
 // clang-format off
+
+#define argparse$opt_list(...) .options = (cex_argparse_opt_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
 #define argparse$opt_group(h)     { CexArgParseType__group, NULL, '\0', NULL, h, false, NULL, 0, 0, .is_present=0 }
 #define argparse$opt_help()       {CexArgParseType__boolean, NULL, 'h', "help",                           \
                                         "show this help message and exit", false,    \
                                         NULL, 0, .is_present = 0}
 #define argparse$pop(argc, argv) ((argc > 0) ? (--argc, (*argv)++) : NULL)
+#define argparse$cmd_list(...) .commands = (cex_argparse_cmd_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
 
 __attribute__((visibility("hidden"))) extern const struct __cex_namespace__argparse argparse;
 
@@ -1737,10 +1740,10 @@ struct __cex_namespace__argparse {
     // Autogenerated by CEX
     // clang-format off
 
-    const char*     (*next)(argparse_c* self);
-    Exception       (*parse)(argparse_c* self, int argc, char** argv);
-    Exception       (*run_command)(argparse_c* self, void* user_ctx);
-    void            (*usage)(argparse_c* self);
+    const char*     (*next)(cex_argparse_c* self);
+    Exception       (*parse)(cex_argparse_c* self, int argc, char** argv);
+    Exception       (*run_command)(cex_argparse_c* self, void* user_ctx);
+    void            (*usage)(cex_argparse_c* self);
 
     // clang-format on
 };
@@ -4901,7 +4904,7 @@ typedef struct
     size_t hash[_CEXDS_BUCKET_LENGTH];
     ptrdiff_t index[_CEXDS_BUCKET_LENGTH];
 } _cexds__hash_bucket; // in 32-bit, this is one 64-byte cache line; in 64-bit, each array is one
-                     // 64-byte cache line
+                       // 64-byte cache line
 _Static_assert(sizeof(_cexds__hash_bucket) == 128, "cacheline aligned");
 
 typedef struct _cexds__hash_index
@@ -4954,7 +4957,11 @@ _cexds__log2(size_t slot_count)
 }
 
 void
-_cexds__hmclear_func(struct _cexds__hash_index* t, _cexds__hash_index* old_table, size_t _cexds__hash_seed)
+_cexds__hmclear_func(
+    struct _cexds__hash_index* t,
+    _cexds__hash_index* old_table,
+    size_t _cexds__hash_seed
+)
 {
     if (t == NULL) {
         // typically external call of uninitialized table
@@ -4999,8 +5006,8 @@ _cexds__make_hash_index(
 {
     _cexds__hash_index* t = mem$malloc(
         allc,
-        (slot_count >> _CEXDS_BUCKET_SHIFT) * sizeof(_cexds__hash_bucket) + sizeof(_cexds__hash_index) +
-            _CEXDS_CACHE_LINE_SIZE - 1
+        (slot_count >> _CEXDS_BUCKET_SHIFT) * sizeof(_cexds__hash_bucket) +
+            sizeof(_cexds__hash_index) + _CEXDS_CACHE_LINE_SIZE - 1
     );
     t->storage = (_cexds__hash_bucket*)mem$aligned_pointer((size_t)(t + 1), _CEXDS_CACHE_LINE_SIZE);
     t->slot_count = slot_count;
@@ -5133,21 +5140,21 @@ _cexds__siphash_bytes(const void* p, size_t len, size_t seed)
     v3 ^= 0x0f0e0d0c0b0a0908ull ^ ~seed;
 #endif
 
-#define _CEXDS_SIPROUND()                                                                           \
+#define _CEXDS_SIPROUND()                                                                          \
     do {                                                                                           \
         v0 += v1;                                                                                  \
-        v1 = _CEXDS_ROTATE_LEFT(v1, 13);                                                            \
+        v1 = _CEXDS_ROTATE_LEFT(v1, 13);                                                           \
         v1 ^= v0;                                                                                  \
-        v0 = _CEXDS_ROTATE_LEFT(v0, _CEXDS_SIZE_T_BITS / 2);                                         \
+        v0 = _CEXDS_ROTATE_LEFT(v0, _CEXDS_SIZE_T_BITS / 2);                                       \
         v2 += v3;                                                                                  \
-        v3 = _CEXDS_ROTATE_LEFT(v3, 16);                                                            \
+        v3 = _CEXDS_ROTATE_LEFT(v3, 16);                                                           \
         v3 ^= v2;                                                                                  \
         v2 += v1;                                                                                  \
-        v1 = _CEXDS_ROTATE_LEFT(v1, 17);                                                            \
+        v1 = _CEXDS_ROTATE_LEFT(v1, 17);                                                           \
         v1 ^= v2;                                                                                  \
-        v2 = _CEXDS_ROTATE_LEFT(v2, _CEXDS_SIZE_T_BITS / 2);                                         \
+        v2 = _CEXDS_ROTATE_LEFT(v2, _CEXDS_SIZE_T_BITS / 2);                                       \
         v0 += v3;                                                                                  \
-        v3 = _CEXDS_ROTATE_LEFT(v3, 21);                                                            \
+        v3 = _CEXDS_ROTATE_LEFT(v3, 21);                                                           \
         v3 ^= v0;                                                                                  \
     } while (0)
 
@@ -10154,14 +10161,14 @@ const struct __cex_namespace__io io = {
 */
 
 static const char*
-argparse__prefix_skip(const char* str, const char* prefix)
+_cex_argparse__prefix_skip(const char* str, const char* prefix)
 {
     usize len = strlen(prefix);
     return strncmp(str, prefix, len) ? NULL : str + len;
 }
 
 static Exception
-argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason, bool is_long)
+_cex_argparse__error(cex_argparse_c* self, const cex_argparse_opt_s* opt, const char* reason, bool is_long)
 {
     (void)self;
     if (is_long) {
@@ -10174,7 +10181,7 @@ argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason,
 }
 
 static void
-argparse_usage(argparse_c* self)
+cex_argparse_usage(cex_argparse_c* self)
 {
     uassert(self->argv != NULL && "usage before parse!");
 
@@ -10376,7 +10383,7 @@ argparse_usage(argparse_c* self)
     }
 }
 static Exception
-argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
+_cex_argparse__getvalue(cex_argparse_c* self, cex_argparse_opt_s* opt, bool is_long)
 {
     if (!opt->value) {
         goto skipped;
@@ -10396,7 +10403,7 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                 self->_ctx.cpidx++;
                 *(const char**)opt->value = *++self->argv;
             } else {
-                return argparse__error(self, opt, "requires a value", is_long);
+                return _cex_argparse__error(self, opt, "requires a value", is_long);
             }
             opt->is_present = true;
             break;
@@ -10412,12 +10419,12 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
         case CexArgParseType__f64:
             if (self->_ctx.optvalue) {
                 if (self->_ctx.optvalue[0] == '\0') {
-                    return argparse__error(self, opt, "requires a value", is_long);
+                    return _cex_argparse__error(self, opt, "requires a value", is_long);
                 }
                 uassert(opt->convert != NULL);
                 e$except_silent(err, opt->convert(self->_ctx.optvalue, opt->value))
                 {
-                    return argparse__error(self, opt, "argument parsing error", is_long);
+                    return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
                 self->_ctx.optvalue = NULL;
             } else if (self->argc > 1) {
@@ -10426,15 +10433,15 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                 self->argv++;
                 e$except_silent(err, opt->convert(*self->argv, opt->value))
                 {
-                    return argparse__error(self, opt, "argument parsing error", is_long);
+                    return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
             } else {
-                return argparse__error(self, opt, "requires a value", is_long);
+                return _cex_argparse__error(self, opt, "requires a value", is_long);
             }
             if (opt->type == CexArgParseType__f32) {
                 f32 res = *(f32*)opt->value;
                 if (isnanf(res) || res == INFINITY || res == -INFINITY) {
-                    return argparse__error(
+                    return _cex_argparse__error(
                         self,
                         opt,
                         "argument parsing error (float out of range)",
@@ -10444,7 +10451,7 @@ argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
             } else if (opt->type == CexArgParseType__f64) {
                 f64 res = *(f64*)opt->value;
                 if (isnanf(res) || res == INFINITY || res == -INFINITY) {
-                    return argparse__error(
+                    return _cex_argparse__error(
                         self,
                         opt,
                         "argument parsing error (float out of range)",
@@ -10465,7 +10472,7 @@ skipped:
         return opt->callback(self, opt, opt->callback_data);
     } else {
         if (opt->short_name == 'h') {
-            argparse_usage(self);
+            cex_argparse_usage(self);
             return Error.argsparse;
         }
     }
@@ -10474,7 +10481,7 @@ skipped:
 }
 
 static Exception
-argparse__options_check(argparse_c* self, bool reset)
+_cex_argparse__options_check(cex_argparse_c* self, bool reset)
 {
     for$eachp(opt, self->options, self->options_len)
     {
@@ -10544,31 +10551,31 @@ argparse__options_check(argparse_c* self, bool reset)
 }
 
 static Exception
-argparse__short_opt(argparse_c* self, argparse_opt_s* options)
+_cex_argparse__short_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         if (options->short_name == *self->_ctx.optvalue) {
             self->_ctx.optvalue = self->_ctx.optvalue[1] ? self->_ctx.optvalue + 1 : NULL;
-            return argparse__getvalue(self, options, false);
+            return _cex_argparse__getvalue(self, options, false);
         }
     }
     return Error.not_found;
 }
 
 static Exception
-argparse__long_opt(argparse_c* self, argparse_opt_s* options)
+_cex_argparse__long_opt(cex_argparse_c* self, cex_argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         const char* rest;
         if (!options->long_name) {
             continue;
         }
-        rest = argparse__prefix_skip(self->argv[0] + 2, options->long_name);
+        rest = _cex_argparse__prefix_skip(self->argv[0] + 2, options->long_name);
         if (!rest) {
             if (options->type != CexArgParseType__boolean) {
                 continue;
             }
-            rest = argparse__prefix_skip(self->argv[0] + 2 + 3, options->long_name);
+            rest = _cex_argparse__prefix_skip(self->argv[0] + 2 + 3, options->long_name);
             if (!rest) {
                 continue;
             }
@@ -10579,14 +10586,14 @@ argparse__long_opt(argparse_c* self, argparse_opt_s* options)
             }
             self->_ctx.optvalue = rest + 1;
         }
-        return argparse__getvalue(self, options, true);
+        return _cex_argparse__getvalue(self, options, true);
     }
     return Error.not_found;
 }
 
 
 static Exception
-argparse__report_error(argparse_c* self, Exc err)
+_cex_argparse__report_error(cex_argparse_c* self, Exc err)
 {
     // invalidate argc
     self->argc = 0;
@@ -10608,11 +10615,11 @@ argparse__report_error(argparse_c* self, Exc err)
 }
 
 static Exception
-argparse__parse_commands(argparse_c* self)
+_cex_argparse__parse_commands(cex_argparse_c* self)
 {
     uassert(self->_ctx.current_command == NULL);
     if (self->commands_len == 0) {
-        argparse_cmd_s* _cmd = self->commands;
+        cex_argparse_cmd_s* _cmd = self->commands;
         while (_cmd != NULL) {
             if (_cmd->name == NULL) {
                 break;
@@ -10622,11 +10629,11 @@ argparse__parse_commands(argparse_c* self)
         }
     }
 
-    argparse_cmd_s* cmd = NULL;
+    cex_argparse_cmd_s* cmd = NULL;
     const char* cmd_arg = (self->argc > 0) ? self->argv[0] : NULL;
 
     if (str.eq(cmd_arg, "-h") || str.eq(cmd_arg, "--help")) {
-        argparse_usage(self);
+        cex_argparse_usage(self);
         return Error.argsparse;
     }
 
@@ -10641,13 +10648,13 @@ argparse__parse_commands(argparse_c* self)
             }
         } else {
             if (c->is_default) {
-                uassert(cmd == NULL && "multiple default commands in argparse_c");
+                uassert(cmd == NULL && "multiple default commands in cex_argparse_c");
                 cmd = c;
             }
         }
     }
     if (cmd == NULL) {
-        argparse_usage(self);
+        cex_argparse_usage(self);
         io.printf("error: unknown command name '%s', try --help\n", (cmd_arg) ? cmd_arg : "");
         return Error.argsparse;
     }
@@ -10658,10 +10665,10 @@ argparse__parse_commands(argparse_c* self)
 }
 
 static Exception
-argparse__parse_options(argparse_c* self)
+_cex_argparse__parse_options(cex_argparse_c* self)
 {
     if (self->options_len == 0) {
-        argparse_opt_s* _opt = self->options;
+        cex_argparse_opt_s* _opt = self->options;
         while (_opt != NULL) {
             if (_opt->type == CexArgParseType__na) {
                 break;
@@ -10671,7 +10678,7 @@ argparse__parse_options(argparse_c* self)
         }
     }
     int initial_argc = self->argc + 1;
-    e$except_silent(err, argparse__options_check(self, true))
+    e$except_silent(err, _cex_argparse__options_check(self, true))
     {
         return err;
     }
@@ -10692,19 +10699,19 @@ argparse__parse_options(argparse_c* self)
         if (arg[1] != '-') {
             if (self->_ctx.has_argument) {
                 // options are not allowed after arguments
-                return argparse__report_error(self, Error.integrity);
+                return _cex_argparse__report_error(self, Error.integrity);
             }
 
             self->_ctx.optvalue = arg + 1;
             self->_ctx.cpidx++;
-            e$except_silent(err, argparse__short_opt(self, self->options))
+            e$except_silent(err, _cex_argparse__short_opt(self, self->options))
             {
-                return argparse__report_error(self, err);
+                return _cex_argparse__report_error(self, err);
             }
             while (self->_ctx.optvalue) {
-                e$except_silent(err, argparse__short_opt(self, self->options))
+                e$except_silent(err, _cex_argparse__short_opt(self, self->options))
                 {
-                    return argparse__report_error(self, err);
+                    return _cex_argparse__report_error(self, err);
                 }
             }
             continue;
@@ -10719,17 +10726,17 @@ argparse__parse_options(argparse_c* self)
         // long option
         if (self->_ctx.has_argument) {
             // options are not allowed after arguments
-            return argparse__report_error(self, Error.integrity);
+            return _cex_argparse__report_error(self, Error.integrity);
         }
-        e$except_silent(err, argparse__long_opt(self, self->options))
+        e$except_silent(err, _cex_argparse__long_opt(self, self->options))
         {
-            return argparse__report_error(self, err);
+            return _cex_argparse__report_error(self, err);
         }
         self->_ctx.cpidx++;
         continue;
     }
 
-    e$except_silent(err, argparse__options_check(self, false))
+    e$except_silent(err, _cex_argparse__options_check(self, false))
     {
         return err;
     }
@@ -10742,7 +10749,7 @@ argparse__parse_options(argparse_c* self)
 }
 
 static Exception
-argparse_parse(argparse_c* self, int argc, char** argv)
+cex_argparse_parse(cex_argparse_c* self, int argc, char** argv)
 {
     if (self->options != NULL && self->commands != NULL) {
         uassert(false && "options and commands are mutually exclusive");
@@ -10764,15 +10771,15 @@ argparse_parse(argparse_c* self, int argc, char** argv)
     self->_ctx.out = argv;
 
     if (self->commands) {
-        return argparse__parse_commands(self);
+        return _cex_argparse__parse_commands(self);
     } else if (self->options) {
-        return argparse__parse_options(self);
+        return _cex_argparse__parse_options(self);
     }
     return Error.ok;
 }
 
 static const char*
-argparse_next(argparse_c* self)
+cex_argparse_next(cex_argparse_c* self)
 {
     uassert(self != NULL);
     uassert(self->argv != NULL && "forgot argparse.parse() call?");
@@ -10816,7 +10823,7 @@ argparse_next(argparse_c* self)
 }
 
 static Exception
-argparse_run_command(argparse_c* self, void* user_ctx)
+cex_argparse_run_command(cex_argparse_c* self, void* user_ctx)
 {
     uassert(self->_ctx.current_command != NULL && "not parsed/parse error?");
     if (self->argc == 0) {
@@ -10833,10 +10840,10 @@ const struct __cex_namespace__argparse argparse = {
     // Autogenerated by CEX
     // clang-format off
 
-    .next = argparse_next,
-    .parse = argparse_parse,
-    .run_command = argparse_run_command,
-    .usage = argparse_usage,
+    .next = cex_argparse_next,
+    .parse = cex_argparse_parse,
+    .run_command = cex_argparse_run_command,
+    .usage = cex_argparse_usage,
 
     // clang-format on
 };
@@ -12054,10 +12061,9 @@ cex_test_main_fn(int argc, char** argv)
     max_name = (max_name < 70) ? 70 : max_name;
 
     ctx->quiet_mode = false;
-    // FIX: after migrating to CEX c build system
-    ctx->has_ansi = true; // io.is_atty();
+    ctx->has_ansi = io.isatty(stdout);
 
-    argparse_opt_s options[] = {
+    cex_argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
         argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
@@ -12070,7 +12076,7 @@ cex_test_main_fn(int argc, char** argv)
         ),
     };
 
-    argparse_c args = {
+    cex_argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
         .description = "Test runner program",
@@ -13185,23 +13191,21 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     // clang-format on
 
     const char* ignore_kw = cexy$process_ignore_kw;
-    argparse_c cmd_args = {
+    cex_argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "process [options] all|path/some_file.c",
         .description = process_help,
         .epilog = "Use `all` for updates, and exact path/some_file.c for creating new\n",
-        .options =
-            (argparse_opt_s[]){
-                argparse$opt_group("Options"),
-                argparse$opt_help(),
-                argparse$opt(
-                    &ignore_kw,
-                    'i',
-                    "ignore",
-                    .help = "ignores `keyword` or `keyword()` from processed function signatures\n  uses cexy$process_ignore_kw"
-                ),
-                { 0 },
-            }
+        argparse$opt_list(
+            argparse$opt_group("Options"),
+            argparse$opt_help(),
+            argparse$opt(
+                &ignore_kw,
+                'i',
+                "ignore",
+                .help = "ignores `keyword` or `keyword()` from processed function signatures\n  uses cexy$process_ignore_kw"
+            ),
+        ),
     };
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* target = argparse.next(&cmd_args);
@@ -13374,7 +13378,7 @@ _cexy__display_full_info(cex_decl_s* d, char* base_ns)
     str_s name = d->name;
     mem$scope(tmem$, _)
     {
-        io.printf("Symbol found at %s:%d\n", d->file, d->line+1);
+        io.printf("Symbol found at %s:%d\n", d->file, d->line + 1);
         if (d->type == CexTkn__func_def) {
             name = _cexy__fn_dotted(d->name, base_ns, _);
             if (!name.buf) {
@@ -13418,15 +13422,15 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     const char* filter = "./*.[hc]";
 
     // clang-format on
-    argparse_c cmd_args = {
+    cex_argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "help [options] [query]",
         .description = process_help,
-        .options = (argparse_opt_s[]
-        ){ argparse$opt_group("Options"),
-           argparse$opt_help(),
-           argparse$opt(&filter, 'f', "filter", .help = "File pattern for searching"),
-           { 0 } },
+        argparse$opt_list(
+            argparse$opt_group("Options"),
+            argparse$opt_help(),
+            argparse$opt(&filter, 'f', "filter", .help = "File pattern for searching"),
+        ),
     };
     if (argparse.parse(&cmd_args, argc, argv)) {
         return Error.argsparse;

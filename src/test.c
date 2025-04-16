@@ -330,10 +330,9 @@ cex_test_main_fn(int argc, char** argv)
     max_name = (max_name < 70) ? 70 : max_name;
 
     ctx->quiet_mode = false;
-    // FIX: after migrating to CEX c build system
-    ctx->has_ansi = true; // io.is_atty();
+    ctx->has_ansi = io.isatty(stdout);
 
-    argparse_opt_s options[] = {
+    cex_argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
         argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
@@ -346,7 +345,7 @@ cex_test_main_fn(int argc, char** argv)
         ),
     };
 
-    argparse_c args = {
+    cex_argparse_c args = {
         .options = options,
         .options_len = arr$len(options),
         .description = "Test runner program",
