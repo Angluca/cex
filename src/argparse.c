@@ -539,8 +539,8 @@ _cex_argparse__parse_options(argparse_c* self)
         // short option
         if (arg[1] != '-') {
             if (self->_ctx.has_argument) {
-                // options are not allowed after arguments
-                return _cex_argparse__report_error(self, Error.integrity);
+                // Breaking when first argument appears (more flexible support of subcommands)
+                break;
             }
 
             self->_ctx.optvalue = arg + 1;
@@ -566,8 +566,8 @@ _cex_argparse__parse_options(argparse_c* self)
         }
         // long option
         if (self->_ctx.has_argument) {
-            // options are not allowed after arguments
-            return _cex_argparse__report_error(self, Error.integrity);
+            // Breaking when first argument appears (more flexible support of subcommands)
+            break;
         }
         e$except_silent(err, _cex_argparse__long_opt(self, self->options))
         {

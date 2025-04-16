@@ -451,7 +451,7 @@ test$case(test_cex_argparse_arguments__option_follows_argument_not_allowed)
     int argc = arr$len(argv);
 
 
-    tassert_er(Error.argsparse, argparse.parse(&args, argc, argv));
+    tassert_er(Error.ok, argparse.parse(&args, argc, argv));
 
     // All untouched
     tassert_eq(force, 100);
@@ -464,7 +464,7 @@ test$case(test_cex_argparse_arguments__option_follows_argument_not_allowed)
     tassert_eq(argv[3], "arg2");         // unchanged
     tassert_eq(argv[4], "--int=100");    // unchanged
     //
-    tassert_eq(args.argc, 0);
+    tassert_eq(args.argc, 4);
 
     return EOK;
 }
