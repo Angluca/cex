@@ -1,31 +1,38 @@
 /* 
-*   CEX.C - Comprehensively EXtended C Language (cex-c.org)
-*                                                                   MOCCA - Make Old C Cexy Again!
-*
-*       MIT License 2023-2025 (c) Alex Veden (see license information at the end of this file)
-*       https://github.com/alexveden/cex/
-*
-*   CEX is self-contained C language extension, the only dependency is one of gcc/clang compilers.
-*   cex.h contains build system, unit test runner, small standard lib and help system.
-*
-*   Visit https://cex-c.org for more information
-*
-*   GETTING STARTED (existing project, when cex.c exists in the project root directory)
-*   1. > cd project_dir
-*   2. > gcc/clang ./cex.c -o ./cex     (need only once, then cex will rebuil itself) 
-*   3. > ./cex --help                   get info about available commands
-*
-*   GETTING STARTED (bare cex.h file, and nothing else)
-*   1. > download https://cex-c.org/cex.h or copy existing one 
-*   2. > mkdir project_dir
-*   3. > cd project_dir
-*   4. > gcc/clang -D CEX_NEW -x c ./cex.h    prime cex.c and build system
-*   5. > ./cex                                creates boilerplate project
-*   6. > ./cex test run all                   runs sample unit tests
-*   7. > ./cex app run myapp                  runs sample app
-*
+# CEX.C - Comprehensively EXtended C Language (cex-c.org)
+                                                                MOCCA - Make Old C Cexy Again!
 
-Usage:
+>    MIT License 2023-2025 (c) Alex Veden (see license information at the end of this file)
+>    https://github.com/alexveden/cex/
+
+CEX is self-contained C language extension, the only dependency is one of gcc/clang compilers.
+cex.h contains build system, unit test runner, small standard lib and help system.
+
+Visit https://cex-c.org for more information
+
+## GETTING STARTED 
+(existing project, when cex.c exists in the project root directory)
+```
+1. > cd project_dir
+2. > gcc/clang ./cex.c -o ./cex     (need only once, then cex will rebuil itself) 
+3. > ./cex --help                   get info about available commands
+```
+
+## GETTING STARTED 
+(bare cex.h file, and nothing else)
+```
+1. > download https://cex-c.org/cex.h or copy existing one 
+2. > mkdir project_dir
+3. > cd project_dir
+4. > gcc/clang -D CEX_NEW -x c ./cex.h    prime cex.c and build system
+5. > ./cex                                creates boilerplate project
+6. > ./cex test run all                   runs sample unit tests
+7. > ./cex app run myapp                  runs sample app
+```
+
+## cex tool usage:
+```
+> ./cex --help
 ./cex {help,process,new,config,test,app} [cmd_options] [cmd_args]
 Cex build system
 
@@ -37,7 +44,7 @@ test                Test runner
 app                 App runner
 
 You may try to get help for commands as well, try `cex process --help`
-
+```
 */
 
 /*
