@@ -3,86 +3,99 @@
 
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
-#ifndef cexy$cc
-#if defined(__clang__)
-#define cexy$cc "clang"
-#elif defined(__GNUC__)
-#define cexy$cc "gcc"
-#else
-# #error "Compiler type is not supported"
-#endif
-#endif // #ifndef cexy$cc
+    #ifndef cexy$cc
+        #if defined(__clang__)
+            #define cexy$cc "clang"
+        #elif defined(__GNUC__)
+            #define cexy$cc "gcc"
+        #else
+            #error "Compiler type is not supported"
+        #endif
+    #endif // #ifndef cexy$cc
 
-#ifndef cexy$cc_include
-#define cexy$cc_include "-I."
-#endif
+    #ifndef cexy$cc_include
+        #define cexy$cc_include "-I."
+    #endif
 
-#ifndef cexy$build_dir
-#define cexy$build_dir "build/"
-#endif
+    #ifndef cexy$build_dir
+        #define cexy$build_dir "build"
+    #endif
 
-#ifndef cexy$cc_args
-#define cexy$cc_args "-Wall", "-Wextra"
-#endif
+    #ifndef cexy$src_dir
+        #define cexy$src_dir "src"
+    #endif
 
-#ifndef cexy$ld_args
-#define cexy$ld_args
-#endif
+    #ifndef cexy$sanitize_args
+        #define cexy$sanitize_args                                                                 \
+            "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined",    \
+                "-fsanitize=leak", "-fstack-protector-strong"
+    #endif
 
-#ifndef cexy$ld_libs
-#define cexy$ld_libs
-#endif
+    #ifndef cexy$cc_args_release
+        #define cexy$cc_args_release "-Wall", "-Wextra"
+    #endif
 
-#ifndef cexy$debug_cmd
-#define cexy$debug_cmd "gdb", "--args"
-#endif
+    #ifndef cexy$cc_args_debug
+        #define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$sanitize_args
+    #endif
 
 
-#ifndef cexy$process_ignore_kw
-/**
-@brief For ignoring extra macro keywords in function signatures of libraries, as str.match() pattern
-string
-*/
-#define cexy$process_ignore_kw ""
-#endif
+    #ifndef cexy$ld_args
+        #define cexy$ld_args
+    #endif
 
-#ifndef cexy$cc_args_test
-#define cexy$cc_args_test                                                                          \
-    "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3", "-Itests/",        \
-        "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined",        \
-        "-fsanitize=leak", "-fstack-protector-strong"
+    #ifndef cexy$ld_libs
+        #define cexy$ld_libs
+    #endif
 
-#endif
+    #ifndef cexy$debug_cmd
+        #define cexy$debug_cmd "gdb", "--args"
+    #endif
 
-#define cexy$cmd_process                                                                           \
-    { .name = "process",                                                                           \
-      .func = cexy.cmd.process,                                                                    \
-      .help = "Create CEX namespaces from project source code" }
-#define cexy$cmd_new                                                                           \
-    { .name = "new",                                                                           \
-      .func = cexy.cmd.new,                                                                    \
-      .help = "Creates new CEX project" }
-#define cexy$cmd_help                                                                              \
-    { .name = "help",                                                                              \
-      .func = cexy.cmd.help,                                                                       \
-      .help = "Search cex.h and project symbols and extract help" }
-#define cexy$cmd_config                                                                             \
-    { .name = "config", .func = cexy.cmd.config, .help = "Check project and system environment and config" }
 
-#define cexy$cmd_test                                                                             \
-    { .name = "test", .func = cexy.cmd.simple_test, .help = "Generic unit test build/run/debug" }
+    #ifndef cexy$process_ignore_kw
+        /**
+        @brief For ignoring extra macro keywords in function signatures of libraries, as str.match()
+        pattern string
+        */
+        #define cexy$process_ignore_kw ""
+    #endif
 
-#define cexy$cmd_app                                                                             \
-    { .name = "app", .func = cexy.cmd.simple_test, .help = "Generic app build/run/debug" }
+    #ifndef cexy$cc_args_test
+        #define cexy$cc_args_test                                                                  \
+            "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3",            \
+                "-Itests/", cexy$sanitize_args
+    #endif
 
-#define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
+    #define cexy$cmd_process                                                                       \
+        { .name = "process",                                                                       \
+          .func = cexy.cmd.process,                                                                \
+          .help = "Create CEX namespaces from project source code" }
+    #define cexy$cmd_new { .name = "new", .func = cexy.cmd.new, .help = "Create new CEX project" }
+    #define cexy$cmd_help                                                                          \
+        { .name = "help",                                                                          \
+          .func = cexy.cmd.help,                                                                   \
+          .help = "Search cex.h and project symbols and extract help" }
+    #define cexy$cmd_config                                                                        \
+        { .name = "config",                                                                        \
+          .func = cexy.cmd.config,                                                                 \
+          .help = "Check project and system environment and config" }
 
-#define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
+    #define cexy$cmd_test                                                                          \
+        { .name = "test",                                                                          \
+          .func = cexy.cmd.simple_test,                                                            \
+          .help = "Generic unit test build/run/debug" }
 
-#define cexy$description "Cex build system"
+    #define cexy$cmd_app                                                                           \
+        { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
 
-#define cexy$epilog                                                                                \
-    "\nYou may try to get help for commands as well, try `cex process --help`\n"
+    #define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
+
+    #define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
+
+    #define cexy$description "Cex build system"
+
+    #define cexy$epilog "\nYou may try to get help for commands as well, try `cex process --help`\n"
 
 // clang-format off
 #define _cexy$cmd_test_help (\
@@ -139,7 +152,7 @@ string
         "cex test debug tests/test_file.c         - run test via `cexy$debug_cmd` program\n"\
         "cex test clean all                       - delete all test executables in `cexy$build_dir`\n"\
         "cex test clean test/test_file.c          - delete specific test executable\n"\
-        "cex test run tests/test_file.c [--help]  - run test with passing arguments to the test runner program\n"\
+        "cex test run tests/test_file.c [--help]  - run test with passing arguments to the test runner program\n"
 
 
 // clang-format on
@@ -153,10 +166,18 @@ struct __cex_namespace__cexy {
     char*           (*target_make)(const char* src_path, const char* build_dir, const char* name_or_extension, IAllocator allocator);
 
     struct {
+        Exception       (*clean)(const char* target);
+        Exception       (*create)(const char* target);
+        Exception       (*find_app_target_src)(IAllocator allc, const char** target);
+        Exception       (*run)(const char* target, bool is_debug, int argc, char** argv);
+    } app;
+
+    struct {
         Exception       (*config)(int argc, char** argv, void* user_ctx);
         Exception       (*help)(int argc, char** argv, void* user_ctx);
         Exception       (*new)(int argc, char** argv, void* user_ctx);
         Exception       (*process)(int argc, char** argv, void* user_ctx);
+        Exception       (*simple_app)(int argc, char** argv, void* user_ctx);
         Exception       (*simple_test)(int argc, char** argv, void* user_ctx);
     } cmd;
 

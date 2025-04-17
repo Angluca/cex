@@ -3,7 +3,7 @@
     #include "cex_config.h"
 #else
     // Overriding config values
-    #define cexy$cc_include "-I.", "-I./lib/"
+    #define cexy$cc_include "-I.", "-I./lib"
     #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #endif
 

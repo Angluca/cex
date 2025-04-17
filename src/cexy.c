@@ -167,25 +167,30 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
                     continue;
                 }
                 log$trace("Processing include: '%S'\n", incf);
-                if (!str.slice.match(incf, "\"*.[hc]\"")) {
+                if (!str.slice.match(incf, "\"*.[hc]\"*")) {
                     // system includes skipped
                     log$trace("Skipping include: '%S'\n", incf);
                     continue;
                 }
-                incf = str.slice.sub(incf, 1, -1);
+                incf = str.slice.sub(incf, 1, 0);
+                incf = str.slice.sub(incf, 0, str.slice.index_of(incf, str$s("\""))-1);
 
                 mem$scope(tmem$, _)
                 {
-                    char* inc_fn = str.slice.clone(incf, _);
-                    uassert(inc_fn != NULL);
-                    for$each(inc_dir, incl_path)
+                    char extensions[] = { 'c', 'h' };
+                    for$each(ext, extensions)
                     {
-                        char* try_path = os$path_join(_, inc_dir, inc_fn);
-                        uassert(try_path != NULL);
-                        var src_meta = os.fs.stat(try_path);
-                        log$trace("Probing include: %s\n", try_path);
-                        if (src_meta.is_valid && src_meta.mtime > target_meta.mtime) {
-                            return true;
+                        char* inc_fn = str.fmt(_, "%S%c", incf, ext);
+                        uassert(inc_fn != NULL);
+                        for$each(inc_dir, incl_path)
+                        {
+                            char* try_path = os$path_join(_, inc_dir, inc_fn);
+                            uassert(try_path != NULL);
+                            var src_meta = os.fs.stat(try_path);
+                            log$trace("Probing include: %s\n", try_path);
+                            if (src_meta.is_valid && src_meta.mtime > target_meta.mtime) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -429,12 +434,7 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
     }
     if (str.ends_with(target, "test_*.c")) {
         io.printf("\n-------------------------------------\n");
-        io.printf(
-            "Total: %d Passed: %d Failed: %d\n",
-            n_tests,
-            n_tests - n_failed,
-            n_failed
-        );
+        io.printf("Total: %d Passed: %d Failed: %d\n", n_tests, n_tests - n_failed, n_failed);
         io.printf("-------------------------------------\n\n");
     }
     return result;
@@ -1482,6 +1482,194 @@ cexy__cmd__new(int argc, char** argv, void* user_ctx)
     return EOK;
 }
 
+Exception
+cexy__app__create(const char* target)
+{
+    mem$scope(tmem$, _)
+    {
+        const char* app_src = os$path_join(_, cexy$src_dir, target, "main.c");
+        if (os.path.exists(app_src)) {
+            return e$raise(Error.exists, "App file already exists: %s", app_src, target);
+        }
+        e$ret(os.fs.mkpath(app_src));
+
+        sbuf_c buf = sbuf.create(1024 * 10, _);
+        cg$init(&buf);
+        $pn("#define CEX_IMPLEMENTATION");
+        $pn("#include \"cex.h\"");
+        $pn("// #include \"lib/mylib.c\"  /* NOTE: include .c to make unity build! */");
+        $pn("");
+        $func("int main(int argc, char** argv)", "")
+        {
+            $pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
+            $pn("return 0;");
+        }
+        e$ret(io.file.save(app_src, buf));
+    }
+    return EOK;
+}
+
+Exception
+cexy__app__run(const char* target, bool is_debug, int argc, char** argv)
+{
+    mem$scope(tmem$, _)
+    {
+        const char* app_src = target;
+        e$ret(cexy.app.find_app_target_src(_, &app_src));
+        char* app_exe = cexy.target_make(app_src, cexy$build_dir, target, _);
+        arr$(char*) args = arr$new(args, _);
+        if (is_debug) {
+            arr$pushm(args, cexy$debug_cmd);
+        }
+        arr$pushm(args, app_exe, );
+        arr$pusha(args, argv, argc);
+        arr$push(args, NULL);
+        e$ret(os$cmda(args));
+    }
+    return EOK;
+}
+
+Exception
+cexy__app__clean(const char* target)
+{
+    mem$scope(tmem$, _)
+    {
+        const char* app_src = target;
+        e$ret(cexy.app.find_app_target_src(_, &app_src));
+        char* app_exe = cexy.target_make(app_src, cexy$build_dir, target, _);
+        if (os.path.exists(app_exe)) {
+            log$info("Removing: %s\n", app_exe);
+            e$ret(os.fs.remove(app_exe));
+        }
+    }
+    return EOK;
+}
+
+Exception
+cexy__app__find_app_target_src(IAllocator allc, const char** target)
+{
+    if (target == NULL) {
+        return e$raise(
+            Error.argsparse,
+            "Invalid target: '%s', expected all or tests/test_some_file.c",
+            *target
+        );
+    }
+    if (str.eq(*target, "all")) {
+        return e$raise(Error.argsparse, "all target is not supported for this command");
+    }
+
+    if (_cexy__is_str_pattern(*target)) {
+        return e$raise(
+            Error.argsparse,
+            "Invalid target: '%s', expected alphanumerical name, patterns are not allowed",
+            *target
+        );
+    }
+    if (!str.match(*target, "[a-zA-Z0-9_+]")) {
+        return e$raise(
+            Error.argsparse,
+            "Invalid target: '%s', expected alphanumerical name",
+            *target
+        );
+    }
+    char* app_src = str.fmt(allc, "%s%c%s.c", cexy$src_dir, os$PATH_SEP, *target);
+    log$trace("Probing %s\n", app_src);
+    if (!os.path.exists(app_src)) {
+        mem$free(allc, app_src);
+
+        app_src = os$path_join(allc, cexy$src_dir, *target, "main.c");
+        log$trace("Probing %s\n", app_src);
+        if (!os.path.exists(app_src)) {
+            mem$free(allc, app_src);
+            return e$raise(Error.not_found, "App target source not found: %s", target);
+        }
+    }
+    *target = app_src;
+    return EOK;
+}
+
+static Exception
+cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
+{
+    (void)user_ctx;
+    bool is_release_mode = false;
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "app [options] {run,build,create,clean,debug} APP_NAME [--app-options app args]",
+        // .description = _cexy$cmd_test_help,
+        // .epilog = _cexy$cmd_test_epilog,
+        argparse$opt_list(
+            argparse$opt_help(),
+            argparse$opt(
+                &is_release_mode,
+                'r',
+                "release",
+                .help = "build in release mode (uses: cexy$cc_args_release)"
+            ),
+        ),
+    };
+
+    e$ret(argparse.parse(&cmd_args, argc, argv));
+    const char* cmd = argparse.next(&cmd_args);
+    const char* target = argparse.next(&cmd_args);
+    const char* target_root = target;
+
+    if (!str.match(cmd, "(run|build|create|clean|debug)") || target == NULL) {
+        argparse.usage(&cmd_args);
+        return e$raise(Error.argsparse, "Invalid command: '%s' or target: '%s'", cmd, target);
+    }
+
+    if (str.eq(cmd, "create")) {
+        e$ret(cexy.app.create(target));
+        return EOK;
+    } else if (str.eq(cmd, "clean")) {
+        e$ret(cexy.app.clean(target));
+        return EOK;
+    }
+    e$assert(os.path.exists(cexy$src_dir) && cexy$src_dir " not exists");
+
+    mem$scope(tmem$, _)
+    {
+        e$ret(cexy.app.find_app_target_src(_, &target));
+        char* app_exec = cexy.target_make(target, cexy$build_dir, target_root, _);
+        log$trace("App src: %s -> %s\n", target, app_exec);
+        if (!cexy.src_include_changed(app_exec, target, NULL)) {
+            goto run;
+        }
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, cexy$cc, );
+        // NOTE: reconstructing char*[] because some cexy$ variables might be empty
+        char* cc_args_release[] = { cexy$cc_args_release };
+        char* cc_args_debug[] = { cexy$cc_args_debug };
+        char* cc_include[] = { cexy$cc_include };
+        char* cc_ld_args[] = { cexy$ld_args };
+        char* cc_ld_libs[] = { cexy$ld_libs };
+        if (is_release_mode) {
+            arr$pusha(args, cc_args_release);
+        } else {
+            arr$pusha(args, cc_args_debug);
+        }
+        arr$pusha(args, cc_include);
+        arr$pusha(args, cc_ld_args);
+        arr$push(args, (char*)target);
+        arr$pusha(args, cc_ld_libs);
+        arr$pushm(args, "-o", app_exec);
+
+
+        arr$push(args, NULL);
+        e$ret(os$cmda(args));
+
+    run:
+        if (str.match(cmd, "(run|debug)")) {
+            e$ret(cexy.app.run(target_root, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
+        }
+    }
+
+
+    return EOK;
+}
+
 const struct __cex_namespace__cexy cexy = {
     // Autogenerated by CEX
     // clang-format off
@@ -1491,11 +1679,19 @@ const struct __cex_namespace__cexy cexy = {
     .src_include_changed = cexy_src_include_changed,
     .target_make = cexy_target_make,
 
+    .app = {
+        .clean = cexy__app__clean,
+        .create = cexy__app__create,
+        .find_app_target_src = cexy__app__find_app_target_src,
+        .run = cexy__app__run,
+    },
+
     .cmd = {
         .config = cexy__cmd__config,
         .help = cexy__cmd__help,
         .new = cexy__cmd__new,
         .process = cexy__cmd__process,
+        .simple_app = cexy__cmd__simple_app,
         .simple_test = cexy__cmd__simple_test,
     },
 
