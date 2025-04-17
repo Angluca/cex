@@ -65,6 +65,11 @@ string
 #define cexy$cmd_config                                                                             \
     { .name = "config", .func = cexy.cmd.config, .help = "Check project and system environment and config" }
 
+#define cexy$cmd_test                                                                             \
+    { .name = "test", .func = cexy.cmd.simple_test, .help = "Test runner" }
+
+#define cexy$cmd_app                                                                             \
+    { .name = "app", .func = cexy.cmd.simple_test, .help = "App runner" }
 
 #define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_config
 
@@ -152,10 +157,14 @@ struct __cex_namespace__cexy {
 
     struct {
         Exception       (*clean)(const char* target);
-        Exception       (*create)(const char* target);
+        Exception       (*create)(const char* target, bool include_sample);
         Exception       (*make_target_pattern)(const char** target);
         Exception       (*run)(const char* target, bool is_debug, int argc, char** argv);
     } test;
+
+    struct {
+        Exception       (*make_new_project)(const char* proj_dir);
+    } utils;
 
     // clang-format on
 };

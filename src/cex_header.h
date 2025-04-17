@@ -20,11 +20,11 @@ typedef struct _IO_FILE FILE;
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 #ifdef _WIN32
 #include <Windows.h>
 #else
+#include <fcntl.h>
 #include <dirent.h>
 #include <linux/limits.h>
 #include <sys/stat.h>

@@ -1,7 +1,7 @@
 #if __has_include("cex_config.h")
-#include "cex_config.h"
+    #include "cex_config.h"
 #else
-#define cexy$cc_include "-I.", "-I./lib/"
+    #define cexy$cc_include "-I.", "-I./lib/"
 #endif
 
 #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
@@ -39,6 +39,44 @@ main(int argc, char** argv)
     return 0;
 }
 
+static void embed_code(sbuf_c* buf, char* code_path) {
+    uassert(buf != NULL);
+    uassertf(os.path.exists(code_path), "not exists: %s", code_path);
+
+    FILE* fh;
+    e$except(err, io.fopen(&fh, code_path, "r"))
+    {
+        exit(1);
+    }
+    char c;
+    e$goto(sbuf.append(buf, "\""), fail);
+
+    while((c = fgetc(fh))) {
+        switch(c) {
+            case '\\':
+                e$goto(sbuf.append(buf, "\\"), fail);
+                break;
+            case '"':
+                e$goto(sbuf.append(buf, "\\"), fail);
+                break;
+            case '\n':
+                e$goto(sbuf.append(buf, "\\n\n\""), fail);
+            default:
+                break;
+        }
+
+        e$goto(sbuf.appendf(buf, "%c", c), fail);
+    }
+
+    e$goto(sbuf.append(buf, "\""), fail);
+
+    io.fclose(&fh);
+    return;
+
+fail:
+    exit(1);
+}
+
 void
 cex_bundle(void)
 {
@@ -52,7 +90,9 @@ cex_bundle(void)
             "src/cex_base.h", "src/mem.h",          "src/AllocatorHeap.h", "src/AllocatorArena.h",
             "src/ds.h",       "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
             "src/io.h",       "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
-            "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexParser.h"
+            "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexParser.h",
+            "src/cex_maker.h"
+
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
 
@@ -104,7 +144,7 @@ cex_bundle(void)
         $pn("*                   CEX IMPLEMENTATION ");
         $pn("*/");
         $pn("\n\n");
-        $pn("#ifdef CEX_IMPLEMENTATION\n");
+        $pn("#if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)\n");
 
         for$each(hdr, bundle)
         {
@@ -134,6 +174,9 @@ cex_bundle(void)
                 $pf("%S", it.val);
             }
         }
+        $pn("\n\n#define _cex_main_boilerplate \n");
+        embed_code(&hbuf, "src/cex_boilerplate.c");
+
         $pn("\n\n#endif // ifndef CEX_IMPLEMENTATION");
         $pn("\n\n#endif // ifndef CEX_HEADER_H");
 
@@ -152,4 +195,3 @@ cex_bundle(void)
         }
     }
 }
-
