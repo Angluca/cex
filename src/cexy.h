@@ -1,7 +1,7 @@
 #pragma once
 #include "all.h"
 
-#if defined(CEX_BUILD)
+#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 #ifndef cexy$cc
 #if defined(__clang__)
@@ -61,7 +61,7 @@ string
 #define cexy$cmd_new                                                                           \
     { .name = "new",                                                                           \
       .func = cexy.cmd.new,                                                                    \
-      .help = "Ceates new CEX project" }
+      .help = "Creates new CEX project" }
 #define cexy$cmd_help                                                                              \
     { .name = "help",                                                                              \
       .func = cexy.cmd.help,                                                                       \
@@ -70,10 +70,10 @@ string
     { .name = "config", .func = cexy.cmd.config, .help = "Check project and system environment and config" }
 
 #define cexy$cmd_test                                                                             \
-    { .name = "test", .func = cexy.cmd.simple_test, .help = "Test runner" }
+    { .name = "test", .func = cexy.cmd.simple_test, .help = "Generic unit test build/run/debug" }
 
 #define cexy$cmd_app                                                                             \
-    { .name = "app", .func = cexy.cmd.simple_test, .help = "App runner" }
+    { .name = "app", .func = cexy.cmd.simple_test, .help = "Generic app build/run/debug" }
 
 #define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
 

@@ -1,6 +1,76 @@
 #pragma once
 #ifndef CEX_HEADER_H
 #define CEX_HEADER_H
+/* 
+*   CEX.C - Comprehensively EXtended C Language (cex-c.org)  
+*
+*       MIT License 2023-2025 (c) Alex Veden (see license information at the end of this file)
+*
+*   CEX is self-contained C language extension, the only dependency is one of gcc/clang compilers.
+*   cex.h contains build system, unit test runner, small standard lib and help system.
+*
+*   Visit https://cex-c.org for more information
+*
+*   GETTING STARTED (existing project, when cex.c exists in the project root directory)
+*   1. > cd project_dir
+*   2. > gcc/clang ./cex.c -o ./cex     (need only once, then cex will rebuil itself) 
+*   3. > ./cex --help                   get info about available commands
+*
+*   GETTING STARTED (bare cex.h file, and nothing else)
+*   1. > download https://cex-c.org/cex.h or copy existing one 
+*   2. > mkdir project_dir
+*   3. > cd project_dir
+*   4. > gcc/clang -D CEX_NEW -x c ./cex.h    prime cex.c and build system
+*   5. > ./cex                                creates boilerplate project
+*   6. > ./cex test run all                   runs sample unit tests
+*   7. > ./cex app run myapp                  runs sample app
+*
+
+Usage:
+./cex {help,process,new,config,test,app} [cmd_options] [cmd_args]
+Cex build system
+
+help                Search cex.h and project symbols and extract help
+process             Create CEX namespaces from project source code
+new                 Creates new CEX project
+config              Check project and system environment and config
+test                Test runner
+app                 App runner
+
+You may try to get help for commands as well, try `cex process --help`
+
+*/
+
+/*
+ *                  GLOBAL CEX VARS / DEFINES
+ *
+ * NOTE: run `cex config --help` for more information about configuration
+ */
+
+/// disables all asserts and safety checks (fast release mode)
+// #define NDEBUG
+
+/// custom fprintf() function for asserts/logs/etc
+// #define __cex__fprintf(stream, prefix, filename, line, func, format, ...)
+
+/// customize abort() behavior
+// #define __cex__abort()
+
+// customize uassert() behavior
+// #define __cex__assert()
+
+// you may override this level to manage log$* verbosity
+// #define CEX_LOG_LVL 5
+
+/// disable ASAN memory poisoning and mem$asan_poison*
+// #define CEX_DISABLE_POISON 1
+
+/// size of stack based buffer for small strings
+// #define CEX_SPRINTF_MIN 512
+
+/// disables float printing for io.printf/et al functions (code size reduction)
+// #define CEX_SPRINTF_NOFLOAT
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -35,33 +105,6 @@ typedef struct _IO_FILE FILE;
 #include <unistd.h>
 #endif
 
-/*
- *                  GLOBAL CEX VARS / DEFINES
- */
-
-/// disables all asserts and safety checks (fast release mode)
-// #define NDEBUG
-
-/// custom fprintf() function for asserts/logs/etc
-// #define __cex__fprintf(stream, prefix, filename, line, func, format, ...)
-
-/// customize abort() behavior
-// #define __cex__abort()
-
-// customize uassert() behavior
-// #define __cex__assert()
-
-// you may override this level to manage log$* verbosity
-// #define CEX_LOG_LVL 5
-
-/// disable ASAN memory poisoning and mem$asan_poison*
-// #define CEX_DISABLE_POISON 1
-
-/// size of stack based buffer for small strings
-// #define CEX_SPRINTF_MIN 512
-
-/// disables float printing for io.printf/et al functions (code size reduction)
-// #define CEX_SPRINTF_NOFLOAT
 
 
 
@@ -3501,7 +3544,7 @@ struct _cex_test_context_s
 /*
 *                          src/cex_code_gen.h
 */
-#ifdef CEX_BUILD
+#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 typedef struct _cex__codegen_s
 {
@@ -3593,7 +3636,7 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 *                          src/cexy.h
 */
 
-#if defined(CEX_BUILD)
+#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 #ifndef cexy$cc
 #if defined(__clang__)
@@ -3653,7 +3696,7 @@ string
 #define cexy$cmd_new                                                                           \
     { .name = "new",                                                                           \
       .func = cexy.cmd.new,                                                                    \
-      .help = "Ceates new CEX project" }
+      .help = "Creates new CEX project" }
 #define cexy$cmd_help                                                                              \
     { .name = "help",                                                                              \
       .func = cexy.cmd.help,                                                                       \
@@ -3662,10 +3705,10 @@ string
     { .name = "config", .func = cexy.cmd.config, .help = "Check project and system environment and config" }
 
 #define cexy$cmd_test                                                                             \
-    { .name = "test", .func = cexy.cmd.simple_test, .help = "Test runner" }
+    { .name = "test", .func = cexy.cmd.simple_test, .help = "Generic unit test build/run/debug" }
 
 #define cexy$cmd_app                                                                             \
-    { .name = "app", .func = cexy.cmd.simple_test, .help = "App runner" }
+    { .name = "app", .func = cexy.cmd.simple_test, .help = "Generic app build/run/debug" }
 
 #define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
 
@@ -3887,6 +3930,58 @@ struct __cex_namespace__CexParser
 #if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)
 
 
+#define _cex_main_boilerplate \
+"#if __has_include(\"cex_config.h\")\n"\
+"    // Custom config file\n"\
+"    #include \"cex_config.h\"\n"\
+"#else\n"\
+"    // Overriding config values\n"\
+"    #define cexy$cc_include \"-I.\", \"-I./lib/\"\n"\
+"    #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */\n"\
+"#endif\n"\
+"\n"\
+"#define CEX_IMPLEMENTATION\n"\
+"#define CEX_BUILD\n"\
+"#include \"cex.h\"\n"\
+"\n"\
+"Exception cmd_build_lib(int argc, char** argv, void* user_ctx);\n"\
+"\n"\
+"int\n"\
+"main(int argc, char** argv)\n"\
+"{\n"\
+"\n"\
+"    cexy$initialize(); // cex self rebuild and init\n"\
+"    argparse_c args = {\n"\
+"        .description = cexy$description,\n"\
+"        .epilog = cexy$epilog,\n"\
+"        argparse$cmd_list(\n"\
+"            cexy$cmd_all,\n"\
+"            cexy$cmd_test,\n"\
+"            cexy$cmd_app,\n"\
+"            { .name = \"build-lib\", .func = cmd_build_lib, .help = \"Custom build command\" },\n"\
+"        ),\n"\
+"    };\n"\
+"    if (argparse.parse(&args, argc, argv)) {\n"\
+"        return 1;\n"\
+"    }\n"\
+"    void* my_user_ctx = NULL; // passed as `user_ctx` to command\n"\
+"    if (argparse.run_command(&args, my_user_ctx)) {\n"\
+"        return 1;\n"\
+"    }\n"\
+"    return 0;\n"\
+"}\n"\
+"\n"\
+"/// Custom build command for building static lib\n"\
+"Exception\n"\
+"cmd_build_lib(int argc, char** argv, void* user_ctx)\n"\
+"{\n"\
+"    (void)argc;\n"\
+"    (void)argv;\n"\
+"    (void)user_ctx;\n"\
+"    log$info(\"Launching custom command\\n\");\n"\
+"    return EOK;\n"\
+"}\n"\
+""
 
 /*
 *                          src/cex_base.c
@@ -12610,7 +12705,7 @@ cex_test_main_fn(int argc, char** argv)
 /*
 *                          src/cex_code_gen.c
 */
-#ifdef CEX_BUILD
+#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 void
 _cex__codegen_indent(_cex__codegen_s* cg)
@@ -12724,7 +12819,7 @@ _cex__codegen_print_case_exit(_cex__codegen_s** cgptr)
 /*
 *                          src/cexy.c
 */
-#if defined(CEX_BUILD)
+#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 static void
 cexy_build_self(int argc, char** argv, const char* cex_source)
@@ -14117,7 +14212,7 @@ cexy__utils__make_new_project(const char* proj_dir)
         e$assert(!os.path.exists(app_c) && "myapp.c already exists");
 
     #ifdef _cex_main_boilerplate
-        e$ret(io.file.save(os$path_join(_, proj_dir, "cex.c"), _cex));
+        e$ret(io.file.save(os$path_join(_, proj_dir, "cex.c"), _cex_main_boilerplate));
     #else
         e$ret(os.fs.copy("src/cex_boilerplate.c", cex_c));
     #endif
@@ -15139,64 +15234,22 @@ const struct __cex_namespace__CexParser CexParser = {
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
-    io.printf("Hello CEX_NEW\n");
+    e$except(err, cexy.utils.make_new_project(".")) {
+        return 1;
+    }
+    io.printf("\n\nMOCCA - Make Old C Cexy Again!\n");
+    io.printf("Cex project has been initialized!\n");
+    io.printf("See the 'cex.c' building script for more info.\n");
+    io.printf("\nNow you can use `./cex` command to do stuff:\n");
+    io.printf("- `./cex --help` for getting CEX capabilities\n");
+    io.printf("- `./cex test run all` for running all tests\n");
+    io.printf("- `./cex app run myapp` for running sample app\n");
+    io.printf("- `./cex help --help` for searching projec symbols and examples\n");
     return 0;
 }
 #endif
 
 
-#define _cex_main_boilerplate \
-"#if __has_include(\"cex_config.h\")\n"\
-"    // Custom config file\n"\
-"    #include \"cex_config.h\"\n"\
-"#else\n"\
-"    // Overriding config values\n"\
-"    #define cexy$cc_include \"-I.\", \"-I./lib/\"\n"\
-"    #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */\n"\
-"#endif\n"\
-"\n"\
-"#define CEX_IMPLEMENTATION\n"\
-"#define CEX_BUILD\n"\
-"#include \"cex.h\"\n"\
-"\n"\
-"Exception cmd_build_lib(int argc, char** argv, void* user_ctx);\n"\
-"\n"\
-"int\n"\
-"main(int argc, char** argv)\n"\
-"{\n"\
-"\n"\
-"    cexy$initialize(); // cex self rebuild and init\n"\
-"    argparse_c args = {\n"\
-"        .description = cexy$description,\n"\
-"        .epilog = cexy$epilog,\n"\
-"        argparse$cmd_list(\n"\
-"            cexy$cmd_all,\n"\
-"            cexy$cmd_test,\n"\
-"            cexy$cmd_app,\n"\
-"            { .name = \"build-lib\", .func = cmd_build_lib, .help = \"Custom build command\" },\n"\
-"        ),\n"\
-"    };\n"\
-"    if (argparse.parse(&args, argc, argv)) {\n"\
-"        return 1;\n"\
-"    }\n"\
-"    void* my_user_ctx = NULL; // passed as `user_ctx` to command\n"\
-"    if (argparse.run_command(&args, my_user_ctx)) {\n"\
-"        return 1;\n"\
-"    }\n"\
-"    return 0;\n"\
-"}\n"\
-"\n"\
-"/// Custom build command for building static lib\n"\
-"Exception\n"\
-"cmd_build_lib(int argc, char** argv, void* user_ctx)\n"\
-"{\n"\
-"    (void)argc;\n"\
-"    (void)argv;\n"\
-"    (void)user_ctx;\n"\
-"    log$info(\"Launching custom command\\n\");\n"\
-"    return EOK;\n"\
-"}\n"\
-""
 
 #endif // ifndef CEX_IMPLEMENTATION
 

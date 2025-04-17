@@ -1,6 +1,6 @@
 #pragma once
 #include "all.h"
-#ifdef CEX_BUILD
+#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 typedef struct _cex__codegen_s
 {

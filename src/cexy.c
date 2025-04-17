@@ -1,5 +1,5 @@
 #include "all.h"
-#if defined(CEX_BUILD)
+#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 static void
 cexy_build_self(int argc, char** argv, const char* cex_source)
@@ -1392,7 +1392,7 @@ cexy__utils__make_new_project(const char* proj_dir)
         e$assert(!os.path.exists(app_c) && "myapp.c already exists");
 
     #ifdef _cex_main_boilerplate
-        e$ret(io.file.save(os$path_join(_, proj_dir, "cex.c"), _cex));
+        e$ret(io.file.save(os$path_join(_, proj_dir, "cex.c"), _cex_main_boilerplate));
     #else
         e$ret(os.fs.copy("src/cex_boilerplate.c", cex_c));
     #endif

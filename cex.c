@@ -149,6 +149,9 @@ cex_bundle(void)
         $pn("\n\n");
         $pn("#if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)\n");
 
+        $pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
+        embed_code(&hbuf, "src/cex_boilerplate.c");
+
         for$each(hdr, bundle)
         {
             char* cfile = str.replace(hdr, ".h", ".c", _);
@@ -178,8 +181,6 @@ cex_bundle(void)
             }
         }
 
-        $pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
-        embed_code(&hbuf, "src/cex_boilerplate.c");
 
         $pn("\n\n#endif // ifndef CEX_IMPLEMENTATION");
         $pn("\n\n#endif // ifndef CEX_HEADER_H");

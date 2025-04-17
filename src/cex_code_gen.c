@@ -1,6 +1,6 @@
 #include "cex_code_gen.h"
 #include "all.h"
-#ifdef CEX_BUILD
+#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 void
 _cex__codegen_indent(_cex__codegen_s* cg)
