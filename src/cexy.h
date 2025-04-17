@@ -18,25 +18,31 @@
     #endif
 
     #ifndef cexy$build_dir
-        #define cexy$build_dir "build"
+        #define cexy$build_dir "./build"
     #endif
 
     #ifndef cexy$src_dir
-        #define cexy$src_dir "src"
+        #define cexy$src_dir "./src"
     #endif
 
-    #ifndef cexy$sanitize_args
-        #define cexy$sanitize_args                                                                 \
+    #ifndef cexy$cc_args_sanitizer
+        #define cexy$cc_args_sanitizer                                                                 \
             "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined",    \
                 "-fsanitize=leak", "-fstack-protector-strong"
     #endif
 
     #ifndef cexy$cc_args_release
-        #define cexy$cc_args_release "-Wall", "-Wextra"
+        #define cexy$cc_args_release "-Wall", "-Wextra", "-O2", "-g"
     #endif
 
     #ifndef cexy$cc_args_debug
-        #define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$sanitize_args
+        #define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
+    #endif
+
+    #ifndef cexy$cc_args_test
+        #define cexy$cc_args_test                                                                  \
+            "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3",            \
+                "-Itests/", cexy$cc_args_sanitizer
     #endif
 
 
@@ -61,11 +67,6 @@
         #define cexy$process_ignore_kw ""
     #endif
 
-    #ifndef cexy$cc_args_test
-        #define cexy$cc_args_test                                                                  \
-            "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3",            \
-                "-Itests/", cexy$sanitize_args
-    #endif
 
     #define cexy$cmd_process                                                                       \
         { .name = "process",                                                                       \

@@ -23,8 +23,8 @@ main(int argc, char** argv)
         .epilog = cexy$epilog,
         argparse$cmd_list(
             cexy$cmd_all,
-            cexy$cmd_test,
-            cexy$cmd_app,
+            cexy$cmd_test, /* feel free to make your own if needed */
+            cexy$cmd_app,  /* feel free to make your own if needed */
             { .name = "build-lib", .func = cmd_build_lib, .help = "Custom build command" },
         ),
     };

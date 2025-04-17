@@ -1,6 +1,8 @@
 #include "all.h"
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
+    #include <time.h>
+
 static void
 cexy_build_self(int argc, char** argv, const char* cex_source)
 {
@@ -173,7 +175,7 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
                     continue;
                 }
                 incf = str.slice.sub(incf, 1, 0);
-                incf = str.slice.sub(incf, 0, str.slice.index_of(incf, str$s("\""))-1);
+                incf = str.slice.sub(incf, 0, str.slice.index_of(incf, str$s("\"")) - 1);
 
                 mem$scope(tmem$, _)
                 {
@@ -1000,7 +1002,7 @@ _cexy__help_qscmp_decls_type(const void* a, const void* b)
 }
 
 static Exception
-_cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source)
+_cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source, bool show_example)
 {
     str_s name = d->name;
     mem$scope(tmem$, _)
@@ -1035,6 +1037,64 @@ _cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source)
             io.printf("%S;", d->body);
         }
         io.printf("\n");
+
+        if (!show_example) {
+            return EOK;
+        }
+        // Looking for a random example
+        srand(time(NULL));
+        io.printf("\nSearching for examples of '%S'\n", name);
+        arr$(char*) sources = os.fs.find("./*.[hc]", true, _);
+
+        u32 n_used = 0;
+        for$each(src_fn, sources)
+        {
+            mem$scope(tmem$, _)
+            {
+                char* code = io.file.load(src_fn, _);
+                if (code == NULL) {
+                    return e$raise(Error.not_found, "Error loading: %s\n", src_fn);
+                }
+                arr$(cex_token_s) items = arr$new(items, _);
+
+                CexParser_c lx = CexParser.create(code, 0, true);
+                cex_token_s t;
+                while ((t = CexParser.next_entity(&lx, &items)).type) {
+                    if (t.type == CexTkn__error) {
+                        break;
+                    }
+                    if (t.type != CexTkn__func_def) {
+                        continue;
+                    }
+                    cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
+                    if (d == NULL) {
+                        continue;
+                    }
+                    if (d->body.buf == NULL) {
+                        continue;
+                    }
+                    if (str.slice.index_of(d->body, name) != -1) {
+                        n_used++;
+                        double dice = (double)rand() / (RAND_MAX + 1.0);
+                        if (dice < 0.25) {
+                            io.printf("\n\nFound at %s:%d\n", src_fn, d->line);
+                            io.printf("%s %S(%s)\n", d->ret_type, d->name, d->args);
+                            io.printf("%S\n", d->body);
+                            return EOK;
+                        }
+                    }
+                }
+            }
+        }
+        if (n_used == 0) {
+            io.printf("No usages of %S in the codebase\n", name);
+        } else {
+            io.printf(
+                "%d usages of %S in the codebase, but no random pick, try again!\n",
+                n_used,
+                name
+            );
+        }
     }
     return EOK;
 }
@@ -1048,18 +1108,21 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     const char* process_help = "Symbol / documentation search tool for C projects";
     const char* epilog_help = 
         "\nQuery examples: \n"
-        "cex help                - list all namespaces in project directory\n"
-        "cex help foo            - find any symbol containing 'foo' (case sensitive)\n"
-        "cex help foo.           - find namespace prefix: foo$, Foo_func(), FOO_CONST, etc\n"
-        "cex help 'foo_*_bar'    - find using pattern search for symbols (see 'cex help str.match')\n"
-        "cex help '*_(bar|foo)'  - find any symbol ending with '_bar' or '_foo'\n"
-        "cex help os             - display all functions of 'os' namespace (for CEX or user project)\n"
-        "cex help str.find       - display function documentation if exactly matched\n"
-        "cex help 'os$PATH_SEP'  - display macro constant value if exactly matched\n"
-        "cex help str_s          - display type info and documentation if exactly matched\n"
+        "cex help                     - list all namespaces in project directory\n"
+        "cex help foo                 - find any symbol containing 'foo' (case sensitive)\n"
+        "cex help foo.                - find namespace prefix: foo$, Foo_func(), FOO_CONST, etc\n"
+        "cex help 'foo_*_bar'         - find using pattern search for symbols (see 'cex help str.match')\n"
+        "cex help '*_(bar|foo)'       - find any symbol ending with '_bar' or '_foo'\n"
+        "cex help os                  - display all functions of 'os' namespace (for CEX or user project)\n"
+        "cex help str.find            - display function documentation if exactly matched\n"
+        "cex help 'os$PATH_SEP'       - display macro constant value if exactly matched\n"
+        "cex help str_s               - display type info and documentation if exactly matched\n"
+        "cex help --source str.find   - display function source if exactly matched\n"
+        "cex help --example str.find  - display random function use in codebase if exactly matched\n"
     ;
     const char* filter = "./*.[hc]";
     bool show_source = false;
+    bool show_example = false;
 
     // clang-format on
     argparse_c cmd_args = {
@@ -1072,6 +1135,12 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
             argparse$opt_help(),
             argparse$opt(&filter, 'f', "filter", .help = "file pattern for searching"),
             argparse$opt(&show_source, 's', "source", .help = "show full source on match"),
+            argparse$opt(
+                &show_example,
+                'e',
+                "example",
+                .help = "finds random example in source base"
+            ),
         ),
     };
     if (argparse.parse(&cmd_args, argc, argv)) {
@@ -1162,7 +1231,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 
                         if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
                             // We have full match display full help
-                            return _cexy__display_full_info(d, base_ns, show_source);
+                            return _cexy__display_full_info(d, base_ns, show_source, show_example);
                         }
 
                         bool has_match = false;
@@ -1266,11 +1335,14 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
 
     // clang-format off
 #define $env                                                                                \
-    "\ncexy$* variables used in build system, see `cex check --help` for more info\n"            \
+    "\ncexy$* variables used in build system, see `cex config --help` for more info\n"            \
     "* cexy$build_dir            " cexy$build_dir "\n"                                             \
+    "* cexy$src_dir              " cexy$src_dir "\n"                                             \
     "* cexy$cc                   " cexy$cc "\n"                                                    \
     "* cexy$cc_include           " cex$stringize(cexy$cc_include) "\n"                             \
-    "* cexy$cc_args              " cex$stringize(cexy$cc_args) "\n"                                \
+    "* cexy$cc_args_sanitizer    " cex$stringize(cexy$cc_args_sanitizer) "\n"                                \
+    "* cexy$cc_args_release      " cex$stringize(cexy$cc_args_release) "\n"                                \
+    "* cexy$cc_args_debug        " cex$stringize(cexy$cc_args_debug) "\n"                                \
     "* cexy$cc_args_test         " cex$stringize(cexy$cc_args_test) "\n"                           \
     "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
     "* cexy$ld_libs              " cex$stringize(cexy$ld_libs) "\n"                                \
