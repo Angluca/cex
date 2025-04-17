@@ -433,6 +433,83 @@ cex_os__fs__getcwd(sbuf_c* out)
     return EOK;
 }
 
+
+static Exception cex_os__fs__copy(const char *src_path, const char *dst_path)
+{
+    if (src_path == NULL || src_path[0] == '\0' || dst_path == NULL || dst_path[0] == '\0'){
+        return Error.argument;
+    }
+
+    log$trace("copying %s -> %s\n", src_path, dst_path);
+
+#ifdef _WIN32
+    # TODO: this is not implemented
+    if (!CopyFile(src_path, dst_path, FALSE)) {
+        nob_log(NOB_ERROR, "Could not copy file: %s", nob_win32_error_message(GetLastError()));
+        return Error.io;
+    }
+    return EOK;
+#else
+    int src_fd = -1;
+    int dst_fd = -1;
+    size_t buf_size = 32*1024;
+    char *buf = mem$malloc(mem$, buf_size);
+    if (buf == NULL) {
+        return Error.memory;
+    }
+    Exc result = Error.runtime;
+
+    if((src_fd = open(src_path, O_RDONLY)) == -1) {
+        switch(errno) {
+            case ENOENT:
+                result = Error.not_found;
+                break;
+            default:
+                result = strerror(errno);
+        }
+        goto defer;
+    }
+
+    struct stat src_stat;
+    if (fstat(src_fd, &src_stat) < 0) {
+        result = strerror(errno);
+        goto defer;
+    }
+
+    dst_fd = open(dst_path, O_CREAT | O_TRUNC | O_WRONLY, src_stat.st_mode);
+    if (dst_fd < 0) {
+        result = strerror(errno);
+        goto defer;
+    }
+
+    for (;;) {
+        ssize_t n = read(src_fd, buf, buf_size);
+        if (n == 0) break;
+        if (n < 0) {
+            result = Error.io;
+            goto defer;
+        }
+        char *buf2 = buf;
+        while (n > 0) {
+            ssize_t m = write(dst_fd, buf2, n);
+            if (m < 0) {
+                result = Error.io;
+                goto defer;
+            }
+            n    -= m;
+            buf2 += m;
+        }
+    }
+    result = EOK;
+
+defer:
+    mem$free(mem$, buf);
+    close(src_fd);
+    close(dst_fd);
+    return result;
+#endif
+}
+
 static const char*
 cex_os__env__get(const char* name, const char* deflt)
 {
@@ -922,6 +999,7 @@ const struct __cex_namespace__os os = {
     },
 
     .fs = {
+        .copy = cex_os__fs__copy,
         .dir_walk = cex_os__fs__dir_walk,
         .find = cex_os__fs__find,
         .getcwd = cex_os__fs__getcwd,
