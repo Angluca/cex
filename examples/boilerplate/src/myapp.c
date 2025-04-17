@@ -1,6 +1,6 @@
 #define CEX_IMPLEMENTATION
 #include "cex.h"
-#include "src/mylib.c"
+#include "lib/mylib.c" // fsdnf
 
 int main(int argc, char** argv) {
     io.printf("MOCCA - Make Old C Cexy Again!\n");

@@ -3134,10 +3134,11 @@ struct __cex_namespace__os {
     } env;
 
     struct {
+        Exception       (*chdir)(const char* path);
         Exception       (*copy)(const char* src_path, const char* dst_path);
         Exception       (*dir_walk)(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx);
         arr$(char*)     (*find)(const char* path, bool is_recursive, IAllocator allc);
-        Exception       (*getcwd)(sbuf_c* out);
+        char*           (*getcwd)(IAllocator allc);
         Exception       (*mkdir)(const char* path);
         Exception       (*mkpath)(const char* path);
         Exception       (*remove)(const char* path);
@@ -3649,6 +3650,10 @@ string
     { .name = "process",                                                                           \
       .func = cexy.cmd.process,                                                                    \
       .help = "Create CEX namespaces from project source code" }
+#define cexy$cmd_new                                                                           \
+    { .name = "new",                                                                           \
+      .func = cexy.cmd.new,                                                                    \
+      .help = "Ceates new CEX project" }
 #define cexy$cmd_help                                                                              \
     { .name = "help",                                                                              \
       .func = cexy.cmd.help,                                                                       \
@@ -3662,7 +3667,7 @@ string
 #define cexy$cmd_app                                                                             \
     { .name = "app", .func = cexy.cmd.simple_test, .help = "App runner" }
 
-#define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_config
+#define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
 
 #define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
@@ -3742,6 +3747,7 @@ struct __cex_namespace__cexy {
     struct {
         Exception       (*config)(int argc, char** argv, void* user_ctx);
         Exception       (*help)(int argc, char** argv, void* user_ctx);
+        Exception       (*new)(int argc, char** argv, void* user_ctx);
         Exception       (*process)(int argc, char** argv, void* user_ctx);
         Exception       (*simple_test)(int argc, char** argv, void* user_ctx);
     } cmd;
@@ -10986,6 +10992,12 @@ const struct __cex_namespace__argparse argparse = {
 *                          src/os.c
 */
 
+#ifdef _WIN32
+    #include <direct.h>
+#else
+    #include <unistd.h>
+#endif
+
 static void
 cex_os_sleep(u32 period_millisec)
 {
@@ -11167,7 +11179,12 @@ cex_os__fs__remove(const char* path)
 }
 
 Exception
-cex_os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
+cex_os__fs__dir_walk(
+    const char* path,
+    bool is_recursive,
+    os_fs_dir_walk_f callback_fn,
+    void* user_ctx
+)
 {
     (void)user_ctx;
     if (path == NULL || path[0] == '\0') {
@@ -11396,39 +11413,61 @@ static arr$(char*) cex_os__fs__find(const char* path, bool is_recursive, IAlloca
     return ctx.result;
 }
 
-static Exception
-cex_os__fs__getcwd(sbuf_c* out)
+static char*
+cex_os__fs__getcwd(IAllocator allc)
 {
+    char* buf = mem$malloc(allc, PATH_MAX);
 
-    uassert(sbuf.isvalid(out) && "out is not valid sbuf_c (or missing initialization)");
-
-    e$except_silent(err, sbuf.grow(out, PATH_MAX + 1))
-    {
-        return err;
-    }
-    sbuf.clear(out);
-
-    errno = 0;
-    if (unlikely(getcwd(*out, sbuf.capacity(out)) == NULL)) {
-        return strerror(errno);
+    char* result = NULL;
+#ifdef _WIN32
+    result = _getcwd(buf, PATH_MAX);
+#else
+    result = getcwd(buf, PATH_MAX);
+#endif
+    if (result == NULL) {
+        mem$free(allc, buf);
     }
 
-    sbuf.update_len(out);
+    return result;
+}
+
+static Exception
+cex_os__fs__chdir(const char* path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return Error.exists;
+    }
+
+    int result;
+#ifdef _WIN32
+    result = _chdir(path);
+#else
+    result = chdir(path);
+#endif
+
+    if (result == -1) {
+        if (errno == ENOENT) {
+            return Error.not_found;
+        } else {
+            return strerror(errno);
+        }
+    }
 
     return EOK;
 }
 
 
-static Exception cex_os__fs__copy(const char *src_path, const char *dst_path)
+static Exception
+cex_os__fs__copy(const char* src_path, const char* dst_path)
 {
-    if (src_path == NULL || src_path[0] == '\0' || dst_path == NULL || dst_path[0] == '\0'){
+    if (src_path == NULL || src_path[0] == '\0' || dst_path == NULL || dst_path[0] == '\0') {
         return Error.argument;
     }
 
     log$trace("copying %s -> %s\n", src_path, dst_path);
 
 #ifdef _WIN32
-    # TODO: this is not implemented
+    #TODO : this is not implemented
     if (!CopyFile(src_path, dst_path, FALSE)) {
         nob_log(NOB_ERROR, "Could not copy file: %s", nob_win32_error_message(GetLastError()));
         return Error.io;
@@ -11437,15 +11476,15 @@ static Exception cex_os__fs__copy(const char *src_path, const char *dst_path)
 #else
     int src_fd = -1;
     int dst_fd = -1;
-    size_t buf_size = 32*1024;
-    char *buf = mem$malloc(mem$, buf_size);
+    size_t buf_size = 32 * 1024;
+    char* buf = mem$malloc(mem$, buf_size);
     if (buf == NULL) {
         return Error.memory;
     }
     Exc result = Error.runtime;
 
-    if((src_fd = open(src_path, O_RDONLY)) == -1) {
-        switch(errno) {
+    if ((src_fd = open(src_path, O_RDONLY)) == -1) {
+        switch (errno) {
             case ENOENT:
                 result = Error.not_found;
                 break;
@@ -11469,19 +11508,21 @@ static Exception cex_os__fs__copy(const char *src_path, const char *dst_path)
 
     for (;;) {
         ssize_t n = read(src_fd, buf, buf_size);
-        if (n == 0) break;
+        if (n == 0) {
+            break;
+        }
         if (n < 0) {
             result = Error.io;
             goto defer;
         }
-        char *buf2 = buf;
+        char* buf2 = buf;
         while (n > 0) {
             ssize_t m = write(dst_fd, buf2, n);
             if (m < 0) {
                 result = Error.io;
                 goto defer;
             }
-            n    -= m;
+            n -= m;
             buf2 += m;
         }
     }
@@ -11984,6 +12025,7 @@ const struct __cex_namespace__os os = {
     },
 
     .fs = {
+        .chdir = cex_os__fs__chdir,
         .copy = cex_os__fs__copy,
         .dir_walk = cex_os__fs__dir_walk,
         .find = cex_os__fs__find,
@@ -12999,7 +13041,7 @@ cexy__test__create(const char* target, bool include_sample)
         $pn("#define CEX_IMPLEMENTATION");
         $pn("#include \"cex.h\"");
         if (include_sample) {
-            $pn("#include \"src/mylib.c\"");
+            $pn("#include \"lib/mylib.c\"");
         }
         $pn("");
         $pn("//test$setup_case() {return EOK;}");
@@ -13011,7 +13053,7 @@ cexy__test__create(const char* target, bool include_sample)
         {
             if (include_sample) {
                 $pn("tassert_eq(mylib_add(1, 2), 3);");
-                $pn("// Next will be available after calling `cex process src/mylib.c`");
+                $pn("// Next will be available after calling `cex process lib/mylib.c`");
                 $pn("// tassert_eq(mylib.add(1, 2), 3);");
             } else {
                 $pn("tassert_eq(1, 0);");
@@ -13075,6 +13117,13 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
     u32 n_failed = 0;
     mem$scope(tmem$, _)
     {
+        if (str.ends_with(target, "test_*.c")) {
+            // quiet mode
+            io.printf("-------------------------------------\n");
+            io.printf("Running Tests: %s\n", target);
+            io.printf("-------------------------------------\n\n");
+        }
+
         for$each(test_src, os.fs.find(target, true, _))
         {
             n_tests++;
@@ -13104,12 +13153,14 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
         }
     }
     if (str.ends_with(target, "test_*.c")) {
-        log$info(
-            "Test run completed: %d tests, %d passed, %d failed\n",
+        io.printf("\n-------------------------------------\n");
+        io.printf(
+            "Total: %d Passed: %d Failed: %d\n",
             n_tests,
             n_tests - n_failed,
             n_failed
         );
+        io.printf("-------------------------------------\n\n");
     }
     return result;
 }
@@ -13796,7 +13847,8 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                 cex_token_s t;
                 while ((t = CexParser.next_entity(&lx, &items)).type) {
                     if (t.type == CexTkn__error) {
-                        return e$raise(Error.integrity, "Error parsing: %s\n", src_fn);
+                        log$error("Error parsing: %s at line: %d\n", src_fn, lx.line);
+                        break;
                     }
                     cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, arena);
                     if (d == NULL) {
@@ -14042,7 +14094,7 @@ cexy__utils__make_new_project(const char* proj_dir)
                 return e$raise(Error.exists, "New project dir already exists: %s", proj_dir);
             }
             e$ret(os.fs.mkdir(proj_dir));
-            log$info("Copying '%s/cex.h'\n", proj_dir);
+            log$info("Copying this 'cex.h' into '%s/cex.h'\n", proj_dir);
             e$ret(os.fs.copy("./cex.h", os$path_join(_, proj_dir, "cex.h")));
         } else {
             // Creating in the current dir
@@ -14054,16 +14106,103 @@ cexy__utils__make_new_project(const char* proj_dir)
             }
         }
 
+        log$info("Making '%s/cex.c'\n", proj_dir);
+        var cex_c = os$path_join(_, proj_dir, "cex.c");
+        var lib_h = os$path_join(_, proj_dir, "lib", "mylib.h");
+        var lib_c = os$path_join(_, proj_dir, "lib", "mylib.c");
+        var app_c = os$path_join(_, proj_dir, "src", "myapp.c");
+        e$assert(!os.path.exists(cex_c) && "cex.c already exists");
+        e$assert(!os.path.exists(lib_h) && "mylib.h already exists");
+        e$assert(!os.path.exists(lib_h) && "mylib.c already exists");
+        e$assert(!os.path.exists(app_c) && "myapp.c already exists");
+
+    #ifdef _cex_main_boilerplate
+        e$ret(io.file.save(os$path_join(_, proj_dir, "cex.c"), _cex));
+    #else
+        e$ret(os.fs.copy("src/cex_boilerplate.c", cex_c));
+    #endif
+
+
         sbuf_c buf = sbuf.create(1024 * 10, _);
         {
+            log$info("Making '%s'\n", lib_h);
+            e$ret(os.fs.mkpath(lib_h));
+            sbuf.clear(&buf);
+            cg$init(&buf);
+            $pn("#pragma once");
+            $pn("#include \"cex.h\"");
+            $pn("");
+            $pn("i32 mylib_add(i32 a, i32 b);");
+            e$ret(io.file.save(lib_h, buf));
+        }
+
+        {
+            log$info("Making '%s'\n", lib_c);
+            e$ret(os.fs.mkpath(lib_c));
+            sbuf.clear(&buf);
+            cg$init(&buf);
+            $pn("#include \"mylib.h\"");
+            $pn("#include \"cex.h\"");
+            $pn("");
+            $func("i32 mylib_add(i32 a, i32 b)", "")
+            {
+                $pn("return a + b;");
+            }
+            e$ret(io.file.save(lib_c, buf));
+        }
+
+        {
+            log$info("Making '%s'\n", app_c);
+            e$ret(os.fs.mkpath(app_c));
             sbuf.clear(&buf);
             cg$init(&buf);
             $pn("#define CEX_IMPLEMENTATION");
             $pn("#include \"cex.h\"");
-            // e$ret(io.file.save(target, buf));
-            log$debug("Src: %s\n", buf);
+            $pn("#include \"lib/mylib.c\"  /* NOTE: include .c to make unity build! */");
+            $pn("");
+            $func("int main(int argc, char** argv)", "")
+            {
+                $pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
+                $pn("io.printf(\"1 + 2 = %d\\n\", mylib_add(1, 2));");
+                $pn("return 0;");
+            }
+            e$ret(io.file.save(app_c, buf));
         }
+
+        var test_c = os$path_join(_, proj_dir, "tests", "test_mylib.c");
+        log$info("Making '%s'\n", test_c);
+        e$ret(cexy.test.create(test_c, true));
+        log$info("Compiling new cex app for a new project...\n");
+        var old_dir = os.fs.getcwd(_);
+        e$ret(os.fs.chdir(proj_dir));
+        os$cmd(cexy$cc, "-o", "cex", "cex.c");
+        e$ret(os.fs.chdir(old_dir));
+        log$info("New project has been created in %s\n", proj_dir);
     }
+
+    return EOK;
+}
+
+static Exception
+cexy__cmd__new(int argc, char** argv, void* user_ctx)
+{
+    (void)user_ctx;
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "new [new_proj_dir]",
+        .description = "Creates new boilerplate CEX project",
+        argparse$opt_list(argparse$opt_help(), ),
+    };
+
+    e$ret(argparse.parse(&cmd_args, argc, argv));
+    const char* proj_dir = argparse.next(&cmd_args);
+
+    if (proj_dir == NULL) {
+        argparse.usage(&cmd_args);
+        return e$raise(Error.argsparse, "Expected new project directory path.");
+    }
+
+    e$ret(cexy.utils.make_new_project(proj_dir));
 
     return EOK;
 }
@@ -14080,6 +14219,7 @@ const struct __cex_namespace__cexy cexy = {
     .cmd = {
         .config = cexy__cmd__config,
         .help = cexy__cmd__help,
+        .new = cexy__cmd__new,
         .process = cexy__cmd__process,
         .simple_test = cexy__cmd__simple_test,
     },
@@ -15002,10 +15142,61 @@ int main(int argc, char** argv) {
     io.printf("Hello CEX_NEW\n");
     return 0;
 }
-
 #endif
 
 
+#define _cex_main_boilerplate \
+"#if __has_include(\"cex_config.h\")\n"\
+"    // Custom config file\n"\
+"    #include \"cex_config.h\"\n"\
+"#else\n"\
+"    // Overriding config values\n"\
+"    #define cexy$cc_include \"-I.\", \"-I./lib/\"\n"\
+"    #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */\n"\
+"#endif\n"\
+"\n"\
+"#define CEX_IMPLEMENTATION\n"\
+"#define CEX_BUILD\n"\
+"#include \"cex.h\"\n"\
+"\n"\
+"Exception cmd_build_lib(int argc, char** argv, void* user_ctx);\n"\
+"\n"\
+"int\n"\
+"main(int argc, char** argv)\n"\
+"{\n"\
+"\n"\
+"    cexy$initialize(); // cex self rebuild and init\n"\
+"    argparse_c args = {\n"\
+"        .description = cexy$description,\n"\
+"        .epilog = cexy$epilog,\n"\
+"        argparse$cmd_list(\n"\
+"            cexy$cmd_all,\n"\
+"            cexy$cmd_test,\n"\
+"            cexy$cmd_app,\n"\
+"            { .name = \"build-lib\", .func = cmd_build_lib, .help = \"Custom build command\" },\n"\
+"        ),\n"\
+"    };\n"\
+"    if (argparse.parse(&args, argc, argv)) {\n"\
+"        return 1;\n"\
+"    }\n"\
+"    void* my_user_ctx = NULL; // passed as `user_ctx` to command\n"\
+"    if (argparse.run_command(&args, my_user_ctx)) {\n"\
+"        return 1;\n"\
+"    }\n"\
+"    return 0;\n"\
+"}\n"\
+"\n"\
+"/// Custom build command for building static lib\n"\
+"Exception\n"\
+"cmd_build_lib(int argc, char** argv, void* user_ctx)\n"\
+"{\n"\
+"    (void)argc;\n"\
+"    (void)argv;\n"\
+"    (void)user_ctx;\n"\
+"    log$info(\"Launching custom command\\n\");\n"\
+"    return EOK;\n"\
+"}\n"\
+""
 
 #endif // ifndef CEX_IMPLEMENTATION
 

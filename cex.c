@@ -48,10 +48,12 @@ static void embed_code(sbuf_c* buf, char* code_path) {
     {
         exit(1);
     }
-    char c;
     e$goto(sbuf.append(buf, "\""), fail);
 
+    char c;
     while((c = fgetc(fh))) {
+        if (feof(fh))
+            break ;
         switch(c) {
             case '\\':
                 e$goto(sbuf.append(buf, "\\"), fail);
@@ -60,7 +62,8 @@ static void embed_code(sbuf_c* buf, char* code_path) {
                 e$goto(sbuf.append(buf, "\\"), fail);
                 break;
             case '\n':
-                e$goto(sbuf.append(buf, "\\n\n\""), fail);
+                e$goto(sbuf.append(buf, "\\n\"\\\n\""), fail);
+                continue;
             default:
                 break;
         }
@@ -174,7 +177,8 @@ cex_bundle(void)
                 $pf("%S", it.val);
             }
         }
-        $pn("\n\n#define _cex_main_boilerplate \n");
+
+        $pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
         embed_code(&hbuf, "src/cex_boilerplate.c");
 
         $pn("\n\n#endif // ifndef CEX_IMPLEMENTATION");

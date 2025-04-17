@@ -316,7 +316,7 @@ cexy__test__create(const char* target, bool include_sample)
         $pn("#define CEX_IMPLEMENTATION");
         $pn("#include \"cex.h\"");
         if (include_sample) {
-            $pn("#include \"src/mylib.c\"");
+            $pn("#include \"lib/mylib.c\"");
         }
         $pn("");
         $pn("//test$setup_case() {return EOK;}");
@@ -328,7 +328,7 @@ cexy__test__create(const char* target, bool include_sample)
         {
             if (include_sample) {
                 $pn("tassert_eq(mylib_add(1, 2), 3);");
-                $pn("// Next will be available after calling `cex process src/mylib.c`");
+                $pn("// Next will be available after calling `cex process lib/mylib.c`");
                 $pn("// tassert_eq(mylib.add(1, 2), 3);");
             } else {
                 $pn("tassert_eq(1, 0);");
@@ -392,6 +392,13 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
     u32 n_failed = 0;
     mem$scope(tmem$, _)
     {
+        if (str.ends_with(target, "test_*.c")) {
+            // quiet mode
+            io.printf("-------------------------------------\n");
+            io.printf("Running Tests: %s\n", target);
+            io.printf("-------------------------------------\n\n");
+        }
+
         for$each(test_src, os.fs.find(target, true, _))
         {
             n_tests++;
@@ -421,12 +428,14 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
         }
     }
     if (str.ends_with(target, "test_*.c")) {
-        log$info(
-            "Test run completed: %d tests, %d passed, %d failed\n",
+        io.printf("\n-------------------------------------\n");
+        io.printf(
+            "Total: %d Passed: %d Failed: %d\n",
             n_tests,
             n_tests - n_failed,
             n_failed
         );
+        io.printf("-------------------------------------\n\n");
     }
     return result;
 }
@@ -1113,7 +1122,8 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                 cex_token_s t;
                 while ((t = CexParser.next_entity(&lx, &items)).type) {
                     if (t.type == CexTkn__error) {
-                        return e$raise(Error.integrity, "Error parsing: %s\n", src_fn);
+                        log$error("Error parsing: %s at line: %d\n", src_fn, lx.line);
+                        break;
                     }
                     cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, arena);
                     if (d == NULL) {
@@ -1359,7 +1369,7 @@ cexy__utils__make_new_project(const char* proj_dir)
                 return e$raise(Error.exists, "New project dir already exists: %s", proj_dir);
             }
             e$ret(os.fs.mkdir(proj_dir));
-            log$info("Copying '%s/cex.h'\n", proj_dir);
+            log$info("Copying this 'cex.h' into '%s/cex.h'\n", proj_dir);
             e$ret(os.fs.copy("./cex.h", os$path_join(_, proj_dir, "cex.h")));
         } else {
             // Creating in the current dir
@@ -1371,16 +1381,103 @@ cexy__utils__make_new_project(const char* proj_dir)
             }
         }
 
+        log$info("Making '%s/cex.c'\n", proj_dir);
+        var cex_c = os$path_join(_, proj_dir, "cex.c");
+        var lib_h = os$path_join(_, proj_dir, "lib", "mylib.h");
+        var lib_c = os$path_join(_, proj_dir, "lib", "mylib.c");
+        var app_c = os$path_join(_, proj_dir, "src", "myapp.c");
+        e$assert(!os.path.exists(cex_c) && "cex.c already exists");
+        e$assert(!os.path.exists(lib_h) && "mylib.h already exists");
+        e$assert(!os.path.exists(lib_h) && "mylib.c already exists");
+        e$assert(!os.path.exists(app_c) && "myapp.c already exists");
+
+    #ifdef _cex_main_boilerplate
+        e$ret(io.file.save(os$path_join(_, proj_dir, "cex.c"), _cex));
+    #else
+        e$ret(os.fs.copy("src/cex_boilerplate.c", cex_c));
+    #endif
+
+
         sbuf_c buf = sbuf.create(1024 * 10, _);
         {
+            log$info("Making '%s'\n", lib_h);
+            e$ret(os.fs.mkpath(lib_h));
+            sbuf.clear(&buf);
+            cg$init(&buf);
+            $pn("#pragma once");
+            $pn("#include \"cex.h\"");
+            $pn("");
+            $pn("i32 mylib_add(i32 a, i32 b);");
+            e$ret(io.file.save(lib_h, buf));
+        }
+
+        {
+            log$info("Making '%s'\n", lib_c);
+            e$ret(os.fs.mkpath(lib_c));
+            sbuf.clear(&buf);
+            cg$init(&buf);
+            $pn("#include \"mylib.h\"");
+            $pn("#include \"cex.h\"");
+            $pn("");
+            $func("i32 mylib_add(i32 a, i32 b)", "")
+            {
+                $pn("return a + b;");
+            }
+            e$ret(io.file.save(lib_c, buf));
+        }
+
+        {
+            log$info("Making '%s'\n", app_c);
+            e$ret(os.fs.mkpath(app_c));
             sbuf.clear(&buf);
             cg$init(&buf);
             $pn("#define CEX_IMPLEMENTATION");
             $pn("#include \"cex.h\"");
-            // e$ret(io.file.save(target, buf));
-            log$debug("Src: %s\n", buf);
+            $pn("#include \"lib/mylib.c\"  /* NOTE: include .c to make unity build! */");
+            $pn("");
+            $func("int main(int argc, char** argv)", "")
+            {
+                $pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
+                $pn("io.printf(\"1 + 2 = %d\\n\", mylib_add(1, 2));");
+                $pn("return 0;");
+            }
+            e$ret(io.file.save(app_c, buf));
         }
+
+        var test_c = os$path_join(_, proj_dir, "tests", "test_mylib.c");
+        log$info("Making '%s'\n", test_c);
+        e$ret(cexy.test.create(test_c, true));
+        log$info("Compiling new cex app for a new project...\n");
+        var old_dir = os.fs.getcwd(_);
+        e$ret(os.fs.chdir(proj_dir));
+        os$cmd(cexy$cc, "-o", "cex", "cex.c");
+        e$ret(os.fs.chdir(old_dir));
+        log$info("New project has been created in %s\n", proj_dir);
     }
+
+    return EOK;
+}
+
+static Exception
+cexy__cmd__new(int argc, char** argv, void* user_ctx)
+{
+    (void)user_ctx;
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "new [new_proj_dir]",
+        .description = "Creates new boilerplate CEX project",
+        argparse$opt_list(argparse$opt_help(), ),
+    };
+
+    e$ret(argparse.parse(&cmd_args, argc, argv));
+    const char* proj_dir = argparse.next(&cmd_args);
+
+    if (proj_dir == NULL) {
+        argparse.usage(&cmd_args);
+        return e$raise(Error.argsparse, "Expected new project directory path.");
+    }
+
+    e$ret(cexy.utils.make_new_project(proj_dir));
 
     return EOK;
 }
@@ -1397,6 +1494,7 @@ const struct __cex_namespace__cexy cexy = {
     .cmd = {
         .config = cexy__cmd__config,
         .help = cexy__cmd__help,
+        .new = cexy__cmd__new,
         .process = cexy__cmd__process,
         .simple_test = cexy__cmd__simple_test,
     },

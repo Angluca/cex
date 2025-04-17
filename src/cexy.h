@@ -58,6 +58,10 @@ string
     { .name = "process",                                                                           \
       .func = cexy.cmd.process,                                                                    \
       .help = "Create CEX namespaces from project source code" }
+#define cexy$cmd_new                                                                           \
+    { .name = "new",                                                                           \
+      .func = cexy.cmd.new,                                                                    \
+      .help = "Ceates new CEX project" }
 #define cexy$cmd_help                                                                              \
     { .name = "help",                                                                              \
       .func = cexy.cmd.help,                                                                       \
@@ -71,7 +75,7 @@ string
 #define cexy$cmd_app                                                                             \
     { .name = "app", .func = cexy.cmd.simple_test, .help = "App runner" }
 
-#define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_config
+#define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
 
 #define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
@@ -151,6 +155,7 @@ struct __cex_namespace__cexy {
     struct {
         Exception       (*config)(int argc, char** argv, void* user_ctx);
         Exception       (*help)(int argc, char** argv, void* user_ctx);
+        Exception       (*new)(int argc, char** argv, void* user_ctx);
         Exception       (*process)(int argc, char** argv, void* user_ctx);
         Exception       (*simple_test)(int argc, char** argv, void* user_ctx);
     } cmd;
