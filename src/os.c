@@ -1,6 +1,12 @@
 #pragma once
 #include "all.h"
 
+#ifdef _WIN32
+    #include <direct.h>
+#else
+    #include <unistd.h>
+#endif
+
 static void
 cex_os_sleep(u32 period_millisec)
 {
@@ -182,7 +188,12 @@ cex_os__fs__remove(const char* path)
 }
 
 Exception
-cex_os__fs__dir_walk(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
+cex_os__fs__dir_walk(
+    const char* path,
+    bool is_recursive,
+    os_fs_dir_walk_f callback_fn,
+    void* user_ctx
+)
 {
     (void)user_ctx;
     if (path == NULL || path[0] == '\0') {
@@ -411,39 +422,61 @@ static arr$(char*) cex_os__fs__find(const char* path, bool is_recursive, IAlloca
     return ctx.result;
 }
 
-static Exception
-cex_os__fs__getcwd(sbuf_c* out)
+static char*
+cex_os__fs__getcwd(IAllocator allc)
 {
+    char* buf = mem$malloc(allc, PATH_MAX);
 
-    uassert(sbuf.isvalid(out) && "out is not valid sbuf_c (or missing initialization)");
-
-    e$except_silent(err, sbuf.grow(out, PATH_MAX + 1))
-    {
-        return err;
-    }
-    sbuf.clear(out);
-
-    errno = 0;
-    if (unlikely(getcwd(*out, sbuf.capacity(out)) == NULL)) {
-        return strerror(errno);
+    char* result = NULL;
+#ifdef _WIN32
+    result = _getcwd(buf, PATH_MAX);
+#else
+    result = getcwd(buf, PATH_MAX);
+#endif
+    if (result == NULL) {
+        mem$free(allc, buf);
     }
 
-    sbuf.update_len(out);
+    return result;
+}
+
+static Exception
+cex_os__fs__chdir(const char* path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return Error.exists;
+    }
+
+    int result;
+#ifdef _WIN32
+    result = _chdir(path);
+#else
+    result = chdir(path);
+#endif
+
+    if (result == -1) {
+        if (errno == ENOENT) {
+            return Error.not_found;
+        } else {
+            return strerror(errno);
+        }
+    }
 
     return EOK;
 }
 
 
-static Exception cex_os__fs__copy(const char *src_path, const char *dst_path)
+static Exception
+cex_os__fs__copy(const char* src_path, const char* dst_path)
 {
-    if (src_path == NULL || src_path[0] == '\0' || dst_path == NULL || dst_path[0] == '\0'){
+    if (src_path == NULL || src_path[0] == '\0' || dst_path == NULL || dst_path[0] == '\0') {
         return Error.argument;
     }
 
     log$trace("copying %s -> %s\n", src_path, dst_path);
 
 #ifdef _WIN32
-    # TODO: this is not implemented
+    #TODO : this is not implemented
     if (!CopyFile(src_path, dst_path, FALSE)) {
         nob_log(NOB_ERROR, "Could not copy file: %s", nob_win32_error_message(GetLastError()));
         return Error.io;
@@ -452,15 +485,15 @@ static Exception cex_os__fs__copy(const char *src_path, const char *dst_path)
 #else
     int src_fd = -1;
     int dst_fd = -1;
-    size_t buf_size = 32*1024;
-    char *buf = mem$malloc(mem$, buf_size);
+    size_t buf_size = 32 * 1024;
+    char* buf = mem$malloc(mem$, buf_size);
     if (buf == NULL) {
         return Error.memory;
     }
     Exc result = Error.runtime;
 
-    if((src_fd = open(src_path, O_RDONLY)) == -1) {
-        switch(errno) {
+    if ((src_fd = open(src_path, O_RDONLY)) == -1) {
+        switch (errno) {
             case ENOENT:
                 result = Error.not_found;
                 break;
@@ -484,19 +517,21 @@ static Exception cex_os__fs__copy(const char *src_path, const char *dst_path)
 
     for (;;) {
         ssize_t n = read(src_fd, buf, buf_size);
-        if (n == 0) break;
+        if (n == 0) {
+            break;
+        }
         if (n < 0) {
             result = Error.io;
             goto defer;
         }
-        char *buf2 = buf;
+        char* buf2 = buf;
         while (n > 0) {
             ssize_t m = write(dst_fd, buf2, n);
             if (m < 0) {
                 result = Error.io;
                 goto defer;
             }
-            n    -= m;
+            n -= m;
             buf2 += m;
         }
     }
@@ -999,6 +1034,7 @@ const struct __cex_namespace__os os = {
     },
 
     .fs = {
+        .chdir = cex_os__fs__chdir,
         .copy = cex_os__fs__copy,
         .dir_walk = cex_os__fs__dir_walk,
         .find = cex_os__fs__find,

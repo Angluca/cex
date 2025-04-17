@@ -169,10 +169,11 @@ struct __cex_namespace__os {
     } env;
 
     struct {
+        Exception       (*chdir)(const char* path);
         Exception       (*copy)(const char* src_path, const char* dst_path);
         Exception       (*dir_walk)(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx);
         arr$(char*)     (*find)(const char* path, bool is_recursive, IAllocator allc);
-        Exception       (*getcwd)(sbuf_c* out);
+        char*           (*getcwd)(IAllocator allc);
         Exception       (*mkdir)(const char* path);
         Exception       (*mkpath)(const char* path);
         Exception       (*remove)(const char* path);

@@ -285,11 +285,20 @@ test$case(test_os_find_direct_match)
 
 test$case(test_os_getcwd)
 {
-    sbuf_c s = sbuf.create(10, mem$);
-    tassert_er(EOK, os.fs.getcwd(&s));
-    tassert_eq(true, str.slice.ends_with(str.sstr(s), str$s("cex")));
+    mem$scope(tmem$, _) {
+        var p = os.fs.getcwd(_);
+        tassert(p != NULL);
+        tassert_eq(true, str.ends_with(p, "cex"));
 
-    sbuf.destroy(&s);
+        tassert_er(EOK, os.fs.chdir("tests"));
+        p = os.fs.getcwd(_);
+        tassert_eq(true, str.ends_with(p, "tests"));
+        tassert_er(EOK, os.fs.chdir(".."));
+
+        p = os.fs.getcwd(_);
+        tassert_eq(true, str.ends_with(p, "cex"));
+    }
+
     return EOK;
 }
 
