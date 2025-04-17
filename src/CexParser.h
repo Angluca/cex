@@ -1,7 +1,7 @@
 #pragma once
 #include "all.h"
 
-#define CexTknList                                                                                 \
+#define _CexTknList                                                                                 \
     X(eof)                                                                                         \
     X(unk)                                                                                         \
     X(error)                                                                                       \
@@ -44,15 +44,11 @@
 typedef enum CexTkn_e
 {
 #define X(name) CexTkn__##name,
-    CexTknList
+    _CexTknList
 #undef X
 } CexTkn_e;
 
-static const char* CexTkn_str[] = {
-#define X(name) cex$stringize(name),
-    CexTknList
-#undef X
-};
+extern const char* CexTkn_str[];
 
 typedef struct cex_token_s
 {

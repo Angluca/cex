@@ -1,5 +1,11 @@
 #include "CexParser.h"
 
+const char* CexTkn_str[] = {
+#define X(name) cex$stringize(name),
+    _CexTknList
+#undef X
+};
+
 // NOTE: lx$ are the temporary macro (will be #undef at the end of this file)
 #define lx$next(lx)                                                                                \
     ({                                                                                             \
