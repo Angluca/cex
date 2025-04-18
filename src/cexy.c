@@ -1304,6 +1304,10 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                             str_s sub_name = str.slice.sub(d->name, 0, prefix.len);
                             if (str.slice.eqi(sub_name, prefix) &&
                                 sub_name.buf[prefix.len] == '_') {
+                                if (d->type == CexTkn__func_def && str.eqi(query, "cex.")) {
+                                    // skipping other namespaces of cex, e.g. cex_str_len()
+                                    continue;
+                                } 
                                 has_match = true;
                             }
                         }
@@ -1392,7 +1396,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     }
     // clang-format off
 #define $env                                                                                \
-    "\ncexy$* variables used in build system, see `cex config --help` for more info\n"            \
+    "\ncexy$* variables used in build system, see `cex help 'cexy$cc'` for more info\n"            \
     "* CEX_LOG_LVL               " cex$stringize(CEX_LOG_LVL) "\n"                                             \
     "* cexy$build_dir            " cexy$build_dir "\n"                                             \
     "* cexy$src_dir              " cexy$src_dir "\n"                                             \

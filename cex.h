@@ -3652,104 +3652,117 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
-    #ifndef cexy$cc
-        #if defined(__clang__)
-            #define cexy$cc "clang"
-        #elif defined(__GNUC__)
-            #define cexy$cc "gcc"
-        #else
-            #error "Compiler type is not supported"
-        #endif
-    #endif // #ifndef cexy$cc
+#    ifndef cexy$cc
+#        if defined(__clang__)
+/// Macro constant derived from the compiler type used to initially build ./cex app
+#            define cexy$cc "clang"
+#        elif defined(__GNUC__)
+#            define cexy$cc "gcc"
+#        else
+#            error "Compiler type is not supported"
+#        endif
+#    endif // #ifndef cexy$cc
 
 
-    #ifndef cexy$cc_include
-        #define cexy$cc_include "-I."
-    #endif
+#    ifndef cexy$cc_include
+/// Include path for the #include "some.h" (may be overridden by user)
+#        define cexy$cc_include "-I."
+#    endif
 
-    #ifndef cexy$build_dir
-        #define cexy$build_dir "./build"
-    #endif
+#    ifndef cexy$build_dir
+/// Build dir for project executables and tests (may be overridden by user)
+#        define cexy$build_dir "./build"
+#    endif
 
-    #ifndef cexy$src_dir
-        #define cexy$src_dir "./src"
-    #endif
+#    ifndef cexy$src_dir
+/// Directory for applications and code (may be overridden by user)
+#        define cexy$src_dir "./src"
+#    endif
 
-    #ifndef cexy$cc_args_sanitizer
-        #define cexy$cc_args_sanitizer                                                                 \
+#    ifndef cexy$cc_args_sanitizer
+/// Debug mode and tests sanitizer flags (may be overridden by user)
+#        define cexy$cc_args_sanitizer                                                             \
             "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined",    \
                 "-fsanitize=leak", "-fstack-protector-strong"
-    #endif
+#    endif
 
-    #ifndef cexy$cc_args_release
-        #define cexy$cc_args_release "-Wall", "-Wextra", "-O2", "-g"
-    #endif
+#    ifndef cexy$cc_args_release
+/// Release mode compiler flags (may be overridden by user)
+#        define cexy$cc_args_release "-Wall", "-Wextra", "-O2", "-g"
+#    endif
 
-    #ifndef cexy$cc_args_debug
-        #define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
-    #endif
+#    ifndef cexy$cc_args_debug
+/// Debug mode compiler flags (may be overridden by user)
+#        define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
+#    endif
 
-    #ifndef cexy$cc_args_test
-        #define cexy$cc_args_test                                                                  \
+#    ifndef cexy$cc_args_test
+/// Test runner compiler flags (may be overridden by user)
+#        define cexy$cc_args_test                                                                  \
             "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3",            \
                 "-Itests/", cexy$cc_args_sanitizer
-    #endif
+#    endif
 
-    #ifndef cexy$cex_self_args
-        #define cexy$cex_self_args
-    #endif
-
-
-    #ifndef cexy$ld_args
-        #define cexy$ld_args
-    #endif
-
-    #ifndef cexy$ld_libs
-        #define cexy$ld_libs
-    #endif
-
-    #ifndef cexy$debug_cmd
-        #define cexy$debug_cmd "gdb", "--args"
-    #endif
+#    ifndef cexy$cex_self_args
+/// Compiler flags used for building ./cex.c -> ./cex (may be overridden by user)
+#        define cexy$cex_self_args
+#    endif
 
 
-    #ifndef cexy$process_ignore_kw
-        /**
-        @brief For ignoring extra macro keywords in function signatures of libraries, as str.match()
-        pattern string
-        */
-        #define cexy$process_ignore_kw ""
-    #endif
+#    ifndef cexy$ld_args
+/// Linker flags (e.g. -L./lib/path/) (may be overridden by user)
+#        define cexy$ld_args
+#    endif
+
+#    ifndef cexy$ld_libs
+/// Linker libs  (e.g. -lm) (may be overridden by user)
+#        define cexy$ld_libs
+#    endif
+
+#    ifndef cexy$debug_cmd
+/// Command for running debugger for cex test/app debug  (may be overridden by
+/// user)
+#        define cexy$debug_cmd "gdb", "--args"
+#    endif
 
 
-    #define cexy$cmd_process                                                                       \
+#    ifndef cexy$process_ignore_kw
+/**
+@brief Pattern for ignoring extra macro keywords in function signatures (for cex process).
+See `cex help str.match` for more information about patter syntax.
+*/
+#        define cexy$process_ignore_kw ""
+#    endif
+
+
+#    define cexy$cmd_process                                                                       \
         { .name = "process",                                                                       \
           .func = cexy.cmd.process,                                                                \
           .help = "Create CEX namespaces from project source code" }
-    #define cexy$cmd_new { .name = "new", .func = cexy.cmd.new, .help = "Create new CEX project" }
-    #define cexy$cmd_help                                                                          \
+#    define cexy$cmd_new { .name = "new", .func = cexy.cmd.new, .help = "Create new CEX project" }
+#    define cexy$cmd_help                                                                          \
         { .name = "help",                                                                          \
           .func = cexy.cmd.help,                                                                   \
           .help = "Search cex.h and project symbols and extract help" }
-    #define cexy$cmd_config                                                                        \
+#    define cexy$cmd_config                                                                        \
         { .name = "config",                                                                        \
           .func = cexy.cmd.config,                                                                 \
           .help = "Check project and system environment and config" }
 
-    #define cexy$cmd_test                                                                          \
+#    define cexy$cmd_test                                                                          \
         { .name = "test",                                                                          \
           .func = cexy.cmd.simple_test,                                                            \
           .help = "Generic unit test build/run/debug" }
 
-    #define cexy$cmd_app                                                                           \
+#    define cexy$cmd_app                                                                           \
         { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
 
-    #define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
+#    define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
 
-    #define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
+#    define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
-    #define cexy$description "\nCEX language (cexy$) build and project management system"
-    #define cexy$usage " [-D] [-D<ARG1>] [-D<ARG2>] command [options] [args]"
+#    define cexy$description "\nCEX language (cexy$) build and project management system"
+#    define cexy$usage " [-D] [-D<ARG1>] [-D<ARG2>] command [options] [args]"
 
 // clang-format off
     #define cexy$epilog \
@@ -3817,7 +3830,8 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 
 
 // clang-format on
-struct __cex_namespace__cexy {
+struct __cex_namespace__cexy
+{
     // Autogenerated by CEX
     // clang-format off
 
@@ -14172,6 +14186,10 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                             str_s sub_name = str.slice.sub(d->name, 0, prefix.len);
                             if (str.slice.eqi(sub_name, prefix) &&
                                 sub_name.buf[prefix.len] == '_') {
+                                if (d->type == CexTkn__func_def && str.eqi(query, "cex.")) {
+                                    // skipping other namespaces of cex, e.g. cex_str_len()
+                                    continue;
+                                } 
                                 has_match = true;
                             }
                         }
@@ -14260,7 +14278,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     }
     // clang-format off
 #define $env                                                                                \
-    "\ncexy$* variables used in build system, see `cex config --help` for more info\n"            \
+    "\ncexy$* variables used in build system, see `cex help 'cexy$cc'` for more info\n"            \
     "* CEX_LOG_LVL               " cex$stringize(CEX_LOG_LVL) "\n"                                             \
     "* cexy$build_dir            " cexy$build_dir "\n"                                             \
     "* cexy$src_dir              " cexy$src_dir "\n"                                             \
