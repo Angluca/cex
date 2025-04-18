@@ -1390,10 +1390,10 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     if (argparse.parse(&cmd_args, argc, argv)) {
         return Error.argsparse;
     }
-
     // clang-format off
 #define $env                                                                                \
     "\ncexy$* variables used in build system, see `cex config --help` for more info\n"            \
+    "* CEX_LOG_LVL               " cex$stringize(CEX_LOG_LVL) "\n"                                             \
     "* cexy$build_dir            " cexy$build_dir "\n"                                             \
     "* cexy$src_dir              " cexy$src_dir "\n"                                             \
     "* cexy$cc                   " cexy$cc "\n"                                                    \
