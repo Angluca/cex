@@ -21,6 +21,7 @@ main(int argc, char** argv)
     argparse_c args = {
         .description = cexy$description,
         .epilog = cexy$epilog,
+        .usage = cexy$usage,
         argparse$cmd_list(
             cexy$cmd_all,
             cexy$cmd_test, /* feel free to make your own if needed */

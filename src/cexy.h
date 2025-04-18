@@ -13,6 +13,7 @@
         #endif
     #endif // #ifndef cexy$cc
 
+
     #ifndef cexy$cc_include
         #define cexy$cc_include "-I."
     #endif
@@ -43,6 +44,10 @@
         #define cexy$cc_args_test                                                                  \
             "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3",            \
                 "-Itests/", cexy$cc_args_sanitizer
+    #endif
+
+    #ifndef cexy$cex_self_args
+        #define cexy$cex_self_args
     #endif
 
 
@@ -94,9 +99,15 @@
 
     #define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
-    #define cexy$description "Cex build system"
+    #define cexy$description "\nCEX language (cexy$) build and project management system"
+    #define cexy$usage " [-D] [-D<ARG1>] [-D<ARG2>] command [options] [args]"
 
-    #define cexy$epilog "\nYou may try to get help for commands as well, try `cex process --help`\n"
+// clang-format off
+    #define cexy$epilog \
+        "\nYou may try to get help for commands as well, try `cex process --help`\n"\
+        "Use `cex -DFOO -DBAR config` to set project config flags\n"\
+        "Use `cex -D config` to reset all project config flags to defaults\n"
+// clang-format on
 
 // clang-format off
 #define _cexy$cmd_test_help (\

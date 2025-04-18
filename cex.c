@@ -2,9 +2,9 @@
     #include "cex_config.h"
 #else
     #define cexy$cc_include "-I.", "-I./lib/"
+    #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #endif
 
-#define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #define CEX_IMPLEMENTATION
 #define CEX_BUILD
 #include "cex.h"
@@ -22,6 +22,7 @@ main(int argc, char** argv)
     // clang-format off
     argparse_c args = {
         .description = cexy$description,
+        .usage = cexy$usage,
         .epilog = cexy$epilog,
         argparse$cmd_list(
             cexy$cmd_all,
@@ -39,7 +40,9 @@ main(int argc, char** argv)
     return 0;
 }
 
-static void embed_code(sbuf_c* buf, char* code_path) {
+static void
+embed_code(sbuf_c* buf, char* code_path)
+{
     uassert(buf != NULL);
     uassertf(os.path.exists(code_path), "not exists: %s", code_path);
 
@@ -51,10 +54,11 @@ static void embed_code(sbuf_c* buf, char* code_path) {
     e$goto(sbuf.append(buf, "\""), fail);
 
     char c;
-    while((c = fgetc(fh))) {
-        if (feof(fh))
-            break ;
-        switch(c) {
+    while ((c = fgetc(fh))) {
+        if (feof(fh)) {
+            break;
+        }
+        switch (c) {
             case '\\':
                 e$goto(sbuf.append(buf, "\\"), fail);
                 break;

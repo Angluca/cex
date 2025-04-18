@@ -33,17 +33,22 @@ Visit https://cex-c.org for more information
 ## cex tool usage:
 ```
 > ./cex --help
-./cex {help,process,new,config,test,app} [cmd_options] [cmd_args]
-Cex build system
+Usage:
+cex  [-D] [-D<ARG1>] [-D<ARG2>] command [options] [args]
+
+CEX language (cexy$) build and project management system
 
 help                Search cex.h and project symbols and extract help
 process             Create CEX namespaces from project source code
-new                 Creates new CEX project
+new                 Create new CEX project
 config              Check project and system environment and config
-test                Test runner
+test                Test running
 app                 App runner
 
 You may try to get help for commands as well, try `cex process --help`
+Use `cex -DFOO -DBAR config` to set project config flags
+Use `cex -D config` to reset all project config flags to defaults
+
 ```
 */
 

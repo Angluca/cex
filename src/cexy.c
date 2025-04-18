@@ -10,12 +10,19 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
     {
         uassert(str.ends_with(argv[0], "cex"));
         char* bin_path = argv[0];
-    #ifdef CEX_SELF_BUILD
-        log$trace("Checking self build for executable: %s\n", bin_path);
-        if (!cexy.src_include_changed(bin_path, cex_source, NULL)) {
-            log$trace("%s unchanged, skipping self build\n", cex_source);
-            // cex.c/cex.h are up to date no rebuild needed
-            return;
+        bool has_darg_before_cmd = (argc > 1 && str.starts_with(argv[1], "-D"));
+        (void)has_darg_before_cmd;
+
+    #ifdef _CEX_SELF_BUILD
+        if (!has_darg_before_cmd) {
+            log$trace("Checking self build for executable: %s\n", bin_path);
+            if (!cexy.src_include_changed(bin_path, cex_source, NULL)) {
+                log$trace("%s unchanged, skipping self build\n", cex_source);
+                // cex.c/cex.h are up to date no rebuild needed
+                return;
+            }
+        } else {
+            log$trace("Passed extra -Dflags to cex command, build now\n");
         }
     #endif
 
@@ -26,13 +33,61 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
             }
             e$except(err, os.fs.rename(bin_path, old_name))
             {
-                goto err;
+                goto fail_recovery;
             }
         }
-        arr$(const char*) args = arr$new(args, _);
-        arr$pushm(args, cexy$cc, "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
-        // arr$pushm(args, cexy$cc, "-fsanitize-address-use-after-scope", "-fsanitize=address",
-        // "-fsanitize=undefined", "-DCEX_SELF_BUILD", "-g", "-o", bin_path, cex_source, NULL);
+        arr$(const char*) args = arr$new(args, _, .capacity = 64);
+        sbuf_c dargs_sbuf = sbuf.create(256, _);
+        arr$pushm(args, cexy$cc, "-D_CEX_SELF_BUILD", "-g");
+        e$goto(sbuf.append(&dargs_sbuf, "-D_CEX_SELF_DARGS=\""), err);
+
+        i32 dflag_idx = 1;
+        for$each(darg, argv + 1, argc - 1)
+        {
+            if (str.starts_with(darg, "-D")) {
+                if (!str.eq(darg, "-D")) {
+                    arr$push(args, darg);
+                    e$goto(sbuf.appendf(&dargs_sbuf, "%s ", darg), fail_recovery);
+                }
+                dflag_idx++;
+            } else {
+                break; // stop at first non -D<flag>
+            }
+        }
+        if (dflag_idx > 1 && (dflag_idx >= argc || !str.eq(argv[dflag_idx], "config"))) { 
+            log$error("Expected config command after passing -D<ARG> to ./cex\n");
+            goto fail_recovery;
+        }
+        #ifdef _CEX_SELF_DARGS
+        if (dflag_idx == 1)
+        {
+            // new compilation no flags (maybe due to source changes, we need to maintain old flags)
+            log$trace("Preserving CEX_SELF_DARGS: %s\n", _CEX_SELF_DARGS);
+            for$iter(str_s, it, str.slice.iter_split(str.sstr(_CEX_SELF_DARGS), " ", &it.iterator)) {
+                str_s clean_it = str.slice.strip(it.val);
+                if (clean_it.len == 0){
+                    continue;
+                }
+                if (!str.slice.starts_with(clean_it, str$s("-D"))){
+                    continue;
+                }
+                if (str.slice.eq(clean_it, str$s("-D"))){
+                    continue;
+                }
+                var _darg = str.fmt(_, "%S", clean_it);
+                arr$push(args, _darg);
+                e$goto(sbuf.appendf(&dargs_sbuf, "%s ", _darg), err);
+            }
+        }
+        #endif
+        e$goto(sbuf.append(&dargs_sbuf, "\""), err);
+
+        arr$push(args, dargs_sbuf);
+
+        char* custom_args[] = { cexy$cex_self_args };
+        arr$pusha(args, custom_args);
+
+        arr$pushm(args, "-o", bin_path, cex_source, NULL);
         _os$args_print("CMD:", args, arr$len(args));
         os_cmd_c _cmd = { 0 };
         e$except(err, os.cmd.run(args, arr$len(args), &_cmd))
@@ -51,7 +106,10 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         // run rebuilt cex executable again
         arr$clear(args);
         arr$pushm(args, bin_path);
-        arr$pusha(args, &argv[1], argc - 1);
+        for$each(darg, argv + dflag_idx, argc - dflag_idx)
+        {
+            arr$push(args, darg);
+        }
         arr$pushm(args, NULL);
         _os$args_print("CMD:", args, arr$len(args));
         e$except(err, os.cmd.run(args, arr$len(args), &_cmd))
@@ -1347,7 +1405,9 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
     "* cexy$ld_libs              " cex$stringize(cexy$ld_libs) "\n"                                \
     "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
-    "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"
+    "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"\
+    "* cexy$cex_self_args        " cex$stringize(cexy$cex_self_args) "\n"\
+    "* ./cex -D<ARGS> config     " cex$stringize(_CEX_SELF_DARGS) "\n"
     // clang-format on
 
     io.printf("%s", $env);
