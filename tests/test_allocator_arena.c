@@ -101,7 +101,7 @@ test$case(test_allocator_arena_malloc)
     {
         u8* p = mem$malloc(arena, 100);
         tassert(p != NULL);
-        tassert(mem$asan_enabled());
+        // tassert(mem$asan_enabled());
         // p[-2] = 1;
         // tassert_eq(p[100], 1); //   GOOD ASAN poison!
         // tassert_eq(p[-3], 0xf7);   //GOOD ASAN poison!

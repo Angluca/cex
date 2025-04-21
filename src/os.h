@@ -165,7 +165,6 @@ struct __cex_namespace__os {
     struct {
         const char*     (*get)(const char* name, const char* deflt);
         void            (*set)(const char* name, const char* value, bool overwrite);
-        void            (*unset)(const char* name);
     } env;
 
     struct {

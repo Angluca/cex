@@ -475,10 +475,6 @@ test$case(test_os_setenv)
     os.env.set("test_os_posix", "bar", true);
     tassert_eq(os.env.get("test_os_posix", NULL), "bar");
 
-    // unset env
-    os.env.unset("test_os_posix");
-    tassert_eq(os.env.get("test_os_posix", NULL), NULL);
-
     return EOK;
 }
 test$case(test_os_path_split)
