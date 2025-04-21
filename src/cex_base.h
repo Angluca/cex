@@ -84,8 +84,8 @@ extern const struct _CEX_Error_struct
 #ifndef __cex__fprintf
 
 // NOTE: you may try to define our own fprintf
-#define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                          \
-    io.fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
+#    define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                      \
+        io.fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
 
 static inline bool
 __cex__fprintf_dummy(void)
@@ -97,7 +97,7 @@ __cex__fprintf_dummy(void)
 
 #if __INTELLISENSE__
 // VS code linter doesn't support __FILE_NAME__ builtin macro
-#define __FILE_NAME__ __FILE__
+#    define __FILE_NAME__ __FILE__
 #endif
 
 #ifndef CEX_LOG_LVL
@@ -109,100 +109,140 @@ __cex__fprintf_dummy(void)
 // 4 - allow log$debug
 // 5 - allow log$trace
 // NOTE: you may override this level to manage log$* verbosity
-#define CEX_LOG_LVL 4
+#    define CEX_LOG_LVL 4
 #endif
 
 #if CEX_LOG_LVL > 0
-#define log$error(format, ...)                                                                     \
-    (__cex__fprintf(stdout, "[ERROR]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
+#    define log$error(format, ...)                                                                 \
+        (__cex__fprintf(                                                                           \
+            stdout,                                                                                \
+            "[ERROR]  ",                                                                           \
+            __FILE_NAME__,                                                                         \
+            __LINE__,                                                                              \
+            __func__,                                                                              \
+            format,                                                                                \
+            ##__VA_ARGS__                                                                          \
+        ))
 #else
-#define log$error(format, ...) __cex__fprintf_dummy()
+#    define log$error(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 1
-#define log$warn(format, ...)                                                                      \
-    (__cex__fprintf(stdout, "[WARN]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
+#    define log$warn(format, ...)                                                                  \
+        (__cex__fprintf(                                                                           \
+            stdout,                                                                                \
+            "[WARN]   ",                                                                           \
+            __FILE_NAME__,                                                                         \
+            __LINE__,                                                                              \
+            __func__,                                                                              \
+            format,                                                                                \
+            ##__VA_ARGS__                                                                          \
+        ))
 #else
-#define log$warn(format, ...) __cex__fprintf_dummy()
+#    define log$warn(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 2
-#define log$info(format, ...)                                                                      \
-    (__cex__fprintf(stdout, "[INFO]   ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
+#    define log$info(format, ...)                                                                  \
+        (__cex__fprintf(                                                                           \
+            stdout,                                                                                \
+            "[INFO]   ",                                                                           \
+            __FILE_NAME__,                                                                         \
+            __LINE__,                                                                              \
+            __func__,                                                                              \
+            format,                                                                                \
+            ##__VA_ARGS__                                                                          \
+        ))
 #else
-#define log$info(format, ...) __cex__fprintf_dummy()
+#    define log$info(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 3
-#define log$debug(format, ...)                                                                     \
-    (__cex__fprintf(stdout, "[DEBUG]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
+#    define log$debug(format, ...)                                                                 \
+        (__cex__fprintf(                                                                           \
+            stdout,                                                                                \
+            "[DEBUG]  ",                                                                           \
+            __FILE_NAME__,                                                                         \
+            __LINE__,                                                                              \
+            __func__,                                                                              \
+            format,                                                                                \
+            ##__VA_ARGS__                                                                          \
+        ))
 #else
-#define log$debug(format, ...) __cex__fprintf_dummy()
+#    define log$debug(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 4
-#define log$trace(format, ...)                                                                     \
-    (__cex__fprintf(stdout, "[TRACE]  ", __FILE_NAME__, __LINE__, __func__, format, ##__VA_ARGS__))
+#    define log$trace(format, ...)                                                                 \
+        (__cex__fprintf(                                                                           \
+            stdout,                                                                                \
+            "[TRACE]  ",                                                                           \
+            __FILE_NAME__,                                                                         \
+            __LINE__,                                                                              \
+            __func__,                                                                              \
+            format,                                                                                \
+            ##__VA_ARGS__                                                                          \
+        ))
 #else
-#define log$trace(format, ...) __cex__fprintf_dummy()
+#    define log$trace(format, ...) __cex__fprintf_dummy()
 #endif
 
 #if CEX_LOG_LVL > 0
-#define __cex__traceback(uerr, fail_func)                                                          \
-    (__cex__fprintf(                                                                               \
-        stdout,                                                                                    \
-        "[^STCK]  ",                                                                               \
-        __FILE_NAME__,                                                                             \
-        __LINE__,                                                                                  \
-        __func__,                                                                                  \
-        "^^^^^ [%s] in function call `%s`\n",                                                      \
-        uerr,                                                                                      \
-        fail_func                                                                                  \
-    ))
+#    define __cex__traceback(uerr, fail_func)                                                      \
+        (__cex__fprintf(                                                                           \
+            stdout,                                                                                \
+            "[^STCK]  ",                                                                           \
+            __FILE_NAME__,                                                                         \
+            __LINE__,                                                                              \
+            __func__,                                                                              \
+            "^^^^^ [%s] in function call `%s`\n",                                                  \
+            uerr,                                                                                  \
+            fail_func                                                                              \
+        ))
 
 /**
  * @brief Non disposable assert, returns Error.assert CEX exception when failed
  */
-#define e$assert(A)                                                                                \
-    ({                                                                                             \
-        if (unlikely(!((A)))) {                                                                    \
-            __cex__fprintf(stdout, "[ASSERT] ", __FILE_NAME__, __LINE__, __func__, "%s\n", #A);    \
-            return Error.assert;                                                                   \
-        }                                                                                          \
-    })
+#    define e$assert(A)                                                                             \
+        ({                                                                                          \
+            if (unlikely(!((A)))) {                                                                 \
+                __cex__fprintf(stdout, "[ASSERT] ", __FILE_NAME__, __LINE__, __func__, "%s\n", #A); \
+                return Error.assert;                                                                \
+            }                                                                                       \
+        })
 
 
-#define e$assertf(A, format, ...)                                                                  \
-    ({                                                                                             \
-        if (unlikely(!((A)))) {                                                                    \
-            __cex__fprintf(                                                                        \
-                stdout,                                                                            \
-                "[ASSERT] ",                                                                       \
-                __FILE_NAME__,                                                                     \
-                __LINE__,                                                                          \
-                __func__,                                                                          \
-                format "\n",                                                                       \
-                ##__VA_ARGS__                                                                      \
-            );                                                                                     \
-            return Error.assert;                                                                   \
-        }                                                                                          \
-    })
+#    define e$assertf(A, format, ...)                                                              \
+        ({                                                                                         \
+            if (unlikely(!((A)))) {                                                                \
+                __cex__fprintf(                                                                    \
+                    stdout,                                                                        \
+                    "[ASSERT] ",                                                                   \
+                    __FILE_NAME__,                                                                 \
+                    __LINE__,                                                                      \
+                    __func__,                                                                      \
+                    format "\n",                                                                   \
+                    ##__VA_ARGS__                                                                  \
+                );                                                                                 \
+                return Error.assert;                                                               \
+            }                                                                                      \
+        })
 #else // #if CEX_LOG_LVL > 0
-#define __cex__traceback(uerr, fail_func) __cex__fprintf_dummy()
-#define e$assert(A)                                                                                \
-    ({                                                                                             \
-        if (unlikely(!((A)))) {                                                                    \
-            return Error.assert;                                                                   \
-        }                                                                                          \
-    })
+#    define __cex__traceback(uerr, fail_func) __cex__fprintf_dummy()
+#    define e$assert(A)                                                                            \
+        ({                                                                                         \
+            if (unlikely(!((A)))) {                                                                \
+                return Error.assert;                                                               \
+            }                                                                                      \
+        })
 
 
-#define e$assertf(A, format, ...)                                                                  \
-    ({                                                                                             \
-        if (unlikely(!((A)))) {                                                                    \
-            return Error.assert;                                                                   \
-        }                                                                                          \
-    })
+#    define e$assertf(A, format, ...)                                                              \
+        ({                                                                                         \
+            if (unlikely(!((A)))) {                                                                \
+                return Error.assert;                                                               \
+            }                                                                                      \
+        })
 #endif // #if CEX_LOG_LVL > 0
 
 
@@ -213,73 +253,73 @@ __cex__fprintf_dummy(void)
 #ifdef __SANITIZE_ADDRESS__
 // This should be linked when gcc sanitizer enabled
 void __sanitizer_print_stack_trace();
-#define sanitizer_stack_trace() __sanitizer_print_stack_trace()
+#    define sanitizer_stack_trace() __sanitizer_print_stack_trace()
 #else
-#define sanitizer_stack_trace() ((void)(0))
+#    define sanitizer_stack_trace() ((void)(0))
 #endif
 
 #ifdef NDEBUG
-#define uassertf(cond, format, ...) ((void)(0))
-#define uassert(cond) ((void)(0))
-#define __cex_test_postmortem_exists() 0
+#    define uassertf(cond, format, ...) ((void)(0))
+#    define uassert(cond) ((void)(0))
+#    define __cex_test_postmortem_exists() 0
 #else
 
-#ifdef CEX_TEST
+#    ifdef CEX_TEST
 // this prevents spamming on stderr (i.e. cextest.h output stream in silent mode)
 int __cex_test_uassert_enabled = 1;
-#define uassert_disable() __cex_test_uassert_enabled = 0
-#define uassert_enable() __cex_test_uassert_enabled = 1
-#define uassert_is_enabled() (__cex_test_uassert_enabled)
-#else
-#define uassert_disable()                                                                          \
-    _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
-#define uassert_enable() (void)0
-#define uassert_is_enabled() true
-#define __cex_test_postmortem_ctx NULL
-#define __cex_test_postmortem_exists() 0
-#define __cex_test_postmortem_f(ctx)
-#endif // #ifdef CEX_TEST
+#        define uassert_disable() __cex_test_uassert_enabled = 0
+#        define uassert_enable() __cex_test_uassert_enabled = 1
+#        define uassert_is_enabled() (__cex_test_uassert_enabled)
+#    else
+#        define uassert_disable()                                                                  \
+            _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
+#        define uassert_enable() (void)0
+#        define uassert_is_enabled() true
+#        define __cex_test_postmortem_ctx NULL
+#        define __cex_test_postmortem_exists() 0
+#        define __cex_test_postmortem_f(ctx)
+#    endif // #ifdef CEX_TEST
 
 
 /**
  * @def uassert(A)
  * @brief Custom assertion, with support of sanitizer call stack printout at failure.
  */
-#define uassert(A)                                                                                 \
-    ({                                                                                             \
-        if (unlikely(!((A)))) {                                                                    \
-            __cex__fprintf(                                                                        \
-                (uassert_is_enabled() ? stderr : stdout),                                          \
-                "[ASSERT] ",                                                                       \
-                __FILE_NAME__,                                                                     \
-                __LINE__,                                                                          \
-                __func__,                                                                          \
-                "%s\n",                                                                            \
-                #A                                                                                 \
-            );                                                                                     \
-            if (uassert_is_enabled()) {                                                            \
-                __cex__panic();                                                                    \
+#    define uassert(A)                                                                             \
+        ({                                                                                         \
+            if (unlikely(!((A)))) {                                                                \
+                __cex__fprintf(                                                                    \
+                    (uassert_is_enabled() ? stderr : stdout),                                      \
+                    "[ASSERT] ",                                                                   \
+                    __FILE_NAME__,                                                                 \
+                    __LINE__,                                                                      \
+                    __func__,                                                                      \
+                    "%s\n",                                                                        \
+                    #A                                                                             \
+                );                                                                                 \
+                if (uassert_is_enabled()) {                                                        \
+                    __cex__panic();                                                                \
+                }                                                                                  \
             }                                                                                      \
-        }                                                                                          \
-    })
+        })
 
-#define uassertf(A, format, ...)                                                                   \
-    ({                                                                                             \
-        if (unlikely(!((A)))) {                                                                    \
-            __cex__fprintf(                                                                        \
-                (uassert_is_enabled() ? stderr : stdout),                                          \
-                "[ASSERT] ",                                                                       \
-                __FILE_NAME__,                                                                     \
-                __LINE__,                                                                          \
-                __func__,                                                                          \
-                format "\n",                                                                       \
-                ##__VA_ARGS__                                                                      \
-            );                                                                                     \
-            if (uassert_is_enabled()) {                                                            \
-                __cex__panic();                                                                    \
+#    define uassertf(A, format, ...)                                                               \
+        ({                                                                                         \
+            if (unlikely(!((A)))) {                                                                \
+                __cex__fprintf(                                                                    \
+                    (uassert_is_enabled() ? stderr : stdout),                                      \
+                    "[ASSERT] ",                                                                   \
+                    __FILE_NAME__,                                                                 \
+                    __LINE__,                                                                      \
+                    __func__,                                                                      \
+                    format "\n",                                                                   \
+                    ##__VA_ARGS__                                                                  \
+                );                                                                                 \
+                if (uassert_is_enabled()) {                                                        \
+                    __cex__panic();                                                                \
+                }                                                                                  \
             }                                                                                      \
-        }                                                                                          \
-    })
+        })
 #endif
 
 __attribute__((noinline)) void __cex__panic(void);
@@ -298,6 +338,17 @@ __attribute__((noinline)) void __cex__panic(void);
         __cex__panic();                                                                            \
     })
 
+#if defined(_WIN32) || defined(_WIN64)
+    #define breakpoint() __debugbreak()
+#elif defined(__APPLE__)
+    #define breakpoint() __builtin_debugtrap()
+#elif defined(__linux__) || defined(__unix__)
+    #define breakpoint() __builtin_trap()
+#else
+    #include <signal.h>
+    #define breakpoint() raise(SIGTRAP)
+#endif
+
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
 #define cex$concat3(c, a, b) c##a##b
 #define cex$concat(a, b) a##b
@@ -312,14 +363,14 @@ __attribute__((noinline)) void __cex__panic(void);
 // WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
 #define e$except(_var_name, _func)                                                                 \
     for (Exc _var_name = _func;                                                                    \
-         unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                    \
+         unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                 \
          _var_name = EOK)
 
 #if defined(CEX_TEST) || defined(CEX_BUILD)
-#define e$except_silent(_var_name, _func) e$except(_var_name, _func)
+#    define e$except_silent(_var_name, _func) e$except(_var_name, _func)
 #else
-#define e$except_silent(_var_name, _func)                                                          \
-    for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
+#    define e$except_silent(_var_name, _func)                                                      \
+        for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
 #endif
 
 #define e$except_errno(_expression)                                                                \
@@ -443,13 +494,13 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
  *
  * for$iter(u32, it, array_iterator(arr2, arr$len(arr2), &it.iterator))
  */
-#define for$iter(it_val_type, it, iter_func)                                                            \
-    struct cex$tmpname(__cex_iter_)                                                                 \
+#define for$iter(it_val_type, it, iter_func)                                                       \
+    struct cex$tmpname(__cex_iter_)                                                                \
     {                                                                                              \
-        it_val_type val;                                                                   \
-        union /* NOTE:  iterator above and this struct shadow each other */                       \
+        it_val_type val;                                                                           \
+        union /* NOTE:  iterator above and this struct shadow each other */                        \
         {                                                                                          \
-            cex_iterator_s iterator;                                                                   \
+            cex_iterator_s iterator;                                                               \
             struct                                                                                 \
             {                                                                                      \
                 union                                                                              \
@@ -462,24 +513,24 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
         };                                                                                         \
     };                                                                                             \
                                                                                                    \
-    for (struct cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; !it.iterator.stopped;               \
+    for (struct cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; !it.iterator.stopped;        \
          it.val = (iter_func))
 
 
 // Check windows
 #if _WIN32 || _WIN64
-#if _WIN64
-#define CEX_ENV64BIT
-#else
-#define CEX_ENV32BIT
-#endif
+#    if _WIN64
+#        define CEX_ENV64BIT
+#    else
+#        define CEX_ENV32BIT
+#    endif
 #endif
 
 // Check GCC
 #if __GNUC__
-#if __x86_64__ || __ppc64__
-#define CEX_ENV64BIT
-#else
-#define CEX_ENV32BIT
-#endif
+#    if __x86_64__ || __ppc64__
+#        define CEX_ENV64BIT
+#    else
+#        define CEX_ENV32BIT
+#    endif
 #endif

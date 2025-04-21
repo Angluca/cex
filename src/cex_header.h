@@ -86,34 +86,22 @@ Use `cex -D config` to reset all project config flags to defaults
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdalign.h>
-#include <threads.h>
 #include <stdarg.h>
-
-#ifdef _WIN32
-typedef struct _IO_FILE FILE;
-#else
-typedef struct _IO_FILE FILE;
-#endif
-
-#include <ctype.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <signal.h>
-#include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <fcntl.h>
-#include <dirent.h>
-#include <linux/limits.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#endif
+// #include <ctype.h>
+#include <errno.h>
+// #include <float.h>
+// #include <signal.h>
+// #include <stdarg.h>
+// #include <stdlib.h>
+// #include <string.h>
+
+// #ifdef _WIN32
+// #include <windows.h>
+// #else
+// #include <threads.h>
+// #include <unistd.h>
+// #endif
 
 

@@ -1,11 +1,124 @@
 #pragma once
-#include "all.h"
+#include "all.c"
 
-#ifdef _WIN32
-    #include <direct.h>
-#else
-    #include <unistd.h>
-#endif
+#ifndef _WIN32
+#    include <dirent.h>
+#else // _WIN32
+// minirent.h HEADER BEGIN
+// Copyright 2021 Alexey Kutepov <reximkut@gmail.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining
+// a copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to
+// the following conditions:
+//
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
+// ============================================================
+
+#    define WIN32_LEAN_AND_MEAN
+#    include "windows.h"
+
+struct dirent
+{
+    char d_name[MAX_PATH + 1];
+};
+
+typedef struct DIR DIR;
+
+static DIR* opendir(const char* dirpath);
+static struct dirent* readdir(DIR* dirp);
+static int closedir(DIR* dirp);
+
+struct DIR
+{
+    HANDLE hFind;
+    WIN32_FIND_DATA data;
+    struct dirent* dirent;
+};
+
+DIR*
+opendir(const char* dirpath)
+{
+    char buffer[MAX_PATH];
+    snprintf(buffer, MAX_PATH, "%s\\*", dirpath);
+
+    DIR* dir = (DIR*)realloc(NULL, sizeof(DIR));
+    memset(dir, 0, sizeof(DIR));
+
+    dir->hFind = FindFirstFile(buffer, &dir->data);
+    if (dir->hFind == INVALID_HANDLE_VALUE) {
+        // TODO: opendir should set errno accordingly on FindFirstFile fail
+        // https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
+        errno = ENOSYS;
+        goto fail;
+    }
+
+    return dir;
+
+fail:
+    if (dir) {
+        free(dir);
+    }
+
+    return NULL;
+}
+
+struct dirent*
+readdir(DIR* dirp)
+{
+    if (dirp->dirent == NULL) {
+        dirp->dirent = (struct dirent*)realloc(NULL, sizeof(struct dirent));
+        memset(dirp->dirent, 0, sizeof(struct dirent));
+    } else {
+        if (!FindNextFile(dirp->hFind, &dirp->data)) {
+            if (GetLastError() != ERROR_NO_MORE_FILES) {
+                // TODO: readdir should set errno accordingly on FindNextFile fail
+                // https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
+                errno = ENOSYS;
+            }
+
+            return NULL;
+        }
+    }
+
+    memset(dirp->dirent->d_name, 0, sizeof(dirp->dirent->d_name));
+
+    strncpy(dirp->dirent->d_name, dirp->data.cFileName, sizeof(dirp->dirent->d_name) - 1);
+
+    return dirp->dirent;
+}
+
+int
+closedir(DIR* dirp)
+{
+    if (!FindClose(dirp->hFind)) {
+        // TODO: closedir should set errno accordingly on FindClose fail
+        // https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
+        errno = ENOSYS;
+        return -1;
+    }
+
+    if (dirp->dirent) {
+        free(dirp->dirent);
+    }
+    free(dirp);
+
+    return 0;
+}
+#endif // _WIN32
 
 static void
 cex_os_sleep(u32 period_millisec)
@@ -103,6 +216,7 @@ cex_os__fs__stat(const char* path)
     }
 
 #ifdef _WIN32
+    /* FIX: win 32
     DWORD attr = GetFileAttributesA(path);
     if (attr == INVALID_FILE_ATTRIBUTES) {
         nob_log(
@@ -119,8 +233,9 @@ cex_os__fs__stat(const char* path)
     if (attr & FILE_ATTRIBUTE_DIRECTORY) {
         return NOB_FILE_DIRECTORY;
     }
-    // TODO: detect symlinks on Windows (whatever that means on Windows anyway)
     return NOB_FILE_REGULAR;
+    */
+    return result;
 #else // _WIN32
     struct stat statbuf;
     if (lstat(path, &statbuf) < 0) {
@@ -175,9 +290,11 @@ cex_os__fs__remove(const char* path)
         return Error.argument;
     }
 #ifdef _WIN32
+    /* FIX: win32
     if (!DeleteFileA(path)) {
         return nob_win32_error_message(GetLastError());
     }
+    */
     return EOK;
 #else
     if (remove(path) < 0) {
@@ -476,11 +593,12 @@ cex_os__fs__copy(const char* src_path, const char* dst_path)
     log$trace("copying %s -> %s\n", src_path, dst_path);
 
 #ifdef _WIN32
-    #TODO : this is not implemented
+    /* FIX: win32
     if (!CopyFile(src_path, dst_path, FALSE)) {
         nob_log(NOB_ERROR, "Could not copy file: %s", nob_win32_error_message(GetLastError()));
         return Error.io;
     }
+    */
     return EOK;
 #else
     int src_fd = -1;
@@ -560,13 +678,11 @@ cex_os__env__get(const char* name, const char* deflt)
 static void
 cex_os__env__set(const char* name, const char* value, bool overwrite)
 {
+#ifdef _WIN32
+    _putenv_s(name, value);
+#else
     setenv(name, value, overwrite);
-}
-
-static void
-cex_os__env__unset(const char* name)
-{
-    unsetenv(name);
+#endif
 }
 
 static bool
@@ -761,19 +877,19 @@ end:
 }
 
 static FILE*
-cex_os__cmd__stdout(os_cmd_c* self)
+cex_os__cmd__fstdout(os_cmd_c* self)
 {
     return self->_subpr.stdout_file;
 }
 
 static FILE*
-cex_os__cmd__stderr(os_cmd_c* self)
+cex_os__cmd__fstderr(os_cmd_c* self)
 {
     return self->_subpr.stderr_file;
 }
 
 static FILE*
-cex_os__cmd__stdin(os_cmd_c* self)
+cex_os__cmd__fstdin(os_cmd_c* self)
 {
     return self->_subpr.stdin_file;
 }
@@ -854,6 +970,7 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 
 #ifdef _WIN32
     // FIX:  WIN32 uncompilable
+    /*
 
     // https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
 
@@ -901,6 +1018,8 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
     CloseHandle(piProcInfo.hThread);
 
     return piProcInfo.hProcess;
+    */
+    return "TODO";
 #else
     pid_t cpid = fork();
     if (cpid < 0) {
@@ -935,21 +1054,21 @@ cex_os__platform__current(void)
 #elif __APPLE__ && __MACH__
     return OSPlatform__macos;
 #elif __unix__
-    #ifdef __FreeBSD__
+#    ifdef __FreeBSD__
     return OSPlatform__freebsd;
-    #elif __NetBSD__
+#    elif __NetBSD__
     return OSPlatform__netbsd;
-    #elif __OpenBSD__
+#    elif __OpenBSD__
     return OSPlatform__openbsd;
-    #elif __ANDROID__
+#    elif __ANDROID__
     return OSPlatform__android;
-    #else
-        #error "Untested platform. Need more?"
-    #endif
+#    else
+#        error "Untested platform. Need more?"
+#    endif
 #elif __wasm__
     return OSPlatform__wasm;
 #else
-    #error "Untested platform. Need more?"
+#    error "Untested platform. Need more?"
 #endif
 }
 
@@ -1015,22 +1134,21 @@ const struct __cex_namespace__os os = {
 
     .cmd = {
         .create = cex_os__cmd__create,
+        .fstderr = cex_os__cmd__fstderr,
+        .fstdin = cex_os__cmd__fstdin,
+        .fstdout = cex_os__cmd__fstdout,
         .is_alive = cex_os__cmd__is_alive,
         .join = cex_os__cmd__join,
         .kill = cex_os__cmd__kill,
         .read_all = cex_os__cmd__read_all,
         .read_line = cex_os__cmd__read_line,
         .run = cex_os__cmd__run,
-        .stderr = cex_os__cmd__stderr,
-        .stdin = cex_os__cmd__stdin,
-        .stdout = cex_os__cmd__stdout,
         .write_line = cex_os__cmd__write_line,
     },
 
     .env = {
         .get = cex_os__env__get,
         .set = cex_os__env__set,
-        .unset = cex_os__env__unset,
     },
 
     .fs = {

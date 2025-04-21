@@ -5,6 +5,7 @@
 #pragma once
 #include "all.h"
 #include "cex_base.c"
+#include "cex_header.c"
 #include "sbuf.c"
 #include "mem.c"
 #include "AllocatorHeap.c"

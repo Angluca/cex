@@ -1,6 +1,6 @@
 #pragma once
 #include "_sprintf.h"
-#include "all.h"
+#include "all.c"
 
 static inline bool
 _cex_str__isvalid(const str_s* s)
@@ -129,6 +129,27 @@ cex_str_sub(const char* s, isize start, isize end)
     return cex_str__slice__sub(slice, start, end);
 }
 
+#ifdef _WIN32
+static char *_cex_str_stpncpy(char *dst, const char *src, size_t len)
+{
+    for (usize i = 0; i < len; ++i)
+    {
+        const char copy_byte = src[i];
+        dst[i] = copy_byte;
+        if (copy_byte == '\0')
+        {
+            // Zero fill and return:
+            for (usize j = i+1; j < len; ++j)
+            {
+                dst[j] = '\0';
+            }
+            return dst + i;
+        }
+    }
+    return dst + len;
+}
+#endif
+
 static Exception
 cex_str_copy(char* dest, const char* src, usize destlen)
 {
@@ -141,7 +162,11 @@ cex_str_copy(char* dest, const char* src, usize destlen)
         return Error.argument;
     }
 
+#ifdef _WIN32
+    char* pend = _cex_str_stpncpy(dest, src, destlen);
+#else 
     char* pend = stpncpy(dest, src, destlen);
+#endif
     dest[destlen - 1] = '\0'; // always secure last byte of destlen
 
     if (unlikely((pend - dest) >= (isize)destlen)) {

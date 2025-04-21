@@ -153,6 +153,12 @@ cex_bundle(void)
         $pn("\n\n");
         $pn("#if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)\n");
 
+        e$except_null(cex_header = io.file.load("src/cex_header.c", _))
+        {
+            exit(1);
+        }
+        $pn(cex_header);
+
         $pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
         embed_code(&hbuf, "src/cex_boilerplate.c");
 

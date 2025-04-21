@@ -31,9 +31,9 @@ test$case(os_cmd_file_handles)
         arr$pushm(args, "tests/build/os_test/write_lines", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
-        tassert(os.cmd.stderr(&c) == c._subpr.stderr_file);
-        tassert(os.cmd.stdout(&c) == c._subpr.stdout_file);
-        tassert(os.cmd.stdin(&c) == c._subpr.stdin_file);
+        tassert(os.cmd.fstderr(&c) == c._subpr.stderr_file);
+        tassert(os.cmd.fstdout(&c) == c._subpr.stdout_file);
+        tassert(os.cmd.fstdin(&c) == c._subpr.stdin_file);
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);

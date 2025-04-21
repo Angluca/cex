@@ -1,5 +1,6 @@
 #pragma once
 #include "argparse.h"
+#include <math.h>
 
 static const char*
 _cex_argparse__prefix_skip(const char* str, const char* prefix)
@@ -281,7 +282,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
             }
             if (opt->type == CexArgParseType__f32) {
                 f32 res = *(f32*)opt->value;
-                if (isnanf(res) || res == INFINITY || res == -INFINITY) {
+                if (__builtin_isnan(res) || res == INFINITY || res == -INFINITY) {
                     return _cex_argparse__error(
                         self,
                         opt,
@@ -291,7 +292,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                 }
             } else if (opt->type == CexArgParseType__f64) {
                 f64 res = *(f64*)opt->value;
-                if (isnanf(res) || res == INFINITY || res == -INFINITY) {
+                if (__builtin_isnan(res) || res == INFINITY || res == -INFINITY) {
                     return _cex_argparse__error(
                         self,
                         opt,

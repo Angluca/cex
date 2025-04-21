@@ -150,15 +150,15 @@ struct __cex_namespace__os {
 
     struct {
         Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
+        FILE*           (*fstderr)(os_cmd_c* self);
+        FILE*           (*fstdin)(os_cmd_c* self);
+        FILE*           (*fstdout)(os_cmd_c* self);
         bool            (*is_alive)(os_cmd_c* self);
         Exception       (*join)(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code);
         Exception       (*kill)(os_cmd_c* self);
         char*           (*read_all)(os_cmd_c* self, IAllocator allc);
         char*           (*read_line)(os_cmd_c* self, IAllocator allc);
         Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
-        FILE*           (*stderr)(os_cmd_c* self);
-        FILE*           (*stdin)(os_cmd_c* self);
-        FILE*           (*stdout)(os_cmd_c* self);
         Exception       (*write_line)(os_cmd_c* self, char* line);
     } cmd;
 

@@ -35,11 +35,11 @@ struct _cex_test_context_s
 };
 
 #if defined(__clang__)
-#define test$NOOPT __attribute__((optnone))
+#    define test$NOOPT __attribute__((optnone))
 #elif defined(__GNUC__) || defined(__GNUG__)
-#define test$NOOPT __attribute__((optimize("O0")))
+#    define test$NOOPT __attribute__((optimize("O0")))
 #elif defined(_MSC_VER)
-#error "MSVC deprecated"
+#    error "MSVC deprecated"
 #endif
 
 #define _test$log_err(msg) __FILE__ ":" cex$stringize(__LINE__) " -> " msg
@@ -47,7 +47,7 @@ struct _cex_test_context_s
     ({                                                                                             \
         if (_cex_test__mainfn_state.breakpoint) {                                                  \
             fprintf(stderr, "[BREAK] %s\n", _test$log_err("breakpoint hit"));                      \
-            raise(SIGTRAP);                                                                        \
+            breakpoint();                                                                          \
         }                                                                                          \
     })
 
@@ -72,14 +72,16 @@ struct _cex_test_context_s
 
 
 #ifndef CEX_TEST
-#define test$env_check()                                                                           \
-    fprintf(stderr, "CEX_TEST was not defined, pass -DCEX_TEST or #define CEX_TEST");                 \
-    exit(1);
+#    define test$env_check()                                                                       \
+        fprintf(stderr, "CEX_TEST was not defined, pass -DCEX_TEST or #define CEX_TEST");          \
+        exit(1);
 #else
-#define test$env_check() (void)0
+#    define test$env_check() (void)0
 #endif
 
 #define test$main()                                                                                \
+    _Pragma("GCC diagnostic push"); /* Mingw64:  warning: visibility attribute not supported */    \
+    _Pragma("GCC diagnostic ignored \"-Wattributes\"");                                            \
     struct _cex_test_context_s _cex_test__mainfn_state = { .suite_file = __FILE__ };               \
     int main(int argc, char** argv)                                                                \
     {                                                                                              \
@@ -169,7 +171,7 @@ struct _cex_test_context_s
            _test$tassert_breakpoint();                                                             \
            if (str.sprintf(                                                                        \
                    _cex_test__mainfn_state.str_buf,                                                \
-                   CEX_TEST_AMSG_MAX_LEN - 1,                                                       \
+                   CEX_TEST_AMSG_MAX_LEN - 1,                                                      \
                    _test$log_err(M),                                                               \
                    ##__VA_ARGS__                                                                   \
                )) {                                                                                \
@@ -225,7 +227,7 @@ struct _cex_test_context_s
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
                     _cex_test__mainfn_state.str_buf,                                               \
-                    CEX_TEST_AMSG_MAX_LEN - 1,                                                      \
+                    CEX_TEST_AMSG_MAX_LEN - 1,                                                     \
                     _test$log_err("a and b are not binary equal")                                  \
                 )) {                                                                               \
             }                                                                                      \
@@ -249,7 +251,7 @@ struct _cex_test_context_s
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
                     _cex_test__mainfn_state.str_buf,                                               \
-                    CEX_TEST_AMSG_MAX_LEN - 1,                                                      \
+                    CEX_TEST_AMSG_MAX_LEN - 1,                                                     \
                     _test$log_err("array length is different %ld != %ld"),                         \
                     _alen,                                                                         \
                     _blen                                                                          \
@@ -262,7 +264,7 @@ struct _cex_test_context_s
                     _test$tassert_breakpoint();                                                    \
                     if (str.sprintf(                                                               \
                             _cex_test__mainfn_state.str_buf,                                       \
-                            CEX_TEST_AMSG_MAX_LEN - 1,                                              \
+                            CEX_TEST_AMSG_MAX_LEN - 1,                                             \
                             _test$log_err("array element at index [%d] is different"),             \
                             i                                                                      \
                         )) {                                                                       \

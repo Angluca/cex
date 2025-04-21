@@ -557,7 +557,7 @@ AllocatorArena_destroy(IAllocator self)
     mem$free(mem$, allc);
 }
 
-thread_local AllocatorArena_c _cex__default_global__allocator_temp = {
+_Thread_local AllocatorArena_c _cex__default_global__allocator_temp = {
     .alloc = {
         .malloc = _cex_allocator_arena__malloc,
         .realloc = _cex_allocator_arena__realloc,

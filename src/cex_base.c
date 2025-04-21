@@ -29,7 +29,7 @@ __cex__panic(void)
     sanitizer_stack_trace();
 
 #ifdef CEX_TEST
-    raise(SIGTRAP);
+    breakpoint();
 #else
     abort();
 #endif
