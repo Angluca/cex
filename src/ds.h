@@ -23,16 +23,16 @@ enum _CexDsKeyType_e
     _CexDsKeyType__charbuf,
     _CexDsKeyType__cexstr,
 };
-extern void* _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, u16 el_align, IAllocator allc);
+extern void* _cexds__arrgrowf(void* a, usize elemsize, usize addlen, usize min_cap, u16 el_align, IAllocator allc);
 extern void _cexds__arrfreef(void* a);
-extern bool _cexds__arr_integrity(const void* arr, size_t magic_num);
+extern bool _cexds__arr_integrity(const void* arr, usize magic_num);
 extern usize _cexds__arr_len(const void* arr);
-extern void _cexds__hmfree_func(void* p, size_t elemsize);
+extern void _cexds__hmfree_func(void* p, usize elemsize, usize keyoffset);
 extern void _cexds__hmclear_func(struct _cexds__hash_index* t, struct _cexds__hash_index* old_table);
-extern void* _cexds__hminit(size_t elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, u16 el_align, struct _cexds__hm_new_kwargs_s* kwargs);
-extern void* _cexds__hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
-extern void* _cexds__hmput_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, void* full_elem, void* result);
-extern bool _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
+extern void* _cexds__hminit(usize elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, u16 el_align, struct _cexds__hm_new_kwargs_s* kwargs);
+extern void* _cexds__hmget_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset);
+extern void* _cexds__hmput_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset, void* full_elem, void* result);
+extern bool _cexds__hmdel_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset);
 // clang-format on
 
 #define _CEXDS_ARR_MAGIC 0xC001DAAD
@@ -52,14 +52,14 @@ typedef struct
     u32 magic_num;
     u16 allocator_scope_depth;
     u16 el_align;
-    size_t capacity;
-    size_t length; // This MUST BE LAST before __poison_area
-    u8 __poison_area[sizeof(size_t)];
+    usize capacity;
+    usize length; // This MUST BE LAST before __poison_area
+    u8 __poison_area[sizeof(usize)];
 } _cexds__array_header;
-_Static_assert(alignof(_cexds__array_header) == alignof(size_t), "align");
+_Static_assert(alignof(_cexds__array_header) == alignof(usize), "align");
 _Static_assert(sizeof(_cexds__array_header) % alignof(max_align_t) == 0, "align size");
 _Static_assert(
-    sizeof(size_t) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
+    sizeof(usize) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
     "size for x64 is 48 / for x32 is 32"
 );
 
@@ -73,7 +73,7 @@ struct _cexds__arr_new_kwargs_s
 };
 #define arr$new(a, allocator, kwargs...)                                                            \
     ({                                                                                              \
-        _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
+        _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");                \
         uassert(allocator != NULL);                                                                 \
         struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                       \
         (a) = (typeof(*a                                                                            \
@@ -248,7 +248,8 @@ struct _cexds__arr_new_kwargs_s
 struct _cexds__hm_new_kwargs_s
 {
     usize capacity;
-    size_t seed;
+    usize seed;
+    u32 copy_keys_arena_pgsize;
     bool copy_keys;
 };
 
@@ -377,7 +378,7 @@ struct _cexds__hm_new_kwargs_s
     })
 
 
-#define hm$free(t) (_cexds__hmfree_func((t), sizeof *(t)), (t) = NULL)
+#define hm$free(t) (_cexds__hmfree_func((t), sizeof *(t), offsetof(typeof(*t), key)), (t) = NULL)
 
 #define hm$len(t)                                                                                  \
     ({                                                                                             \
@@ -396,7 +397,7 @@ typedef struct _cexds__string_block
 struct _cexds__string_arena
 {
     _cexds__string_block* storage;
-    size_t remaining;
+    usize remaining;
     unsigned char block;
     unsigned char mode; // this isn't used by the string arena itself
 };

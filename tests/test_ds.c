@@ -1154,4 +1154,48 @@ test$case(test_mem_scope_lifetime_test)
     return EOK;
 }
 
+test$case(test_hashmap_string_copy)
+{
+    hm$(const char*, int) smap = hm$new(smap, mem$, .copy_keys = true);
+
+    char key2[10] = "foo";
+
+    hm$set(smap, key2, 3);
+    tassert_eq(hm$len(smap), 1);
+    tassert_eq(hm$get(smap, "foo"), 3);
+    tassert_eq(hm$get(smap, key2), 3);
+    tassert_eq(smap[0].key, "foo");
+
+    memset(key2, 0, sizeof(key2));
+    tassert_eq(smap[0].key, "foo");
+    tassert_eq(hm$get(smap, "foo"), 3);
+
+    hm$free(smap);
+    return EOK;
+}
+
+test$case(test_hashmap_string_copy_custom_struct)
+{
+    struct
+    {
+        int value;
+        char* key;
+    }* smap = hm$new(smap, mem$, .copy_keys = true);
+
+    char key2[10] = "foo";
+
+    hm$set(smap, key2, 3);
+    tassert_eq(hm$len(smap), 1);
+    tassert_eq(hm$get(smap, "foo"), 3);
+    tassert_eq(hm$get(smap, key2), 3);
+    tassert_eq(smap[0].key, "foo");
+
+    memset(key2, 0, sizeof(key2));
+    tassert_eq(smap[0].key, "foo");
+    tassert_eq(hm$get(smap, "foo"), 3);
+
+    hm$free(smap);
+    return EOK;
+}
+
 test$main();

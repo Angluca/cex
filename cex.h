@@ -962,16 +962,16 @@ enum _CexDsKeyType_e
     _CexDsKeyType__charbuf,
     _CexDsKeyType__cexstr,
 };
-extern void* _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, u16 el_align, IAllocator allc);
+extern void* _cexds__arrgrowf(void* a, usize elemsize, usize addlen, usize min_cap, u16 el_align, IAllocator allc);
 extern void _cexds__arrfreef(void* a);
-extern bool _cexds__arr_integrity(const void* arr, size_t magic_num);
+extern bool _cexds__arr_integrity(const void* arr, usize magic_num);
 extern usize _cexds__arr_len(const void* arr);
-extern void _cexds__hmfree_func(void* p, size_t elemsize);
+extern void _cexds__hmfree_func(void* p, usize elemsize, usize keyoffset);
 extern void _cexds__hmclear_func(struct _cexds__hash_index* t, struct _cexds__hash_index* old_table);
-extern void* _cexds__hminit(size_t elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, u16 el_align, struct _cexds__hm_new_kwargs_s* kwargs);
-extern void* _cexds__hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
-extern void* _cexds__hmput_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, void* full_elem, void* result);
-extern bool _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
+extern void* _cexds__hminit(usize elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, u16 el_align, struct _cexds__hm_new_kwargs_s* kwargs);
+extern void* _cexds__hmget_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset);
+extern void* _cexds__hmput_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset, void* full_elem, void* result);
+extern bool _cexds__hmdel_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset);
 // clang-format on
 
 #define _CEXDS_ARR_MAGIC 0xC001DAAD
@@ -991,14 +991,14 @@ typedef struct
     u32 magic_num;
     u16 allocator_scope_depth;
     u16 el_align;
-    size_t capacity;
-    size_t length; // This MUST BE LAST before __poison_area
-    u8 __poison_area[sizeof(size_t)];
+    usize capacity;
+    usize length; // This MUST BE LAST before __poison_area
+    u8 __poison_area[sizeof(usize)];
 } _cexds__array_header;
-_Static_assert(alignof(_cexds__array_header) == alignof(size_t), "align");
+_Static_assert(alignof(_cexds__array_header) == alignof(usize), "align");
 _Static_assert(sizeof(_cexds__array_header) % alignof(max_align_t) == 0, "align size");
 _Static_assert(
-    sizeof(size_t) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
+    sizeof(usize) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
     "size for x64 is 48 / for x32 is 32"
 );
 
@@ -1012,7 +1012,7 @@ struct _cexds__arr_new_kwargs_s
 };
 #define arr$new(a, allocator, kwargs...)                                                            \
     ({                                                                                              \
-        _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
+        _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");                \
         uassert(allocator != NULL);                                                                 \
         struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                       \
         (a) = (typeof(*a                                                                            \
@@ -1187,7 +1187,8 @@ struct _cexds__arr_new_kwargs_s
 struct _cexds__hm_new_kwargs_s
 {
     usize capacity;
-    size_t seed;
+    usize seed;
+    u32 copy_keys_arena_pgsize;
     bool copy_keys;
 };
 
@@ -1316,7 +1317,7 @@ struct _cexds__hm_new_kwargs_s
     })
 
 
-#define hm$free(t) (_cexds__hmfree_func((t), sizeof *(t)), (t) = NULL)
+#define hm$free(t) (_cexds__hmfree_func((t), sizeof *(t), offsetof(typeof(*t), key)), (t) = NULL)
 
 #define hm$len(t)                                                                                  \
     ({                                                                                             \
@@ -1335,7 +1336,7 @@ typedef struct _cexds__string_block
 struct _cexds__string_arena
 {
     _cexds__string_block* storage;
-    size_t remaining;
+    usize remaining;
     unsigned char block;
     unsigned char mode; // this isn't used by the string arena itself
 };
@@ -5096,14 +5097,14 @@ const struct __cex_namespace__AllocatorArena AllocatorArena = {
 
 #ifdef _CEXDS_STATISTICS
 #    define _CEXDS_STATS(x) x
-size_t _cexds__array_grow;
-size_t _cexds__hash_grow;
-size_t _cexds__hash_shrink;
-size_t _cexds__hash_rebuild;
-size_t _cexds__hash_probes;
-size_t _cexds__hash_alloc;
-size_t _cexds__rehash_probes;
-size_t _cexds__rehash_items;
+usize _cexds__array_grow;
+usize _cexds__hash_grow;
+usize _cexds__hash_shrink;
+usize _cexds__hash_rebuild;
+usize _cexds__hash_probes;
+usize _cexds__hash_alloc;
+usize _cexds__rehash_probes;
+usize _cexds__rehash_items;
 #else
 #    define _CEXDS_STATS(x)
 #endif
@@ -5126,7 +5127,7 @@ _cexds__base(_cexds__array_header* hdr)
 }
 
 bool
-_cexds__arr_integrity(const void* arr, size_t magic_num)
+_cexds__arr_integrity(const void* arr, usize magic_num)
 {
     (void)magic_num;
     _cexds__array_header* hdr = _cexds__header(arr);
@@ -5160,9 +5161,9 @@ _cexds__arr_len(const void* arr)
 void*
 _cexds__arrgrowf(
     void* arr,
-    size_t elemsize,
-    size_t addlen,
-    size_t min_cap,
+    usize elemsize,
+    usize addlen,
+    usize min_cap,
     u16 el_align,
     IAllocator allc
 )
@@ -5181,7 +5182,7 @@ _cexds__arrgrowf(
         _cexds__arr_integrity(arr, 0);
     }
     _cexds__array_header temp = { 0 }; // force debugging
-    size_t min_len = (arr ? _cexds__header(arr)->length : 0) + addlen;
+    usize min_len = (arr ? _cexds__header(arr)->length : 0) + addlen;
     (void)sizeof(temp);
 
     // compute the minimum capacity needed
@@ -5202,7 +5203,7 @@ _cexds__arrgrowf(
         return arr;
     }
 
-    // General types with alignment <= size_t use generic realloc (less mem overhead + realloc faster)
+    // General types with alignment <= usize use generic realloc (less mem overhead + realloc faster)
     el_align = (el_align <= alignof(_cexds__array_header)) ? alignof(_cexds__array_header) : 64;
 
     void* new_arr;
@@ -5281,7 +5282,7 @@ _cexds__arrfreef(void* a)
 
 typedef struct
 {
-    size_t hash[_CEXDS_BUCKET_LENGTH];
+    usize hash[_CEXDS_BUCKET_LENGTH];
     ptrdiff_t index[_CEXDS_BUCKET_LENGTH];
 } _cexds__hash_bucket; // in 32-bit, this is one 64-byte cache line; in 64-bit, each array is one
                        // 64-byte cache line
@@ -5289,16 +5290,17 @@ _Static_assert(sizeof(_cexds__hash_bucket) == 128, "cacheline aligned");
 
 typedef struct _cexds__hash_index
 {
-    size_t slot_count;
-    size_t used_count;
-    size_t used_count_threshold;
-    size_t used_count_shrink_threshold;
-    size_t tombstone_count;
-    size_t tombstone_count_threshold;
-    size_t seed;
-    size_t slot_count_log2;
-    _cexds__string_arena string;
+    usize slot_count;
+    usize used_count;
+    usize used_count_threshold;
+    usize used_count_shrink_threshold;
+    usize tombstone_count;
+    usize tombstone_count_threshold;
+    usize seed;
+    usize slot_count_log2;
     enum _CexDsKeyType_e key_type;
+    AllocatorArena_c* key_arena;
+    bool copy_keys;
 
     // not a separate allocation, just 64-byte aligned storage after this struct
     _cexds__hash_bucket* storage;
@@ -5311,12 +5313,12 @@ typedef struct _cexds__hash_index
 #define _CEXDS_HASH_EMPTY 0
 #define _CEXDS_HASH_DELETED 1
 
-#define _CEXDS_SIZE_T_BITS ((sizeof(size_t)) * 8)
+#define _CEXDS_usize_BITS ((sizeof(usize)) * 8)
 
-static inline size_t
-_cexds__probe_position(size_t hash, size_t slot_count, size_t slot_log2)
+static inline usize
+_cexds__probe_position(usize hash, usize slot_count, usize slot_log2)
 {
-    size_t pos;
+    usize pos;
     (void)(slot_log2);
     pos = hash & (slot_count - 1);
 #ifdef _CEXDS_INTERNAL_BUCKET_START
@@ -5325,10 +5327,10 @@ _cexds__probe_position(size_t hash, size_t slot_count, size_t slot_log2)
     return pos;
 }
 
-static inline size_t
-_cexds__log2(size_t slot_count)
+static inline usize
+_cexds__log2(usize slot_count)
 {
-    size_t n = 0;
+    usize n = 0;
     while (slot_count > 1) {
         slot_count >>= 1;
         ++n;
@@ -5351,16 +5353,16 @@ _cexds__hmclear_func(struct _cexds__hash_index* t, _cexds__hash_index* old_table
     // TODO: cleanup strings from old table???
 
     if (old_table) {
-        t->string = old_table->string;
-        // reuse old seed so we can reuse old hashes so below "copy out old data" doesn't do any
-        // hashing
+        t->key_arena = old_table->key_arena;
         t->seed = old_table->seed;
+        t->key_arena = old_table->key_arena;
+        t->copy_keys = old_table->copy_keys;
     } else {
-        memset(&t->string, 0, sizeof(t->string));
+        // memset(&t->string, 0, sizeof(t->string));
         uassert(t->seed != 0);
     }
 
-    size_t i, j;
+    usize i, j;
     for (i = 0; i < t->slot_count >> _CEXDS_BUCKET_SHIFT; ++i) {
         _cexds__hash_bucket* b = &t->storage[i];
         for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) {
@@ -5374,10 +5376,10 @@ _cexds__hmclear_func(struct _cexds__hash_index* t, _cexds__hash_index* old_table
 
 static _cexds__hash_index*
 _cexds__make_hash_index(
-    size_t slot_count,
+    usize slot_count,
     _cexds__hash_index* old_table,
     IAllocator allc,
-    size_t hash_seed,
+    usize hash_seed,
     enum _CexDsKeyType_e key_type
 )
 {
@@ -5389,7 +5391,7 @@ _cexds__make_hash_index(
     if (t == NULL) {
         return NULL; // memory error
     }
-    t->storage = (_cexds__hash_bucket*)mem$aligned_pointer((size_t)(t + 1), _CEXDS_CACHE_LINE_SIZE);
+    t->storage = (_cexds__hash_bucket*)mem$aligned_pointer((usize)(t + 1), _CEXDS_CACHE_LINE_SIZE);
     t->slot_count = slot_count;
     t->slot_count_log2 = _cexds__log2(slot_count);
     t->tombstone_count = 0;
@@ -5414,18 +5416,18 @@ _cexds__make_hash_index(
 
     // copy out the old data, if any
     if (old_table) {
-        size_t i, j;
+        usize i, j;
         t->used_count = old_table->used_count;
         for (i = 0; i < old_table->slot_count >> _CEXDS_BUCKET_SHIFT; ++i) {
             _cexds__hash_bucket* ob = &old_table->storage[i];
             for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) {
                 if (_CEXDS_INDEX_IN_USE(ob->index[j])) {
-                    size_t hash = ob->hash[j];
-                    size_t pos = _cexds__probe_position(hash, t->slot_count, t->slot_count_log2);
-                    size_t step = _CEXDS_BUCKET_LENGTH;
+                    usize hash = ob->hash[j];
+                    usize pos = _cexds__probe_position(hash, t->slot_count, t->slot_count_log2);
+                    usize step = _CEXDS_BUCKET_LENGTH;
                     _CEXDS_STATS(++_cexds__rehash_items);
                     for (;;) {
-                        size_t limit, z;
+                        usize limit, z;
                         _cexds__hash_bucket* bucket;
                         bucket = &t->storage[pos >> _CEXDS_BUCKET_SHIFT];
                         _CEXDS_STATS(++_cexds__rehash_probes);
@@ -5460,14 +5462,14 @@ _cexds__make_hash_index(
     return t;
 }
 
-#define _CEXDS_ROTATE_LEFT(val, n) (((val) << (n)) | ((val) >> (_CEXDS_SIZE_T_BITS - (n))))
-#define _CEXDS_ROTATE_RIGHT(val, n) (((val) >> (n)) | ((val) << (_CEXDS_SIZE_T_BITS - (n))))
+#define _CEXDS_ROTATE_LEFT(val, n) (((val) << (n)) | ((val) >> (_CEXDS_usize_BITS - (n))))
+#define _CEXDS_ROTATE_RIGHT(val, n) (((val) >> (n)) | ((val) << (_CEXDS_usize_BITS - (n))))
 
 
 #ifdef _CEXDS_SIPHASH_2_4
 #    define _CEXDS_SIPHASH_C_ROUNDS 2
 #    define _CEXDS_SIPHASH_D_ROUNDS 4
-typedef int _CEXDS_SIPHASH_2_4_can_only_be_used_in_64_bit_builds[sizeof(size_t) == 8 ? 1 : -1];
+typedef int _CEXDS_SIPHASH_2_4_can_only_be_used_in_64_bit_builds[sizeof(usize) == 8 ? 1 : -1];
 #endif
 
 #ifndef _CEXDS_SIPHASH_C_ROUNDS
@@ -5477,13 +5479,13 @@ typedef int _CEXDS_SIPHASH_2_4_can_only_be_used_in_64_bit_builds[sizeof(size_t) 
 #    define _CEXDS_SIPHASH_D_ROUNDS 1
 #endif
 
-static inline size_t
-_cexds__hash_string(const char* str, size_t str_cap, size_t seed)
+static inline usize
+_cexds__hash_string(const char* str, usize str_cap, usize seed)
 {
-    size_t hash = seed;
+    usize hash = seed;
     // NOTE: using max buffer capacity capping, this allows using hash
     //       on char buf[N] - without stack overflowing
-    for (size_t i = 0; i < str_cap && *str; i++) {
+    for (usize i = 0; i < str_cap && *str; i++) {
         hash = _CEXDS_ROTATE_LEFT(hash, 9) + (unsigned char)*str++;
     }
 
@@ -5498,21 +5500,21 @@ _cexds__hash_string(const char* str, size_t str_cap, size_t seed)
     return hash + seed;
 }
 
-static inline size_t
-_cexds__siphash_bytes(const void* p, size_t len, size_t seed)
+static inline usize
+_cexds__siphash_bytes(const void* p, usize len, usize seed)
 {
     unsigned char* d = (unsigned char*)p;
-    size_t i, j;
-    size_t v0, v1, v2, v3, data;
+    usize i, j;
+    usize v0, v1, v2, v3, data;
 
     // hash that works on 32- or 64-bit registers without knowing which we have
     // (computes different results on 32-bit and 64-bit platform)
     // derived from siphash, but on 32-bit platforms very different as it uses 4 32-bit state not 4
     // 64-bit
-    v0 = ((((size_t)0x736f6d65 << 16) << 16) + 0x70736575) ^ seed;
-    v1 = ((((size_t)0x646f7261 << 16) << 16) + 0x6e646f6d) ^ ~seed;
-    v2 = ((((size_t)0x6c796765 << 16) << 16) + 0x6e657261) ^ seed;
-    v3 = ((((size_t)0x74656462 << 16) << 16) + 0x79746573) ^ ~seed;
+    v0 = ((((usize)0x736f6d65 << 16) << 16) + 0x70736575) ^ seed;
+    v1 = ((((usize)0x646f7261 << 16) << 16) + 0x6e646f6d) ^ ~seed;
+    v2 = ((((usize)0x6c796765 << 16) << 16) + 0x6e657261) ^ seed;
+    v3 = ((((usize)0x74656462 << 16) << 16) + 0x79746573) ^ ~seed;
 
 #ifdef _CEXDS_TEST_SIPHASH_2_4
     // hardcoded with key material in the siphash test vectors
@@ -5527,23 +5529,23 @@ _cexds__siphash_bytes(const void* p, size_t len, size_t seed)
         v0 += v1;                                                                                  \
         v1 = _CEXDS_ROTATE_LEFT(v1, 13);                                                           \
         v1 ^= v0;                                                                                  \
-        v0 = _CEXDS_ROTATE_LEFT(v0, _CEXDS_SIZE_T_BITS / 2);                                       \
+        v0 = _CEXDS_ROTATE_LEFT(v0, _CEXDS_usize_BITS / 2);                                       \
         v2 += v3;                                                                                  \
         v3 = _CEXDS_ROTATE_LEFT(v3, 16);                                                           \
         v3 ^= v2;                                                                                  \
         v2 += v1;                                                                                  \
         v1 = _CEXDS_ROTATE_LEFT(v1, 17);                                                           \
         v1 ^= v2;                                                                                  \
-        v2 = _CEXDS_ROTATE_LEFT(v2, _CEXDS_SIZE_T_BITS / 2);                                       \
+        v2 = _CEXDS_ROTATE_LEFT(v2, _CEXDS_usize_BITS / 2);                                       \
         v0 += v3;                                                                                  \
         v3 = _CEXDS_ROTATE_LEFT(v3, 21);                                                           \
         v3 ^= v0;                                                                                  \
     } while (0)
 
-    for (i = 0; i + sizeof(size_t) <= len; i += sizeof(size_t), d += sizeof(size_t)) {
+    for (i = 0; i + sizeof(usize) <= len; i += sizeof(usize), d += sizeof(usize)) {
         data = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
-        data |= (size_t)(d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24))
-             << 16 << 16; // discarded if size_t == 4
+        data |= (usize)(d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24))
+             << 16 << 16; // discarded if usize == 4
 
         v3 ^= data;
         for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) {
@@ -5551,14 +5553,14 @@ _cexds__siphash_bytes(const void* p, size_t len, size_t seed)
         }
         v0 ^= data;
     }
-    data = len << (_CEXDS_SIZE_T_BITS - 8);
+    data = len << (_CEXDS_usize_BITS - 8);
     switch (len - i) {
         case 7:
-            data |= ((size_t)d[6] << 24) << 24; // fall through
+            data |= ((usize)d[6] << 24) << 24; // fall through
         case 6:
-            data |= ((size_t)d[5] << 20) << 20; // fall through
+            data |= ((usize)d[5] << 20) << 20; // fall through
         case 5:
-            data |= ((size_t)d[4] << 16) << 16; // fall through
+            data |= ((usize)d[4] << 16) << 16; // fall through
         case 4:
             data |= (d[3] << 24); // fall through
         case 3:
@@ -5589,8 +5591,8 @@ _cexds__siphash_bytes(const void* p, size_t len, size_t seed)
 #endif
 }
 
-static inline size_t
-_cexds__hash_bytes(const void* p, size_t len, size_t seed)
+static inline usize
+_cexds__hash_bytes(const void* p, usize len, usize seed)
 {
 #ifdef _CEXDS_SIPHASH_2_4
     return _cexds__siphash_bytes(p, len, seed);
@@ -5609,13 +5611,13 @@ _cexds__hash_bytes(const void* p, size_t len, size_t seed)
         hash = hash * 0x27d4eb2d;
         hash ^= seed;
         hash = hash ^ (hash >> 15);
-        return (((size_t)hash << 16 << 16) | hash) ^ seed;
-    } else if (len == 8 && sizeof(size_t) == 8) {
-        size_t hash = (size_t)d[0] | ((size_t)d[1] << 8) | ((size_t)d[2] << 16) |
-                      ((size_t)d[3] << 24);
+        return (((usize)hash << 16 << 16) | hash) ^ seed;
+    } else if (len == 8 && sizeof(usize) == 8) {
+        usize hash = (usize)d[0] | ((usize)d[1] << 8) | ((usize)d[2] << 16) |
+                      ((usize)d[3] << 24);
 
-        hash |= (size_t)((size_t)d[4] | ((size_t)d[5] << 8) | ((size_t)d[6] << 16) |
-                         ((size_t)d[7] << 24))
+        hash |= (usize)((usize)d[4] | ((usize)d[5] << 8) | ((usize)d[6] << 16) |
+                         ((usize)d[7] << 24))
              << 16 << 16;
         hash ^= seed;
         hash = (~hash) + (hash << 21);
@@ -5634,8 +5636,8 @@ _cexds__hash_bytes(const void* p, size_t len, size_t seed)
 #endif
 }
 
-static inline size_t
-_cexds__hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, size_t seed)
+static inline usize
+_cexds__hash(enum _CexDsKeyType_e key_type, const void* key, usize key_size, usize seed)
 {
     switch (key_type) {
         case _CexDsKeyType__generic:
@@ -5661,12 +5663,12 @@ _cexds__hash(enum _CexDsKeyType_e key_type, const void* key, size_t key_size, si
 static bool
 _cexds__is_key_equal(
     void* a,
-    size_t elemsize,
+    usize elemsize,
     void* key,
-    size_t keysize,
-    size_t keyoffset,
+    usize keysize,
+    usize keyoffset,
     enum _CexDsKeyType_e key_type,
-    size_t i
+    usize i
 )
 {
     void* hm_key = _cexds__item_ptr(a, i, elemsize) + keyoffset;
@@ -5693,8 +5695,37 @@ _cexds__is_key_equal(
     abort();
 }
 
+static inline void*
+_cexds__hmkey_ptr(void* a, usize elemsize, usize index, usize keyoffset)
+{
+    _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->_hash_table;
+    void* key_data_p = NULL;
+    switch (table->key_type) {
+        case _CexDsKeyType__generic:
+            key_data_p = (char*)a + elemsize * index + keyoffset;
+            break;
+
+        case _CexDsKeyType__charbuf:
+            key_data_p = (char*)((char*)a + elemsize * index + keyoffset);
+            break;
+
+        case _CexDsKeyType__charptr:
+            key_data_p = *(char**)((char*)a + elemsize * index + keyoffset);
+            break;
+
+        case _CexDsKeyType__cexstr: {
+            str_s* s = (str_s*)((char*)a + elemsize * index + keyoffset);
+            key_data_p = s;
+            break;
+        }
+        default:
+            unreachable("Not implemented");
+    }
+    return key_data_p;
+}
+
 void
-_cexds__hmfree_func(void* a, size_t elemsize)
+_cexds__hmfree_func(void* a, usize elemsize, usize keyoffset)
 {
     if (a == NULL) {
         return;
@@ -5703,35 +5734,33 @@ _cexds__hmfree_func(void* a, size_t elemsize)
 
     _cexds__array_header* h = _cexds__header(a);
     uassert(h->allocator != NULL);
+    _cexds__hash_index* table = h->_hash_table;
 
-    if (_cexds__hash_table(a) != NULL) {
-        if (_cexds__hash_table(a)->string.mode == _CEXDS_SH_STRDUP) {
-            size_t i;
-            // skip 0th element, which is default
-            for (i = 1; i < h->length; ++i) {
-                h->allocator->free(h->allocator, *(char**)((char*)a + elemsize * i));
+    if (table != NULL) {
+        if (table->copy_keys) {
+            for (usize i = 0; i < h->length; ++i) {
+                h->allocator->free(h->allocator, *(char**)((char*)a + elemsize * i + keyoffset));
             }
         }
-        _cexds__strreset(&_cexds__hash_table(a)->string);
     }
     h->allocator->free(h->allocator, h->_hash_table);
     h->allocator->free(h->allocator, _cexds__base(h));
 }
 
 static ptrdiff_t
-_cexds__hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset)
+_cexds__hm_find_slot(void* a, usize elemsize, void* key, usize keysize, usize keyoffset)
 {
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
     _cexds__hash_index* table = _cexds__hash_table(a);
     enum _CexDsKeyType_e key_type = table->key_type;
-    size_t hash = _cexds__hash(key_type, key, keysize, table->seed);
-    size_t step = _CEXDS_BUCKET_LENGTH;
+    usize hash = _cexds__hash(key_type, key, keysize, table->seed);
+    usize step = _CEXDS_BUCKET_LENGTH;
 
     if (hash < 2) {
         hash += 2; // stored hash values are forbidden from being 0, so we can detect empty slots
     }
 
-    size_t pos = _cexds__probe_position(hash, table->slot_count, table->slot_count_log2);
+    usize pos = _cexds__probe_position(hash, table->slot_count, table->slot_count_log2);
 
     // TODO: check when this could be infinite loop (due to overflow or something)?
     for (;;) {
@@ -5740,7 +5769,7 @@ _cexds__hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t
 
         // start searching from pos to end of bucket, this should help performance on small hash
         // tables that fit in cache
-        for (size_t i = pos & _CEXDS_BUCKET_MASK; i < _CEXDS_BUCKET_LENGTH; ++i) {
+        for (usize i = pos & _CEXDS_BUCKET_MASK; i < _CEXDS_BUCKET_LENGTH; ++i) {
             if (bucket->hash[i] == hash) {
                 if (_cexds__is_key_equal(
                         a,
@@ -5759,8 +5788,8 @@ _cexds__hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t
         }
 
         // search from beginning of bucket to pos
-        size_t limit = pos & _CEXDS_BUCKET_MASK;
-        for (size_t i = 0; i < limit; ++i) {
+        usize limit = pos & _CEXDS_BUCKET_MASK;
+        for (usize i = 0; i < limit; ++i) {
             if (bucket->hash[i] == hash) {
                 if (_cexds__is_key_equal(
                         a,
@@ -5786,7 +5815,7 @@ _cexds__hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t
 }
 
 void*
-_cexds__hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset)
+_cexds__hmget_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset)
 {
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
 
@@ -5795,7 +5824,7 @@ _cexds__hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
         ptrdiff_t slot = _cexds__hm_find_slot(a, elemsize, key, keysize, keyoffset);
         if (slot >= 0) {
             _cexds__hash_bucket* b = &table->storage[slot >> _CEXDS_BUCKET_SHIFT];
-            size_t idx = b->index[slot & _CEXDS_BUCKET_MASK];
+            usize idx = b->index[slot & _CEXDS_BUCKET_MASK];
             return ((char*)a + elemsize * idx);
         }
     }
@@ -5804,19 +5833,21 @@ _cexds__hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
 
 void*
 _cexds__hminit(
-    size_t elemsize,
+    usize elemsize,
     IAllocator allc,
     enum _CexDsKeyType_e key_type,
     u16 el_align,
     struct _cexds__hm_new_kwargs_s* kwargs
 )
 {
-    size_t capacity = 0;
-    size_t hm_seed = 0xBadB0dee;
+    usize capacity = 0;
+    usize hm_seed = 0xBadB0dee;
+    bool copy_keys = false;
 
     if (kwargs) {
         capacity = kwargs->capacity;
         hm_seed = kwargs->seed ? kwargs->seed : hm_seed;
+        copy_keys = kwargs->copy_keys;
     }
     void* a = _cexds__arrgrowf(NULL, elemsize, 0, capacity, el_align, allc);
     if (a == NULL) {
@@ -5842,8 +5873,7 @@ _cexds__hminit(
 
     if (table) {
         // NEW Table initialization here
-        // nt->string.mode = mode >= _CEXDS_HM_STRING ? _CEXDS_SH_DEFAULT : 0;
-        table->string.mode = 0;
+        table->copy_keys = copy_keys;
     }
 
     return a;
@@ -5853,10 +5883,10 @@ _cexds__hminit(
 void*
 _cexds__hmput_key(
     void* a,
-    size_t elemsize,
+    usize elemsize,
     void* key,
-    size_t keysize,
-    size_t keyoffset,
+    usize keysize,
+    usize keyoffset,
     void* full_elem,
     void* result
 )
@@ -5872,7 +5902,7 @@ _cexds__hmput_key(
     uassert(table != NULL);
     if (table->used_count >= table->used_count_threshold) {
 
-        size_t slot_count = (table == NULL) ? _CEXDS_BUCKET_LENGTH : table->slot_count * 2;
+        usize slot_count = (table == NULL) ? _CEXDS_BUCKET_LENGTH : table->slot_count * 2;
         _cexds__array_header* hdr = _cexds__header(a);
         (void)hdr;
         uassert(
@@ -5897,8 +5927,8 @@ _cexds__hmput_key(
             _cexds__header(a)->allocator->free(_cexds__header(a)->allocator, table);
         } else {
             // NEW Table initialization here
-            // nt->string.mode = mode >= _CEXDS_HM_STRING ? _CEXDS_SH_DEFAULT : 0;
-            nt->string.mode = 0;
+            nt->copy_keys = table->copy_keys;
+            nt->key_arena = table->key_arena;
         }
         _cexds__header(a)->_hash_table = table = nt;
         _CEXDS_STATS(++_cexds__hash_grow);
@@ -5906,9 +5936,9 @@ _cexds__hmput_key(
 
     // we iterate hash table explicitly because we want to track if we saw a tombstone
     {
-        size_t hash = _cexds__hash(key_type, key, keysize, table->seed);
-        size_t step = _CEXDS_BUCKET_LENGTH;
-        size_t pos;
+        usize hash = _cexds__hash(key_type, key, keysize, table->seed);
+        usize step = _CEXDS_BUCKET_LENGTH;
+        usize pos;
         ptrdiff_t tombstone = -1;
         _cexds__hash_bucket* bucket;
 
@@ -5921,7 +5951,7 @@ _cexds__hmput_key(
         pos = _cexds__probe_position(hash, table->slot_count, table->slot_count_log2);
 
         for (;;) {
-            size_t limit, i;
+            usize limit, i;
             _CEXDS_STATS(++_cexds__hash_probes);
             bucket = &table->storage[pos >> _CEXDS_BUCKET_SHIFT];
 
@@ -5993,7 +6023,7 @@ _cexds__hmput_key(
             ptrdiff_t i = (ptrdiff_t)_cexds__header(a)->length;
             // we want to do _cexds__arraddn(1), but we can't use the macros since we don't have
             // something of the right type
-            if ((size_t)i + 1 > arr$cap(a)) {
+            if ((usize)i + 1 > arr$cap(a)) {
                 *(void**)&a = _cexds__arrgrowf(a, elemsize, 1, 0, _cexds__header(a)->el_align, NULL);
                 if (a == NULL) {
                     uassert(a != NULL && "new array for table memory error");
@@ -6002,7 +6032,7 @@ _cexds__hmput_key(
                 }
             }
 
-            uassert((size_t)i + 1 <= arr$cap(a));
+            uassert((usize)i + 1 <= arr$cap(a));
             _cexds__header(a)->length = i + 1;
             bucket = &table->storage[pos >> _CEXDS_BUCKET_SHIFT];
             bucket->hash[pos & _CEXDS_BUCKET_MASK] = hash;
@@ -6014,28 +6044,16 @@ _cexds__hmput_key(
 
 process_key:
     uassert(*out_result != NULL);
-    switch (table->string.mode) {
-        case _CEXDS_SH_STRDUP:
-            uassert(false);
-            // _cexds__temp_key(a) = *(char**)((char*)a + elemsize * i) = _cexds__strdup((char*)key
-            // );
-            break;
-        case _CEXDS_SH_ARENA:
-            uassert(false);
-            // _cexds__temp_key(a) = *(char**)((char*)a + elemsize * i
-            // ) = _cexds__stralloc(&table->string, (char*)key);
-            break;
-        case _CEXDS_SH_DEFAULT:
-            uassert(false);
-            // _cexds__temp_key(a) = *(char**)((char*)a + elemsize * i) = (char*)key;
-            break;
-        default:
-            if (full_elem) {
-                memcpy(((char*)*out_result), full_elem, elemsize);
-            } else {
-                memcpy(((char*)*out_result) + keyoffset, key, keysize);
-            }
-            break;
+    if (full_elem) {
+        memcpy(((char*)*out_result), full_elem, elemsize);
+    } else {
+        memcpy(((char*)*out_result) + keyoffset, key, keysize);
+    }
+    if (table->copy_keys) {
+        uassert(key_type == _CexDsKeyType__charptr);
+        uassert(keysize == sizeof(usize) && "expected pointer size");
+        char** key_data_p = (char**)(*out_result + keyoffset);
+        *key_data_p = str.clone(*key_data_p, _cexds__header(a)->allocator);
     }
 
 end:
@@ -6044,7 +6062,7 @@ end:
 
 
 bool
-_cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset)
+_cexds__hmdel_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset)
 {
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
 
@@ -6071,10 +6089,11 @@ _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
     b->hash[i] = _CEXDS_HASH_DELETED;
     b->index[i] = _CEXDS_INDEX_DELETED;
 
-    // if (mode == _CEXDS_HM_STRING && table->string.mode == _CEXDS_SH_STRDUP) {
-    //     // FIX: this may conflict with static alloc
-    //     _cexds__header(a)->allocator->free(*(char**)((char*)a + elemsize * old_index));
-    // }
+    if (table->copy_keys && table->key_type == _CexDsKeyType__charptr) {
+        uassert(table->key_arena == NULL && "TODO"); // only in dup mode
+        IAllocator _allc = _cexds__header(a)->allocator;
+        _allc->free(_allc, *(char**)((char*)a + elemsize * old_index + keyoffset));
+    }
 
     // if indices are the same, memcpy is a no-op, but back-pointer-fixup will fail, so
     // skip
@@ -6082,26 +6101,7 @@ _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
         // Replacing deleted element by last one, and update hashmap buckets for last element
         memmove((char*)a + elemsize * old_index, (char*)a + elemsize * final_index, elemsize);
 
-        void* key_data_p = NULL;
-        switch (table->key_type) {
-            case _CexDsKeyType__generic:
-                key_data_p = (char*)a + elemsize * old_index + keyoffset;
-                break;
-
-            case _CexDsKeyType__charbuf:
-                key_data_p = (char*)((char*)a + elemsize * old_index + keyoffset);
-                break;
-
-            case _CexDsKeyType__charptr:
-                key_data_p = *(char**)((char*)a + elemsize * old_index + keyoffset);
-                break;
-
-            case _CexDsKeyType__cexstr: {
-                str_s* s = (str_s*)((char*)a + elemsize * old_index + keyoffset);
-                key_data_p = s;
-                break;
-            }
-        }
+        void* key_data_p = _cexds__hmkey_ptr(a, elemsize, old_index, keyoffset);
         uassert(key_data_p != NULL);
         slot = _cexds__hm_find_slot(a, elemsize, key_data_p, keysize, keyoffset);
         uassert(slot >= 0);
@@ -6148,76 +6148,6 @@ _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
     }
 
     return a;
-}
-
-#ifndef _CEXDS_STRING_ARENA_BLOCKSIZE_MIN
-#    define _CEXDS_STRING_ARENA_BLOCKSIZE_MIN 512u
-#endif
-#ifndef _CEXDS_STRING_ARENA_BLOCKSIZE_MAX
-#    define _CEXDS_STRING_ARENA_BLOCKSIZE_MAX (1u << 20)
-#endif
-
-char*
-_cexds__stralloc(_cexds__string_arena* a, char* str)
-{
-    char* p;
-    size_t len = strlen(str) + 1;
-    if (len > a->remaining) {
-        // compute the next blocksize
-        size_t blocksize = a->block;
-
-        // size is 512, 512, 1024, 1024, 2048, 2048, 4096, 4096, etc., so that
-        // there are log(SIZE) allocations to free when we destroy the table
-        blocksize = (size_t)(_CEXDS_STRING_ARENA_BLOCKSIZE_MIN) << (blocksize >> 1);
-
-        // if size is under 1M, advance to next blocktype
-        if (blocksize < (size_t)(_CEXDS_STRING_ARENA_BLOCKSIZE_MAX)) {
-            ++a->block;
-        }
-
-        if (len > blocksize) {
-            // if string is larger than blocksize, then just allocate the full size.
-            // note that we still advance string_block so block size will continue
-            // increasing, so e.g. if somebody only calls this with 1000-long strings,
-            // eventually the arena will start doubling and handling those as well
-            _cexds__string_block* sb = realloc(NULL, sizeof(*sb) - 8 + len);
-            memmove(sb->storage, str, len);
-            if (a->storage) {
-                // insert it after the first element, so that we don't waste the space there
-                sb->next = a->storage->next;
-                a->storage->next = sb;
-            } else {
-                sb->next = 0;
-                a->storage = sb;
-                a->remaining = 0; // this is redundant, but good for clarity
-            }
-            return sb->storage;
-        } else {
-            _cexds__string_block* sb = realloc(NULL, sizeof(*sb) - 8 + blocksize);
-            sb->next = a->storage;
-            a->storage = sb;
-            a->remaining = blocksize;
-        }
-    }
-
-    uassert(len <= a->remaining);
-    p = a->storage->storage + a->remaining - len;
-    a->remaining -= len;
-    memmove(p, str, len);
-    return p;
-}
-
-void
-_cexds__strreset(_cexds__string_arena* a)
-{
-    _cexds__string_block *x, *y;
-    x = a->storage;
-    while (x) {
-        y = x->next;
-        free(x);
-        x = y;
-    }
-    memset(a, 0, sizeof(*a));
 }
 
 
