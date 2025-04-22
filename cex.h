@@ -5301,7 +5301,7 @@ typedef struct _cexds__hash_index
     usize seed;
     usize slot_count_log2;
     enum _CexDsKeyType_e key_type;
-    AllocatorArena_c* key_arena;
+    IAllocator key_arena;
     bool copy_keys;
 
     // not a separate allocation, just 64-byte aligned storage after this struct
@@ -5731,8 +5731,15 @@ _cexds__hmfree_keys_func(void* a, usize elemsize, usize keyoffset)
 
     if (table != NULL) {
         if (table->copy_keys) {
-            for (usize i = 0; i < h->length; ++i) {
-                h->allocator->free(h->allocator, *(char**)((char*)a + elemsize * i + keyoffset));
+            if (table->key_arena == NULL) {
+                for (usize i = 0; i < h->length; ++i) {
+                    h->allocator->free(h->allocator, *(char**)((char*)a + elemsize * i + keyoffset));
+                }
+            } else {
+                uassert(table->key_arena->scope_depth(table->key_arena) > 0);
+                // Exit + enter for arena is equivalent of cleaning up and poisoning
+                table->key_arena->scope_exit(table->key_arena);
+                table->key_arena->scope_enter(table->key_arena);
             }
         }
     }
@@ -5747,6 +5754,9 @@ _cexds__hmfree_func(void* a, usize elemsize, usize keyoffset)
 
     _cexds__array_header* h = _cexds__header(a);
     _cexds__hmfree_keys_func(a, elemsize, keyoffset);
+    if (h->_hash_table->key_arena) {
+        AllocatorArena.destroy(h->_hash_table->key_arena);
+    }
     h->allocator->free(h->allocator, h->_hash_table);
     h->allocator->free(h->allocator, _cexds__base(h));
 }
@@ -5877,8 +5887,13 @@ _cexds__hminit(
 
     if (table) {
         // NEW Table initialization here
+        if (copy_keys) {
+            uassert(table->key_type == _CexDsKeyType__charptr && "Only char* keys supported");
+        }
         table->copy_keys = copy_keys;
-        table->key_arena = NULL;
+        if (kwargs->copy_keys_arena_pgsize > 0) {
+            table->key_arena = AllocatorArena.create(kwargs->copy_keys_arena_pgsize);
+        }
     }
 
     return a;
@@ -6058,7 +6073,11 @@ process_key:
         uassert(key_type == _CexDsKeyType__charptr);
         uassert(keysize == sizeof(usize) && "expected pointer size");
         char** key_data_p = (char**)(*out_result + keyoffset);
-        *key_data_p = str.clone(*key_data_p, _cexds__header(a)->allocator);
+        if (table->key_arena) {
+            *key_data_p = str.clone(*key_data_p, table->key_arena);
+        } else {
+            *key_data_p = str.clone(*key_data_p, _cexds__header(a)->allocator);
+        }
     }
 
 end:
@@ -6094,10 +6113,11 @@ _cexds__hmdel_key(void* a, usize elemsize, void* key, usize keysize, usize keyof
     b->hash[i] = _CEXDS_HASH_DELETED;
     b->index[i] = _CEXDS_INDEX_DELETED;
 
-    if (table->copy_keys && table->key_type == _CexDsKeyType__charptr) {
-        uassert(table->key_arena == NULL && "TODO"); // only in dup mode
-        IAllocator _allc = _cexds__header(a)->allocator;
-        _allc->free(_allc, *(char**)((char*)a + elemsize * old_index + keyoffset));
+    if (table->copy_keys) {
+        if (table->key_arena == NULL) {
+            IAllocator _allc = _cexds__header(a)->allocator;
+            _allc->free(_allc, *(char**)((char*)a + elemsize * old_index + keyoffset));
+        }
     }
 
     // if indices are the same, memcpy is a no-op, but back-pointer-fixup will fail, so

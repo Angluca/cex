@@ -1248,4 +1248,62 @@ test$case(test_hashmap_string_copy_clear_cleanup)
     return EOK;
 }
 
+test$case(test_hashmap_string_copy_arena)
+{
+    hm$(const char*, int) smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
+
+    char key2[10] = "foo";
+
+    hm$set(smap, key2, 3);
+    tassert_eq(hm$len(smap), 1);
+    tassert_eq(hm$get(smap, "foo"), 3);
+    tassert_eq(hm$get(smap, key2), 3);
+    tassert_eq(smap[0].key, "foo");
+
+    memset(key2, 0, sizeof(key2));
+    tassert_eq(smap[0].key, "foo");
+    tassert_eq(hm$get(smap, "foo"), 3);
+
+    hm$free(smap);
+    return EOK;
+}
+
+test$case(test_hashmap_string_copy_clear_cleanup_arena)
+{
+    hm$(const char*, int) smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
+    var h = _cexds__header(smap);
+    AllocatorArena_c* arena = (AllocatorArena_c*)h->_hash_table->key_arena;
+    tassert_eq(arena->used, 0);
+
+    char key2[10] = "foo";
+
+    hm$set(smap, key2, 3);
+    tassert_eq(hm$len(smap), 1);
+    tassert_eq(hm$get(smap, "foo"), 3);
+    tassert_eq(hm$get(smap, key2), 3);
+    tassert_eq(smap[0].key, "foo");
+    tassert(h->_hash_table->key_arena != NULL);
+    tassert_gt(arena->used, 0);
+
+    memset(key2, 0, sizeof(key2));
+    tassert_eq(smap[0].key, "foo");
+    tassert_eq(hm$clear(smap), 1);
+    tassert_eq(hm$get(smap, "foo"), 0);
+    tassert_eq(arena->used, 0);
+    tassert(h->_hash_table->key_arena != NULL);
+
+    char key3[10] = "bar";
+    hm$set(smap, key3, 2);
+    tassert_eq(hm$get(smap, "bar"), 2);
+    tassert_eq(hm$get(smap, key3), 2);
+    tassert_eq(hm$get(smap, "foo"), 0);
+    tassert(h->_hash_table->key_arena != NULL);
+    tassert_gt(arena->used, 0);
+
+    // Fool hm$free() make it not to cleanup the allocated copy_keys
+    h->_hash_table->copy_keys = false;
+
+    hm$free(smap);
+    return EOK;
+}
 test$main();
