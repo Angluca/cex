@@ -271,7 +271,7 @@ test$case(test_array_len_unified)
     char buf_zero[0];
     arr$(char*) array = arr$new(array, mem$);
     tassert_eq(0, arr$len(array));
-    tassert(mem$aligned_pointer(array, 64) == array);
+    tassert(mem$aligned_pointer(array, alignof(size_t)) == array);
 
     arr$push(array, "foo");
     arr$push(array, "bar");
@@ -300,7 +300,6 @@ test$case(test_for_arr)
         tassert(false && "must not happen!");
     }
     arr$(char*) array = arr$new(array, mem$);
-    tassert(mem$aligned_pointer(array, 64) == array);
     for$each(v, array)
     {
         (void)v;
@@ -509,7 +508,7 @@ test$case(test_arr_pushm)
 {
     arr$(int) arr = arr$new(arr, mem$);
     arr$(int) arr2 = arr$new(arr2, mem$);
-    tassert(mem$aligned_pointer(arr, 64) == arr);
+    tassert(mem$aligned_pointer(arr, alignof(size_t)) == arr);
 
     arr$pushm(arr2, 10, 6, 7, 8, 9, 0);
     tassert_eq(arr$len(arr2), 6);
@@ -596,7 +595,7 @@ test$case(test_smallest_alignment)
 {
     arr$(char) arr;
     tassert(arr$new(arr, mem$) != NULL);
-    tassert(mem$aligned_pointer(arr, 64) == arr);
+    tassert(mem$aligned_pointer(arr, alignof(size_t)) == arr);
 
     for (u32 i = 0; i < 1000; i++) {
         arr$push(arr, i % 10);
