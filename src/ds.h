@@ -28,6 +28,7 @@ extern void _cexds__arrfreef(void* a);
 extern bool _cexds__arr_integrity(const void* arr, usize magic_num);
 extern usize _cexds__arr_len(const void* arr);
 extern void _cexds__hmfree_func(void* p, usize elemsize, usize keyoffset);
+extern void _cexds__hmfree_keys_func(void* a, usize elemsize, usize keyoffset);
 extern void _cexds__hmclear_func(struct _cexds__hash_index* t, struct _cexds__hash_index* old_table);
 extern void* _cexds__hminit(usize elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, u16 el_align, struct _cexds__hm_new_kwargs_s* kwargs);
 extern void* _cexds__hmget_key(void* a, usize elemsize, void* key, usize keysize, usize keyoffset);
@@ -361,6 +362,7 @@ struct _cexds__hm_new_kwargs_s
 #define hm$clear(t)                                                                                \
     ({                                                                                             \
         _cexds__arr_integrity(t, _CEXDS_HM_MAGIC);                                                 \
+        _cexds__hmfree_keys_func((t), sizeof(*t), offsetof(typeof(*t), key));                      \
         _cexds__hmclear_func(_cexds__header((t))->_hash_table, NULL);                              \
         _cexds__header(t)->length = 0;                                                             \
         true;                                                                                      \
