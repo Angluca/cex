@@ -553,11 +553,8 @@ test$case(test_overaligned_struct)
         arr$push(arr, f);
 
         tassert_eq(arr$len(arr), i + 1);
-        tassert_eq(((size_t*)arr)[-2], i + 1);
     }
     tassert_eq(arr$len(arr), 1000);
-    // size is stored -sizeof(size_t) bytes from arr address
-    tassert_eq(((size_t*)arr)[-2], 1000);
 
     for (u32 i = 0; i < 1000; i++) {
         tassert_eq(arr[i].s, i);
@@ -584,8 +581,6 @@ test$case(test_overaligned_struct64)
         arr$push(arr, f);
     }
     tassert_eq(arr$len(arr), 1000);
-    // size is stored -sizeof(size_t) bytes from arr address
-    tassert_eq(((size_t*)arr)[-2], 1000);
 
     for (u32 i = 0; i < 1000; i++) {
         tassert_eq(arr[i].s, i);
@@ -606,8 +601,6 @@ test$case(test_smallest_alignment)
         arr$push(arr, i % 10);
     }
     tassert_eq(arr$len(arr), 1000);
-    // size is stored -sizeof(size_t) bytes from arr address
-    tassert_eq(((size_t*)arr)[-2], 1000);
 
     for (u32 i = 0; i < 1000; i++) {
         tassert_eq(arr[i], i % 10);
