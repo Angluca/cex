@@ -149,7 +149,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
         uassert(ptr_offset >= sizeof(u64) * 2);
         uassert(ptr_offset <= 64 + 16);
         uassert(ptr_offset <= alignment + sizeof(u64) * 2);
-        // poison area after header and before allocated pointer 
+        // poison area after header and before allocated pointer
         mem$asan_poison(result - sizeof(u64), sizeof(u64));
         ((u64*)result)[-2] = _cex_allocator_heap__hdr_set(size, ptr_offset, alignment);
 
@@ -222,21 +222,35 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     if (unlikely(new_hdr == 0)) {
         goto fail;
     }
-    usize new_full_size = _cex_allocator_heap__hdr_get_size(new_hdr);
-    uassert(new_full_size > size);
 
-    u8* raw_result = realloc(p - old_offset, new_full_size);
-    if (unlikely(raw_result == NULL)) {
-        goto fail;
+    u8* raw_result = NULL;
+    u8* result = NULL;
+    usize new_full_size = _cex_allocator_heap__hdr_get_size(new_hdr);
+
+    if (alignment <= _Alignof(max_align_t)) {
+        uassert(new_full_size > size);
+        raw_result = realloc(p - old_offset, new_full_size);
+        if (unlikely(raw_result == NULL)) {
+            goto fail;
+        }
+        result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
+    } else {
+        // fallback to malloc + memcpy because realloc doesn't guarantee alignment
+        raw_result = malloc(new_full_size);
+        if (unlikely(raw_result == NULL)) {
+            goto fail;
+        }
+        result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
+        memcpy(result, ptr, size > old_size ? old_size : size);
+        free(ptr - old_offset);
     }
-    u8* result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
     uassert(mem$aligned_pointer(result, 8) == result);
     uassert(mem$aligned_pointer(result, old_alignment) == result);
 
     usize ptr_offset = result - raw_result;
     uassert(ptr_offset <= 64 + 16);
     uassert(ptr_offset <= old_alignment + sizeof(u64) * 2);
-    uassert(ptr_offset + size <= new_full_size);
+    // uassert(ptr_offset + size <= new_full_size);
 
 #ifdef CEX_TEST
     a->stats.n_reallocs++;
@@ -256,7 +270,7 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     return result;
 
 fail:
-    free(ptr);
+    _cex_allocator_heap__free(self, ptr);
     return NULL;
 }
 

@@ -218,6 +218,29 @@ test$case(test_allocator_heap_realloc)
     return EOK;
 }
 
+test$case(test_allocator_heap_realloc_aligned)
+{
+
+    AllocatorHeap_c* allc = (AllocatorHeap_c*)mem$;
+    allc->stats.n_free = 0;
+    allc->stats.n_allocs = 0;
+
+    usize len = 32 * 10;
+    u8* a = mem$malloc(mem$, len, 32);
+    u8* b = mem$->malloc(mem$, 1024, 0);
+    tassert(a != NULL);
+    tassert(b != NULL);
+    tassert(mem$aligned_pointer(a, 8) == a);
+
+    u8* new_a = mem$realloc(mem$, a, len * 2, 32);
+    tassert(new_a != a);
+
+    mem$free(mem$, new_a);
+    mem$free(mem$, b);
+
+    return EOK;
+}
+
 test$case(test_allocator_heap_realloc_random_align)
 {
     usize align_arr[] = { 0, 1, 2, 4, 8, 16, 32, 64 };
@@ -242,6 +265,7 @@ test$case(test_allocator_heap_realloc_random_align)
             tassert(v == 'Z');
         }
         a[0] = 0xCD;
+        a[size-1] = 0xAB;
 
         if (al < 8) {
             tassert((usize)a % 8 == 0 && "expected aligned to 8");
@@ -260,22 +284,26 @@ test$case(test_allocator_heap_realloc_random_align)
 
 
         a = mem$realloc(mem$, a, new_size, al);
-        // tassert_eq(a[-1], 1);  // ASAN poison check 
+        tassert_eq(a[-1], 0xf7);  // ASAN poison check 
         tassert(a != NULL);
         tassert(a[0] == 0xCD);
         if (new_size > size) {
-            for$each(v, a + 1, size - 1)
+            for$each(v, a + 1, size - 2)
             {
                 tassert(v == 'Z');
             }
+            tassert(a[size-1] == 0xAB);
             for(u32 j = size; j < new_size; j++)
             {
                 tassert_eq(a[j], 0xf7);
             }
         } else {
-            for$each(v, a + 1, new_size - 1)
+            for$each(v, a + 1, new_size - 2)
             {
                 tassert(v == 'Z');
+            }
+            if (new_size == size) {
+                tassert(a[size-1] == 0xAB);
             }
         }
 
