@@ -2,7 +2,7 @@
 
 
 #ifdef _CEXDS_STATISTICS
-#define _CEXDS_STATS(x) x
+#    define _CEXDS_STATS(x) x
 size_t _cexds__array_grow;
 size_t _cexds__hash_grow;
 size_t _cexds__hash_shrink;
@@ -12,7 +12,7 @@ size_t _cexds__hash_alloc;
 size_t _cexds__rehash_probes;
 size_t _cexds__rehash_items;
 #else
-#define _CEXDS_STATS(x)
+#    define _CEXDS_STATS(x)
 #endif
 
 //
@@ -130,6 +130,10 @@ _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAlloc
         hdr->allocator_scope_depth = allc->scope_depth(allc);
         mem$asan_poison(hdr->__poison_area, sizeof(hdr->__poison_area));
     } else {
+        uassert(
+            (hdr->magic_num == _CEXDS_ARR_MAGIC || hdr->magic_num == _CEXDS_HM_MAGIC) &&
+            "bad magic after realloc"
+        );
         mem$asan_poison(hdr->__poison_area, sizeof(hdr->__poison_area));
         _CEXDS_STATS(++_cexds__array_grow);
     }
@@ -343,16 +347,16 @@ _cexds__make_hash_index(
 
 
 #ifdef _CEXDS_SIPHASH_2_4
-#define _CEXDS_SIPHASH_C_ROUNDS 2
-#define _CEXDS_SIPHASH_D_ROUNDS 4
+#    define _CEXDS_SIPHASH_C_ROUNDS 2
+#    define _CEXDS_SIPHASH_D_ROUNDS 4
 typedef int _CEXDS_SIPHASH_2_4_can_only_be_used_in_64_bit_builds[sizeof(size_t) == 8 ? 1 : -1];
 #endif
 
 #ifndef _CEXDS_SIPHASH_C_ROUNDS
-#define _CEXDS_SIPHASH_C_ROUNDS 1
+#    define _CEXDS_SIPHASH_C_ROUNDS 1
 #endif
 #ifndef _CEXDS_SIPHASH_D_ROUNDS
-#define _CEXDS_SIPHASH_D_ROUNDS 1
+#    define _CEXDS_SIPHASH_D_ROUNDS 1
 #endif
 
 static inline size_t
@@ -1026,10 +1030,10 @@ _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
 }
 
 #ifndef _CEXDS_STRING_ARENA_BLOCKSIZE_MIN
-#define _CEXDS_STRING_ARENA_BLOCKSIZE_MIN 512u
+#    define _CEXDS_STRING_ARENA_BLOCKSIZE_MIN 512u
 #endif
 #ifndef _CEXDS_STRING_ARENA_BLOCKSIZE_MAX
-#define _CEXDS_STRING_ARENA_BLOCKSIZE_MAX (1u << 20)
+#    define _CEXDS_STRING_ARENA_BLOCKSIZE_MAX (1u << 20)
 #endif
 
 char*
