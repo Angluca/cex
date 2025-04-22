@@ -124,7 +124,7 @@ _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAlloc
     _cexds__array_header* hdr = _cexds__header(b);
     if (a == NULL) {
         hdr->length = 0;
-        hdr->hash_table = NULL;
+        hdr->_hash_table = NULL;
         hdr->allocator = allc;
         hdr->magic_num = _CEXDS_ARR_MAGIC;
         hdr->allocator_scope_depth = allc->scope_depth(allc);
@@ -161,7 +161,8 @@ _cexds__arrfreef(void* a)
 #define _CEXDS_BUCKET_MASK (_CEXDS_BUCKET_LENGTH - 1)
 #define _CEXDS_CACHE_LINE_SIZE 64
 
-#define _cexds__hash_table(a) ((_cexds__hash_index*)_cexds__header(a)->hash_table)
+#define _cexds__hash_table(a) ((_cexds__hash_index*)_cexds__header(a)->_hash_table)
+
 
 typedef struct
 {
@@ -183,6 +184,7 @@ typedef struct _cexds__hash_index
     size_t seed;
     size_t slot_count_log2;
     _cexds__string_arena string;
+    enum _CexDsKeyType_e key_type;
 
     // not a separate allocation, just 64-byte aligned storage after this struct
     _cexds__hash_bucket* storage;
@@ -223,8 +225,7 @@ _cexds__log2(size_t slot_count)
 void
 _cexds__hmclear_func(
     struct _cexds__hash_index* t,
-    _cexds__hash_index* old_table,
-    size_t _cexds__hash_seed
+    _cexds__hash_index* old_table
 )
 {
     if (t == NULL) {
@@ -245,7 +246,7 @@ _cexds__hmclear_func(
         t->seed = old_table->seed;
     } else {
         memset(&t->string, 0, sizeof(t->string));
-        t->seed = _cexds__hash_seed;
+        uassert(t->seed != 0);
     }
 
     size_t i, j;
@@ -265,7 +266,8 @@ _cexds__make_hash_index(
     size_t slot_count,
     _cexds__hash_index* old_table,
     IAllocator allc,
-    size_t _cexds__hash_seed
+    size_t hash_seed,
+    enum _CexDsKeyType_e key_type
 )
 {
     _cexds__hash_index* t = mem$malloc(
@@ -273,11 +275,16 @@ _cexds__make_hash_index(
         (slot_count >> _CEXDS_BUCKET_SHIFT) * sizeof(_cexds__hash_bucket) +
             sizeof(_cexds__hash_index) + _CEXDS_CACHE_LINE_SIZE - 1
     );
+    if (t == NULL) {
+        return NULL; // memory error
+    }
     t->storage = (_cexds__hash_bucket*)mem$aligned_pointer((size_t)(t + 1), _CEXDS_CACHE_LINE_SIZE);
     t->slot_count = slot_count;
     t->slot_count_log2 = _cexds__log2(slot_count);
     t->tombstone_count = 0;
     t->used_count = 0;
+    t->key_type = key_type;
+    t->seed = hash_seed;
 
     // compute without overflowing
     t->used_count_threshold = slot_count - (slot_count >> 2);
@@ -292,7 +299,7 @@ _cexds__make_hash_index(
     uassert(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
     _CEXDS_STATS(++_cexds__hash_alloc);
 
-    _cexds__hmclear_func(t, old_table, _cexds__hash_seed);
+    _cexds__hmclear_func(t, old_table);
 
     // copy out the old data, if any
     if (old_table) {
@@ -596,7 +603,7 @@ _cexds__hmfree_func(void* a, size_t elemsize)
         }
         _cexds__strreset(&_cexds__hash_table(a)->string);
     }
-    h->allocator->free(h->allocator, h->hash_table);
+    h->allocator->free(h->allocator, h->_hash_table);
     h->allocator->free(h->allocator, _cexds__base(a));
 }
 
@@ -605,9 +612,9 @@ _cexds__hm_find_slot(void* a, size_t elemsize, void* key, size_t keysize, size_t
 {
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
     _cexds__hash_index* table = _cexds__hash_table(a);
-    size_t hash = _cexds__hash(_cexds__header(a)->hm_key_type, key, keysize, table->seed);
+    enum _CexDsKeyType_e key_type = table->key_type;
+    size_t hash = _cexds__hash(key_type, key, keysize, table->seed);
     size_t step = _CEXDS_BUCKET_LENGTH;
-    enum _CexDsKeyType_e key_type = _cexds__header(a)->hm_key_type;
 
     if (hash < 2) {
         hash += 2; // stored hash values are forbidden from being 0, so we can detect empty slots
@@ -672,7 +679,7 @@ _cexds__hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
 {
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
 
-    _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->hash_table;
+    _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->_hash_table;
     if (table != NULL) {
         ptrdiff_t slot = _cexds__hm_find_slot(a, elemsize, key, keysize, keyoffset);
         if (slot >= 0) {
@@ -705,21 +712,20 @@ _cexds__hminit(
     }
 
     uassert(_cexds__header(a)->magic_num == _CEXDS_ARR_MAGIC);
-    uassert(_cexds__header(a)->hash_table == NULL);
+    uassert(_cexds__header(a)->_hash_table == NULL);
 
     _cexds__header(a)->magic_num = _CEXDS_HM_MAGIC;
-    _cexds__header(a)->hm_seed = hm_seed;
-    _cexds__header(a)->hm_key_type = key_type;
 
-    _cexds__hash_index* table = _cexds__header(a)->hash_table;
+    _cexds__hash_index* table = _cexds__header(a)->_hash_table;
 
     // ensure slot counts must be pow of 2
     uassert(mem$is_power_of2(arr$cap(a)));
-    table = _cexds__header(a)->hash_table = _cexds__make_hash_index(
+    table = _cexds__header(a)->_hash_table = _cexds__make_hash_index(
         arr$cap(a),
         NULL,
         _cexds__header(a)->allocator,
-        _cexds__header(a)->hm_seed
+        hm_seed,
+        key_type
     );
 
     if (table) {
@@ -747,11 +753,12 @@ _cexds__hmput_key(
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
 
     void** out_result = (void**)result;
-    enum _CexDsKeyType_e key_type = _cexds__header(a)->hm_key_type;
+    _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->_hash_table;
+    enum _CexDsKeyType_e key_type = table->key_type;
     *out_result = NULL;
 
-    _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->hash_table;
-    if (table == NULL || table->used_count >= table->used_count_threshold) {
+    uassert(table != NULL);
+    if (table->used_count >= table->used_count_threshold) {
 
         size_t slot_count = (table == NULL) ? _CEXDS_BUCKET_LENGTH : table->slot_count * 2;
         _cexds__array_header* hdr = _cexds__header(a);
@@ -764,7 +771,8 @@ _cexds__hmput_key(
             slot_count,
             table,
             _cexds__header(a)->allocator,
-            _cexds__header(a)->hm_seed
+            table->seed,
+            table->key_type
         );
 
         if (nt == NULL) {
@@ -780,13 +788,13 @@ _cexds__hmput_key(
             // nt->string.mode = mode >= _CEXDS_HM_STRING ? _CEXDS_SH_DEFAULT : 0;
             nt->string.mode = 0;
         }
-        _cexds__header(a)->hash_table = table = nt;
+        _cexds__header(a)->_hash_table = table = nt;
         _CEXDS_STATS(++_cexds__hash_grow);
     }
 
     // we iterate hash table explicitly because we want to track if we saw a tombstone
     {
-        size_t hash = _cexds__hash(_cexds__header(a)->hm_key_type, key, keysize, table->seed);
+        size_t hash = _cexds__hash(key_type, key, keysize, table->seed);
         size_t step = _CEXDS_BUCKET_LENGTH;
         size_t pos;
         ptrdiff_t tombstone = -1;
@@ -928,10 +936,9 @@ _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
 {
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
 
-    _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->hash_table;
-
+    _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->_hash_table;
     uassert(_cexds__header(a)->allocator != NULL);
-    if (table == 0) {
+    if (table == NULL) {
         return false;
     }
 
@@ -964,7 +971,7 @@ _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
         memmove((char*)a + elemsize * old_index, (char*)a + elemsize * final_index, elemsize);
 
         void* key_data_p = NULL;
-        switch (_cexds__header(a)->hm_key_type) {
+        switch (table->key_type) {
             case _CexDsKeyType__generic:
                 key_data_p = (char*)a + elemsize * old_index + keyoffset;
                 break;
@@ -1001,11 +1008,12 @@ _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
             hdr->allocator->scope_depth(hdr->allocator) == hdr->allocator_scope_depth &&
             "passing object between different mem$scope() will lead to use-after-free / ASAN poison issues"
         );
-        _cexds__header(a)->hash_table = _cexds__make_hash_index(
+        _cexds__header(a)->_hash_table = _cexds__make_hash_index(
             table->slot_count >> 1,
             table,
             _cexds__header(a)->allocator,
-            _cexds__header(a)->hm_seed
+            table->seed,
+            table->key_type
         );
         _cexds__header(a)->allocator->free(_cexds__header(a)->allocator, table);
         _CEXDS_STATS(++_cexds__hash_shrink);
@@ -1016,11 +1024,12 @@ _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t ke
             hdr->allocator->scope_depth(hdr->allocator) == hdr->allocator_scope_depth &&
             "passing object between different mem$scope() will lead to use-after-free / ASAN poison issues"
         );
-        _cexds__header(a)->hash_table = _cexds__make_hash_index(
+        _cexds__header(a)->_hash_table = _cexds__make_hash_index(
             table->slot_count,
             table,
             _cexds__header(a)->allocator,
-            _cexds__header(a)->hm_seed
+            table->seed,
+            table->key_type
         );
         _cexds__header(a)->allocator->free(_cexds__header(a)->allocator, table);
         _CEXDS_STATS(++_cexds__hash_rebuild);

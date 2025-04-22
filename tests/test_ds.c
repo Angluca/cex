@@ -651,7 +651,7 @@ test$case(test_hashmap_basic)
     tassert_eq(hm$len(intmap), 0);
 
     var h = _cexds__header(intmap);
-    tassert(h->hm_seed != 0);
+    tassert(h->_hash_table->seed != 0);
 
     hm$free(intmap);
     hm$free(intmap64);
@@ -795,13 +795,13 @@ test$case(test_hashmap_keytype)
 
     hm$(str_s, int) map5 = hm$new(map5, mem$);
 
-    tassert_eq(_cexds__header(intmap)->hm_key_type, _CexDsKeyType__generic);
-    tassert_eq(_cexds__header(intmap64)->hm_key_type, _CexDsKeyType__generic);
-    tassert_eq(_cexds__header(map1)->hm_key_type, _CexDsKeyType__generic);
-    tassert_eq(_cexds__header(map2)->hm_key_type, _CexDsKeyType__charptr);
-    tassert_eq(_cexds__header(map3)->hm_key_type, _CexDsKeyType__charptr);
-    tassert_eq(_cexds__header(map4)->hm_key_type, _CexDsKeyType__charbuf);
-    tassert_eq(_cexds__header(map5)->hm_key_type, _CexDsKeyType__cexstr);
+    tassert_eq(_cexds__header(intmap)->_hash_table->key_type, _CexDsKeyType__generic);
+    tassert_eq(_cexds__header(intmap64)->_hash_table->key_type, _CexDsKeyType__generic);
+    tassert_eq(_cexds__header(map1)->_hash_table->key_type, _CexDsKeyType__generic);
+    tassert_eq(_cexds__header(map2)->_hash_table->key_type, _CexDsKeyType__charptr);
+    tassert_eq(_cexds__header(map3)->_hash_table->key_type, _CexDsKeyType__charptr);
+    tassert_eq(_cexds__header(map4)->_hash_table->key_type, _CexDsKeyType__charbuf);
+    tassert_eq(_cexds__header(map5)->_hash_table->key_type, _CexDsKeyType__cexstr);
 
     hm$free(intmap);
     hm$free(intmap64);

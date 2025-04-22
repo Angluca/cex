@@ -28,7 +28,7 @@ extern void _cexds__arrfreef(void* a);
 extern bool _cexds__arr_integrity(const void* arr, size_t magic_num);
 extern usize _cexds__arr_len(const void* arr);
 extern void _cexds__hmfree_func(void* p, size_t elemsize);
-extern void _cexds__hmclear_func(struct _cexds__hash_index* t, struct _cexds__hash_index* old_table, size_t _cexds__hash_seed);
+extern void _cexds__hmclear_func(struct _cexds__hash_index* t, struct _cexds__hash_index* old_table);
 extern void* _cexds__hminit(size_t elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, struct _cexds__hm_new_kwargs_s* kwargs);
 extern void* _cexds__hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
 extern void* _cexds__hmput_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, void* full_elem, void* result);
@@ -42,19 +42,17 @@ _Static_assert(mem$is_power_of2(_CEXDS_HDR_PAD), "expected pow of 2");
 
 
 // cexds array alignment
-// v malloc'd pointer              v-element 1
+// v malloc'd pointer                v-element 1
 // |..... <_cexds__array_header>|====!====!====
-//    ^ padding      ^cap^len ^         ^-element 2
-//                            ^-- arr$ user space pointer (element 0)
+//      ^ padding      ^cap^len ^         ^-element 2
+//                              ^-- arr$ user space pointer (element 0)
 //
 typedef struct
 {
-    alignas(64) void* hash_table;
+    alignas(64) struct _cexds__hash_index* _hash_table;
     IAllocator allocator;
     u32 allocator_scope_depth;
     u32 magic_num;
-    enum _CexDsKeyType_e hm_key_type;
-    size_t hm_seed;
     size_t capacity;
     size_t length; // This MUST BE LAST before __poison_area
     u8 __poison_area[sizeof(size_t)];
@@ -359,7 +357,7 @@ struct _cexds__hm_new_kwargs_s
 #define hm$clear(t)                                                                                \
     ({                                                                                             \
         _cexds__arr_integrity(t, _CEXDS_HM_MAGIC);                                                 \
-        _cexds__hmclear_func(_cexds__header((t))->hash_table, NULL, _cexds__header(t)->hm_seed);   \
+        _cexds__hmclear_func(_cexds__header((t))->_hash_table, NULL);   \
         _cexds__header(t)->length = 0;                                                             \
         true;                                                                                      \
     })
