@@ -6201,7 +6201,7 @@ static i32 cexsp__real_to_str(
     u32 frac_digits
 );
 static i32 cexsp__real_to_parts(i64* bits, i32* expo, double value);
-#define CEXSP__SPECIAL 0x7000
+#    define CEXSP__SPECIAL 0x7000
 #endif
 
 static char cexsp__period = '.';
@@ -6254,11 +6254,12 @@ cexsp__lead_sign(u32 fl, char* sign)
 }
 
 static u32
-cexsp__strlen_limited(char const* s, u32 limit)
+cexsp__format_s_check_va_item_string_len(char const* s, u32 limit)
 {
+    uassertf((usize)s > 1024 * 1024, "%%s va_arg pointer looks too low, wrong va type? s:%p\n", s);
+    uassertf((isize)s > 0, "%%s va_arg pointer looks too high/negative, wrong va type? s: %p\n", s);
     char const* sn = s;
-    // handle the last few characters to find actual size
-    while (limit && *sn) {
+    while (limit && *sn) { // WARNING: if getting segfault here, typically %s format messes with int
         ++sn;
         --limit;
     }
@@ -6425,7 +6426,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 break;
             // are we 64-bit (unix style)
             case 'l':
-                // %ld/%lld - is always 64 bits 
+                // %ld/%lld - is always 64 bits
                 fl |= CEXSP__INTMAX;
                 ++f;
                 if (f[0] == 'l') {
@@ -6492,7 +6493,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 }
                 // get the length, limited to desired precision
                 // always limit to ~0u chars since our counts are 32b
-                l = cexsp__strlen_limited(s, (pr >= 0) ? (unsigned)pr : ~0u);
+                l = cexsp__format_s_check_va_item_string_len(s, (pr >= 0) ? (unsigned)pr : ~0u);
                 lead[0] = 0;
                 tail[0] = 0;
                 pr = 0;
@@ -6506,7 +6507,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 s = sv.buf;
                 if (s == 0) {
                     s = (char*)"(null)";
-                    l = cexsp__strlen_limited(s, (pr >= 0) ? (unsigned)pr : ~0u);
+                    l = cexsp__format_s_check_va_item_string_len(s, (pr >= 0) ? (unsigned)pr : ~0u);
                 } else {
                     l = sv.len > 0xffffffff ? 0xffffffff : sv.len;
                 }
@@ -7014,7 +7015,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     i32 i = va_arg(va, i32);
                     n64 = (u32)i;
                     if ((f[0] != 'u') && (i < 0)) {
-                        n64 =  (i != INT32_MIN) ? (u32)-i : INT32_MIN;
+                        n64 = (i != INT32_MIN) ? (u32)-i : INT32_MIN;
                         fl |= CEXSP__NEGATIVE;
                     }
                 }
@@ -7451,12 +7452,12 @@ cexsp__fprintf(FILE* stream, const char* format, ...)
 #ifndef CEX_SPRINTF_NOFLOAT
 
 // copies d to bits w/ strict aliasing (this compiles to nothing on /Ox)
-#define CEXSP__COPYFP(dest, src)                                                                   \
-    {                                                                                              \
-        int cn;                                                                                    \
-        for (cn = 0; cn < 8; cn++)                                                                 \
-            ((char*)&dest)[cn] = ((char*)&src)[cn];                                                \
-    }
+#    define CEXSP__COPYFP(dest, src)                                                               \
+        {                                                                                          \
+            int cn;                                                                                \
+            for (cn = 0; cn < 8; cn++)                                                             \
+                ((char*)&dest)[cn] = ((char*)&src)[cn];                                            \
+        }
 
 // get float info
 static i32
@@ -7519,7 +7520,7 @@ static double const cexsp__negtoperr[13] = { 3.9565301985100693e-040,  -2.299904
                                              -6.3691100762962136e-270, -9.436808465446358e-293,
                                              8.0970921678014997e-317 };
 
-#if defined(_MSC_VER) && (_MSC_VER <= 1200)
+#    if defined(_MSC_VER) && (_MSC_VER <= 1200)
 static u64 const cexsp__powten[20] = { 1,
                                        10,
                                        100,
@@ -7540,8 +7541,8 @@ static u64 const cexsp__powten[20] = { 1,
                                        100000000000000000,
                                        1000000000000000000,
                                        10000000000000000000U };
-#define cexsp__tento19th ((u64)1000000000000000000)
-#else
+#        define cexsp__tento19th ((u64)1000000000000000000)
+#    else
 static u64 const cexsp__powten[20] = { 1,
                                        10,
                                        100,
@@ -7562,47 +7563,47 @@ static u64 const cexsp__powten[20] = { 1,
                                        100000000000000000ULL,
                                        1000000000000000000ULL,
                                        10000000000000000000ULL };
-#define cexsp__tento19th (1000000000000000000ULL)
-#endif
+#        define cexsp__tento19th (1000000000000000000ULL)
+#    endif
 
-#define cexsp__ddmulthi(oh, ol, xh, yh)                                                            \
-    {                                                                                              \
-        double ahi = 0, alo, bhi = 0, blo;                                                         \
-        i64 bt;                                                                                    \
-        oh = xh * yh;                                                                              \
-        CEXSP__COPYFP(bt, xh);                                                                     \
-        bt &= ((~(u64)0) << 27);                                                                   \
-        CEXSP__COPYFP(ahi, bt);                                                                    \
-        alo = xh - ahi;                                                                            \
-        CEXSP__COPYFP(bt, yh);                                                                     \
-        bt &= ((~(u64)0) << 27);                                                                   \
-        CEXSP__COPYFP(bhi, bt);                                                                    \
-        blo = yh - bhi;                                                                            \
-        ol = ((ahi * bhi - oh) + ahi * blo + alo * bhi) + alo * blo;                               \
-    }
+#    define cexsp__ddmulthi(oh, ol, xh, yh)                                                        \
+        {                                                                                          \
+            double ahi = 0, alo, bhi = 0, blo;                                                     \
+            i64 bt;                                                                                \
+            oh = xh * yh;                                                                          \
+            CEXSP__COPYFP(bt, xh);                                                                 \
+            bt &= ((~(u64)0) << 27);                                                               \
+            CEXSP__COPYFP(ahi, bt);                                                                \
+            alo = xh - ahi;                                                                        \
+            CEXSP__COPYFP(bt, yh);                                                                 \
+            bt &= ((~(u64)0) << 27);                                                               \
+            CEXSP__COPYFP(bhi, bt);                                                                \
+            blo = yh - bhi;                                                                        \
+            ol = ((ahi * bhi - oh) + ahi * blo + alo * bhi) + alo * blo;                           \
+        }
 
-#define cexsp__ddtoS64(ob, xh, xl)                                                                 \
-    {                                                                                              \
-        double ahi = 0, alo, vh, t;                                                                \
-        ob = (i64)xh;                                                                              \
-        vh = (double)ob;                                                                           \
-        ahi = (xh - vh);                                                                           \
-        t = (ahi - xh);                                                                            \
-        alo = (xh - (ahi - t)) - (vh + t);                                                         \
-        ob += (i64)(ahi + alo + xl);                                                               \
-    }
+#    define cexsp__ddtoS64(ob, xh, xl)                                                             \
+        {                                                                                          \
+            double ahi = 0, alo, vh, t;                                                            \
+            ob = (i64)xh;                                                                          \
+            vh = (double)ob;                                                                       \
+            ahi = (xh - vh);                                                                       \
+            t = (ahi - xh);                                                                        \
+            alo = (xh - (ahi - t)) - (vh + t);                                                     \
+            ob += (i64)(ahi + alo + xl);                                                           \
+        }
 
-#define cexsp__ddrenorm(oh, ol)                                                                    \
-    {                                                                                              \
-        double s;                                                                                  \
-        s = oh + ol;                                                                               \
-        ol = ol - (s - oh);                                                                        \
-        oh = s;                                                                                    \
-    }
+#    define cexsp__ddrenorm(oh, ol)                                                                \
+        {                                                                                          \
+            double s;                                                                              \
+            s = oh + ol;                                                                           \
+            ol = ol - (s - oh);                                                                    \
+            oh = s;                                                                                \
+        }
 
-#define cexsp__ddmultlo(oh, ol, xh, xl, yh, yl) ol = ol + (xh * yl + xl * yh);
+#    define cexsp__ddmultlo(oh, ol, xh, xl, yh, yl) ol = ol + (xh * yl + xl * yh);
 
-#define cexsp__ddmultlos(oh, ol, xh, yl) ol = ol + (xh * yl);
+#    define cexsp__ddmultlos(oh, ol, xh, yl) ol = ol + (xh * yl);
 
 static void
 cexsp__raise_to_power10(double* ohi, double* olo, double d, i32 power) // power can be -323
@@ -7840,15 +7841,14 @@ cexsp__real_to_str(
     return ng;
 }
 
-#undef cexsp__ddmulthi
-#undef cexsp__ddrenorm
-#undef cexsp__ddmultlo
-#undef cexsp__ddmultlos
-#undef CEXSP__SPECIAL
-#undef CEXSP__COPYFP
+#    undef cexsp__ddmulthi
+#    undef cexsp__ddrenorm
+#    undef cexsp__ddmultlo
+#    undef cexsp__ddmultlos
+#    undef CEXSP__SPECIAL
+#    undef CEXSP__COPYFP
 
 #endif // CEX_SPRINTF_NOFLOAT
-
 
 
 
