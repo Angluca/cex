@@ -23,13 +23,13 @@ enum _CexDsKeyType_e
     _CexDsKeyType__charbuf,
     _CexDsKeyType__cexstr,
 };
-extern void* _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocator allc);
+extern void* _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, u16 el_align, IAllocator allc);
 extern void _cexds__arrfreef(void* a);
 extern bool _cexds__arr_integrity(const void* arr, size_t magic_num);
 extern usize _cexds__arr_len(const void* arr);
 extern void _cexds__hmfree_func(void* p, size_t elemsize);
 extern void _cexds__hmclear_func(struct _cexds__hash_index* t, struct _cexds__hash_index* old_table);
-extern void* _cexds__hminit(size_t elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, struct _cexds__hm_new_kwargs_s* kwargs);
+extern void* _cexds__hminit(size_t elemsize, IAllocator allc, enum _CexDsKeyType_e key_type, u16 el_align, struct _cexds__hm_new_kwargs_s* kwargs);
 extern void* _cexds__hmget_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
 extern void* _cexds__hmput_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset, void* full_elem, void* result);
 extern bool _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysize, size_t keyoffset);
@@ -37,8 +37,6 @@ extern bool _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysiz
 
 #define _CEXDS_ARR_MAGIC 0xC001DAAD
 #define _CEXDS_HM_MAGIC 0xF001C001
-#define _CEXDS_HDR_PAD 64
-_Static_assert(mem$is_power_of2(_CEXDS_HDR_PAD), "expected pow of 2");
 
 
 // cexds array alignment
@@ -73,12 +71,13 @@ struct _cexds__arr_new_kwargs_s
 {
     usize capacity;
 };
-#define arr$new(a, allocator, kwargs...)                                                           \
-    ({                                                                                             \
+#define arr$new(a, allocator, kwargs...)                                                            \
+    ({                                                                                              \
         _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
-        uassert(allocator != NULL);                                                                \
-        struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                      \
-        (a) = (typeof(*a)*)_cexds__arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, allocator);     \
+        uassert(allocator != NULL);                                                                 \
+        struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                       \
+        (a) = (typeof(*a                                                                            \
+        )*)_cexds__arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, alignof(typeof(*a)), allocator); \
     })
 
 #define arr$free(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__arrfreef((a)), (a) = NULL)
@@ -185,7 +184,7 @@ struct _cexds__arr_new_kwargs_s
          : true)
 
 #define arr$grow(a, add_len, min_cap)                                                              \
-    ((a) = _cexds__arrgrowf((a), sizeof *(a), (add_len), (min_cap), NULL))
+    ((a) = _cexds__arrgrowf((a), sizeof *(a), (add_len), (min_cap), alignof(typeof(*a)), NULL))
 
 
 // NOLINT
@@ -268,7 +267,8 @@ struct _cexds__hm_new_kwargs_s
             default: _CexDsKeyType__generic                                                        \
         );                                                                                         \
         struct _cexds__hm_new_kwargs_s _kwargs = { kwargs };                                       \
-        (t) = (typeof(*t)*)_cexds__hminit(sizeof(*t), (allocator), _key_type, &_kwargs);           \
+        (t) = (typeof(*t                                                                           \
+        )*)_cexds__hminit(sizeof(*t), (allocator), _key_type, alignof(typeof(*t)), &_kwargs);      \
     })
 
 
@@ -409,5 +409,4 @@ enum
     _CEXDS_SH_ARENA
 };
 
-#define _cexds__arrgrowf _cexds__arrgrowf
 #define _cexds__shmode_func_wrapper(t, e, m) _cexds__shmode_func(e, m)

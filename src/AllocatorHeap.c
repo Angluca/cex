@@ -131,7 +131,10 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
     u8* result = raw_result;
 
     if (raw_result) {
-        uassert((usize)result % sizeof(u64) == 0 && "malloc returned non 8 byte aligned ptr");
+        uassert(
+            (usize)result % sizeof(max_align_t) == 0 &&
+            "malloc returned non max_align_t byte aligned ptr"
+        );
 
         result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, alignment);
         uassert(mem$aligned_pointer(result, 8) == result);

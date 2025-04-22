@@ -546,7 +546,7 @@ test$case(test_overaligned_struct)
 
     arr$(struct test32_s) arr = arr$new(arr, mem$);
     struct test32_s f = { .s = 100 };
-    tassert(mem$aligned_pointer(arr, 64) == arr);
+    tassert(mem$aligned_pointer(arr, 32) == arr);
 
     for (u32 i = 0; i < 1000; i++) {
         f.s = i;
@@ -590,6 +590,7 @@ test$case(test_overaligned_struct64)
     arr$free(arr);
     return EOK;
 }
+
 
 test$case(test_smallest_alignment)
 {

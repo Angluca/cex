@@ -19,8 +19,16 @@ size_t _cexds__rehash_items;
 // _cexds__arr implementation
 //
 
-#define _cexds__base(t) ((char*)(t) - _CEXDS_HDR_PAD)
 #define _cexds__item_ptr(t, i, elemsize) ((char*)a + elemsize * i)
+
+static inline void* _cexds__base(_cexds__array_header* hdr) {
+    if (hdr->el_align <= sizeof(_cexds__array_header)) {
+        return hdr;
+    } else {
+        char* arr_ptr = (char*)hdr + sizeof(_cexds__array_header); 
+        return arr_ptr - hdr->el_align;
+    }
+}
 
 bool
 _cexds__arr_integrity(const void* arr, size_t magic_num)
@@ -55,22 +63,30 @@ _cexds__arr_len(const void* arr)
 }
 
 void*
-_cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAllocator allc)
+_cexds__arrgrowf(
+    void* arr,
+    size_t elemsize,
+    size_t addlen,
+    size_t min_cap,
+    u16 el_align,
+    IAllocator allc
+)
 {
     uassert(addlen < PTRDIFF_MAX && "negative or overflow");
     uassert(min_cap < PTRDIFF_MAX && "negative or overflow");
+    uassert(el_align <= 64 && "alignment is too high");
 
-    if (a == NULL) {
+    if (arr == NULL) {
         if (allc == NULL) {
             uassert(allc != NULL && "using uninitialized arr/hm or out-of-mem error");
             // unconditionally abort even in production
             abort();
         }
     } else {
-        _cexds__arr_integrity(a, 0);
+        _cexds__arr_integrity(arr, 0);
     }
     _cexds__array_header temp = { 0 }; // force debugging
-    size_t min_len = (a ? _cexds__header(a)->length : 0) + addlen;
+    size_t min_len = (arr ? _cexds__header(arr)->length : 0) + addlen;
     (void)sizeof(temp);
 
     // compute the minimum capacity needed
@@ -79,27 +95,30 @@ _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAlloc
     }
 
     // increase needed capacity to guarantee O(1) amortized
-    if (min_cap < 2 * arr$cap(a)) {
-        min_cap = 2 * arr$cap(a);
+    if (min_cap < 2 * arr$cap(arr)) {
+        min_cap = 2 * arr$cap(arr);
     } else if (min_cap < 16) {
         min_cap = 16;
     }
     uassert(min_cap < PTRDIFF_MAX && "negative or overflow after processing");
     uassert(addlen > 0 || min_cap > 0);
 
-    if (min_cap <= arr$cap(a)) {
-        return a;
+    if (min_cap <= arr$cap(arr)) {
+        return arr;
     }
 
-    void* b;
-    if (a == NULL) {
-        b = mem$malloc(
+    el_align = (el_align <= alignof(_cexds__array_header)) ? alignof(_cexds__array_header)
+                                                          : 64;
+
+    void* new_arr;
+    if (arr == NULL) {
+        new_arr = mem$malloc(
             allc,
-            mem$aligned_round(elemsize * min_cap + _CEXDS_HDR_PAD, _CEXDS_HDR_PAD),
-            _CEXDS_HDR_PAD
+            mem$aligned_round(elemsize * min_cap + sizeof(_cexds__array_header), el_align),
+            el_align
         );
     } else {
-        _cexds__array_header* hdr = _cexds__header(a);
+        _cexds__array_header* hdr = _cexds__header(arr);
         (void)hdr;
         uassert(
             hdr->allocator->scope_depth(hdr->allocator) == hdr->allocator_scope_depth &&
@@ -107,27 +126,28 @@ _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAlloc
         );
         // NOTE: we must unpoison to prevent false ASAN use-after-poison check if data is copied
         mem$asan_unpoison(hdr->__poison_area, sizeof(hdr->__poison_area));
-        b = mem$realloc(
-            _cexds__header(a)->allocator,
-            _cexds__base(a),
-            mem$aligned_round(elemsize * min_cap + _CEXDS_HDR_PAD, _CEXDS_HDR_PAD),
-            _CEXDS_HDR_PAD
+        new_arr = mem$realloc(
+            _cexds__header(arr)->allocator,
+            _cexds__base(hdr),
+            mem$aligned_round(elemsize * min_cap + sizeof(_cexds__array_header), el_align),
+            el_align
         );
     }
 
-    if (b == NULL) {
+    if (new_arr == NULL) {
         // oops memory error
         return NULL;
     }
 
-    b = (char*)b + _CEXDS_HDR_PAD;
-    _cexds__array_header* hdr = _cexds__header(b);
-    if (a == NULL) {
+    new_arr = mem$aligned_pointer(new_arr + sizeof(_cexds__array_header), el_align);
+    _cexds__array_header* hdr = _cexds__header(new_arr);
+    if (arr == NULL) {
         hdr->length = 0;
         hdr->_hash_table = NULL;
         hdr->allocator = allc;
         hdr->magic_num = _CEXDS_ARR_MAGIC;
         hdr->allocator_scope_depth = allc->scope_depth(allc);
+        hdr->el_align = el_align;
         mem$asan_poison(hdr->__poison_area, sizeof(hdr->__poison_area));
     } else {
         uassert(
@@ -139,7 +159,7 @@ _cexds__arrgrowf(void* a, size_t elemsize, size_t addlen, size_t min_cap, IAlloc
     }
     hdr->capacity = min_cap;
 
-    return b;
+    return new_arr;
 }
 
 void
@@ -148,7 +168,7 @@ _cexds__arrfreef(void* a)
     if (a != NULL) {
         uassert(_cexds__header(a)->allocator != NULL);
         _cexds__array_header* h = _cexds__header(a);
-        h->allocator->free(h->allocator, _cexds__base(a));
+        h->allocator->free(h->allocator, _cexds__base(h));
     }
 }
 
@@ -174,7 +194,6 @@ _Static_assert(sizeof(_cexds__hash_bucket) == 128, "cacheline aligned");
 
 typedef struct _cexds__hash_index
 {
-    char* temp_key; // this MUST be the first field of the hash table
     size_t slot_count;
     size_t used_count;
     size_t used_count_threshold;
@@ -223,10 +242,7 @@ _cexds__log2(size_t slot_count)
 }
 
 void
-_cexds__hmclear_func(
-    struct _cexds__hash_index* t,
-    _cexds__hash_index* old_table
-)
+_cexds__hmclear_func(struct _cexds__hash_index* t, _cexds__hash_index* old_table)
 {
     if (t == NULL) {
         // typically external call of uninitialized table
@@ -604,7 +620,7 @@ _cexds__hmfree_func(void* a, size_t elemsize)
         _cexds__strreset(&_cexds__hash_table(a)->string);
     }
     h->allocator->free(h->allocator, h->_hash_table);
-    h->allocator->free(h->allocator, _cexds__base(a));
+    h->allocator->free(h->allocator, _cexds__base(h));
 }
 
 static ptrdiff_t
@@ -696,6 +712,7 @@ _cexds__hminit(
     size_t elemsize,
     IAllocator allc,
     enum _CexDsKeyType_e key_type,
+    u16 el_align,
     struct _cexds__hm_new_kwargs_s* kwargs
 )
 {
@@ -706,7 +723,7 @@ _cexds__hminit(
         capacity = kwargs->capacity;
         hm_seed = kwargs->seed ? kwargs->seed : hm_seed;
     }
-    void* a = _cexds__arrgrowf(NULL, elemsize, 0, capacity, allc);
+    void* a = _cexds__arrgrowf(NULL, elemsize, 0, capacity, el_align, allc);
     if (a == NULL) {
         return NULL; // memory error
     }
@@ -882,7 +899,7 @@ _cexds__hmput_key(
             // we want to do _cexds__arraddn(1), but we can't use the macros since we don't have
             // something of the right type
             if ((size_t)i + 1 > arr$cap(a)) {
-                *(void**)&a = _cexds__arrgrowf(a, elemsize, 1, 0, NULL);
+                *(void**)&a = _cexds__arrgrowf(a, elemsize, 1, 0, _cexds__header(a)->el_align, NULL);
                 if (a == NULL) {
                     uassert(a != NULL && "new array for table memory error");
                     *out_result = NULL;
