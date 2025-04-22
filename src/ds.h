@@ -49,18 +49,21 @@ _Static_assert(mem$is_power_of2(_CEXDS_HDR_PAD), "expected pow of 2");
 //
 typedef struct
 {
-    alignas(64) struct _cexds__hash_index* _hash_table;
+    alignas(alignof(max_align_t)) struct _cexds__hash_index* _hash_table;
     IAllocator allocator;
-    u32 allocator_scope_depth;
     u32 magic_num;
+    u16 allocator_scope_depth;
+    u16 el_align;
     size_t capacity;
     size_t length; // This MUST BE LAST before __poison_area
     u8 __poison_area[sizeof(size_t)];
 } _cexds__array_header;
-_Static_assert(alignof(_cexds__array_header) == 64, "align");
-_Static_assert(alignof(_cexds__array_header) == _CEXDS_HDR_PAD, "size too high");
-_Static_assert(sizeof(_cexds__array_header) % alignof(size_t) == 0, "align size");
-_Static_assert(sizeof(_cexds__array_header) == 64, "size");
+_Static_assert(alignof(_cexds__array_header) == alignof(max_align_t), "align");
+_Static_assert(sizeof(_cexds__array_header) % alignof(max_align_t) == 0, "align size");
+_Static_assert(
+    sizeof(size_t) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
+    "size for x64 is 48 / for x32 is 32"
+);
 
 #define _cexds__header(t) ((_cexds__array_header*)(((char*)(t)) - sizeof(_cexds__array_header)))
 
@@ -357,7 +360,7 @@ struct _cexds__hm_new_kwargs_s
 #define hm$clear(t)                                                                                \
     ({                                                                                             \
         _cexds__arr_integrity(t, _CEXDS_HM_MAGIC);                                                 \
-        _cexds__hmclear_func(_cexds__header((t))->_hash_table, NULL);   \
+        _cexds__hmclear_func(_cexds__header((t))->_hash_table, NULL);                              \
         _cexds__header(t)->length = 0;                                                             \
         true;                                                                                      \
     })

@@ -88,20 +88,4 @@ Use `cex -D config` to reset all project config flags to defaults
 #include <stdalign.h>
 #include <stdarg.h>
 #include <stdio.h>
-
-// #include <ctype.h>
 #include <errno.h>
-// #include <float.h>
-// #include <signal.h>
-// #include <stdarg.h>
-// #include <stdlib.h>
-// #include <string.h>
-
-// #ifdef _WIN32
-// #include <windows.h>
-// #else
-// #include <threads.h>
-// #include <unistd.h>
-// #endif
-
-

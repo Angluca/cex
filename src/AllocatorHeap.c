@@ -1,5 +1,4 @@
 #include "AllocatorHeap.h"
-#include <stdint.h>
 
 // clang-format off
 static void* _cex_allocator_heap__malloc(IAllocator self,usize size, usize alignment);
