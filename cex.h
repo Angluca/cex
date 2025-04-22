@@ -3700,15 +3700,19 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
-#    ifndef cexy$cc
+#    ifndef cexy$cex_self_cc
 #        if defined(__clang__)
 /// Macro constant derived from the compiler type used to initially build ./cex app
-#            define cexy$cc "clang"
+#            define cexy$cex_self_cc "clang"
 #        elif defined(__GNUC__)
-#            define cexy$cc "gcc"
+#            define cexy$cex_self_cc "gcc"
 #        else
 #            error "Compiler type is not supported"
 #        endif
+#    endif // #ifndef cexy$cex_self_cc
+
+#    ifndef cexy$cc
+#        define cexy$cc cexy$cex_self_cc
 #    endif // #ifndef cexy$cc
 
 
@@ -13146,7 +13150,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         }
         arr$(const char*) args = arr$new(args, _, .capacity = 64);
         sbuf_c dargs_sbuf = sbuf.create(256, _);
-        arr$pushm(args, cexy$cc, "-D_CEX_SELF_BUILD", "-g");
+        arr$pushm(args, cexy$cex_self_cc, "-D_CEX_SELF_BUILD", "-g");
         e$goto(sbuf.append(&dargs_sbuf, "-D_CEX_SELF_DARGS=\""), err);
 
         i32 dflag_idx = 1;
@@ -14519,6 +14523,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
     "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"\
     "* cexy$cex_self_args        " cex$stringize(cexy$cex_self_args) "\n"\
+    "* cexy$cex_self_cc          " cexy$cex_self_cc "\n"\
     "* ./cex -D<ARGS> config     " cex$stringize(_CEX_SELF_DARGS) "\n"
     // clang-format on
 

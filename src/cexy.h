@@ -3,15 +3,19 @@
 
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
-#    ifndef cexy$cc
+#    ifndef cexy$cex_self_cc
 #        if defined(__clang__)
 /// Macro constant derived from the compiler type used to initially build ./cex app
-#            define cexy$cc "clang"
+#            define cexy$cex_self_cc "clang"
 #        elif defined(__GNUC__)
-#            define cexy$cc "gcc"
+#            define cexy$cex_self_cc "gcc"
 #        else
 #            error "Compiler type is not supported"
 #        endif
+#    endif // #ifndef cexy$cex_self_cc
+
+#    ifndef cexy$cc
+#        define cexy$cc cexy$cex_self_cc
 #    endif // #ifndef cexy$cc
 
 
