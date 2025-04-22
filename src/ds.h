@@ -47,7 +47,7 @@ extern bool _cexds__hmdel_key(void* a, size_t elemsize, void* key, size_t keysiz
 //
 typedef struct
 {
-    alignas(alignof(max_align_t)) struct _cexds__hash_index* _hash_table;
+    struct _cexds__hash_index* _hash_table;
     IAllocator allocator;
     u32 magic_num;
     u16 allocator_scope_depth;
@@ -56,7 +56,7 @@ typedef struct
     size_t length; // This MUST BE LAST before __poison_area
     u8 __poison_area[sizeof(size_t)];
 } _cexds__array_header;
-_Static_assert(alignof(_cexds__array_header) == alignof(max_align_t), "align");
+_Static_assert(alignof(_cexds__array_header) == alignof(size_t), "align");
 _Static_assert(sizeof(_cexds__array_header) % alignof(max_align_t) == 0, "align size");
 _Static_assert(
     sizeof(size_t) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,

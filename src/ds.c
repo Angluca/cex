@@ -21,11 +21,13 @@ size_t _cexds__rehash_items;
 
 #define _cexds__item_ptr(t, i, elemsize) ((char*)a + elemsize * i)
 
-static inline void* _cexds__base(_cexds__array_header* hdr) {
+static inline void*
+_cexds__base(_cexds__array_header* hdr)
+{
     if (hdr->el_align <= sizeof(_cexds__array_header)) {
         return hdr;
     } else {
-        char* arr_ptr = (char*)hdr + sizeof(_cexds__array_header); 
+        char* arr_ptr = (char*)hdr + sizeof(_cexds__array_header);
         return arr_ptr - hdr->el_align;
     }
 }
@@ -107,8 +109,8 @@ _cexds__arrgrowf(
         return arr;
     }
 
-    el_align = (el_align <= alignof(_cexds__array_header)) ? alignof(_cexds__array_header)
-                                                          : 64;
+    // General types with alignment <= size_t use generic realloc (less mem overhead + realloc faster)
+    el_align = (el_align <= alignof(_cexds__array_header)) ? alignof(_cexds__array_header) : 64;
 
     void* new_arr;
     if (arr == NULL) {
