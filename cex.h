@@ -9472,11 +9472,6 @@ cex_str_qscmpi(const void* a, const void* b)
         return (_a < _b) - (_a > _b);
     }
 
-#ifdef _WIN32
-    return _stricmp(_a, _b);
-#elif defined(__APPLE__) || defined(__linux__) || defined(__unix__)
-    return strcasecmp(_a, _b);
-#else
     while (*_a && *_b) {
         int diff = tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
         if (diff != 0) {
@@ -9486,7 +9481,6 @@ cex_str_qscmpi(const void* a, const void* b)
         _b++;
     }
     return tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
-#endif
 }
 
 const struct __cex_namespace__str str = {
@@ -13464,12 +13458,27 @@ cexy_target_make(
 
     char* result = NULL;
     if (name_or_extension[0] == '.') {
-        // starts_with .ext, make full path as following: build_dir/src_path/src_file.ext
-        result = str.fmt(allocator, "%s%c%s%s%s", build_dir, os$PATH_SEP, src_path, name_or_extension, cexy$build_ext_exe);
+        // starts_with .ext, make full path as following: build_dir/src_path/src_file.ext[.exe]
+        result = str.fmt(
+            allocator,
+            "%s%c%s%s%s",
+            build_dir,
+            os$PATH_SEP,
+            src_path,
+            name_or_extension,
+            cexy$build_ext_exe
+        );
         uassert(result != NULL && "memory error");
     } else {
-        // probably a program name, make full path: build_dir/name_or_extension
-        result = str.fmt(allocator, "%s%c%s%s", build_dir, os$PATH_SEP, name_or_extension,cexy$build_ext_exe);
+        // probably a program name, make full path: build_dir/name_or_extension[.exe]
+        result = str.fmt(
+            allocator,
+            "%s%c%s%s",
+            build_dir,
+            os$PATH_SEP,
+            name_or_extension,
+            cexy$build_ext_exe
+        );
         uassert(result != NULL && "memory error");
     }
     e$except(err, os.fs.mkpath(result))

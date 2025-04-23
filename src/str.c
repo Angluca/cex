@@ -1588,11 +1588,6 @@ cex_str_qscmpi(const void* a, const void* b)
         return (_a < _b) - (_a > _b);
     }
 
-#ifdef _WIN32
-    return _stricmp(_a, _b);
-#elif defined(__APPLE__) || defined(__linux__) || defined(__unix__)
-    return strcasecmp(_a, _b);
-#else
     while (*_a && *_b) {
         int diff = tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
         if (diff != 0) {
@@ -1602,7 +1597,6 @@ cex_str_qscmpi(const void* a, const void* b)
         _b++;
     }
     return tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
-#endif
 }
 
 const struct __cex_namespace__str str = {

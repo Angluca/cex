@@ -2340,9 +2340,13 @@ test$case(test_cmp_str_ignore_case)
     mem$scope(tmem$, _) {
         arr$(char*) items = arr$new(items, _); 
         arr$pushm(items, "A", "1", "a", "Z", "z",);
-        char* expected[] = {"1", "A", "a", "Z", "z"};
+        // char* expected[] = {"1", "A", "a", "Z", "z"};
         arr$sort(items, str.qscmpi);
-        tassert_eq_arr(items, expected);
+        tassert_eq(items[0], "1");
+        tassert(str.eqi(items[1], "a"));
+        tassert(str.eqi(items[2], "a"));
+        tassert(str.eqi(items[3], "z"));
+        tassert(str.eqi(items[4], "z"));
     }
     return EOK;
 }
@@ -2427,9 +2431,14 @@ test$case(test_cmp_slice_ignore_case)
     mem$scope(tmem$, _) {
         arr$(str_s) items = arr$new(items, _); 
         arr$pushm(items, str$s("A"), str$s("1"), str$s("z"), str$s("a"), str$s("Z"));
-        str_s expected[] = {str$s("1"), str$s("A"), str$s("a"), str$s("z"), str$s("Z")};
+        // str_s expected[] = {str$s("1"), str$s("A"), str$s("a"), str$s("z"), str$s("Z")};
         arr$sort(items, str.slice.qscmpi);
-        tassert_eq_arr(items, expected);
+
+        tassert(str.slice.eqi(items[0], str$s("1")));
+        tassert(str.slice.eqi(items[1], str$s("a")));
+        tassert(str.slice.eqi(items[2], str$s("a")));
+        tassert(str.slice.eqi(items[3], str$s("z")));
+        tassert(str.slice.eqi(items[4], str$s("z")));
     }
 
     mem$scope(tmem$, _) {
