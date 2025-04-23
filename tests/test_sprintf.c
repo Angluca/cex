@@ -295,6 +295,9 @@ test$case(stb_sprintf_strings)
         tassert_eq("(null)", str.fmt(_, "%s", NULL));
         tassert_eq("(null)", str.fmt(_, "%S", (str_s){ 0 }));
 
+        // string with dynamic len
+        tassert_eq("12345", str.fmt(_, "%.*s", 5, "123456789"));
+        tassert_eq("12345", str.fmt(_, "%.*S", 5, str$s("123456789")));
         /*
         * Damage control wrong args (these are intentional bugs, trying to mitigate them)
         */
@@ -302,7 +305,7 @@ test$case(stb_sprintf_strings)
         // but CEX attempts gracefully handle them if possible 
         tassert_eq("(%s-bad)", str.fmt(_, "%s", 7));
         tassert_eq("(null)", str.fmt(_, "%s", 0));
-        tassert_eq("(%S-bad)", str.fmt(_, "%S", (str_s){.len = 65536, .buf = "baz"}));
+        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S", (str_s){.len = 65536, .buf = "baz"}));
         u64 baad = 0xfe03ba0d;
         (void)baad;
 #ifdef _WIN32
@@ -313,7 +316,7 @@ test$case(stb_sprintf_strings)
         tassert_eq("", str.fmt(_, "%s", str$s(""))); // win mismatch
         tassert_eq("", str.fmt(_, "%s",  (str_s){0})); // win mismatch ''
         tassert_eq("(%s-bad)", str.fmt(_, "%s",  baad));
-        tassert_eq("(%S-bad)", str.fmt(_, "%S",  "foo"));
+        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S",  "foo"));
         tassert_eq("(%S-bad)", str.fmt(_, "%S", (str_s){.len = 6, .buf = (void*)0xfe03ba0d}));
         // tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("123456789"))); // mismatch \t
 #else

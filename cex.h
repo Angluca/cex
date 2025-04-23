@@ -6544,16 +6544,13 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 s = sv.buf;
                 if (s == 0) {
                     s = "(null)";
-                    l = cexsp__format_s_check_va_item_string_len(s, (pr >= 0) ? (unsigned)pr : ~0u);
+                    l = cexsp__format_s_check_va_item_string_len(s, ~0u);
                 } else {
-                    if (sv.len > UINT16_MAX) {
-                        s = "(%S-bad)";
-                        l = cexsp__format_s_check_va_item_string_len(
-                            s,
-                            (pr >= 0) ? (unsigned)pr : ~0u
-                        );
+                    if (pr == -1 && sv.len > UINT16_MAX) {
+                        s = "(%S-bad/overflow)";
+                        l = cexsp__format_s_check_va_item_string_len(s, ~0u);
                     } else {
-                        l = sv.len;
+                        l = (pr >= 0) ? (u32)pr : sv.len;
                     }
                 }
 #if defined(CEX_TEST) && defined(_WIN32)
