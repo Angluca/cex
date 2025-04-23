@@ -6558,8 +6558,8 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 }
 #if defined(CEX_TEST) && defined(_WIN32)
                 if (IsBadReadPtr(s, 1)) {
-                    // s = "(%s-bad)";
-                    // l = cexsp__format_s_check_va_item_string_len(s, ~0u);
+                    s = "(%S-bad)";
+                    l = cexsp__format_s_check_va_item_string_len(s, ~0u);
                 }
 #endif
                 lead[0] = 0;

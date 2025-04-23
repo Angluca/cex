@@ -295,9 +295,11 @@ test$case(stb_sprintf_strings)
         tassert_eq("(null)", str.fmt(_, "%s", NULL));
         tassert_eq("(null)", str.fmt(_, "%S", (str_s){ 0 }));
 
+        /*
+        * Damage control wrong args (these are intentional bugs, trying to mitigate them)
+        */
         // NOTE: cases below are invalid use of %s/%S and arguments
         // but CEX attempts gracefully handle them if possible 
-        // Some invalid mismatch of %s/%S use
         tassert_eq("(%s-bad)", str.fmt(_, "%s", 7));
         tassert_eq("(null)", str.fmt(_, "%s", 0));
         tassert_eq("(%S-bad)", str.fmt(_, "%S", (str_s){.len = 65536, .buf = "baz"}));
@@ -311,10 +313,12 @@ test$case(stb_sprintf_strings)
         tassert_eq("", str.fmt(_, "%s", str$s(""))); // win mismatch
         tassert_eq("", str.fmt(_, "%s",  (str_s){0})); // win mismatch ''
         tassert_eq("(%s-bad)", str.fmt(_, "%s",  baad));
-        // tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad));
+        tassert_eq("(%S-bad)", str.fmt(_, "%S",  "foo"));
+        tassert_eq("(%S-bad)", str.fmt(_, "%S", (str_s){.len = 6, .buf = (void*)0xfe03ba0d}));
         // tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("123456789"))); // mismatch \t
 #else
         tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad));
+        tassert_eq("(%S-bad)", str.fmt(_, "%S",  "foo"));
         tassert_eq("(null)", str.fmt(_, "%s", str$s("")));
         tassert_eq("", str.fmt(_, "%S", NULL)); // win segv
         tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("foo"))); // win segv
