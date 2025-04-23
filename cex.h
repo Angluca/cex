@@ -9999,9 +9999,9 @@ cex_io_isatty(FILE* file)
         return false;
     }
 #ifdef _WIN32
-    return _isatty(_fileno(file)) == 1;
+    return _isatty(_fileno(file));
 #else
-    return isatty(fileno(file)) == 1;
+    return isatty(fileno(file));
 #endif
 }
 
