@@ -184,6 +184,7 @@ test$case(test_allocator_heap_realloc)
     AllocatorHeap_c* allc = (AllocatorHeap_c*)mem$;
     allc->stats.n_free = 0;
     allc->stats.n_allocs = 0;
+    allc->stats.n_reallocs = 0;
 
     for (u32 i = 1; i < 1000; i++) {
         usize len = i * 8 + 1;

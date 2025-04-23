@@ -2,10 +2,12 @@
 #include "all.h"
 
 #ifdef _WIN32
-#include <io.h>
-#include <windows.h>
+#    include <io.h>
+#    include <sys/stat.h>
+#    include <windows.h>
 #else
-#include <unistd.h>
+#    include <sys/stat.h>
+#    include <unistd.h>
 #endif
 
 Exception
@@ -118,29 +120,26 @@ cex_io_ftell(FILE* file, usize* size)
 usize
 cex_io__file__size(FILE* file)
 {
-    uassert(file != NULL);
-
-    usize fsize = 0;
-    usize old_pos = 0;
-
-    e$except_silent(err, cex_io_ftell(file, &old_pos))
-    {
+    if (file == NULL){
         return 0;
     }
-    e$except_silent(err, cex_io_fseek(file, 0, SEEK_END))
-    {
+#ifdef _WIN32
+    struct _stat win_stat;
+    int ret = _fstat(fileno(file), &win_stat);
+    if (ret == 0) {
+        return win_stat.st_size;
+    } else {
         return 0;
     }
-    e$except_silent(err, cex_io_ftell(file, &fsize))
-    {
+#else
+    struct stat stat;
+    int ret = fstat(fileno(file), &stat);
+    if (ret == 0) {
+        return stat.st_size;
+    } else {
         return 0;
     }
-    e$except_silent(err, cex_io_fseek(file, old_pos, SEEK_SET))
-    {
-        return 0;
-    }
-
-    return fsize;
+#endif
 }
 
 Exception
@@ -285,7 +284,6 @@ cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
 {
     Exc result = Error.runtime;
     usize cursor = 0;
-    FILE* fh = file;
     char* buf = NULL;
     usize buf_size = 0;
 
@@ -295,8 +293,10 @@ cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
     }
     uassert(s != NULL);
 
+    log$debug("START: fcur: %ld, cur: %ld\n", ftell(file), cursor);
     int c = EOF;
-    while ((c = fgetc(fh)) != EOF) {
+    while ((c = fgetc(file)) != EOF) {
+        log$debug("1. fcur: %ld, cur: %ld, c: '%c'\n", ftell(file), cursor, (char)c);
         if (unlikely(c == '\n')) {
             // Handle windows \r\n new lines also
             if (cursor > 0 && buf[cursor - 1] == '\r') {

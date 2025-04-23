@@ -84,11 +84,25 @@ test$case(test_read_all_stdin)
     );
     return EOK;
 }
+test$case(test_file_size)
+{
+    FILE* file;
+    tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
+    tassert_eq(50, io.file.size(file));
+    tassert_eq(0, io.file.size(NULL));
+    tassert_eq(0, io.file.size(stdin));
+    tassert_eq(0, io.file.size(stderr));
+    // tassert_eq(0, io.file.size(stdout)); // CEX test runners hijacks stdout to file, it has size
+    io.fclose(&file);
+
+    return EOK;
+}
 
 test$case(test_read_line)
 {
     FILE* file;
     tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
+    tassert_eq(50, io.file.size(file));
 
     str_s content;
     tassert_eq(Error.ok, io.fread_line(file, &content, mem$));
@@ -122,6 +136,11 @@ test$case(test_read_line)
     tassert_eq(Error.eof, io.fread_line(file, &content, mem$));
     tassert_eq(content.buf, NULL);
     tassert_eq(content.len, 0);
+
+
+    usize fsize = 0;
+    tassert_eq(EOK, io.ftell(file, &fsize));
+    tassert_eq(fsize, 50);
 
     io.fclose(&file);
     return EOK;
