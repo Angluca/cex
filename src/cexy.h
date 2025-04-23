@@ -59,8 +59,8 @@
 #    endif
 
 #    ifndef cexy$test_launcher
-#    define cexy$test_launcher
-#endif
+#        define cexy$test_launcher
+#    endif
 
 #    ifndef cexy$cex_self_args
 /// Compiler flags used for building ./cex.c -> ./cex (may be overridden by user)
@@ -84,6 +84,32 @@
 #        define cexy$debug_cmd "gdb", "--args"
 #    endif
 
+#    ifndef cexy$build_ext_exe
+#        ifdef _WIN32
+/// Extension for executables (e.g. '.exe' for win32)
+#            define cexy$build_ext_exe ".exe"
+#        else
+#            define cexy$build_ext_exe ""
+#        endif
+#    endif
+
+#    ifndef cexy$build_ext_lib_dyn
+#        ifdef _WIN32
+/// Extension for dynamic linked libs (".dll" win, ".so" linux)
+#            define cexy$build_ext_lib_dyn ".dll"
+#        else
+#            define cexy$build_ext_lib_dyn ".so"
+#        endif
+#    endif
+
+#    ifndef cexy$build_ext_lib_stat
+#        ifdef _WIN32
+/// Extension for static libs (".lib" win, ".a" linux)
+#            define cexy$build_ext_lib_stat ".lib"
+#        else
+#            define cexy$build_ext_lib_stat ".a"
+#        endif
+#    endif
 
 #    ifndef cexy$process_ignore_kw
 /**

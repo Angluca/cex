@@ -3743,8 +3743,8 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #    endif
 
 #    ifndef cexy$test_launcher
-#    define cexy$test_launcher
-#endif
+#        define cexy$test_launcher
+#    endif
 
 #    ifndef cexy$cex_self_args
 /// Compiler flags used for building ./cex.c -> ./cex (may be overridden by user)
@@ -3768,6 +3768,32 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #        define cexy$debug_cmd "gdb", "--args"
 #    endif
 
+#    ifndef cexy$build_ext_exe
+#        ifdef _WIN32
+/// Extension for executables (e.g. '.exe' for win32)
+#            define cexy$build_ext_exe ".exe"
+#        else
+#            define cexy$build_ext_exe ""
+#        endif
+#    endif
+
+#    ifndef cexy$build_ext_lib_dyn
+#        ifdef _WIN32
+/// Extension for dynamic linked libs (".dll" win, ".so" linux)
+#            define cexy$build_ext_lib_dyn ".dll"
+#        else
+#            define cexy$build_ext_lib_dyn ".so"
+#        endif
+#    endif
+
+#    ifndef cexy$build_ext_lib_stat
+#        ifdef _WIN32
+/// Extension for static libs (".lib" win, ".a" linux)
+#            define cexy$build_ext_lib_stat ".lib"
+#        else
+#            define cexy$build_ext_lib_stat ".a"
+#        endif
+#    endif
 
 #    ifndef cexy$process_ignore_kw
 /**
@@ -13103,7 +13129,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
 {
     mem$scope(tmem$, _)
     {
-        uassert(str.ends_with(argv[0], "cex"));
+        uassert(str.ends_with(argv[0], "cex") || str.ends_with(argv[0], "cex.exe"));
         char* bin_path = argv[0];
         bool has_darg_before_cmd = (argc > 1 && str.starts_with(argv[1], "-D"));
         (void)has_darg_before_cmd;
@@ -13439,11 +13465,11 @@ cexy_target_make(
     char* result = NULL;
     if (name_or_extension[0] == '.') {
         // starts_with .ext, make full path as following: build_dir/src_path/src_file.ext
-        result = str.fmt(allocator, "%s%c%s%s", build_dir, os$PATH_SEP, src_path, name_or_extension);
+        result = str.fmt(allocator, "%s%c%s%s%s", build_dir, os$PATH_SEP, src_path, name_or_extension, cexy$build_ext_exe);
         uassert(result != NULL && "memory error");
     } else {
         // probably a program name, make full path: build_dir/name_or_extension
-        result = str.fmt(allocator, "%s%c%s", build_dir, os$PATH_SEP, name_or_extension);
+        result = str.fmt(allocator, "%s%c%s%s", build_dir, os$PATH_SEP, name_or_extension,cexy$build_ext_exe);
         uassert(result != NULL && "memory error");
     }
     e$except(err, os.fs.mkpath(result))

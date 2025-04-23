@@ -13,4 +13,5 @@
 #    define cexy$cc "x86_64-w64-mingw32-gcc"
 #    define cexy$cc_args_sanitizer
 #    define cexy$test_launcher "wine"
+#    define cexy$build_ext_exe ".exe"
 #endif

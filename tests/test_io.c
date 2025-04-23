@@ -62,8 +62,10 @@ test$case(test_is_atty)
 {
     tassert_eq(1, io.isatty(stderr));
     tassert_eq(1, io.isatty(stdin));
-    // NOTE: stdout - in test runner is captured to file, this will lead to false negative failure
-    // tassert_eq(1, io.isatty(stdout));
+    if (_cex_test__mainfn_state.out_stream) {
+        // NOTE: stdout - in test runner is captured to file
+        tassert_eq(0, io.isatty(stdout));
+    }
     FILE* file;
     tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
     tassert_eq(0, io.isatty(file));
@@ -585,10 +587,8 @@ test$case(test_fload)
     tassert_eq("000000001\n0", content);
     mem$free(mem$, content);
 
-    // TODO: this may fail on windows
     content = io.file.load("/dev/console", mem$);
-    tassert_eq("Permission denied", strerror(errno));
-    tassert_eq(EACCES, errno);
+    tassert_ne(0, errno);
     tassert_eq(content, NULL);
     mem$free(mem$, content);
 

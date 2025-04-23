@@ -8,7 +8,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
 {
     mem$scope(tmem$, _)
     {
-        uassert(str.ends_with(argv[0], "cex"));
+        uassert(str.ends_with(argv[0], "cex") || str.ends_with(argv[0], "cex.exe"));
         char* bin_path = argv[0];
         bool has_darg_before_cmd = (argc > 1 && str.starts_with(argv[1], "-D"));
         (void)has_darg_before_cmd;
@@ -343,12 +343,27 @@ cexy_target_make(
 
     char* result = NULL;
     if (name_or_extension[0] == '.') {
-        // starts_with .ext, make full path as following: build_dir/src_path/src_file.ext
-        result = str.fmt(allocator, "%s%c%s%s", build_dir, os$PATH_SEP, src_path, name_or_extension);
+        // starts_with .ext, make full path as following: build_dir/src_path/src_file.ext[.exe]
+        result = str.fmt(
+            allocator,
+            "%s%c%s%s%s",
+            build_dir,
+            os$PATH_SEP,
+            src_path,
+            name_or_extension,
+            cexy$build_ext_exe
+        );
         uassert(result != NULL && "memory error");
     } else {
-        // probably a program name, make full path: build_dir/name_or_extension
-        result = str.fmt(allocator, "%s%c%s", build_dir, os$PATH_SEP, name_or_extension);
+        // probably a program name, make full path: build_dir/name_or_extension[.exe]
+        result = str.fmt(
+            allocator,
+            "%s%c%s%s",
+            build_dir,
+            os$PATH_SEP,
+            name_or_extension,
+            cexy$build_ext_exe
+        );
         uassert(result != NULL && "memory error");
     }
     e$except(err, os.fs.mkpath(result))
