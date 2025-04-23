@@ -9,7 +9,7 @@
 #define CHECK_END(str)                                                                             \
     if (strcmp(buf, str) != 0 || (unsigned)ret != strlen(str)) {                                   \
         printf("< '%s'\n> '%s'\n", str, buf);                                                      \
-        tassert(false && "CHECK_END() failed see ^^^");                                                              \
+        tassert(false && "CHECK_END() failed see ^^^");                                            \
     }
 
 // clang-format off
@@ -25,7 +25,9 @@
 // clang-format on
 
 
-static char* ret_null_char(){
+static char*
+ret_null_char()
+{
     return NULL;
 }
 
@@ -34,32 +36,6 @@ static char* ret_null_char(){
  *   TEST SUITE
  *
  */
-test$case(stb_sprintf_str)
-{
-
-    sbuf_c s = sbuf.create(128, mem$);
-    tassert_eq(EOK, sbuf.appendf(&s, "%s11", "abcdefgh"));
-    tassert_eq(s, "abcdefgh11");
-
-    str_s sv = str.sstr("45678");
-    str_s sv_sub = str.slice.sub(sv, 1, 3);
-    tassert_eq(str.slice.eq(sv_sub, str$s("56")), 1);
-
-    _Static_assert(sizeof(char*) == sizeof(usize), "size");
-
-
-    // WARNING: dangerous trick, sprintf(), tries to distinguish
-    // str_s by checking if sv_sub addres < 1024*1024, this may not be portable
-    // especially on embedded and may require additional testing
-    tassert_eq(EOK, sbuf.appendf(&s, "%s", sv_sub));
-    tassert_eq(s, "abcdefgh11(str_c->%S)");
-
-    tassert_eq(EOK, sbuf.appendf(&s, "%S", sv_sub));
-    tassert_eq(s, "abcdefgh11(str_c->%S)56");
-
-    sbuf.destroy(&s);
-    return EOK;
-}
 
 test$case(stb_sprintf_orig)
 {
@@ -87,14 +63,12 @@ test$case(stb_sprintf_orig)
 #else
     CHECK2("", "%.0d", 0); // glibc gives "" as specified by C99(?)
 #endif
-    CHECK3("33 555", "%hi %ld", (short)33, 555l);
-#if !defined(_MSC_VER) || _MSC_VER >= 1600
+    CHECK3("33 555", "%hi %d", (short)33, 555L);
     CHECK2("9888777666", "%llu", 9888777666llu);
-#endif
 
-    #ifndef CEX_ENV32BIT
+#ifndef CEX_ENV32BIT
     CHECK4("-1 2 -3", "%ji %zi %ti", (intmax_t)-1, (isize)2, (ptrdiff_t)-3);
-    #endif
+#endif
 
     // floating-point numbers
     CHECK2("-3.000000", "%f", -3.0);
@@ -130,13 +104,13 @@ test$case(stb_sprintf_orig)
     CHECK3("2e-315:1e+308", "%g:%g", 2e-315, 1e+308);
 
 #if __STDC_VERSION__ >= 199901L
-#if USE_STB
+#    if USE_STB
     CHECK4("inf -inf nan", "%g %G %f", (double)INFINITY, (double)-INFINITY, (double)NAN);
     CHECK2("n", "%.1g", (double)NAN);
-#else
+#    else
     CHECK4("inf INF nan", "%g %G %f", INFINITY, INFINITY, NAN);
     CHECK2("nan", "%.1g", NAN);
-#endif
+#    endif
 #endif
 
     // %n
@@ -148,22 +122,22 @@ test$case(stb_sprintf_orig)
     CHECK2("0x1.fedcbap+98", "%a", 0x1.fedcbap+98);
     CHECK2("0x1.999999999999a0p-4", "%.14a", 0.1);
     CHECK2("0x1.0p-1022", "%.1a", 0x1.ffp-1023);
-#if USE_STB // difference in default precision and x vs X for %A
+#    if USE_STB // difference in default precision and x vs X for %A
     CHECK2("0x1.009117p-1022", "%a", 2.23e-308);
     CHECK2("-0x1.AB0P-5", "%.3A", -0x1.abp-5);
-#else
+#    else
     CHECK2("0x1.0091177587f83p-1022", "%a", 2.23e-308);
     CHECK2("-0X1.AB0P-5", "%.3A", -0X1.abp-5);
-#endif
+#    endif
 #endif
 
     // %p
 #if USE_STB
-    #ifdef CEX_ENV32BIT
+#    ifdef CEX_ENV32BIT
     CHECK2("00000000", "%p", (void*)NULL);
-    #else
+#    else
     CHECK2("0000000000000000", "%p", (void*)NULL);
-    #endif
+#    endif
 #else
     CHECK2("(nil)", "%p", (void*)NULL);
 #endif
@@ -215,9 +189,9 @@ test$case(stb_sprintf_orig)
     // CHECK2("123,4abc:", "%'x:", 0x1234ABC);
     // CHECK2("100000000", "%b", 256); // pedantic
     // CHECK3("0b10 0B11", "%#b %#B", 2, 3); // pedantic
-#if !defined(_MSC_VER) || _MSC_VER >= 1600
+#    if !defined(_MSC_VER) || _MSC_VER >= 1600
     // CHECK4("2 3 4", "%I64d %I32d %Id", 2ll, 3, 4ll);
-#endif
+#    endif
     // CHECK3("1k 2.54 M", "%$_d %$.2d", 1000, 2536000);
     // CHECK3("2.42 Mi 2.4 M", "%$$.2d %$$$d", 2536000, 2536000);
 
@@ -231,7 +205,8 @@ test$case(stb_sprintf_orig)
 
 test$case(stb_sprintf_integers_16bits)
 {
-    mem$scope(tmem$, _) {
+    mem$scope(tmem$, _)
+    {
         i16 _i16 = 123;
         u16 _u16 = 123;
 
@@ -257,7 +232,8 @@ test$case(stb_sprintf_integers_16bits)
 
 test$case(stb_sprintf_integers_32bits)
 {
-    mem$scope(tmem$, _) {
+    mem$scope(tmem$, _)
+    {
         i32 _i32 = 123;
         u32 _u32 = 123;
 
@@ -283,7 +259,8 @@ test$case(stb_sprintf_integers_32bits)
 
 test$case(stb_sprintf_integers_64bits)
 {
-    mem$scope(tmem$, _) {
+    mem$scope(tmem$, _)
+    {
         i64 _i64 = 123;
         u64 _u64 = 123;
 
@@ -302,6 +279,36 @@ test$case(stb_sprintf_integers_64bits)
         tassert_eq("-9223372036854775808", str.fmt(_, "%ld", _i64));
         tassert_eq("18446744073709551615", str.fmt(_, "%lu", _u64));
         tassert_eq("-1", str.fmt(_, "%ld", _u64));
+    }
+
+    return EOK;
+}
+
+test$case(stb_sprintf_strings)
+{
+    mem$scope(tmem$, _)
+    {
+        char buf[] = "foo";
+        tassert_eq("foo", str.fmt(_, "%s", buf));
+
+        tassert_eq("bar", str.fmt(_, "%s", "bar"));
+        tassert_eq("foo-bar", str.fmt(_, "%s-%s", buf, "bar"));
+
+        tassert_eq("(null)", str.fmt(_, "%s", NULL));
+        tassert_eq("(null)", str.fmt(_, "%s", 0));
+        tassert_eq("(null)", str.fmt(_, "%s", str$s("")));
+        tassert_eq("(%s-bad)", str.fmt(_, "%s", str$s("foo")));
+        tassert_eq("foo", str.fmt(_, "%S", str$s("foo")));
+        tassert_eq("", str.fmt(_, "%S", str$s("")));
+        tassert_eq("", str.fmt(_, "%S", NULL));
+        tassert_eq("(null)", str.fmt(_, "%S", (str_s){0}));
+        u64 baad = 0xfe03ba0d;
+        uassert_disable();
+        tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad));
+
+        tassert_eq("(null)", str.fmt(_, "%s",  (str_s){0}));
+        tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("foo")));
+        tassert_eq("(%s-bad)", str.fmt(_, "%s", 7));
     }
 
     return EOK;

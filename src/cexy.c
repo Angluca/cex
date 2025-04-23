@@ -426,16 +426,21 @@ cexy__test__create(const char* target, bool include_sample)
 Exception
 cexy__test__clean(const char* target)
 {
-    if (os.path.exists(target)) {
-        return e$raise(Error.exists, "Test file already exists: %s", target);
-    }
 
     if (str.eq(target, "all")) {
         log$info("Cleaning all tests\n");
         e$ret(os.fs.remove_tree(cexy$build_dir "/tests/"));
     } else {
         log$info("Cleaning target: %s\n", target);
-        e$ret(os.fs.remove(target));
+        if (!os.path.exists(target)) {
+            return e$raise(Error.exists, "Test target not exists: %s", target);
+        }
+
+        mem$scope(tmem$, _)
+        {
+            char* test_target = cexy.target_make(target, cexy$build_dir, ".test", _);
+            e$ret(os.fs.remove(test_target));
+        }
     }
     return EOK;
 }

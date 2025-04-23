@@ -9,6 +9,8 @@ Copyright (c) 2017 Sean Barrett
 */
 #include "_sprintf.h"
 #include "all.h"
+#include <ctype.h>
+
 
 #ifndef CEX_SPRINTF_NOFLOAT
 // internal float utility functions
@@ -76,10 +78,25 @@ cexsp__lead_sign(u32 fl, char* sign)
 static u32
 cexsp__format_s_check_va_item_string_len(char const* s, u32 limit)
 {
-    uassertf((usize)s > 1024 * 1024, "%%s va_arg pointer looks too low, wrong va type? s:%p\n", s);
+    uassertf((usize)s > UINT16_MAX, "%%s va_arg pointer looks too low, wrong va type? s:%p\n", s);
     uassertf((isize)s > 0, "%%s va_arg pointer looks too high/negative, wrong va type? s: %p\n", s);
     char const* sn = s;
     while (limit && *sn) { // WARNING: if getting segfault here, typically %s format messes with int
+#ifdef CEX_TEST
+        {
+            char c = *sn;
+            if (!isspace(c) && ((c >= 0 && c <= 31) || c == 127)) {
+                // NOTE: we have non printable character inside string, maybe it's a bad value?
+                uassertf(
+                    false,
+                    "Detected untprintable character in %%s format. va_arg address: %p, char code: %d",
+                    s,
+                    c
+                );
+                return 0;
+            }
+        }
+#endif
         ++sn;
         --limit;
     }
@@ -302,13 +319,13 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
             case 's':
                 // get the string
                 s = va_arg(va, char*);
-                if ((void*)s <= (void*)(1024 * 1024)) {
+                if ((void*)s <= (void*)(UINT16_MAX)) {
                     if (s == 0) {
                         s = (char*)"(null)";
                     } else {
                         // NOTE: cex is str_s passed as %s, s will be length
                         // try to double check sensible value of pointer
-                        s = (char*)"(str_c->%S)";
+                        s = (char*)"(%s-bad)";
                     }
                 }
                 // get the length, limited to desired precision
@@ -329,7 +346,20 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     s = (char*)"(null)";
                     l = cexsp__format_s_check_va_item_string_len(s, (pr >= 0) ? (unsigned)pr : ~0u);
                 } else {
-                    l = sv.len > 0xffffffff ? 0xffffffff : sv.len;
+                    if (sv.len > UINT16_MAX) {
+                        s = (char*)"(%S-bad)";
+                        l = cexsp__format_s_check_va_item_string_len(
+                            s,
+                            (pr >= 0) ? (unsigned)pr : ~0u
+                        );
+                        uassertf(
+                            sv.len < UINT16_MAX,
+                            "%%S length is too high: got %zu, max is 65535\n",
+                            sv.len
+                        );
+                    } else {
+                        l = sv.len;
+                    }
                 }
                 lead[0] = 0;
                 tail[0] = 0;
