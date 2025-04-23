@@ -9945,6 +9945,13 @@ const struct __cex_namespace__sbuf sbuf = {
 *                          src/io.c
 */
 
+#ifdef _WIN32
+#include <io.h>
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 Exception
 cex_io_fopen(FILE** file, const char* filename, const char* mode)
 {
@@ -9986,8 +9993,14 @@ bool
 cex_io_isatty(FILE* file)
 {
     uassert(file != NULL);
-    // TODO: add windows version
+    if (unlikely(file == NULL)) {
+        return false;
+    }
+#ifdef _WIN32
+    return _isatty(_fileno(file)) == 1;
+#else
     return isatty(fileno(file)) == 1;
+#endif
 }
 
 Exception

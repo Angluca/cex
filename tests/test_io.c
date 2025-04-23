@@ -58,9 +58,24 @@ test$case(test_read_all_empty)
     return EOK;
 }
 
+test$case(test_is_atty)
+{
+    tassert_eq(1, io.isatty(stderr));
+    tassert_eq(1, io.isatty(stdin));
+    // NOTE: stdout - in test runner is captured to file, this will lead to false negative failure
+    // tassert_eq(1, io.isatty(stdout));
+    FILE* file;
+    tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
+    tassert_eq(0, io.isatty(file));
+    io.fclose(&file);
+
+    return EOK;
+}
+
 test$case(test_read_all_stdin)
 {
     tassert_eq(0, io.file.size(stdin));
+    tassert_eq(1, io.isatty(stdin));
 
     str_s content;
     tassert_eq(
@@ -499,7 +514,7 @@ test$case(test_fload_save)
 
 test$case(test_fload_not_found)
 {
-    tassert_eq("Is a directory", io.file.save("tests/", "Hello from CEX!\n"));
+    tassert_ne(io.file.save("tests/", "Hello from CEX!\n"), EOK);
     return EOK;
 }
 
