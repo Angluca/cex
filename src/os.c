@@ -675,14 +675,16 @@ cex_os__env__get(const char* name, const char* deflt)
     return result;
 }
 
-static void
-cex_os__env__set(const char* name, const char* value, bool overwrite)
+static Exception
+cex_os__env__set(const char* name, const char* value)
 {
 #ifdef _WIN32
     _putenv_s(name, value);
 #else
-    setenv(name, value, overwrite);
+    setenv(name, value, true);
 #endif
+    // TODO: add error reporting
+    return EOK;
 }
 
 static bool

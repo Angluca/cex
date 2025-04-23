@@ -1,7 +1,7 @@
 #include "all.h"
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
-    #include <time.h>
+#    include <time.h>
 
 static void
 cexy_build_self(int argc, char** argv, const char* cex_source)
@@ -13,7 +13,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         bool has_darg_before_cmd = (argc > 1 && str.starts_with(argv[1], "-D"));
         (void)has_darg_before_cmd;
 
-    #ifdef _CEX_SELF_BUILD
+#    ifdef _CEX_SELF_BUILD
         if (!has_darg_before_cmd) {
             log$trace("Checking self build for executable: %s\n", bin_path);
             if (!cexy.src_include_changed(bin_path, cex_source, NULL)) {
@@ -24,7 +24,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         } else {
             log$trace("Passed extra -Dflags to cex command, build now\n");
         }
-    #endif
+#    endif
 
         log$info("Rebuilding self: %s -> %s\n", cex_source, bin_path);
         char* old_name = str.fmt(_, "%s.old", bin_path);
@@ -54,24 +54,24 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
                 break; // stop at first non -D<flag>
             }
         }
-        if (dflag_idx > 1 && (dflag_idx >= argc || !str.eq(argv[dflag_idx], "config"))) { 
+        if (dflag_idx > 1 && (dflag_idx >= argc || !str.eq(argv[dflag_idx], "config"))) {
             log$error("Expected config command after passing -D<ARG> to ./cex\n");
             goto fail_recovery;
         }
-        #ifdef _CEX_SELF_DARGS
-        if (dflag_idx == 1)
-        {
+#    ifdef _CEX_SELF_DARGS
+        if (dflag_idx == 1) {
             // new compilation no flags (maybe due to source changes, we need to maintain old flags)
             log$trace("Preserving CEX_SELF_DARGS: %s\n", _CEX_SELF_DARGS);
-            for$iter(str_s, it, str.slice.iter_split(str.sstr(_CEX_SELF_DARGS), " ", &it.iterator)) {
+            for$iter(str_s, it, str.slice.iter_split(str.sstr(_CEX_SELF_DARGS), " ", &it.iterator))
+            {
                 str_s clean_it = str.slice.strip(it.val);
-                if (clean_it.len == 0){
+                if (clean_it.len == 0) {
                     continue;
                 }
-                if (!str.slice.starts_with(clean_it, str$s("-D"))){
+                if (!str.slice.starts_with(clean_it, str$s("-D"))) {
                     continue;
                 }
-                if (str.slice.eq(clean_it, str$s("-D"))){
+                if (str.slice.eq(clean_it, str$s("-D"))) {
                     continue;
                 }
                 var _darg = str.fmt(_, "%S", clean_it);
@@ -79,7 +79,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
                 e$goto(sbuf.appendf(&dargs_sbuf, "%s ", _darg), err);
             }
         }
-        #endif
+#    endif
         e$goto(sbuf.append(&dargs_sbuf, "\""), err);
 
         arr$push(args, dargs_sbuf);
@@ -478,6 +478,11 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
                     );
                 }
                 arr$pushm(args, cexy$debug_cmd);
+            } else {
+                // [optional] program to run test program
+                // might be a debugger or `wine` simulator for win32 cross build
+                char* launcher[] = { cexy$test_launcher };
+                arr$pusha(args, launcher);
             }
             arr$pushm(args, test_target, );
             if (str.ends_with(target, "test_*.c")) {
@@ -705,12 +710,12 @@ _cexy__process_update_code(
         bool has_module_struct = false;
         arr$(cex_token_s) items = arr$new(items, _);
 
-    #define $dump_prev()                                                                           \
+#    define $dump_prev()                                                                           \
         code_buf.len = t.value.buf - code_buf.buf - ((t.value.buf > lx.content) ? 1 : 0);          \
         if (code_buf.buf != NULL)                                                                  \
             e$ret(sbuf.appendf(&new_code, "%S\n", code_buf));                                      \
         code_buf = (str_s){ 0 }
-    #define $dump_prev_comment()                                                                   \
+#    define $dump_prev_comment()                                                                   \
         for$each(it, items)                                                                        \
         {                                                                                          \
             if (it.type == CexTkn__comment_single || it.type == CexTkn__comment_multi) {           \
@@ -780,8 +785,8 @@ _cexy__process_update_code(
         }
     }
 
-    #undef $dump_prev
-    #undef $dump_prev_comment
+#    undef $dump_prev
+#    undef $dump_prev_comment
     return EOK;
 }
 
@@ -1307,7 +1312,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                                 if (d->type == CexTkn__func_def && str.eqi(query, "cex.")) {
                                     // skipping other namespaces of cex, e.g. cex_str_len()
                                     continue;
-                                } 
+                                }
                                 has_match = true;
                             }
                         }
@@ -1405,9 +1410,10 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$cc_args_sanitizer    " cex$stringize(cexy$cc_args_sanitizer) "\n"                                \
     "* cexy$cc_args_release      " cex$stringize(cexy$cc_args_release) "\n"                                \
     "* cexy$cc_args_debug        " cex$stringize(cexy$cc_args_debug) "\n"                                \
-    "* cexy$cc_args_test         " cex$stringize(cexy$cc_args_test) "\n"                           \
     "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
     "* cexy$ld_libs              " cex$stringize(cexy$ld_libs) "\n"                                \
+    "* cexy$test_cc_args         " cex$stringize(cexy$test_cc_args) "\n"                           \
+    "* cexy$test_launcher        " cex$stringize(cexy$test_launcher) "\n"                           \
     "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
     "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"\
     "* cexy$cex_self_args        " cex$stringize(cexy$cex_self_args) "\n"\
@@ -1417,7 +1423,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
 
     io.printf("%s", $env);
 
-    #undef $env
+#    undef $env
 
     return EOK;
 }
@@ -1469,7 +1475,7 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
             arr$(char*) args = arr$new(args, _);
             arr$pushm(args, cexy$cc, );
             // NOTE: reconstructing char*[] because some cexy$ variables might be empty
-            char* cc_args_test[] = { cexy$cc_args_test };
+            char* cc_args_test[] = { cexy$test_cc_args };
             char* cc_include[] = { cexy$cc_include };
             char* cc_ld_args[] = { cexy$ld_args };
             char* cc_ld_libs[] = { cexy$ld_libs };
@@ -1528,11 +1534,11 @@ cexy__utils__make_new_project(const char* proj_dir)
         e$assert(!os.path.exists(lib_h) && "mylib.c already exists");
         e$assert(!os.path.exists(app_c) && "myapp.c already exists");
 
-    #ifdef _cex_main_boilerplate
+#    ifdef _cex_main_boilerplate
         e$ret(io.file.save(os$path_join(_, proj_dir, "cex.c"), _cex_main_boilerplate));
-    #else
+#    else
         e$ret(os.fs.copy("src/cex_boilerplate.c", cex_c));
-    #endif
+#    endif
 
 
         sbuf_c buf = sbuf.create(1024 * 10, _);

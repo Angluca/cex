@@ -464,15 +464,15 @@ test$case(test_os_setenv)
     tassert_eq(os.env.get("test_os_posix", "envdef"), "envdef");
 
     // set env
-    os.env.set("test_os_posix", "foo", true);
+    tassert_er(EOK, os.env.set("test_os_posix", "foo"));
     tassert_eq(os.env.get("test_os_posix", NULL), "foo");
 
     // set without replacing
-    os.env.set("test_os_posix", "bar", false);
+    tassert_er(EOK, os.env.set("test_os_posix", "bar"));
     tassert_eq(os.env.get("test_os_posix", NULL), "foo");
 
     // set with replacing
-    os.env.set("test_os_posix", "bar", true);
+    tassert_er(EOK, os.env.set("test_os_posix", "bar"));
     tassert_eq(os.env.get("test_os_posix", NULL), "bar");
 
     return EOK;

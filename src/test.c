@@ -49,7 +49,7 @@ _check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
             break;
     }
     if (!passed) {
-        snprintf(
+        str.sprintf(
             _cex_test__mainfn_state.str_buf,
             sizeof(_cex_test__mainfn_state.str_buf),
             "%s:%d -> %ld %s %ld",
@@ -78,7 +78,7 @@ _check_eq_almost(f64 a, f64 b, f64 delta, int line)
         passed = fabs(abdelta) <= ((delta != 0) ? delta : (f64)0.0000001);
     }
     if (!passed) {
-        snprintf(
+        str.sprintf(
             _cex_test__mainfn_state.str_buf,
             sizeof(_cex_test__mainfn_state.str_buf),
             "%s:%d -> %f != %f (delta: %f, diff: %f)",
@@ -141,7 +141,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
             break;
     }
     if (!passed) {
-        snprintf(
+        str.sprintf(
             _cex_test__mainfn_state.str_buf,
             sizeof(_cex_test__mainfn_state.str_buf),
             "%s:%d -> %f %s %f (delta: %f)",
@@ -176,7 +176,7 @@ _check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
     }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!passed) {
-        snprintf(
+        str.sprintf(
             _cex_test__mainfn_state.str_buf,
             CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> '%s' %s '%s'",
@@ -198,7 +198,7 @@ _check_eq_err(const char* a, const char* b, int line)
     if (!str.eq(a, b)) {
         const char* ea = (a == EOK) ? "Error.ok" : a;
         const char* eb = (b == EOK) ? "Error.ok" : b;
-        snprintf(
+        str.sprintf(
             _cex_test__mainfn_state.str_buf,
             CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> Exc mismatch '%s' != '%s'",
@@ -218,7 +218,7 @@ _check_eq_ptr(const void* a, const void* b, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (a != b) {
-        snprintf(
+        str.sprintf(
             _cex_test__mainfn_state.str_buf,
             CEX_TEST_AMSG_MAX_LEN - 1,
             "%s:%d -> %p != %p (ptr_diff: %ld)",

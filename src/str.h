@@ -66,7 +66,7 @@ struct __cex_namespace__str {
     str_s           (*sbuf)(char* s, usize length);
     arr$(char*)     (*split)(const char* s, const char* split_by, IAllocator allc);
     arr$(char*)     (*split_lines)(const char* s, IAllocator allc);
-    Exception       (*sprintf)(char* dest, usize dest_len, const char* format,...);
+    Exc             (*sprintf)(char* dest, usize dest_len, const char* format,...);
     /// Creates string slice of input c-str (NULL tolerant, (str_s){0} on error)
     str_s           (*sstr)(const char* ccharptr);
     bool            (*starts_with)(const char* str, const char* prefix);

@@ -40,11 +40,11 @@ test$case(test_array)
     add_to_arr(&array);
     add_to_str(&array2);
     for (usize i = 0; i < arr$len(array); ++i) {
-        printf("%d \n", array[i]);
+        io.printf("%d \n", array[i]);
     }
 
     for (usize i = 0; i < arr$len(array2); ++i) {
-        printf("%s \n", array2[i]);
+        io.printf("%s \n", array2[i]);
     }
     arr$free(array);
     arr$free(array2);
@@ -59,7 +59,7 @@ test$case(test_array_char_ptr)
     arr$push(array, "bar");
     arr$push(array, "baz");
     for (usize i = 0; i < arr$len(array); ++i) {
-        printf("%s \n", array[i]);
+        io.printf("%s \n", array[i]);
     }
     arr$free(array);
 
@@ -89,7 +89,7 @@ test$case(test_array_struct)
     arr$push(array, s);
 
     for (usize i = 0; i < arr$len(array); ++i) {
-        printf("key: %d str: %s\n", array[i].key, array[i].my_string);
+        io.printf("key: %d str: %s\n", array[i].key, array[i].my_string);
     }
     arr$free(array);
 
@@ -314,7 +314,7 @@ test$case(test_for_arr)
 
     for$each(v, array)
     {
-        printf("v: %s\n", v);
+        io.printf("v: %s\n", v);
     }
 
     typeof(buf[0])* pbuf = &buf[0];
@@ -325,7 +325,7 @@ test$case(test_for_arr)
 
     for$each(c, buf)
     {
-        printf("c: %c\n", c);
+        io.printf("c: %c\n", c);
     }
 
     u32 n = 0;
@@ -333,7 +333,7 @@ test$case(test_for_arr)
     {
         isize i = v - array;
         tassert_eq(n, i);
-        printf("v: %s, i: %ld\n", *v, i);
+        io.printf("v: %s, i: %ld\n", *v, i);
         n++;
     }
 
@@ -342,13 +342,13 @@ test$case(test_for_arr)
     {
         isize i = v - buf;
         tassert_eq(n, i);
-        printf("v: %c, i: %ld\n", *v, i);
+        io.printf("v: %c, i: %ld\n", *v, i);
         n++;
     }
 
     // TODO: check if possible for$each(*v, &arr)??
     // for$each(c, &buf) {
-    //     printf("c: %c\n", *c);
+    //     io.printf("c: %c\n", *c);
     // }
     typeof((&buf)[0])* pbuf_ptr = &((&buf)[0]);
     // typeof((&buf)[0]) p = pbuf_ptr[0];
@@ -359,7 +359,7 @@ test$case(test_for_arr)
     // typeof((&array)[0]) p_array = array_ptr[0];
     var p_array = array_ptr;
     // tassert_eq(*p_array, "foo");
-    printf("p_array: %p\n", p_array);
+    io.printf("p_array: %p\n", p_array);
 
     arr$free(array);
     return EOK;
@@ -413,7 +413,7 @@ test$case(test_for_arr_custom_size)
     tassert_eq(3, arr$len(array));
     for$each(v, array, arr$len(array) - 1)
     {
-        printf("v: %s\n", v);
+        io.printf("v: %s\n", v);
         n++;
     }
     tassert_eq(n, 2);
@@ -423,7 +423,7 @@ test$case(test_for_arr_custom_size)
     tassert_eq(3, arr$len(buf));
     for$each(c, buf, 2)
     {
-        printf("c: %c\n", c);
+        io.printf("c: %c\n", c);
         n++;
     }
     tassert_eq(n, 2);
@@ -450,7 +450,7 @@ test$case(test_for_arr_for_struct)
     // v - is a copy of the array element
     for$each(v, array)
     {
-        printf("v: %s\n", v.my_string);
+        io.printf("v: %s\n", v.my_string);
         n++;
         v.key = 77;
     }
@@ -463,7 +463,7 @@ test$case(test_for_arr_for_struct)
     for$eachp(v, array, arr$len(array))
     {
         isize i = v - array;
-        printf("v: %s\n", v->my_string);
+        io.printf("v: %s\n", v->my_string);
         tassert_eq(n, i);
         n++;
         v->key = 77;
@@ -907,7 +907,7 @@ test$case(test_hashmap_bufkey)
             str_s*: (key_len = 0),                                                                 \
             default: (key_len = 0)                                                                 \
         );                                                                                         \
-        printf("key: %p, key_len: %ld, key_size: %ld\n", key, key_len, key_size);                  \
+        io.printf("key: %p, key_len: %ld, key_size: %ld\n", key, key_len, key_size);                  \
     })
 
 test$case(test_hashmap_cex_string)

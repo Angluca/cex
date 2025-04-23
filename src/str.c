@@ -258,7 +258,7 @@ cex_str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
     return EOK;
 }
 
-static Exception
+static Exc
 cex_str_sprintf(char* dest, usize dest_len, const char* format, ...)
 {
     va_list va;

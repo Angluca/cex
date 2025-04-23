@@ -1,14 +1,9 @@
 #include "src/all.c"
 
+#pragma GCC diagnostic ignored "-Wformat"
+#pragma GCC diagnostic ignored "-Wformat-extra-args"
 #define USE_STB 1
 
-#if USE_STB
-#define SNPRINTF cexsp__snprintf
-#else
-#include <locale.h>
-#define SPRINTF sprintf
-#define SNPRINTF snprintf
-#endif
 
 // stbsp_sprintf
 #define CHECK_END(str)                                                                             \
@@ -18,15 +13,15 @@
     }
 
 // clang-format off
-#define CHECK9(str, v1, v2, v3, v4, v5, v6, v7, v8, v9) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7, v8, v9); CHECK_END(str); }
-#define CHECK8(str, v1, v2, v3, v4, v5, v6, v7, v8    ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7, v8    ); CHECK_END(str); }
-#define CHECK7(str, v1, v2, v3, v4, v5, v6, v7        ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7        ); CHECK_END(str); }
-#define CHECK6(str, v1, v2, v3, v4, v5, v6            ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5, v6            ); CHECK_END(str); }
-#define CHECK5(str, v1, v2, v3, v4, v5                ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4, v5                ); CHECK_END(str); }
-#define CHECK4(str, v1, v2, v3, v4                    ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3, v4                    ); CHECK_END(str); }
-#define CHECK3(str, v1, v2, v3                        ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2, v3                        ); CHECK_END(str); }
-#define CHECK2(str, v1, v2                            ) { int ret = SNPRINTF(buf, arr$len(buf), v1, v2                            ); CHECK_END(str); }
-#define CHECK1(str, v1                                ) { int ret = SNPRINTF(buf, arr$len(buf), v1                                ); CHECK_END(str); }
+#define CHECK9(str, v1, v2, v3, v4, v5, v6, v7, v8, v9) { int ret = cexsp__snprintf(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7, v8, v9); CHECK_END(str); }
+#define CHECK8(str, v1, v2, v3, v4, v5, v6, v7, v8    ) { int ret = cexsp__snprintf(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7, v8    ); CHECK_END(str); }
+#define CHECK7(str, v1, v2, v3, v4, v5, v6, v7        ) { int ret = cexsp__snprintf(buf, arr$len(buf), v1, v2, v3, v4, v5, v6, v7        ); CHECK_END(str); }
+#define CHECK6(str, v1, v2, v3, v4, v5, v6            ) { int ret = cexsp__snprintf(buf, arr$len(buf), v1, v2, v3, v4, v5, v6            ); CHECK_END(str); }
+#define CHECK5(str, v1, v2, v3, v4, v5                ) { int ret = cexsp__snprintf(buf, arr$len(buf), v1, v2, v3, v4, v5                ); CHECK_END(str); }
+#define CHECK4(str, v1, v2, v3, v4                    ) { int ret = cexsp__snprintf(buf, arr$len(buf), v1, v2, v3, v4                    ); CHECK_END(str); }
+#define CHECK3(str, v1, v2, v3                        ) { int ret = cexsp__snprintf(buf, arr$len(buf), v1, v2, v3                        ); CHECK_END(str); }
+#define CHECK2(str, v1, v2                            ) { int ret = cexsp__snprintf(buf, arr$len(buf), v1, v2                            ); CHECK_END(str); }
+#define CHECK1(str, v1                                ) { int ret = cexsp__snprintf(buf, arr$len(buf), v1                                ); CHECK_END(str); }
 // clang-format on
 
 
@@ -174,27 +169,27 @@ test$case(stb_sprintf_orig)
 #endif
 
     // snprintf
-    tassert(SNPRINTF(buf, 100, " %s     %d", "b", 123) == 10);
+    tassert(cexsp__snprintf(buf, 100, " %s     %d", "b", 123) == 10);
     tassert(strcmp(buf, " b     123") == 0);
-    tassert(SNPRINTF(buf, 100, "%f", pow_2_75) == 30);
+    tassert(cexsp__snprintf(buf, 100, "%f", pow_2_75) == 30);
     tassert(strncmp(buf, "37778931862957161709568.000000", 17) == 0);
-    n = SNPRINTF(buf, 10, "number %f", 123.456789);
+    n = cexsp__snprintf(buf, 10, "number %f", 123.456789);
     tassert(strcmp(buf, "number 12") == 0);
     // tassert_eq(n, 9); // written vs would-be written bytes
     tassert_eq(n, 10); // WARNING: cex changed this behavior to handle overflows!
     //
     buf[0] = '\0';
-    n = SNPRINTF(buf, 0, "7 chars");
+    n = cexsp__snprintf(buf, 0, "7 chars");
     tassert_eq(n, -1);
     tassert_eq(strlen(buf), 0);
 
     // stb_sprintf uses internal buffer of 512 chars - test longer string
-    SNPRINTF(buf, 550, "%d  %600s", 3, "abc");
+    cexsp__snprintf(buf, 550, "%d  %600s", 3, "abc");
     tassert(strlen(buf) == 549);
-    tassert(SNPRINTF(buf, 600, "%510s     %c", "a", 'b') == 516);
+    tassert(cexsp__snprintf(buf, 600, "%510s     %c", "a", 'b') == 516);
 
     // length check
-    tassert(SNPRINTF(NULL, 0, " %s     %d", "b", 123) == -1);
+    tassert(cexsp__snprintf(NULL, 0, " %s     %d", "b", 123) == -1);
 
     // ' modifier. Non-standard, but supported by glibc.
 #if !USE_STB

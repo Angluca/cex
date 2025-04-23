@@ -51,12 +51,16 @@
 #        define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
 #    endif
 
-#    ifndef cexy$cc_args_test
+#    ifndef cexy$test_cc_args
 /// Test runner compiler flags (may be overridden by user)
-#        define cexy$cc_args_test                                                                  \
+#        define cexy$test_cc_args                                                                  \
             "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3",            \
                 "-Itests/", cexy$cc_args_sanitizer
 #    endif
+
+#    ifndef cexy$test_launcher
+#    define cexy$test_launcher
+#endif
 
 #    ifndef cexy$cex_self_args
 /// Compiler flags used for building ./cex.c -> ./cex (may be overridden by user)
