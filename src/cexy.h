@@ -81,7 +81,7 @@
 #    ifndef cexy$debug_cmd
 /// Command for running debugger for cex test/app debug  (may be overridden by
 /// user)
-#        define cexy$debug_cmd "gdb", "--args"
+#        define cexy$debug_cmd "gdb", "-q", "--args"
 #    endif
 
 #    ifndef cexy$build_ext_exe

@@ -166,38 +166,29 @@ test$case(stb_sprintf_orig)
     tassert(cexsp__snprintf(NULL, 0, " %s     %d", "b", 123) == -1);
 
     // ' modifier. Non-standard, but supported by glibc.
-#if !USE_STB
-    setlocale(LC_NUMERIC, ""); // C locale does not group digits
-#endif
-    // CHECK2("1,200,000", "%'d", 1200000); // pedantic
-    // CHECK2("-100,006,789", "%'d", -100006789); // pedantic
+    CHECK2("1,200,000", "%'d", 1200000); 
+    CHECK2("-100,006,789", "%'d", -100006789); 
 #if !defined(_MSC_VER) || _MSC_VER >= 1600
-    // CHECK2("9,888,777,666", "%'lld", 9888777666ll); // pedantic
+    CHECK2("9,888,777,666", "%'lld", 9888777666ll); 
 #endif
-    // CHECK2("200,000,000.000000", "%'18f", 2e8); // pedantic
-    // CHECK2("100,056,789", "%'.0f", 100056789.0); // pedantic
-    // CHECK2("100,056,789.0", "%'.1f", 100056789.0); // pedantic
-#if USE_STB // difference in leading zeros
-            // CHECK2("000,001,200,000", "%'015d", 1200000); // pedantic
-#else
-    CHECK2("0000001,200,000", "%'015d", 1200000);
-#endif
+    CHECK2("200,000,000.000000", "%'18f", 2e8); 
+    CHECK2("100,056,789", "%'.0f", 100056789.0); 
+    CHECK2("100,056,789.0", "%'.1f", 100056789.0); 
+    CHECK2("000,001,200,000", "%'015d", 1200000); 
 
     // things not supported by glibc
 #if USE_STB
     CHECK2("(null)", "%s", ret_null_char());
-    // CHECK2("123,4abc:", "%'x:", 0x1234ABC);
-    // CHECK2("100000000", "%b", 256); // pedantic
-    // CHECK3("0b10 0B11", "%#b %#B", 2, 3); // pedantic
-#    if !defined(_MSC_VER) || _MSC_VER >= 1600
-    // CHECK4("2 3 4", "%I64d %I32d %Id", 2ll, 3, 4ll);
-#    endif
-    // CHECK3("1k 2.54 M", "%$_d %$.2d", 1000, 2536000);
-    // CHECK3("2.42 Mi 2.4 M", "%$$.2d %$$$d", 2536000, 2536000);
+    CHECK2("123,4abc:", "%'x:", 0x1234ABC);
+    CHECK2("100000000", "%b", 256); 
+    CHECK3("0b10 0B11", "%#b %#B", 2, 3); 
+    CHECK4("2 3 4", "%I64d %I32d %Id", 2ll, 3, 4ll);
+    CHECK3("1k 2.54 M", "%$_d %$.2d", 1000, 2536000);
+    CHECK3("2.42 Mi 2.4 M", "%$$.2d %$$$d", 2536000, 2536000);
 
     // different separators
     cexsp__set_separators(' ', ',');
-    // CHECK2("12 345,678900", "%'f", 12345.6789);  // pedantic
+    CHECK2("12 345,678900", "%'f", 12345.6789);  
 #endif
 
     return EOK;
@@ -288,27 +279,50 @@ test$case(stb_sprintf_strings)
 {
     mem$scope(tmem$, _)
     {
+        // valid array
         char buf[] = "foo";
         tassert_eq("foo", str.fmt(_, "%s", buf));
 
+        // valid strings
         tassert_eq("bar", str.fmt(_, "%s", "bar"));
         tassert_eq("foo-bar", str.fmt(_, "%s-%s", buf, "bar"));
 
-        tassert_eq("(null)", str.fmt(_, "%s", NULL));
-        tassert_eq("(null)", str.fmt(_, "%s", 0));
-        tassert_eq("(null)", str.fmt(_, "%s", str$s("")));
-        tassert_eq("(%s-bad)", str.fmt(_, "%s", str$s("foo")));
+        // valid slice
         tassert_eq("foo", str.fmt(_, "%S", str$s("foo")));
         tassert_eq("", str.fmt(_, "%S", str$s("")));
-        tassert_eq("", str.fmt(_, "%S", NULL));
-        tassert_eq("(null)", str.fmt(_, "%S", (str_s){0}));
-        u64 baad = 0xfe03ba0d;
-        uassert_disable();
-        tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad));
 
-        tassert_eq("(null)", str.fmt(_, "%s",  (str_s){0}));
-        tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("foo")));
+        // "valid" NULL string and slice (common error)
+        tassert_eq("(null)", str.fmt(_, "%s", NULL));
+        tassert_eq("(null)", str.fmt(_, "%S", (str_s){ 0 }));
+
+        // NOTE: cases below are invalid use of %s/%S and arguments
+        // but CEX attempts gracefully handle them if possible 
+        // Some invalid mismatch of %s/%S use
         tassert_eq("(%s-bad)", str.fmt(_, "%s", 7));
+        tassert_eq("(null)", str.fmt(_, "%s", 0));
+        tassert_eq("(%S-bad)", str.fmt(_, "%S", (str_s){.len = 65536, .buf = "baz"}));
+        u64 baad = 0xfe03ba0d;
+        (void)baad;
+#ifdef _WIN32
+        // IMPORTANT: win32 va arg implementation passes str_s by pointer,
+        //   therefore some error check heuristics do not work on windows (segfaults)
+        // tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad)); // segv
+
+        tassert_eq("", str.fmt(_, "%s", str$s(""))); // win mismatch
+        tassert_eq("", str.fmt(_, "%s",  (str_s){0})); // win mismatch ''
+        tassert_eq("(%s-bad)", str.fmt(_, "%s",  baad));
+        // tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad));
+        // tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("123456789"))); // mismatch \t
+#else
+        tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad));
+        tassert_eq("(null)", str.fmt(_, "%s", str$s("")));
+        tassert_eq("", str.fmt(_, "%S", NULL)); // win segv
+        tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("foo"))); // win segv
+        tassert_eq("(null)", str.fmt(_, "%s",  (str_s){0})); // win mismatch ''
+        tassert_eq("(%s-bad)", str.fmt(_, "%s", str$s("foo"))); // win segv!
+        // tassert_eq("(%s-bad)", str.fmt(_, "%s",  baad)); // segv on linux
+#endif
+
     }
 
     return EOK;
