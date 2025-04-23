@@ -298,6 +298,8 @@ test$case(stb_sprintf_strings)
         // string with dynamic len
         tassert_eq("12345", str.fmt(_, "%.*s", 5, "123456789"));
         tassert_eq("12345", str.fmt(_, "%.*S", 5, str$s("123456789")));
+        tassert_eq("123456789", str.fmt(_, "%.*s", 500, "123456789"));
+        tassert_eq("123456789", str.fmt(_, "%.*S", 500, str$s("123456789")));
         /*
         * Damage control wrong args (these are intentional bugs, trying to mitigate them)
         */
