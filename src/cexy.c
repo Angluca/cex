@@ -1443,10 +1443,14 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"\
     "* cexy$cex_self_args        " cex$stringize(cexy$cex_self_args) "\n"\
     "* cexy$cex_self_cc          " cexy$cex_self_cc "\n"\
-    "* ./cex -D<ARGS> config     " cex$stringize(_CEX_SELF_DARGS) "\n"
     // clang-format on
 
     io.printf("%s", $env);
+
+    io.printf("\nGlobal environment:\n");
+    io.printf("* os.platform.current()     %s\n", os.platform.to_str(os.platform.current()));
+    io.printf("* ./cex -D<ARGS> config     %s\n", cex$stringize(_CEX_SELF_DARGS));
+
 
 #    undef $env
 
@@ -1487,6 +1491,8 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
     // Build stage
     u32 n_tests = 0;
     u32 n_built = 0;
+    (void)n_tests;
+    (void)n_built;
     mem$scope(tmem$, _)
     {
         for$each(test_src, os.fs.find(target, true, _))

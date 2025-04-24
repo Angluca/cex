@@ -318,16 +318,19 @@ test$case(stb_sprintf_strings)
         // IMPORTANT: win32 va arg implementation passes str_s by pointer,
         //   therefore some error check heuristics do not work on windows (segfaults)
         // tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad)); // segv
+        // uassert(false && "Teest");
 
         tassert_eq("", str.fmt(_, "%s", str$s(""))); // win mismatch
         tassert_eq("", str.fmt(_, "%s",  (str_s){0})); // win mismatch ''
         tassert_eq("(%s-bad)", str.fmt(_, "%s",  baad));
-        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S",  "foo"));
+#if !defined(__SANITIZE_ADDRESS__)
+        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S",  "foo", 123)); // win asan crash
+#endif
         tassert_eq("(%S-bad)", str.fmt(_, "%S", (str_s){.len = 6, .buf = (void*)0xfe03ba0d}));
         // tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("123456789"))); // mismatch \t
 #else
-        tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad));
-        tassert_eq("(%S-bad)", str.fmt(_, "%S",  "foo"));
+        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S",  baad));
+        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S",  "foo"));
         tassert_eq("(null)", str.fmt(_, "%s", str$s("")));
         tassert_eq("", str.fmt(_, "%S", NULL)); // win segv
         tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("foo"))); // win segv

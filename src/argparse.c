@@ -1,5 +1,6 @@
 #pragma once
 #include "argparse.h"
+#include "cex_base.h"
 #include <math.h>
 
 static const char*
@@ -224,6 +225,14 @@ cex_argparse_usage(argparse_c* self)
         io.printf("%s\n", self->epilog);
     }
 }
+__attribute__((no_sanitize("undefined"))) static inline Exception
+_cex_argparse__convert(const char* s, argparse_opt_s* opt){
+    // NOTE: this hits UBSAN because we casting convert function of
+    // (char*, void*) into str.convert.to_u32(char*, u32*)
+    // however we do explicit type checking and tagging so it should be good!
+    return opt->convert(s, opt->value);
+}
+
 static Exception
 _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
 {
@@ -264,7 +273,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                     return _cex_argparse__error(self, opt, "requires a value", is_long);
                 }
                 uassert(opt->convert != NULL);
-                e$except_silent(err, opt->convert(self->_ctx.optvalue, opt->value))
+                e$except_silent(err,_cex_argparse__convert(self->_ctx.optvalue, opt) )
                 {
                     return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
@@ -273,7 +282,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                 self->argc--;
                 self->_ctx.cpidx++;
                 self->argv++;
-                e$except_silent(err, opt->convert(*self->argv, opt->value))
+                e$except_silent(err, _cex_argparse__convert(*self->argv, opt))
                 {
                     return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }

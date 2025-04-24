@@ -3723,10 +3723,20 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #    endif
 
 #    ifndef cexy$cc_args_sanitizer
+#        if defined(_WIN32)
+#            if defined(__clang__)
 /// Debug mode and tests sanitizer flags (may be overridden by user)
-#        define cexy$cc_args_sanitizer                                                             \
-            "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined",    \
-                "-fsanitize=leak", "-fstack-protector-strong"
+#                define cexy$cc_args_sanitizer                                                     \
+                    "-fsanitize-address-use-after-scope", "-fsanitize=address",                    \
+                        "-fsanitize=undefined", "-fstack-protector-strong"
+#            else
+#                define cexy$cc_args_sanitizer
+#            endif
+#        else
+#            define cexy$cc_args_sanitizer                                                         \
+                "-fsanitize-address-use-after-scope", "-fsanitize=address",                        \
+                    "-fsanitize=undefined", "-fsanitize=leak", "-fstack-protector-strong"
+#        endif
 #    endif
 
 #    ifndef cexy$cc_args_release
@@ -10812,6 +10822,14 @@ cex_argparse_usage(argparse_c* self)
         io.printf("%s\n", self->epilog);
     }
 }
+__attribute__((no_sanitize("undefined"))) static inline Exception
+_cex_argparse__convert(const char* s, argparse_opt_s* opt){
+    // NOTE: this hits UBSAN because we casting convert function of
+    // (char*, void*) into str.convert.to_u32(char*, u32*)
+    // however we do explicit type checking and tagging so it should be good!
+    return opt->convert(s, opt->value);
+}
+
 static Exception
 _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
 {
@@ -10852,7 +10870,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                     return _cex_argparse__error(self, opt, "requires a value", is_long);
                 }
                 uassert(opt->convert != NULL);
-                e$except_silent(err, opt->convert(self->_ctx.optvalue, opt->value))
+                e$except_silent(err,_cex_argparse__convert(self->_ctx.optvalue, opt) )
                 {
                     return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
@@ -10861,7 +10879,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                 self->argc--;
                 self->_ctx.cpidx++;
                 self->argv++;
-                e$except_silent(err, opt->convert(*self->argv, opt->value))
+                e$except_silent(err, _cex_argparse__convert(*self->argv, opt))
                 {
                     return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
@@ -12328,7 +12346,6 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 
 
 #ifdef _WIN32
-    sbuf_c cmd = sbuf.create(1024, mem$);
     Exc result = Error.runtime;
 
     STARTUPINFO si = { 0 };
@@ -12340,37 +12357,41 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
     si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 
-    for (u32 i = 0; i < args_len - 1; i++) {
-        if (str.find(args[i], " ")) {
-            e$except_silent(err, sbuf.appendf(&cmd, "\"%s\" ", args[i]))
-            {
-                result = err;
-                goto end;
-            }
-        } else {
-            e$except_silent(err, sbuf.appendf(&cmd, "%s ", args[i]))
-            {
-                result = err;
-                goto end;
+    mem$scope(tmem$, _)
+    {
+        sbuf_c cmd = sbuf.create(1024, _);
+        for (u32 i = 0; i < args_len - 1; i++) {
+            if (str.find(args[i], " ") || str.find(args[i], "\"")) {
+                char* escaped_arg = str.replace(args[i], "\"", "\\\"", _);
+                e$except_silent(err, sbuf.appendf(&cmd, "\"%s\" ", escaped_arg))
+                {
+                    result = err;
+                    goto end;
+                }
+            } else {
+                e$except_silent(err, sbuf.appendf(&cmd, "%s ", args[i]))
+                {
+                    result = err;
+                    goto end;
+                }
             }
         }
-    }
-    log$debug("Running a cmd: '%s'\n", cmd);
 
-    if (!CreateProcessA(
-            NULL,    // Application name (use command line)
-            cmd,     // Command line
-            NULL,    // Process security attributes
-            NULL,    // Thread security attributes
-            FALSE,   // Inherit handles
-            0,       // Creation flags
-            NULL,    // Environment
-            NULL,    // Current directory
-            &si,     // Startup info
-            &pi      // Process information
-        )) {
-        result = os.get_last_error();
-        goto end;
+        if (!CreateProcessA(
+                NULL,  // Application name (use command line)
+                cmd,   // Command line
+                NULL,  // Process security attributes
+                NULL,  // Thread security attributes
+                TRUE,  // Inherit handles
+                0,     // Creation flags
+                NULL,  // Environment
+                NULL,  // Current directory
+                &si,   // Startup info
+                &pi    // Process information
+            )) {
+            result = os.get_last_error();
+            goto end;
+        }
     }
 
     *out_cmd = (os_cmd_c){ ._is_subprocess = false,
@@ -12381,8 +12402,6 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
     CloseHandle(pi.hThread);
     result = EOK;
 end:
-    sbuf.destroy(&cmd);
-
     return result;
 #else
     pid_t cpid = fork();
@@ -14660,10 +14679,14 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"\
     "* cexy$cex_self_args        " cex$stringize(cexy$cex_self_args) "\n"\
     "* cexy$cex_self_cc          " cexy$cex_self_cc "\n"\
-    "* ./cex -D<ARGS> config     " cex$stringize(_CEX_SELF_DARGS) "\n"
     // clang-format on
 
     io.printf("%s", $env);
+
+    io.printf("\nGlobal environment:\n");
+    io.printf("* os.platform.current()     %s\n", os.platform.to_str(os.platform.current()));
+    io.printf("* ./cex -D<ARGS> config     %s\n", cex$stringize(_CEX_SELF_DARGS));
+
 
 #    undef $env
 
@@ -14704,6 +14727,8 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
     // Build stage
     u32 n_tests = 0;
     u32 n_built = 0;
+    (void)n_tests;
+    (void)n_built;
     mem$scope(tmem$, _)
     {
         for$each(test_src, os.fs.find(target, true, _))

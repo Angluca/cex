@@ -35,10 +35,20 @@
 #    endif
 
 #    ifndef cexy$cc_args_sanitizer
+#        if defined(_WIN32)
+#            if defined(__clang__)
 /// Debug mode and tests sanitizer flags (may be overridden by user)
-#        define cexy$cc_args_sanitizer                                                             \
-            "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined",    \
-                "-fsanitize=leak", "-fstack-protector-strong"
+#                define cexy$cc_args_sanitizer                                                     \
+                    "-fsanitize-address-use-after-scope", "-fsanitize=address",                    \
+                        "-fsanitize=undefined", "-fstack-protector-strong"
+#            else
+#                define cexy$cc_args_sanitizer
+#            endif
+#        else
+#            define cexy$cc_args_sanitizer                                                         \
+                "-fsanitize-address-use-after-scope", "-fsanitize=address",                        \
+                    "-fsanitize=undefined", "-fsanitize=leak", "-fstack-protector-strong"
+#        endif
 #    endif
 
 #    ifndef cexy$cc_args_release

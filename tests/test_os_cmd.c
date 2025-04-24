@@ -338,6 +338,8 @@ test$case(os_cmd_run_macro_space_in_args)
     {
         tassert_er(Error.runtime, os$cmd(test_app("write_arg", _)));
         tassert_er(EOK, os$cmd(test_app("write_arg", _), "hello world"));
+        tassert_er(EOK, os$cmd(test_app("write_arg", _), "hello=\"world\""));
+        tassert_er(EOK, os$cmd(test_app("write_arg", _), "hello=\"world big world\""));
     }
     return EOK;
 }
@@ -362,5 +364,8 @@ test$case(os_cmd_run_read_all)
     }
     return EOK;
 }
+
+
+
 
 test$main();

@@ -5,8 +5,11 @@
 int
 main(int argc, char* argv[])
 {
-    if (argc != 2) {
+    if (argc < 2) {
         fprintf(stdout, "Usage: %s <echo text>\n", argv[0]);
+        return 1;
+    } else if (argc > 2){
+        fprintf(stdout, "Too many args 1st is: %s\n", argv[1]);
         return 1;
     }
 

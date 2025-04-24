@@ -1041,7 +1041,6 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 
 
 #ifdef _WIN32
-    sbuf_c cmd = sbuf.create(1024, mem$);
     Exc result = Error.runtime;
 
     STARTUPINFO si = { 0 };
@@ -1053,37 +1052,41 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
     si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 
-    for (u32 i = 0; i < args_len - 1; i++) {
-        if (str.find(args[i], " ")) {
-            e$except_silent(err, sbuf.appendf(&cmd, "\"%s\" ", args[i]))
-            {
-                result = err;
-                goto end;
-            }
-        } else {
-            e$except_silent(err, sbuf.appendf(&cmd, "%s ", args[i]))
-            {
-                result = err;
-                goto end;
+    mem$scope(tmem$, _)
+    {
+        sbuf_c cmd = sbuf.create(1024, _);
+        for (u32 i = 0; i < args_len - 1; i++) {
+            if (str.find(args[i], " ") || str.find(args[i], "\"")) {
+                char* escaped_arg = str.replace(args[i], "\"", "\\\"", _);
+                e$except_silent(err, sbuf.appendf(&cmd, "\"%s\" ", escaped_arg))
+                {
+                    result = err;
+                    goto end;
+                }
+            } else {
+                e$except_silent(err, sbuf.appendf(&cmd, "%s ", args[i]))
+                {
+                    result = err;
+                    goto end;
+                }
             }
         }
-    }
-    log$debug("Running a cmd: '%s'\n", cmd);
 
-    if (!CreateProcessA(
-            NULL,    // Application name (use command line)
-            cmd,     // Command line
-            NULL,    // Process security attributes
-            NULL,    // Thread security attributes
-            FALSE,   // Inherit handles
-            0,       // Creation flags
-            NULL,    // Environment
-            NULL,    // Current directory
-            &si,     // Startup info
-            &pi      // Process information
-        )) {
-        result = os.get_last_error();
-        goto end;
+        if (!CreateProcessA(
+                NULL,  // Application name (use command line)
+                cmd,   // Command line
+                NULL,  // Process security attributes
+                NULL,  // Thread security attributes
+                TRUE,  // Inherit handles
+                0,     // Creation flags
+                NULL,  // Environment
+                NULL,  // Current directory
+                &si,   // Startup info
+                &pi    // Process information
+            )) {
+            result = os.get_last_error();
+            goto end;
+        }
     }
 
     *out_cmd = (os_cmd_c){ ._is_subprocess = false,
@@ -1094,8 +1097,6 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
     CloseHandle(pi.hThread);
     result = EOK;
 end:
-    sbuf.destroy(&cmd);
-
     return result;
 #else
     pid_t cpid = fork();

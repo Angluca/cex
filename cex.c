@@ -1,8 +1,25 @@
 #if __has_include("cex_config.h")
 #    include "cex_config.h"
 #else
-#    define cexy$cc_include "-I.", "-I./lib/"
-#    define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
+// These settings can be set via `./cex -D CEX_WINE config` commang
+#    ifdef CEX_DEBUG
+#        define cexy$cex_self_args cexy$cc_args_sanitizer
+#        define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
+#    else
+#        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
+#    endif
+
+#    ifdef CEX_TEST_NOASAN
+#        define cexy$cc_args_sanitizer
+#    endif
+
+#    ifdef CEX_WINE
+#        define cexy$cc "x86_64-w64-mingw32-gcc"
+#        define cexy$cc_args_sanitizer
+#        define cexy$test_launcher "wine"
+#        define cexy$build_ext_exe ".exe"
+#    endif
+
 #endif
 
 #define CEX_IMPLEMENTATION
@@ -52,7 +69,7 @@ cmd_custom_test(int argc, char** argv, void* user_ctx)
         for$each(src, test_app_src)
         {
             char* tgt_ext = NULL;
-            char* test_launcher[] = {cexy$test_launcher};
+            char* test_launcher[] = { cexy$test_launcher };
             if (arr$len(test_launcher) > 0 && str.eq(test_launcher[0], "wine")) {
                 tgt_ext = str.fmt(_, ".%s", "win");
             } else {
