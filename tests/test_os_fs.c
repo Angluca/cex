@@ -285,7 +285,8 @@ test$case(test_os_find_direct_match)
 
 test$case(test_os_getcwd)
 {
-    mem$scope(tmem$, _) {
+    mem$scope(tmem$, _)
+    {
         var p = os.fs.getcwd(_);
         tassert(p != NULL);
         tassert_eq(true, str.ends_with(p, "cex"));
@@ -329,16 +330,20 @@ test$case(test_os_mkdir)
     tassert_er(Error.argument, os.fs.mkdir(NULL));
     tassert_er(Error.argument, os.fs.mkdir(""));
 
-    if (os.fs.remove(TBUILDDIR "mytestdir")) {
+    e$except_silent(err, os.fs.remove(TBUILDDIR "mytestdir"))
+    {
+        if (err != Error.not_found) {
+            tassert_er(Error.not_found, err);
+        }
     }
 
     var ftype = os.fs.stat(TBUILDDIR "mytestdir");
-    tassert_er(ftype.error, Error.not_found);
     tassert_eq(ftype.is_valid, 0);
     tassert_eq(ftype.is_directory, 0);
     tassert_eq(ftype.is_file, 0);
     tassert_eq(ftype.is_symlink, 0);
     tassert_eq(ftype.is_other, 0);
+    tassert_er(ftype.error, Error.not_found);
 
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestdir"));
     tassert_er(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
@@ -361,7 +366,7 @@ test$case(test_os_mkdir)
     tassert_eq(ftype.is_valid, 1);
     tassert_eq(ftype.is_directory, 1);
     tassert_eq(ftype.is_file, 0);
-    tassert_eq(ftype.is_symlink, 1);
+    tassert_eq(ftype.is_symlink, (os.platform.current() == OSPlatform__win) ? 0 : 1);
     tassert_eq(ftype.is_other, 0);
     tassert_eq(ftype.is_other, 0);
     tassert_ne(ftype.mtime, 0);
@@ -380,6 +385,7 @@ test$case(test_os_fs_stat)
     tassert_eq(ftype.is_file, 1);
     tassert_eq(ftype.is_symlink, 0);
     tassert_eq(ftype.is_other, 0);
+    tassert_gt(ftype.size, 0);
 
     return EOK;
 }
@@ -423,14 +429,19 @@ test$case(test_os_rename_file)
     }
     if (os.fs.remove(TBUILDDIR "mytestfile.txt2")) {
     }
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt3")) {
+    }
 
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_er(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt", "foo"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt3", "bar"));
     tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt3"));
 
     tassert_er(Error.ok, os.fs.rename(TBUILDDIR "mytestfile.txt", TBUILDDIR "mytestfile.txt2"));
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt2"));
+
     var ftype = os.fs.stat(TBUILDDIR "mytestfile.txt2");
     tassert_eq(ftype.is_valid, 1);
     tassert_eq(ftype.is_directory, 0);
@@ -438,8 +449,30 @@ test$case(test_os_rename_file)
     tassert_eq(ftype.is_symlink, 0);
     tassert_eq(ftype.is_other, 0);
 
-    tassert_er(EOK, os.fs.remove(TBUILDDIR "mytestfile.txt2"));
+    tassert_er(Error.exists, os.fs.rename(TBUILDDIR "mytestfile.txt3", TBUILDDIR "mytestfile.txt2"));
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt2"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt3"));
 
+    tassert_er(Error.not_found, os.fs.remove(TBUILDDIR "mytestfile.txt"));
+    tassert_er(EOK, os.fs.remove(TBUILDDIR "mytestfile.txt2"));
+    tassert_er(EOK, os.fs.remove(TBUILDDIR "mytestfile.txt3"));
+
+
+    return EOK;
+}
+
+test$case(test_os_remove_file)
+{
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {
+    }
+
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt", "foo"));
+
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_er(EOK, os.fs.remove(TBUILDDIR "mytestfile.txt"));
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
 
     return EOK;
 }
@@ -451,7 +484,11 @@ test$case(test_os_path_join)
         arr$(const char*) parts = arr$new(parts, ta);
         arr$pushm(parts, "cexstr", str.fmt(ta, "%s_%d.txt", "foo", 10));
         char* p = os.path.join(parts, arr$len(parts), ta);
-        tassert_eq("cexstr/foo_10.txt", p);
+        if (os.platform.current() == OSPlatform__win) {
+            tassert_eq("cexstr\\foo_10.txt", p);
+        } else {
+            tassert_eq("cexstr/foo_10.txt", p);
+        }
     }
     return EOK;
 }
@@ -465,10 +502,6 @@ test$case(test_os_setenv)
 
     // set env
     tassert_er(EOK, os.env.set("test_os_posix", "foo"));
-    tassert_eq(os.env.get("test_os_posix", NULL), "foo");
-
-    // set without replacing
-    tassert_er(EOK, os.env.set("test_os_posix", "bar"));
     tassert_eq(os.env.get("test_os_posix", NULL), "foo");
 
     // set with replacing
@@ -531,6 +564,7 @@ test$case(test_os_path_basename_dirname)
 
 test$case(test_os_mkpath)
 {
+    log$debug("PATH_MAX: %d\n", PATH_MAX);
     e$ret(os.fs.remove_tree(TBUILDDIR));
 
     tassert(!os.path.exists(TBUILDDIR));

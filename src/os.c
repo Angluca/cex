@@ -207,14 +207,16 @@ cex_os__fs__rename(const char* old_path, const char* new_path)
     if (new_path == NULL || new_path[0] == '\0') {
         return Error.argument;
     }
+    if (os.path.exists(new_path)) {
+        return Error.exists;
+    }
 #ifdef _WIN32
     if (!MoveFileEx(old_path, new_path, MOVEFILE_REPLACE_EXISTING)) {
-        return Error.os;
+        return os.get_last_error();
     }
     return EOK;
 #else
     if (rename(old_path, new_path) < 0) {
-
         return os.get_last_error();
     }
     return EOK;
@@ -237,7 +239,7 @@ cex_os__fs__mkdir(const char* path)
         if (errno == EEXIST) {
             return EOK;
         }
-        return strerror(errno);
+        return os.get_last_error();
     }
     return EOK;
 }
@@ -280,34 +282,36 @@ cex_os__fs__stat(const char* path)
     }
 
 #ifdef _WIN32
-    /* FIX: win 32
-    DWORD attr = GetFileAttributesA(path);
-    if (attr == INVALID_FILE_ATTRIBUTES) {
-        nob_log(
-            NOB_ERROR,
-            "Could not get file attributes of %s: %s",
-            path,
-            nob_win32_error_message(GetLastError())
-        );
-        return -1;
+    struct _stat statbuf;
+    if (unlikely(_stat(path, &statbuf) < 0)) {
+        result.error = os.get_last_error();
+        return result;
     }
-    result.is_valid = true;
-    result.result = EOK;
 
-    if (attr & FILE_ATTRIBUTE_DIRECTORY) {
-        return NOB_FILE_DIRECTORY;
+    result.error = EOK;
+    result.is_valid = true;
+    result.mtime = statbuf.st_mtime;
+    result.is_other = true;
+    result.is_symlink = false;
+
+    if (statbuf.st_mode & _S_IFDIR) {
+        result.is_directory = true;
+        result.is_other = false;
     }
-    return NOB_FILE_REGULAR;
-    */
+
+    if (statbuf.st_mode & _S_IFREG) {
+        result.is_directory = false;
+        result.is_other = false;
+        result.is_file = true;
+    }
+
+    result.size = statbuf.st_size;
+
     return result;
 #else // _WIN32
     struct stat statbuf;
-    if (lstat(path, &statbuf) < 0) {
-        if (errno == ENOENT) {
-            result.error = Error.not_found;
-        } else {
-            result.error = strerror(errno);
-        }
+    if (unlikely(lstat(path, &statbuf) < 0)) {
+        result.error = os.get_last_error();
         return result;
     }
     result.is_valid = true;
@@ -326,12 +330,8 @@ cex_os__fs__stat(const char* path)
         }
     } else {
         result.is_symlink = true;
-        if (stat(path, &statbuf) < 0) {
-            if (errno == ENOENT) {
-                result.error = Error.not_found;
-            } else {
-                result.error = strerror(errno);
-            }
+        if (unlikely(stat(path, &statbuf) < 0)) {
+            result.error = os.get_last_error();
             return result;
         }
         if (S_ISREG(statbuf.st_mode)) {
@@ -343,6 +343,7 @@ cex_os__fs__stat(const char* path)
             result.is_other = false;
         }
     }
+    result.size = statbuf.st_size;
     return result;
 #endif
 }
@@ -353,16 +354,27 @@ cex_os__fs__remove(const char* path)
     if (path == NULL || path[0] == '\0') {
         return Error.argument;
     }
-#ifdef _WIN32
-    /* FIX: win32
-    if (!DeleteFileA(path)) {
-        return nob_win32_error_message(GetLastError());
+
+    os_fs_stat_s stat = os.fs.stat(path);
+    if (!stat.is_valid) {
+        return stat.error;
     }
-    */
+#ifdef _WIN32
+    if (stat.is_file || stat.is_symlink) {
+        if (!DeleteFileA(path)) {
+            return os.get_last_error();
+        }
+    } else if (stat.is_directory) {
+        if (!RemoveDirectoryA(path)) {
+            return os.get_last_error();
+        }
+    } else {
+        return "Unsupported path type";
+    }
     return EOK;
 #else
     if (remove(path) < 0) {
-        return strerror(errno);
+        return os.get_last_error();
     }
     return EOK;
 #endif
@@ -393,7 +405,7 @@ cex_os__fs__dir_walk(
     }
 
     u32 path_len = strlen(path);
-    if (path_len > PATH_MAX - 256) {
+    if (path_len > PATH_MAX - 2) {
         result = Error.overflow;
         goto end;
     }

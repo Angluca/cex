@@ -24,13 +24,14 @@ typedef struct os_fs_stat_s
         Exc error;
         time_t mtime;
     };
-    usize is_valid : 1;
-    usize is_directory : 1;
-    usize is_symlink : 1;
-    usize is_file : 1;
-    usize is_other : 1;
+    u64 is_valid : 1;
+    u64 is_directory : 1;
+    u64 is_symlink : 1;
+    u64 is_file : 1;
+    u64 is_other : 1;
+    u64 size : 48;
 } os_fs_stat_s;
-_Static_assert(sizeof(os_fs_stat_s) == sizeof(usize) * 2, "size?");
+_Static_assert(sizeof(os_fs_stat_s) == sizeof(u64) * 2, "size?");
 
 typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* user_ctx);
 
