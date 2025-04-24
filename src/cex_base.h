@@ -79,6 +79,8 @@ extern const struct _CEX_Error_struct
     Exc assert;
     Exc os;
     Exc timeout;
+    Exc permission;
+    Exc try_again;
 } Error;
 
 #ifndef __cex__fprintf

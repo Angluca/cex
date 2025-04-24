@@ -19,6 +19,8 @@ const struct _CEX_Error_struct Error = {
     .assert = "AssertError",         // generic runtime check
     .os = "OSError",                 // generic OS check
     .timeout = "TimeoutError",       // await interval timeout
+    .permission = "PermissionError", // Permission denied
+    .try_again = "TryAgainError",    // EAGAIN / EWOULDBLOCK errno analog for async operations
 };
 
 void
