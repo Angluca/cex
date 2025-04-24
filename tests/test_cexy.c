@@ -27,7 +27,11 @@ test$case(test_target_make)
         e$ret(io.file.save(src, "#include <my_src2.c>"));
         char* tgt_file = cexy.target_make(src, TBUILDDIR "my_tgt_dir", "my_tgt", _);
         e$assert(os.path.exists(TBUILDDIR "my_tgt_dir/") && "must exist!");
-        tassert_eq(tgt_file, tgt);
+        if (os.platform.current() == OSPlatform__win) {
+            tassert_eq(tgt_file, TBUILDDIR "my_tgt_dir\\my_tgt.exe");
+        } else {
+            tassert_eq(tgt_file, tgt);
+        }
         e$assert(!os.path.exists(tgt_file) && "must not exist!");
     }
     return EOK;
@@ -48,7 +52,11 @@ test$case(test_target_make_with_ext)
         char* tgt_file = cexy.target_make(src, TBUILDDIR "my_tgt_dir", ".test", _);
         tassert(tgt_file != NULL);
         tassert(os.path.exists(TBUILDDIR "my_tgt_dir/") && "must exist!");
-        tassert_eq(tgt_file, TBUILDDIR "my_tgt_dir/" TBUILDDIR "my_src/my_src.c.test");
+        if (os.platform.current() == OSPlatform__win) {
+            tassert_eq(tgt_file, TBUILDDIR "my_tgt_dir\\" TBUILDDIR "my_src/my_src.c.test.exe");
+        } else {
+            tassert_eq(tgt_file, TBUILDDIR "my_tgt_dir/" TBUILDDIR "my_src/my_src.c.test");
+        }
         e$assert(!os.path.exists(tgt_file) && "must not exist!");
     }
     return EOK;
