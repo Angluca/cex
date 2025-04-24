@@ -173,6 +173,11 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
         return true;
     }
 
+    if (!str.ends_with(src_path, ".c") && !str.ends_with(src_path, ".h")) {
+        // We only parse includes for appropriate .c/.h files
+        return false;
+    }
+
     mem$scope(tmem$, _)
     {
         arr$(const char*) incl_path = arr$new(incl_path, _);
