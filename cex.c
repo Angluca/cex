@@ -1,8 +1,8 @@
 #if __has_include("cex_config.h")
-    #include "cex_config.h"
+#    include "cex_config.h"
 #else
-    #define cexy$cc_include "-I.", "-I./lib/"
-    #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
+#    define cexy$cc_include "-I.", "-I./lib/"
+#    define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #endif
 
 #define CEX_IMPLEMENTATION
@@ -10,7 +10,7 @@
 #include "cex.h"
 
 
-Exception cmd_test(int argc, char** argv, void* user_ctx);
+Exception cmd_custom_test(int argc, char** argv, void* user_ctx);
 void cex_bundle(void);
 
 int
@@ -26,7 +26,7 @@ main(int argc, char** argv)
         .epilog = cexy$epilog,
         argparse$cmd_list(
             cexy$cmd_all,
-            { .name = "test", .func = cexy.cmd.simple_test, .help = "Test running" },
+            { .name = "test", .func = cmd_custom_test, .help = "Test running" },
         ),
     };
     // clang-format on
@@ -38,6 +38,38 @@ main(int argc, char** argv)
         return 1;
     }
     return 0;
+}
+
+Exception
+cmd_custom_test(int argc, char** argv, void* user_ctx)
+{
+    // Extended test runner
+    mem$scope(tmem$, _)
+    {
+        log$trace("Finding/building simple os apps in tests/os_test/*.c\n");
+        arr$(char*) test_app_src = os.fs.find("tests/os_test/*.c", false, _);
+
+        for$each(src, test_app_src)
+        {
+            char* tgt_ext = NULL;
+            char* test_launcher[] = {cexy$test_launcher};
+            if (arr$len(test_launcher) > 0 && str.eq(test_launcher[0], "wine")) {
+                tgt_ext = str.fmt(_, ".%s", "win");
+            } else {
+                tgt_ext = str.fmt(_, ".%s", os.platform.to_str(os.platform.current()));
+            }
+            // target app is: build/tests/os_test/<app_name>.[platform][.exe]
+            char* target = cexy.target_make(src, cexy$build_dir, tgt_ext, _);
+
+            if (!cexy.src_include_changed(target, src, NULL)) {
+                continue;
+            }
+
+            e$ret(os$cmd(cexy$cc, "-g", "-Wall", "-Wextra", "-o", target, src));
+        }
+    }
+
+    return cexy.cmd.simple_test(argc, argv, user_ctx);
 }
 
 static void

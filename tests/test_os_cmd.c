@@ -1,6 +1,27 @@
-#include "src/all.h"
 #include "src/all.c"
+#include "src/all.h"
 
+char*
+test_app(char* app_name, IAllocator allc)
+{
+    uassert(app_name != NULL);
+    uassert(allc != NULL);
+    char* result = os$path_join(
+        allc,
+        "build",
+        "tests",
+        "os_test",
+        str.fmt(
+            allc,
+            "%s.c.%s%s",
+            app_name,
+            os.platform.to_str(os.platform.current()),
+            (os.platform.current() == OSPlatform__win) ? ".exe" : ""
+        )
+    );
+    log$debug("Making test app: %s\n", result);
+    return result;
+}
 
 test$case(os_cmd_create)
 {
@@ -8,7 +29,7 @@ test$case(os_cmd_create)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", NULL);
+        arr$pushm(args, test_app("write_lines", _), NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         char* output = os.cmd.read_all(&c, _);
@@ -28,7 +49,7 @@ test$case(os_cmd_file_handles)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", NULL);
+        arr$pushm(args, test_app("write_lines", _), NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         tassert(os.cmd.fstderr(&c) == c._subpr.stderr_file);
@@ -52,7 +73,7 @@ test$case(os_cmd_read_all_small)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", "stdout", "10", NULL);
+        arr$pushm(args, test_app("write_lines", _), "stdout", "10", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         char* output = os.cmd.read_all(&c, _);
@@ -68,7 +89,14 @@ test$case(os_cmd_read_all_small)
             tassert_eq(str.fmt(_, "%09d", i), lines[i]);
         }
 
-        tassert_eq(strlen(output) / 10, arr$len(lines));
+        // tassert_eq(strlen(output) / 10, arr$len(lines));
+        if (os.platform.current() == OSPlatform__win) {
+            tassert_eq(output[strlen(output)-2], '\r');
+            tassert_eq(output[strlen(output)-1], '\n');
+            tassert_eq(strlen(output) / 11, arr$len(lines));
+        } else {
+            tassert_eq(strlen(output) / 10, arr$len(lines));
+        }
     }
     return EOK;
 }
@@ -79,7 +107,7 @@ test$case(os_cmd_read_all_huge)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", "stdout", "100000", NULL);
+        arr$pushm(args, test_app("write_lines", _), "stdout", "100000", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         char* output = os.cmd.read_all(&c, _);
@@ -103,7 +131,7 @@ test$case(os_cmd_read_line_huge)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", "stdout", "100000", NULL);
+        arr$pushm(args, test_app("write_lines", _), "stdout", "100000", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         char* line;
@@ -127,7 +155,7 @@ test$case(os_cmd_read_all_only_stdout)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", "stderr", "10", NULL);
+        arr$pushm(args, test_app("write_lines", _), "stderr", "10", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         char* output = os.cmd.read_all(&c, _);
@@ -148,7 +176,7 @@ test$case(os_cmd_read_all_combined_stderr)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", "stderr", "10", NULL);
+        arr$pushm(args, test_app("write_lines", _), "stderr", "10", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .combine_stdouterr = 1 }));
 
         char* output = os.cmd.read_all(&c, _);
@@ -163,7 +191,13 @@ test$case(os_cmd_read_all_combined_stderr)
             tassert_eq(str.fmt(_, "%09d", i), lines[i]);
         }
 
-        tassert_eq(strlen(output) / 10, arr$len(lines));
+        if (os.platform.current() == OSPlatform__win) {
+            tassert_eq(output[strlen(output)-2], '\r');
+            tassert_eq(output[strlen(output)-1], '\n');
+            tassert_eq(strlen(output) / 11, arr$len(lines));
+        } else {
+            tassert_eq(strlen(output) / 10, arr$len(lines));
+        }
     }
     return EOK;
 }
@@ -178,7 +212,7 @@ test$case(os_cmd_join_timeout)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/sleep", "2", NULL);
+        arr$pushm(args, test_app("sleep", _), "2", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
         tassert_eq(1, os.cmd.is_alive(&c));
 
@@ -201,7 +235,7 @@ test$case(os_cmd_huge_join)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", "stdout", "100000", NULL);
+        arr$pushm(args, test_app("write_lines", _), "stdout", "100000", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         int err_code = 1;
@@ -217,7 +251,7 @@ test$case(os_cmd_huge_join_stderr)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines", "stderr", "100000", NULL);
+        arr$pushm(args, test_app("write_lines", _), "stderr", "100000", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         int err_code = 1;
@@ -233,7 +267,7 @@ test$case(os_cmd_stdin_communucation)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/echo_server", NULL);
+        arr$pushm(args, test_app("echo_server", _), NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
         tassert(os.cmd.is_alive(&c));
 
@@ -255,12 +289,12 @@ test$case(os_cmd_read_all_small_wdelay)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "tests/build/os_test/write_lines_delay", "stdout", "10", NULL);
+        arr$pushm(args, test_app("write_lines_delay", _), "stdout", "10", NULL);
         tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
-        // printf("%s\n", output);
+        log$debug("write_lines_delay output:\n`%s`", output);
         int err_code = 1;
         tassert_er(Error.ok, os.cmd.join(&c, 0, &err_code));
         tassert_eq(err_code, 0);
@@ -271,7 +305,13 @@ test$case(os_cmd_read_all_small_wdelay)
             tassert_eq(str.fmt(_, "%09d", i), lines[i]);
         }
 
-        tassert_eq(strlen(output) / 10, arr$len(lines));
+        if (os.platform.current() == OSPlatform__win) {
+            tassert_eq(output[strlen(output)-2], '\r');
+            tassert_eq(output[strlen(output)-1], '\n');
+            tassert_eq(strlen(output) / 11, arr$len(lines));
+        } else {
+            tassert_eq(strlen(output) / 10, arr$len(lines));
+        }
     }
     return EOK;
 }
