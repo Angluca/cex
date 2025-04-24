@@ -665,16 +665,16 @@ cex_os__fs__copy(const char* src_path, const char* dst_path)
     if (src_path == NULL || src_path[0] == '\0' || dst_path == NULL || dst_path[0] == '\0') {
         return Error.argument;
     }
-
     log$trace("copying %s -> %s\n", src_path, dst_path);
 
-#ifdef _WIN32
-    /* FIX: win32
-    if (!CopyFile(src_path, dst_path, FALSE)) {
-        nob_log(NOB_ERROR, "Could not copy file: %s", nob_win32_error_message(GetLastError()));
-        return Error.io;
+    if (os.path.exists(dst_path)) {
+        return Error.exists;
     }
-    */
+
+#ifdef _WIN32
+    if (!CopyFile(src_path, dst_path, FALSE)) {
+        return os.get_last_error();
+    }
     return EOK;
 #else
     int src_fd = -1;
@@ -687,19 +687,13 @@ cex_os__fs__copy(const char* src_path, const char* dst_path)
     Exc result = Error.runtime;
 
     if ((src_fd = open(src_path, O_RDONLY)) == -1) {
-        switch (errno) {
-            case ENOENT:
-                result = Error.not_found;
-                break;
-            default:
-                result = strerror(errno);
-        }
+        result = os.get_last_error();
         goto defer;
     }
 
     struct stat src_stat;
     if (fstat(src_fd, &src_stat) < 0) {
-        result = strerror(errno);
+        result = os.get_last_error();
         goto defer;
     }
 
@@ -715,14 +709,14 @@ cex_os__fs__copy(const char* src_path, const char* dst_path)
             break;
         }
         if (n < 0) {
-            result = Error.io;
+            result = os.get_last_error();
             goto defer;
         }
         char* buf2 = buf;
         while (n > 0) {
             ssize_t m = write(dst_fd, buf2, n);
             if (m < 0) {
-                result = Error.io;
+                result = os.get_last_error();
                 goto defer;
             }
             n -= m;

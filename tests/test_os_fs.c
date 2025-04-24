@@ -643,4 +643,40 @@ test$case(test_os_mkpath)
 
     return EOK;
 }
+
+test$case(test_os_copy_file)
+{
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {
+    }
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt2")) {
+    }
+
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt", "foo"));
+
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt2"));
+
+    tassert_er(Error.ok, os.fs.copy(TBUILDDIR "mytestfile.txt", TBUILDDIR "mytestfile.txt2"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt"));
+    tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt2"));
+
+    var ftype = os.fs.stat(TBUILDDIR "mytestfile.txt2");
+    tassert_eq(ftype.is_valid, 1);
+    tassert_eq(ftype.is_directory, 0);
+    tassert_eq(ftype.is_file, 1);
+    tassert_eq(ftype.is_symlink, 0);
+    tassert_eq(ftype.is_other, 0);
+
+    mem$scope(tmem$, _) {
+        var content = io.file.load(TBUILDDIR "mytestfile.txt2", _);
+        tassert(content);
+        tassert_eq(content, "foo");
+    }
+
+    tassert_er(Error.exists, os.fs.copy(TBUILDDIR "mytestfile.txt", TBUILDDIR "mytestfile.txt2"));
+    tassert_er(Error.not_found, os.fs.copy(TBUILDDIR "alksdjaldj.txt", TBUILDDIR "mytestfile.txt4"));
+
+    return EOK;
+}
 test$main();
