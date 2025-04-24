@@ -1730,7 +1730,8 @@ test$case(test_fmt)
         tassert_eq("foo", s);
         mem$free(mem$, s);
 
-        char* s2 = str.fmt(mem$, "%S", fcontent);
+        // NOTE: %S format for slice is limited to 65k chars, using this trick to overcome it
+        char* s2 = str.fmt(mem$, "%.*S", fcontent.len, fcontent);
         tassert(s2 != NULL);
         tassert_eq(strlen(s2), fcontent.len);
         for (u32 i = 0; i < fcontent.len; i++) {
