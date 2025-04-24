@@ -300,6 +300,10 @@ test$case(stb_sprintf_strings)
         tassert_eq("12345", str.fmt(_, "%.*S", 5, str$s("123456789")));
         tassert_eq("123456789", str.fmt(_, "%.*s", 500, "123456789"));
         tassert_eq("123456789", str.fmt(_, "%.*S", 500, str$s("123456789")));
+        tassert_eq("123456789", str.fmt(_, "%.*s", -1, "123456789"));
+        tassert_eq("123456789", str.fmt(_, "%.*S", -1, str$s("123456789")));
+        tassert_eq("123", str.fmt(_, "%.3s", "123456789"));
+        tassert_eq("123", str.fmt(_, "%.3S", str$s("123456789")));
         /*
         * Damage control wrong args (these are intentional bugs, trying to mitigate them)
         */
