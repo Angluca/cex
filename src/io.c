@@ -120,7 +120,7 @@ cex_io_ftell(FILE* file, usize* size)
 usize
 cex_io__file__size(FILE* file)
 {
-    if (file == NULL){
+    if (file == NULL) {
         return 0;
     }
 #ifdef _WIN32
@@ -527,13 +527,16 @@ cex_io__file__load(const char* path, IAllocator allc)
             if (out_content.buf) {
                 out_content.buf[0] = '\0';
             }
-            return out_content.buf;
+            goto end;
         }
         if (out_content.buf) {
             mem$free(allc, out_content.buf);
         }
-        return NULL;
+        goto end;
     }
+end:
+    cex_io_fclose(&file);
+
     return out_content.buf;
 }
 
