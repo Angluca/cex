@@ -12326,60 +12326,64 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
         }
     }
 
+
 #ifdef _WIN32
-    // FIX:  WIN32 uncompilable
-    /*
+    sbuf_c cmd = sbuf.create(1024, mem$);
+    Exc result = Error.runtime;
 
-    //
-    https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
+    STARTUPINFO si = { 0 };
+    PROCESS_INFORMATION pi = { 0 };
 
-    STARTUPINFO siStartInfo;
-    ZeroMemory(&siStartInfo, sizeof(siStartInfo));
-    siStartInfo.cb = sizeof(STARTUPINFO);
-    // NOTE: theoretically setting NULL to std handles should not be a problem
-    //
-    https://docs.microsoft.com/en-us/windows/console/getstdhandle?redirectedfrom=MSDN#attachdetach-behavior
-    // TODO: check for errors in GetStdHandle
-    siStartInfo.hStdError = redirect.fderr ? *redirect.fderr : GetStdHandle(STD_ERROR_HANDLE);
-    siStartInfo.hStdOutput = redirect.fdout ? *redirect.fdout : GetStdHandle(STD_OUTPUT_HANDLE);
-    siStartInfo.hStdInput = redirect.fdin ? *redirect.fdin : GetStdHandle(STD_INPUT_HANDLE);
-    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+    si.cb = sizeof(STARTUPINFO);
+    si.dwFlags |= STARTF_USESTDHANDLES;
+    si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 
-    PROCESS_INFORMATION piProcInfo;
-    ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
+    for (u32 i = 0; i < args_len - 1; i++) {
+        if (str.find(args[i], " ")) {
+            e$except_silent(err, sbuf.appendf(&cmd, "\"%s\" ", args[i]))
+            {
+                result = err;
+                goto end;
+            }
+        } else {
+            e$except_silent(err, sbuf.appendf(&cmd, "%s ", args[i]))
+            {
+                result = err;
+                goto end;
+            }
+        }
+    }
+    log$debug("Running a cmd: '%s'\n", cmd);
 
-    // TODO: use a more reliable rendering of the command instead of cmd_render
-    // cmd_render is for logging primarily
-    nob_cmd_render(cmd, &sb);
-    nob_sb_append_null(&sb);
-    BOOL bSuccess = CreateProcessA(
-        NULL,
-        sb.items,
-        NULL,
-        NULL,
-        TRUE,
-        0,
-        NULL,
-        NULL,
-        &siStartInfo,
-        &piProcInfo
-    );
-    nob_sb_free(sb);
-
-    if (!bSuccess) {
-        nob_log(
-            NOB_ERROR,
-            "Could not create child process: %s",
-            nob_win32_error_message(GetLastError())
-        );
-        return NOB_INVALID_PROC;
+    if (!CreateProcessA(
+            NULL,    // Application name (use command line)
+            cmd,     // Command line
+            NULL,    // Process security attributes
+            NULL,    // Thread security attributes
+            FALSE,   // Inherit handles
+            0,       // Creation flags
+            NULL,    // Environment
+            NULL,    // Current directory
+            &si,     // Startup info
+            &pi      // Process information
+        )) {
+        result = os.get_last_error();
+        goto end;
     }
 
-    CloseHandle(piProcInfo.hThread);
+    *out_cmd = (os_cmd_c){ ._is_subprocess = false,
+                           ._subpr = {
+                               .hProcess = pi.hProcess,
+                               .alive = 1,
+                           } };
+    CloseHandle(pi.hThread);
+    result = EOK;
+end:
+    sbuf.destroy(&cmd);
 
-    return piProcInfo.hProcess;
-    */
-    return "TODO";
+    return result;
 #else
     pid_t cpid = fork();
     if (cpid < 0) {

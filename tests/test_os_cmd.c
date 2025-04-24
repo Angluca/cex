@@ -91,8 +91,8 @@ test$case(os_cmd_read_all_small)
 
         // tassert_eq(strlen(output) / 10, arr$len(lines));
         if (os.platform.current() == OSPlatform__win) {
-            tassert_eq(output[strlen(output)-2], '\r');
-            tassert_eq(output[strlen(output)-1], '\n');
+            tassert_eq(output[strlen(output) - 2], '\r');
+            tassert_eq(output[strlen(output) - 1], '\n');
             tassert_eq(strlen(output) / 11, arr$len(lines));
         } else {
             tassert_eq(strlen(output) / 10, arr$len(lines));
@@ -192,8 +192,8 @@ test$case(os_cmd_read_all_combined_stderr)
         }
 
         if (os.platform.current() == OSPlatform__win) {
-            tassert_eq(output[strlen(output)-2], '\r');
-            tassert_eq(output[strlen(output)-1], '\n');
+            tassert_eq(output[strlen(output) - 2], '\r');
+            tassert_eq(output[strlen(output) - 1], '\n');
             tassert_eq(strlen(output) / 11, arr$len(lines));
         } else {
             tassert_eq(strlen(output) / 10, arr$len(lines));
@@ -306,12 +306,59 @@ test$case(os_cmd_read_all_small_wdelay)
         }
 
         if (os.platform.current() == OSPlatform__win) {
-            tassert_eq(output[strlen(output)-2], '\r');
-            tassert_eq(output[strlen(output)-1], '\n');
+            tassert_eq(output[strlen(output) - 2], '\r');
+            tassert_eq(output[strlen(output) - 1], '\n');
             tassert_eq(strlen(output) / 11, arr$len(lines));
         } else {
             tassert_eq(strlen(output) / 10, arr$len(lines));
         }
+    }
+    return EOK;
+}
+
+test$case(os_cmd_run)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(const char*) args = arr$new(args, _);
+        arr$pushm(args, test_app("write_lines", _), "stdout", "10", NULL);
+        tassert_er(EOK, os.cmd.run(args, arr$len(args), &c));
+#if defined(_WIN32)
+        tassert(c._subpr.hProcess != NULL);
+#endif
+        tassert_er(EOK, os.cmd.join(&c, 0, NULL));
+    }
+    return EOK;
+}
+
+test$case(os_cmd_run_macro_space_in_args)
+{
+    mem$scope(tmem$, _)
+    {
+        tassert_er(Error.runtime, os$cmd(test_app("write_arg", _)));
+        tassert_er(EOK, os$cmd(test_app("write_arg", _), "hello world"));
+    }
+    return EOK;
+}
+
+test$case(os_cmd_run_read_all)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, test_app("write_arg", _), "hello world", NULL);
+        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+
+        char* output = os.cmd.read_all(&c, _);
+        tassert(output != NULL);
+        log$debug("write_arg output:\n`%s`", output);
+        int err_code = 1;
+        tassert_er(Error.ok, os.cmd.join(&c, 0, &err_code));
+        tassert_eq(err_code, 0);
+
+        tassert(str.starts_with(output, "1st argument: 'hello world'"));
     }
     return EOK;
 }
