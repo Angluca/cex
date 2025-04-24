@@ -587,7 +587,7 @@ static arr$(char*) cex_os__fs__find(const char* path, bool is_recursive, IAlloca
     }
     char* dir_name = (dir_part.len > 0) ? path_buf : ".";
     char* pattern = path_buf + dir_part.len + 1;
-    if (*pattern == os$PATH_SEP) {
+    if (*pattern == '/' || *pattern == '\\') {
         pattern++;
     }
     if (*pattern == '\0') {

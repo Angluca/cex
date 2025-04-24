@@ -29,18 +29,55 @@ test_dir_walk(const char* path, os_fs_stat_s ftype, void* user_ctx)
     return EOK;
 }
 
+static char*
+p(const char* path, IAllocator allc)
+{
+    uassert(path);
+    uassert(allc);
+
+    sbuf_c buf = sbuf.create(4096, allc);
+
+    for$iter(str_s, it, str.slice.iter_split(str.sstr(path), "/\\", &it.iterator))
+    {
+        if (it.idx.i == 0) {
+            if (sbuf.appendf(&buf, "%S", it.val)) {
+                uassert(false && "appendf failed");
+            }
+        } else {
+            if (sbuf.appendf(&buf, "%c%S", os$PATH_SEP, it.val)) {
+                uassert(false && "appendf failed");
+            }
+        }
+    }
+    return buf;
+}
+
 test$case(test_os_dir_walk_print)
 {
     u32 ncalls = 0;
 
     // recursive walk (each file + directory + non recursive symlinks)
-    tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", true, test_dir_walk, &ncalls));
-    tassert_eq(8, ncalls);
+    mem$scope(tmem$, _)
+    {
+        char* path = p("tests/data/dir1", _);
+        log$debug("Walking: %s\n", path);
+        tassert_er(EOK, os.fs.dir_walk(path, true, test_dir_walk, &ncalls));
 
-    // non-recursive
-    ncalls = 0;
-    tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", false, test_dir_walk, &ncalls));
-    tassert_eq(5, ncalls);
+        if (os.platform.current() == OSPlatform__win) {
+            tassert_ge(ncalls, 8); // windows walks symlinks (no such thing as symlink!)
+        } else {
+            tassert_eq(8, ncalls);
+        }
+
+        // non-recursive
+        ncalls = 0;
+        tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", false, test_dir_walk, &ncalls));
+        if (os.platform.current() == OSPlatform__win) {
+            tassert_ge(ncalls, 5);
+        } else {
+            tassert_eq(5, ncalls);
+        }
+    }
 
     return EOK;
 }
@@ -50,13 +87,17 @@ test$case(test_os_find)
 
     mem$scope(tmem$, _)
     {
-        arr$(char*) files = os.fs.find("tests/data/dir1/", false, _);
+        arr$(char*) files = os.fs.find(p("tests/data/dir1/", _), false, _);
         tassert(files != NULL);
         tassert(arr$len(files) > 0);
         ;
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
-        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
-        hm$set(exp_files, "tests/data/dir1/file3.txt", true);
+        hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
+        hm$set(exp_files, p("tests/data/dir1/file3.txt", _), true);
+        if (os.platform.current() == OSPlatform__win) {
+            // Windows doesn't support symlinks
+            hm$set(exp_files, p("tests/data/dir1/file1_symlink.csv", _), true);
+        }
 
         u32 nit = 0;
         for$each(it, files)
@@ -77,11 +118,15 @@ test$case(test_os_find_inside_foreach)
     mem$scope(tmem$, _)
     {
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
-        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
-        hm$set(exp_files, "tests/data/dir1/file3.txt", true);
+        hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
+        hm$set(exp_files, p("tests/data/dir1/file3.txt", _), true);
+        if (os.platform.current() == OSPlatform__win) {
+            // Windows doesn't support symlinks
+            hm$set(exp_files, p("tests/data/dir1/file1_symlink.csv", _), true);
+        }
 
         u32 nit = 0;
-        for$each(it, os.fs.find("tests/data/dir1/", false, _))
+        for$each(it, os.fs.find(p("tests/data/dir1/", _), false, _))
         {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
@@ -99,10 +144,10 @@ test$case(test_os_find_exact)
     mem$scope(tmem$, _)
     {
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
-        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+        hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
 
         u32 nit = 0;
-        for$each(it, os.fs.find("tests/data/dir1/file1.csv", false, _))
+        for$each(it, os.fs.find(p("tests/data/dir1/file1.csv", _), false, _))
         {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
@@ -120,10 +165,10 @@ test$case(test_os_find_exact_recursive)
     mem$scope(tmem$, _)
     {
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
-        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+        hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
 
         u32 nit = 0;
-        for$each(it, os.fs.find("tests/data/dir1/file1.csv", true, _))
+        for$each(it, os.fs.find(p("tests/data/dir1/file1.csv", _), true, _))
         {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
@@ -159,7 +204,7 @@ test$case(test_os_find_no_trailing_slash)
     {
         // NOTE: when dir1 is a directory, and input path is without a pattern
         //       dir1 considered as a pattern
-        arr$(char*) files = os.fs.find("tests/data/dir1", false, _);
+        arr$(char*) files = os.fs.find(p("tests/data/dir1", _), false, _);
         tassert(files != NULL);
         tassert_eq(arr$len(files), 0);
     }
@@ -172,12 +217,12 @@ test$case(test_os_find_pattern)
 
     mem$scope(tmem$, _)
     {
-        arr$(char*) files = os.fs.find("tests/data/dir1/*.txt", false, _);
+        arr$(char*) files = os.fs.find(p("tests/data/dir1/*.txt", _), false, _);
         tassert(files != NULL);
         tassert(arr$len(files) > 0);
 
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
-        hm$set(exp_files, "tests/data/dir1/file3.txt", true);
+        hm$set(exp_files, p("tests/data/dir1/file3.txt", _), true);
 
         u32 nit = 0;
         for$each(it, files)
@@ -197,13 +242,13 @@ test$case(test_os_find_pattern_glob)
 
     mem$scope(tmem$, _)
     {
-        arr$(char*) files = os.fs.find("tests/data/dir1/file?.(txt|csv)", false, _);
+        arr$(char*) files = os.fs.find(p("tests/data/dir1/file?.(txt|csv)", _), false, _);
         tassert(files != NULL);
         tassert(arr$len(files) > 0);
         ;
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
-        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
-        hm$set(exp_files, "tests/data/dir1/file3.txt", true);
+        hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
+        hm$set(exp_files, p("tests/data/dir1/file3.txt", _), true);
 
         u32 nit = 0;
         for$each(it, files)
@@ -223,7 +268,7 @@ test$case(test_os_find_pattern_with_relative_non_norm_path)
 
     mem$scope(tmem$, _)
     {
-        arr$(char*) files = os.fs.find("tests/data/../../tests/data/dir1/*.txt", false, _);
+        arr$(char*) files = os.fs.find(p("tests/data/../../tests/data/dir1/*.txt", _), false, _);
         tassert(files != NULL);
         tassert_eq(arr$len(files), 1);
     }
@@ -236,14 +281,22 @@ test$case(test_os_find_recursive)
 
     mem$scope(tmem$, _)
     {
-        arr$(char*) files = os.fs.find("tests/data/dir1/*.csv", true, _);
+        arr$(char*) files = os.fs.find(p("tests/data/dir1/*.csv", _), true, _);
         tassert(files != NULL);
         tassert(arr$len(files) > 0);
         ;
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
-        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
-        hm$set(exp_files, "tests/data/dir1/dir2/dir3/file4.csv", true);
-        hm$set(exp_files, "tests/data/dir1/dir2/file2.csv", true);
+        hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
+        hm$set(exp_files, p("tests/data/dir1/dir2/dir3/file4.csv", _), true);
+        hm$set(exp_files, p("tests/data/dir1/dir2/file2.csv", _), true);
+        if (os.platform.current() == OSPlatform__win) {
+            // Windows doesn't support symlinks
+            hm$set(exp_files, p("tests/data/dir1/file1_symlink.csv", _), true);
+            hm$set(exp_files, p("tests/data/dir1/dir2_symlink/dir3/file4.csv", _), true);
+            // hm$set(exp_files, p("tests/data/dir1/dir2_symlink/dir3", _), true);
+            hm$set(exp_files, p("tests/data/dir1/dir2_symlink/file2.csv", _), true);
+            hm$set(exp_files, p("tests/data/dir1/file1_symlink.csv", _), true);
+        }
 
         u32 nit = 0;
         for$each(it, files)
@@ -263,12 +316,12 @@ test$case(test_os_find_direct_match)
 
     mem$scope(tmem$, _)
     {
-        arr$(char*) files = os.fs.find("tests/data/dir1/file1.csv", true, _);
+        arr$(char*) files = os.fs.find(p("tests/data/dir1/file1.csv", _), true, _);
         tassert(files != NULL);
         tassert_eq(arr$len(files), 1);
         ;
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
-        hm$set(exp_files, "tests/data/dir1/file1.csv", true);
+        hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
 
         u32 nit = 0;
         for$each(it, files)
