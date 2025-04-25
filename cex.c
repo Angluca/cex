@@ -1,7 +1,7 @@
 #if __has_include("cex_config.h")
 #    include "cex_config.h"
 #else
-// These settings can be set via `./cex -D CEX_WINE config` commang
+// These settings can be set via `./cex -D CEX_WINE config` command
 #    if defined(CEX_DEBUG)
 #        define cexy$cex_self_args cexy$cc_args_sanitizer
 #        define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
@@ -38,7 +38,7 @@ void cex_bundle(void);
 int
 main(int argc, char** argv)
 {
-    // cex_bundle();
+    cex_bundle();
     cexy$initialize();
 
     // clang-format off

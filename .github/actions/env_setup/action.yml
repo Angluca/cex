@@ -1,0 +1,57 @@
+name: CI environment setup
+description: Setup stuff
+
+runs:
+  using: 'composite'
+
+  steps:
+    - name: Setup environment
+      shell: bash
+      run: |
+        git config --global user.email "ci@cex-c.org"
+        git config --global user.name "CEX CI"
+        sudo mkdir /var/cores
+        sudo chmod ugo+rwx /var/cores/
+        echo "ASAN_OPTIONS=abort_on_error=1:disable_coredump=0:unmap_shadow_on_exit=1" >> $GITHUB_ENV
+
+        sudo apt-get remove apport  
+        sudo systemctl disable apport.service
+        sudo bash -c 'echo "/var/cores/core.%e.%t.%p" > /proc/sys/kernel/core_pattern'
+        sudo sysctl -w fs.suid_dumpable=2
+
+    - name: test access to core dump directory
+      shell: bash
+      run: |
+        touch /var/cores/test
+        ls /var/cores
+
+    - name: test enabling cores
+      shell: bash
+      run: |
+        ulimit -c               # should output 0 if disabled
+        ulimit -c unlimited
+        ulimit -c               # should output 'unlimited' now
+
+    - name: asan abort_on_error
+      shell: bash
+      run: |
+        echo "ASAN_OPTIONS: $ASAN_OPTIONS"
+
+    - name: core dump check
+      shell: bash
+      run: |
+        echo "Core ulimit default"
+        ulimit -c               # should output 'unlimited' now
+        echo "Core ulimit after"
+        ulimit -c unlimited
+        ulimit -c               # should output 'unlimited' now
+        echo "Core pattern:"
+        sudo cat /proc/sys/kernel/core_pattern
+        sudo sysctl -a | grep kernel.core_pattern
+        sudo sysctl -a | grep dump
+        echo "int main() {return *(int*)0;}" > coredump.c
+        gcc coredump.c
+        ./a.out || echo "core dumped?"
+        ls -la /var/cores
+        rm -r /var/cores/*
+

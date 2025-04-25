@@ -1,0 +1,44 @@
+name: Testing Suite
+
+on:
+  push:
+    branches: [ main, dev, ci_tes, experiments ]
+  pull_request:
+    branches: [ main, dev ]
+
+env:
+  llvm_version: 18
+
+jobs:
+  build-cex:
+    runs-on: ubuntu-22.04
+
+    strategy:
+      # Don't abort runners if a single one fails
+      fail-fast: false
+
+      matrix:
+        cex_preset: ["CEX_DEBUG", ""]
+
+    steps:
+      - name: Checkout cex
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/env_setup
+        name: Setup env
+
+      - name: cex initial build
+        run: |
+          ulimit -c unlimited 
+          ls -la
+          echo "Priming cex tool"
+          gcc -g ./cex.c -o ./cex 
+          ./cex -D${{ matrix.cex_preset }} config
+
+      - uses: actions/upload-artifact@master # capture all crashes as build artifacts
+        if: always()
+        with:
+          name: ${{ github.job }}_coredumps_${{ matrix.optimize}}
+          path: /var/cores
+          if-no-files-found: ignore
+
