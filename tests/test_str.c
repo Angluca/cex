@@ -122,6 +122,13 @@ test$case(test_copy)
     memset(buf, 'a', arr$len(buf));
     tassert_eq(Error.overflow, str.copy(buf, "12345678", arr$len(buf)));
     // string is truncated
+    tassert_eq(buf[7], '\0');
+    tassert_eq("1234567", buf);
+
+    memset(buf, 'a', arr$len(buf));
+    tassert_eq(Error.overflow, str.copy(buf, "1234567812309812308", arr$len(buf)));
+    // string is truncated
+    tassert_eq(buf[7], '\0');
     tassert_eq("1234567", buf);
 
     memset(buf, 'a', arr$len(buf));

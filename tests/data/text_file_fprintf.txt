@@ -1,1 +1,0 @@
-io.fprintf: str_c: 1234

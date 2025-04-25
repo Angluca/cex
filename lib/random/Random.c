@@ -80,7 +80,8 @@ rnd_internal_f32_normalized_from_u32(u32 value)
     u32 exponent = 127;
     u32 mantissa = value >> 9;
     u32 result = (exponent << 23) | mantissa;
-    f32 fresult = *(f32*)(&result);
+    f32 fresult = 0.0f;
+    memcpy(&fresult, &result, sizeof(u32));
     return fresult - 1.0f;
 }
 

@@ -2,9 +2,14 @@
 #    include "cex_config.h"
 #else
 // These settings can be set via `./cex -D CEX_WINE config` commang
-#    ifdef CEX_DEBUG
+#    if defined(CEX_DEBUG)
 #        define cexy$cex_self_args cexy$cc_args_sanitizer
 #        define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
+#    elif defined(CEX_RELEASE)
+#        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
+#        define cexy$test_cc_args                                                                  \
+            "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",            \
+                "-Itests/", "-O3"
 #    else
 #        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #    endif
@@ -33,7 +38,7 @@ void cex_bundle(void);
 int
 main(int argc, char** argv)
 {
-    cex_bundle();
+    // cex_bundle();
     cexy$initialize();
 
     // clang-format off

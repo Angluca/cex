@@ -1,5 +1,12 @@
 #include "src/all.c"
 
+test$teardown_suite()
+{
+    if(os.fs.remove("tests/data/text_file_write.txt")) {}
+    if(os.fs.remove("tests/data/text_file_fprintf.txt")) {}
+    return EOK;
+}
+
 test$case(test_io)
 {
     FILE* file = (void*)221;
