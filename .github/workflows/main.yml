@@ -2,7 +2,7 @@ name: Testing Suite
 
 on:
   push:
-    branches: [ main, dev, ci_tes, experiments ]
+    branches: [ main, dev, ci_test, experiments ]
   pull_request:
     branches: [ main, dev ]
 
