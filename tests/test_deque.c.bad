@@ -1,3 +1,9 @@
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//
+// FIX: this tests is completely flawed due to new ASAN UB check (clang 20+)
+//      deque.c need total refactoring
+//
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #include "src/all.c"
 #include "lib/deque/deque.h"
 #include "lib/deque/deque.c"
@@ -5,6 +11,18 @@
 
 deque$typedef(deque_int, int, false);
 deque$impl(deque_int);
+
+static char* buf = NULL;
+#define BUF_LEN sizeof(_cex_deque_head_s) + sizeof(int) * 16
+
+test$setup_case() {
+    buf = mem$malloc(mem$, BUF_LEN, 64);
+    return EOK;
+}
+test$teardown_case() {
+    buf = mem$free(mem$, buf);
+    return EOK;
+}
 
 test$case(testlist_alloc_capacity)
 {
@@ -723,10 +741,10 @@ test$case(test_deque_static)
 
 test$case(test_deque_static_append_grow)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    e$except(err, deque$new_static(&a, buf, arr$len(buf)))
+    e$except(err, deque$new_static(&a, buf, BUF_LEN))
     {
         tassert(false && "deque$new fail");
     }
@@ -751,15 +769,16 @@ test$case(test_deque_static_append_grow)
 
     tassert_eq(EOK, _cex_deque_validate(&a.base));
     deque_int.destroy(&a);
+    mem$free(mem$, buf);
     return EOK;
 }
 
 test$case(test_deque_static_append_grow_overwrite)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    e$except(err, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true))
+    e$except(err, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true))
     {
         tassert(false && "deque$new fail");
     }
@@ -793,10 +812,10 @@ test$case(test_deque_static_append_grow_overwrite)
 
 test$case(test_deque_validate)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    tassert_eq(EOK, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true));
+    tassert_eq(EOK, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true));
     tassert((void*)a.base == (void*)buf);
     tassert_eq(Error.argument, _cex_deque_validate(NULL));
     tassert_eq(EOK, _cex_deque_validate(&a.base));
@@ -805,10 +824,10 @@ test$case(test_deque_validate)
 
 test$case(test_deque_validate__head_gt_tail)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    tassert_eq(EOK, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true));
+    tassert_eq(EOK, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true));
     _cex_deque_head_s* head = &a.base->_head;
     head->idx_head = 1;
     tassert_eq(Error.integrity, _cex_deque_validate(&a.base));
@@ -817,10 +836,10 @@ test$case(test_deque_validate__head_gt_tail)
 
 test$case(test_deque_validate__eloffset_weird)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    tassert_eq(EOK, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true));
+    tassert_eq(EOK, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true));
     _cex_deque_head_s* head = &a.base->_head;
     head->header.eloffset = 1;
     tassert_eq(Error.integrity, _cex_deque_validate(&a.base));
@@ -830,10 +849,10 @@ test$case(test_deque_validate__eloffset_weird)
 
 test$case(test_deque_validate__eloffset_elalign)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    tassert_eq(EOK, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true));
+    tassert_eq(EOK, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true));
     _cex_deque_head_s* head = &a.base->_head;
     head->header.elalign = 0;
     tassert_eq(Error.integrity, _cex_deque_validate(&a.base));
@@ -845,10 +864,10 @@ test$case(test_deque_validate__eloffset_elalign)
 
 test$case(test_deque_validate__capacity_gt_max_capacity)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    tassert_eq(EOK, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true));
+    tassert_eq(EOK, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true));
     _cex_deque_head_s* head = &a.base->_head;
     head->max_capacity = 16;
     head->capacity = 17;
@@ -860,10 +879,10 @@ test$case(test_deque_validate__capacity_gt_max_capacity)
 
 test$case(test_deque_validate__zero_capacity)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    tassert_eq(EOK, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true));
+    tassert_eq(EOK, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true));
     _cex_deque_head_s* head = &a.base->_head;
     head->capacity = 0;
     tassert_eq(Error.integrity, _cex_deque_validate(&a.base));
@@ -873,10 +892,10 @@ test$case(test_deque_validate__zero_capacity)
 
 test$case(test_deque_validate__bad_magic)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    tassert_eq(EOK, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true));
+    tassert_eq(EOK, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true));
     _cex_deque_head_s* head = &a.base->_head;
     head->header.magic = 0xdef1;
     tassert_eq(Error.integrity, _cex_deque_validate(&a.base));
@@ -886,10 +905,10 @@ test$case(test_deque_validate__bad_magic)
 
 test$case(test_deque_validate__bad_pointer_alignment)
 {
-    alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
+    // alignas(64) char buf[sizeof(_cex_deque_head_s) + sizeof(int) * 16];
 
     deque_int_c a;
-    tassert_eq(EOK, deque$new_static(&a, buf, arr$len(buf), .rewrite_overflowed = true));
+    tassert_eq(EOK, deque$new_static(&a, buf, BUF_LEN, .rewrite_overflowed = true));
     a.base = (void*)(buf + 1);
     tassert_eq(Error.memory, _cex_deque_validate(&a.base));
     return EOK;

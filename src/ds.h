@@ -188,7 +188,15 @@ struct _cexds__arr_new_kwargs_s
     ((a) = _cexds__arrgrowf((a), sizeof *(a), (add_len), (min_cap), alignof(typeof(*a)), NULL))
 
 
-// NOLINT
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 12)
+#define arr$len(arr)                                                                               \
+    ({                                                                                             \
+        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0])) /* check if array or ptr */   \
+            ? _cexds__arr_len(arr)                                   /* some pointer or arr$ */    \
+            : (sizeof(arr) / sizeof((arr)[0])                        /* static array[] */          \
+              );                                                                                   \
+    })
+#else
 #define arr$len(arr)                                                                               \
     ({                                                                                             \
         _Pragma("GCC diagnostic push");                                                            \
@@ -202,7 +210,13 @@ struct _cexds__arr_new_kwargs_s
         /* NOLINTEND */                                                                            \
         _Pragma("GCC diagnostic pop");                                                             \
     })
-// NOLINT
+#endif
+
+static inline void*
+_cex__get_buf_addr(void* a)
+{
+    return (a != NULL) ? &((char*)a)[0] : NULL;
+}
 
 #define for$each(v, array, array_len...)                                                           \
     /* NOLINTBEGIN*/                                                                               \
@@ -210,7 +224,7 @@ struct _cexds__arr_new_kwargs_s
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
                                       : arr$len(array); /* prevents multi call of (length)*/       \
-    typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
+    typeof((array)[0])* cex$tmpname(arr_arrp) = _cex__get_buf_addr(array);                         \
     usize cex$tmpname(arr_index) = 0;                                                              \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
     /* NOLINTEND */                                                                                \
@@ -219,6 +233,7 @@ struct _cexds__arr_new_kwargs_s
           ((v) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1));                               \
          cex$tmpname(arr_index)++)
 
+
 #define for$eachp(v, array, array_len...)                                                          \
     /* NOLINTBEGIN*/                                                                               \
     usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
@@ -226,7 +241,7 @@ struct _cexds__arr_new_kwargs_s
                                       ? cex$tmpname(arr_length_opt)[0]                             \
                                       : arr$len(array); /* prevents multi call of (length)*/       \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
-    typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
+    typeof((array)[0])* cex$tmpname(arr_arrp) = _cex__get_buf_addr(array);                         \
     usize cex$tmpname(arr_index) = 0;                                                              \
     /* NOLINTEND */                                                                                \
     for (typeof((array)[0])* v = cex$tmpname(arr_arrp);                                            \

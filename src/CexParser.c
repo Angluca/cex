@@ -37,7 +37,7 @@ CexParser_create(char* content, u32 content_len, bool fold_scopes)
         content_len = str.len(content);
     }
     CexParser_c lx = { .content = content,
-                       .content_end = content + content_len,
+                       .content_end = (content) ? content + content_len : NULL,
                        .cur = content,
                        .fold_scopes = fold_scopes };
     return lx;
@@ -640,7 +640,7 @@ CexParser_decl_parse(
                     // Use only doxygen style comments for docs
                     if (str.slice.match(cmt, "(/**|/*!)*")) {
                         result->docs = cmt;
-                    } else if (str.slice.starts_with(cmt, str$s("///"))){
+                    } else if (str.slice.starts_with(cmt, str$s("///"))) {
                         if (prev_t.type == CexTkn__comment_single && result->docs.buf) {
                             // Trying extend previous /// comment
                             result->docs.len = (cmt.buf - result->docs.buf) + cmt.len;

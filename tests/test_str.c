@@ -1273,7 +1273,7 @@ test$case(str_to__unsigned_num)
     num = 0;
     s = "18446744073709551615";
     tassert_er(Error.ok, cex_str__to_unsigned_num(s, &num, UINT64_MAX));
-    tassert(num == __UINT64_C(18446744073709551615));
+    tassert(num == UINT64_C(18446744073709551615));
 
     num = 0;
     s = "18446744073709551616";
@@ -1368,7 +1368,7 @@ test$case(test_str_to_u64)
     num = 0;
     s = "18446744073709551615";
     tassert_er(EOK, str.convert.to_u64(s, &num));
-    tassert(num == __UINT64_C(18446744073709551615));
+    tassert(num == UINT64_C(18446744073709551615));
     tassert(num == UINT64_MAX);
 
     num = 0;

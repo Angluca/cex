@@ -1,16 +1,14 @@
-name: Testing Suite
+name: Tests
 
 on:
   push:
-    branches: [ main, dev, ci_test, experiments ]
+    branches: [ master, dev, ci_test]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ master, dev ]
 
-env:
-  llvm_version: 18
 
 jobs:
-  build-cex:
+  linux-ubuntu2204:
     runs-on: ubuntu-22.04
 
     strategy:
@@ -18,7 +16,8 @@ jobs:
       fail-fast: false
 
       matrix:
-        cex_preset: ["CEX_DEBUG", ""]
+        compiler: ["gcc-10", "gcc-11", "gcc-12", "clang-13", "clang-14", "clang-15"]
+        cex_preset: ["CEX_DEBUG", "CEX_RELEASE", "CEX_NDEBUG"]
 
     steps:
       - name: Checkout cex
@@ -27,13 +26,28 @@ jobs:
       - uses: ./.github/actions/env_setup
         name: Setup env
 
+      - name: cc setup
+        run: |
+          #sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          #sudo apt-get update
+          sudo apt-get install ${{ matrix.compiler }}
+          echo "Replacing: cc to ${{ matrix.compiler }}"
+          sudo rm /usr/bin/cc
+          sudo ln -s /usr/bin/${{ matrix.compiler }} /usr/bin/cc 
+          echo "cc --version"
+          cc --version
+
       - name: cex initial build
         run: |
           ulimit -c unlimited 
           ls -la
           echo "Priming cex tool"
-          gcc -g ./cex.c -o ./cex 
+          cc -g ./cex.c -o ./cex 
           ./cex -D${{ matrix.cex_preset }} config
+
+      - name: cex unit tests
+        run: |
+          ./cex test run all
 
       - uses: actions/upload-artifact@master # capture all crashes as build artifacts
         if: always()
@@ -42,3 +56,153 @@ jobs:
           path: /var/cores
           if-no-files-found: ignore
 
+  linux-ubuntu2404:
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Don't abort runners if a single one fails
+      fail-fast: false
+
+      matrix:
+        compiler: ["gcc-12", "gcc-13", "gcc-14", "clang-16", "clang-17", "clang-18"]
+        cex_preset: ["CEX_DEBUG", "CEX_RELEASE", "CEX_NDEBUG"]
+
+    steps:
+      - name: Checkout cex
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/env_setup
+        name: Setup env
+
+      - name: cc setup
+        run: |
+          #sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          #sudo apt-get update
+          sudo apt-get install ${{ matrix.compiler }}
+          echo "Replacing: cc to ${{ matrix.compiler }}"
+          sudo rm /usr/bin/cc
+          sudo ln -s /usr/bin/${{ matrix.compiler }} /usr/bin/cc 
+          echo "cc --version"
+          cc --version
+
+      - name: cex initial build
+        run: |
+          ulimit -c unlimited 
+          ls -la
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex 
+          ./cex -D${{ matrix.cex_preset }} config
+
+      - name: cex unit tests
+        run: |
+          ./cex test run all
+
+      - uses: actions/upload-artifact@master # capture all binaries
+        with:
+          name: ${{ github.job }}_build_exe_${{ matrix.compiler }}-${{ matrix.cex_preset }}
+          path: build/
+
+
+  tests-windows:
+    name: ${{ matrix.sys.runs-on }}-${{ matrix.sys.msys }}-${{ matrix.cex_preset }}
+    runs-on: ${{ matrix.sys.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        cex_preset: 
+          - CEX_DEBUG
+          - CEX_RELEASE
+          - CEX_NDEBUG
+        sys:
+          - msys: mingw64
+            runs-on: 'windows-latest'
+          - msys: ucrt64
+            runs-on: 'windows-latest'
+          - msys: clang64
+            runs-on: 'windows-latest'
+          #- msys: clangarm64
+          #  runs-on: 'windows-11-arm'
+
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: 'Setup MSYS2'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{matrix.sys.msys}}
+          update: true
+          install: >-
+            git
+          pacboy: >-
+            toolchain:p
+
+      - name: 'Test cc version / config'
+        run: |
+          git config --global core.autocrlf input
+          cc --version
+
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: cex initial build
+        run: |
+          ulimit -c unlimited 
+          ls -la
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex.exe 
+          ./cex.exe -D${{ matrix.cex_preset }} config
+
+      - name: cex unit tests
+        run: |
+          ./cex.exe test run all
+
+      - uses: actions/upload-artifact@master # capture all binaries
+        if: always()
+        with:
+          name: ${{ github.job }}_build_exe_${{ matrix.sys.runs-on }}-${{ matrix.sys.msys }}-${{ matrix.cex_preset }}
+          path: build/
+
+  tests-macos:
+    name: ${{ matrix.runs-on }}-${{ matrix.cex_preset }}
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        cex_preset: 
+          - CEX_DEBUG
+          - CEX_RELEASE
+          - CEX_NDEBUG
+        runs-on:
+          - macos-13
+          - macos-14
+          - macos-15
+    steps:
+      - name: Checkout cex
+        uses: actions/checkout@v4
+
+      - name: cc version / setup
+        run: |
+          echo "cc --version"
+          cc --version
+
+      - name: cex initial build
+        run: |
+          ulimit -c unlimited 
+          ls -la
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex 
+          ./cex -D${{ matrix.cex_preset }} config
+
+      - name: cex unit tests
+        run: |
+          ./cex test run all
+          #./cex test run tests/test_io.c -o
+
+      - uses: actions/upload-artifact@master # capture all binaries
+        with:
+          name: ${{ github.job }}_build_exe_${{ matrix.runs-on }}-${{ matrix.cex_preset }}
+          path: build/

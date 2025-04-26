@@ -577,18 +577,19 @@ cex_str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterat
             return (str_s){ 0 };
         }
         ctx->split_by_len = strlen(split_by);
+        uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
         if (ctx->split_by_len == 0) {
             iterator->stopped = 1;
             return (str_s){ 0 };
         }
-        uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
         isize idx = _cex_str__index(&s, split_by, ctx->split_by_len);
         if (idx < 0) {
             idx = s.len;
         }
         ctx->cursor = idx;
+        ctx->str_len = s.len; // this prevents s being changed in a loop
         iterator->idx.i = 0;
         if (idx == 0) {
             // first line is \n
@@ -597,12 +598,12 @@ cex_str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterat
             return str.slice.sub(s, 0, idx);
         }
     } else {
-        if (ctx->cursor >= s.len) {
+        if (unlikely(ctx->cursor >= ctx->str_len)) {
             iterator->stopped = 1;
             return (str_s){ 0 };
         }
         ctx->cursor++;
-        if (unlikely(ctx->cursor == s.len)) {
+        if (unlikely(ctx->cursor == ctx->str_len)) {
             // edge case, we have separator at last col
             // it's not an error, return empty split token
             iterator->idx.i++;

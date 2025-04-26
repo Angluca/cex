@@ -1525,6 +1525,7 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
     }
 
     log$info("Tests building: %d tests processed, %d tests built\n", n_tests, n_built);
+    fflush(stdout);
 
     if (str.match(cmd, "(run|debug)")) {
         e$ret(cexy.test.run(target, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
@@ -1624,7 +1625,7 @@ cexy__utils__make_new_project(const char* proj_dir)
         log$info("Compiling new cex app for a new project...\n");
         var old_dir = os.fs.getcwd(_);
         e$ret(os.fs.chdir(proj_dir));
-        os$cmd(cexy$cc, "-o", "cex", "cex.c");
+        e$ret(os$cmd(cexy$cex_self_cc, "-o", "cex", "cex.c"));
         e$ret(os.fs.chdir(old_dir));
         log$info("New project has been created in %s\n", proj_dir);
     }

@@ -2,6 +2,10 @@
 #    include "cex_config.h"
 #else
 // These settings can be set via `./cex -D CEX_WINE config` command
+
+// This is for CI (allowing substitute compiler with env var)
+#define cexy$cex_self_cc "cc"
+
 #    if defined(CEX_DEBUG)
 #        define cexy$cex_self_args cexy$cc_args_sanitizer
 #        define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
@@ -10,12 +14,22 @@
 #        define cexy$test_cc_args                                                                  \
             "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",            \
                 "-Itests/", "-O3"
+#    elif defined(CEX_NDEBUG)
+#        define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
+#        define cexy$cc_args_sanitizer
+#        define cexy$test_cc_args                                                                  \
+            "-DCEX_TEST", "-DNDEBUG", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",            \
+                "-Itests/", "-O2"
 #    else
 #        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #    endif
 
 #    ifdef CEX_TEST_NOASAN
 #        define cexy$cc_args_sanitizer
+#    endif
+
+#    ifdef CEX_OLD_GCC
+#        define cexy$cc "gcc-14"
 #    endif
 
 #    ifdef CEX_WINE
@@ -68,6 +82,8 @@ cmd_custom_test(int argc, char** argv, void* user_ctx)
     // Extended test runner
     mem$scope(tmem$, _)
     {
+        e$ret(os.fs.mkpath("tests/build/"));
+        e$assert(os.path.exists("tests/build/"));
         log$trace("Finding/building simple os apps in tests/os_test/*.c\n");
         arr$(char*) test_app_src = os.fs.find("tests/os_test/*.c", false, _);
 

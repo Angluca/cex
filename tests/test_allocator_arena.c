@@ -63,17 +63,20 @@ test$case(test_allocator_arena_create_destroy)
 
     mem$scope(arena, tal)
     {
+        (void)tal;
         tassert_eq(allc->scope_depth, 2);
         tassert_eq(arena->scope_depth(arena), 2);
         tassert_eq(mem$->scope_depth(mem$), 1);
 
         mem$scope(arena, tal)
         {
+            (void)tal;
             tassert_eq(allc->scope_depth, 3);
             tassert_eq(arena->scope_depth(arena), 3);
             tassert_eq(mem$->scope_depth(mem$), 1);
             mem$scope(arena, tal)
             {
+                (void)tal;
                 tassert_eq(allc->scope_depth, 4);
                 tassert_eq(mem$->scope_depth(mem$), 1);
                 tassert_eq(arena->scope_depth(arena), 4);
@@ -99,7 +102,7 @@ test$case(test_allocator_arena_malloc)
 
     mem$scope(arena, _)
     {
-        u8* p = mem$malloc(arena, 100);
+        u8* p = mem$malloc(_, 100);
         tassert(p != NULL);
         // tassert(mem$asan_enabled());
         // p[-2] = 1;
@@ -126,7 +129,7 @@ test$case(test_allocator_arena_malloc)
             tassert_eq(allc->scope_stack[1], 0);
             tassert_eq(allc->scope_stack[2], 112);
 
-            char* p2 = mem$malloc(arena, 4);
+            char* p2 = mem$malloc(_, 4);
             tassert(p2 != NULL);
             tassert_eq(allc->stats.bytes_alloc, 112 + 16);
             tassert_eq(allc->used, 112 + 16);
@@ -135,7 +138,7 @@ test$case(test_allocator_arena_malloc)
 
             mem$scope(arena, _)
             {
-                char* p3 = mem$malloc(arena, 4);
+                char* p3 = mem$malloc(_, 4);
                 tassert(p3 != NULL);
                 tassert_eq(allc->stats.bytes_alloc, 112 + 16 + 16);
                 tassert_eq(allc->used, 112 + 16 + 16);
@@ -174,7 +177,7 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
 
     mem$scope(arena, _)
     {
-        char* _p = mem$malloc(arena, 100);
+        char* _p = mem$malloc(_, 100);
         tassert(_p != NULL);
         allocator_arena_page_s* page = allc->last_page;
         tassert(page != NULL);
@@ -245,13 +248,14 @@ test$case(test_allocator_arena_scope_sanitization)
 
     mem$scope(arena, _)
     {
+        (void)_;
         u32 align[] = { 8, 16, 32, 64 };
 
 
         for (int i = 0; i < 10; i++) {
             mem$scope(arena, _)
             {
-                char* p = mem$malloc(arena, i % 32 + 1);
+                char* p = mem$malloc(_, i % 32 + 1);
                 tassert(p != NULL);
                 tassert(mem$aligned_pointer(p, 8) == p);
 
@@ -299,7 +303,7 @@ test$case(test_allocator_arena_realloc)
 
     mem$scope(arena, _)
     {
-        char* p = mem$malloc(arena, 100);
+        char* p = mem$malloc(_, 100);
         tassert(p != NULL);
         memset(p, 0xAA, 100);
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
@@ -380,7 +384,7 @@ test$case(test_allocator_arena_multiple_pages)
 
     mem$scope(arena, _)
     {
-        char* p = mem$malloc(arena, 1000);
+        char* p = mem$malloc(_, 1000);
         tassert(p != NULL);
 
         page = allc->last_page;
@@ -424,7 +428,7 @@ test$case(test_allocator_arena_realloc_shrink)
 
     mem$scope(arena, _)
     {
-        char* p = mem$malloc(arena, 100);
+        char* p = mem$malloc(_, 100);
         tassert(p != NULL);
         memset(p, 0xAA, 100);
         // NOTE: includes size + alignment offset + padding + allocator_arena_rec_s
@@ -478,7 +482,7 @@ test$case(test_allocator_arena_malloc_mem_pattern)
 
     mem$scope(arena, _)
     {
-        u8* p = mem$malloc(arena, 100);
+        u8* p = mem$malloc(_, 100);
         tassert(p != NULL);
         for (u32 i = 0; i < 100; i++) {
             tassert(p[i] == 0xf7);
@@ -498,7 +502,7 @@ test$case(test_allocator_arena_pointer_lifetime)
 
     mem$scope(arena, _)
     {
-        u8* p = mem$malloc(arena, 100);
+        u8* p = mem$malloc(_, 100);
         allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
         tassert(p != NULL);
         tassert((void*)rec > (void*)allc->last_page);
@@ -508,7 +512,7 @@ test$case(test_allocator_arena_pointer_lifetime)
         );
         mem$scope(arena, _)
         {
-            u8* p2 = mem$malloc(arena, 100);
+            u8* p2 = mem$malloc(_, 100);
             tassert(p2 != NULL);
             allocator_arena_rec_s* rec2 = _cex_alloc_arena__get_rec(p2);
             tassert((void*)rec2 > (void*)allc->last_page);
@@ -539,10 +543,10 @@ test$case(test_allocator_arena_realloc_last_pointer)
             tassert(p != NULL);
             *p = 0;
             for (u32 i = 1; i < 200; i++) {
-                u8* new_p = mem$realloc(arena, p, i+1);
+                u8* new_p = mem$realloc(_, p, i + 1);
                 tassert(new_p != NULL);
                 tassert(new_p == p);
-                tassert_eq(p[i-1], i-1);
+                tassert_eq(p[i - 1], i - 1);
                 p[i] = i;
             }
             for (u32 i = 0; i < 200; i++) {
@@ -574,7 +578,8 @@ test$case(test_allocator_mem_scope_exit_oversized_page)
             memset(p, 0xBB, 4096);
             memset(p, 0xab, 1);
             (void)p;
-            allocator_arena_rec_s* rec = (allocator_arena_rec_s*)(p - sizeof(allocator_arena_rec_s));
+            allocator_arena_rec_s* rec = (allocator_arena_rec_s*)(p - sizeof(allocator_arena_rec_s)
+            );
             tassert_eq(rec->size, 4096);
         }
     }
@@ -584,14 +589,15 @@ test$case(test_allocator_mem_scope_exit_oversized_page)
 test$case(test_mem_arena)
 {
 
-    mem$arena(4096, arena) {
+    mem$arena(4096, arena)
+    {
         u8* p = mem$malloc(arena, 100);
         tassert(p != NULL);
         AllocatorArena_c* allc = (AllocatorArena_c*)arena;
         mem$scope(arena, tal)
         {
             tassert_eq(allc->scope_depth, 2);
-            u8* p = mem$malloc(arena, 100);
+            u8* p = mem$malloc(tal, 100);
             tassert(p != NULL);
         }
     }
@@ -601,14 +607,15 @@ test$case(test_mem_arena)
 test$case(test_mem_arena_with_return)
 {
 
-    mem$arena(4096, arena) {
+    mem$arena(4096, arena)
+    {
         u8* p = mem$malloc(arena, 100);
         tassert(p != NULL);
         AllocatorArena_c* allc = (AllocatorArena_c*)arena;
         mem$scope(arena, tal)
         {
             tassert_eq(allc->scope_depth, 2);
-            u8* p = mem$malloc(arena, 10040);
+            u8* p = mem$malloc(tal, 10040);
             tassert(p != NULL);
             return EOK;
         }

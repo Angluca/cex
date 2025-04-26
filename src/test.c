@@ -290,7 +290,7 @@ cex_test_unmute(Exc test_result)
         fflush(stdout);
         putc('\0', stdout);
         fflush(stdout);
-        isize flen = ftell(ctx->out_stream);
+        isize flen = io.file.size(ctx->out_stream);
         io.rewind(ctx->out_stream);
         dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
 
@@ -363,9 +363,6 @@ cex_test_main_fn(int argc, char** argv)
             uassert(false && "TODO: test this");
         }
     }
-    // TODO: win32
-    // ctx->orig_stdout_fd = _dup(_fileno(stdout));
-    // ctx->orig_stderr_fd = _dup(_fileno(stderr));
 
     ctx->orig_stdout_fd = dup(fileno(stdout));
     ctx->orig_stderr_fd = dup(fileno(stderr));
@@ -422,7 +419,12 @@ cex_test_main_fn(int argc, char** argv)
         uassert_enable(); // unconditionally enable previously disabled asserts
 #endif
         Exc err = EOK;
+        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
+        alloc_heap->stats.n_allocs = 0;
+        alloc_heap->stats.n_free = 0;
+
         if (ctx->setup_case_fn && (err = ctx->setup_case_fn()) != EOK) {
+            fflush(stdout);
             fprintf(
                 stderr,
                 "[%s] test$setup() failed with '%s' (suite %s stopped)\n",
@@ -434,9 +436,6 @@ cex_test_main_fn(int argc, char** argv)
         }
 
         cex_test_mute();
-        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
-        alloc_heap->stats.n_allocs = 0;
-        alloc_heap->stats.n_free = 0;
         err = t.test_fn();
         if (ctx->quiet_mode && err != EOK) {
             fprintf(stdout, "[%s] %s\n", ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL", err);
@@ -465,6 +464,7 @@ cex_test_main_fn(int argc, char** argv)
             }
         }
         if (ctx->teardown_case_fn && (err = ctx->teardown_case_fn()) != EOK) {
+            fflush(stdout);
             fprintf(
                 stderr,
                 "[%s] test$teardown() failed with %s (suite %s stopped)\n",

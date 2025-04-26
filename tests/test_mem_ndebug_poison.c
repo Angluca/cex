@@ -1,4 +1,6 @@
+#ifndef NDEBUG
 #define NDEBUG
+#endif
 #include "src/all.c"
 
 test$case(test_poison_by_cex)

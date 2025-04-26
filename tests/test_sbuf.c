@@ -114,6 +114,7 @@ test$case(test_sbuf_append_char_grow_temp)
 {
     mem$scope(tmem$, _)
     {
+        (void)(_);
         sbuf_c s = sbuf.create_temp();
 
         tassert_eq(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);

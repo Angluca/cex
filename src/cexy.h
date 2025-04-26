@@ -35,7 +35,7 @@
 #    endif
 
 #    ifndef cexy$cc_args_sanitizer
-#        if defined(_WIN32)
+#        if defined(_WIN32) || defined(MACOS_X) || defined(__APPLE__)
 #            if defined(__clang__)
 /// Debug mode and tests sanitizer flags (may be overridden by user)
 #                define cexy$cc_args_sanitizer                                                     \

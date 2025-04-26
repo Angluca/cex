@@ -97,9 +97,9 @@ __cex__fprintf_dummy(void)
 
 #endif
 
-#if __INTELLISENSE__
-// VS code linter doesn't support __FILE_NAME__ builtin macro
-#    define __FILE_NAME__ __FILE__
+#ifndef __FILE_NAME__
+#    define __FILE_NAME__                                                                          \
+        (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
 #ifndef CEX_LOG_LVL
@@ -251,8 +251,23 @@ __cex__fprintf_dummy(void)
 /**
  *                 ASSERTIONS MACROS
  */
+#ifndef mem$asan_enabled
+#    if defined(__has_feature)
+#        if __has_feature(address_sanitizer)
+#            define mem$asan_enabled() 1
+#        else
+#            define mem$asan_enabled() 0
+#        endif
+#    else
+#        if defined(__SANITIZE_ADDRESS__)
+#            define mem$asan_enabled() 1
+#        else
+#            define mem$asan_enabled() 0
+#        endif
+#    endif
+#endif // mem$asan_enabled
 
-#ifdef __SANITIZE_ADDRESS__
+#if mem$asan_enabled()
 // This should be linked when gcc sanitizer enabled
 void __sanitizer_print_stack_trace();
 #    define sanitizer_stack_trace() __sanitizer_print_stack_trace()
@@ -263,6 +278,8 @@ void __sanitizer_print_stack_trace();
 #ifdef NDEBUG
 #    define uassertf(cond, format, ...) ((void)(0))
 #    define uassert(cond) ((void)(0))
+#    define uassert_disable() ((void)0)
+#    define uassert_enable() ((void)0)
 #    define __cex_test_postmortem_exists() 0
 #else
 
@@ -341,14 +358,14 @@ __attribute__((noinline)) void __cex__panic(void);
     })
 
 #if defined(_WIN32) || defined(_WIN64)
-    #define breakpoint() __debugbreak()
+#    define breakpoint() __debugbreak()
 #elif defined(__APPLE__)
-    #define breakpoint() __builtin_debugtrap()
+#    define breakpoint() __builtin_debugtrap()
 #elif defined(__linux__) || defined(__unix__)
-    #define breakpoint() __builtin_trap()
+#    define breakpoint() __builtin_trap()
 #else
-    #include <signal.h>
-    #define breakpoint() raise(SIGTRAP)
+#    include <signal.h>
+#    define breakpoint() raise(SIGTRAP)
 #endif
 
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
@@ -376,11 +393,18 @@ __attribute__((noinline)) void __cex__panic(void);
 #endif
 
 #define e$except_errno(_expression)                                                                \
-    if (unlikely(                                                                                  \
-            ((_expression) == -1) &&                                                               \
-            (log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno)),  \
-             1)                                                                                    \
-        ))
+    for (int _tmp_errno = 0; unlikely(                                                             \
+             ((_tmp_errno == 0) && ((_expression) == -1) && ((_tmp_errno = errno), 1) &&           \
+              (log$error(                                                                          \
+                   "`%s` failed errno: %d, msg: %s\n",                                             \
+                   #_expression,                                                                   \
+                   _tmp_errno,                                                                     \
+                   strerror(_tmp_errno)                                                            \
+               ),                                                                                  \
+               1) &&                                                                               \
+              (errno = _tmp_errno, 1))                                                             \
+         );                                                                                        \
+         _tmp_errno = 1)
 
 #define e$except_null(_expression)                                                                 \
     if (unlikely(((_expression) == NULL) && (log$error("`%s` returned NULL\n", #_expression), 1)))
@@ -519,20 +543,10 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
          it.val = (iter_func))
 
 
-// Check windows
-#if _WIN32 || _WIN64
-#    if _WIN64
-#        define CEX_ENV64BIT
-#    else
-#        define CEX_ENV32BIT
-#    endif
-#endif
-
-// Check GCC
-#if __GNUC__
-#    if __x86_64__ || __ppc64__
-#        define CEX_ENV64BIT
-#    else
-#        define CEX_ENV32BIT
+#if defined(__GNUC__) && !defined(__clang__)
+// NOTE: GCC < 12, has some weird warnings for arr$len temp pragma push + missing-field-initializers
+#    if (__GNUC__ < 12)
+#        pragma GCC diagnostic ignored "-Wsizeof-pointer-div"
+#        pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #    endif
 #endif

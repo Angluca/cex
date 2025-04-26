@@ -43,6 +43,7 @@ test$case(test_sysfunc)
     e$except_errno(ret = sys_func(-1))
     {
         log$error("Except: ret=%d errno=%d\n", ret, errno);
+        tassert_eq(_tmp_errno, 999);
         tassert_eq(errno, 999);
         tassert_eq(ret, -1);
         nit++;
@@ -741,6 +742,19 @@ test$case(test_arrays_and_slices)
         }
     }
 
+    return EOK;
+}
+
+test$case(test_foreachp_zero_offset_to_null_ub) {
+    int* arr = NULL;
+
+    for$eachp(it, arr) {
+        tassert(false && "never!");
+    }
+
+    for$eachp(it, arr, 0) {
+        tassert(false && "never!");
+    }
     return EOK;
 }
 

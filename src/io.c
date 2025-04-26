@@ -120,7 +120,11 @@ cex_io_ftell(FILE* file, usize* size)
 usize
 cex_io__file__size(FILE* file)
 {
-    if (file == NULL) {
+    if (unlikely(file == NULL)) {
+        return 0;
+    }
+    if (unlikely(io.isatty(file))) {
+        // Using extra check, because fstat() for stdin/err/out is platform specific
         return 0;
     }
 #ifdef _WIN32
@@ -293,10 +297,8 @@ cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
     }
     uassert(s != NULL);
 
-    log$debug("START: fcur: %ld, cur: %ld\n", ftell(file), cursor);
     int c = EOF;
     while ((c = fgetc(file)) != EOF) {
-        log$debug("1. fcur: %ld, cur: %ld, c: '%c'\n", ftell(file), cursor, (char)c);
         if (unlikely(c == '\n')) {
             // Handle windows \r\n new lines also
             if (cursor > 0 && buf[cursor - 1] == '\r') {

@@ -36,10 +36,10 @@ typedef struct _cex__codegen_s
 // clang-format off
 #define $scope(format, ...) \
     for (_cex__codegen_s* cex$tmpname(codegen_scope)  \
-                __attribute__ ((__cleanup__(_cex__codegen_print_scope_exit))) =  \
-                _cex__codegen_print_scope_enter(cg$var, format, __VA_ARGS__),\
-        *cex$tmpname(codegen_sentinel) = cg$var;\
-        cex$tmpname(codegen_sentinel); \
+                __attribute__ ((__cleanup__(_cex__codegen_print_scope_exit))) =     \
+                _cex__codegen_print_scope_enter(cg$var, format, __VA_ARGS__),       \
+        *cex$tmpname(codegen_sentinel) = cg$var;                                    \
+        cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;        \
         cex$tmpname(codegen_sentinel) = NULL)
 #define $func(format, ...) $scope(format, __VA_ARGS__)
 // clang-format on
@@ -62,17 +62,17 @@ typedef struct _cex__codegen_s
 #define $switch(format, ...) $scope("switch (" format ") ", __VA_ARGS__)
 #define $case(format, ...)                                                                         \
     for (_cex__codegen_s * cex$tmpname(codegen_scope)                                                \
-                             __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =           \
-             _cex__codegen_print_case_enter(cg$var, "case " format, __VA_ARGS__),                    \
-                             *cex$tmpname(codegen_sentinel) = cg$var;                              \
-         cex$tmpname(codegen_sentinel);                                                            \
+            __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =           \
+            _cex__codegen_print_case_enter(cg$var, "case " format, __VA_ARGS__),                    \
+            *cex$tmpname(codegen_sentinel) = cg$var;                              \
+         cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;                                                            \
          cex$tmpname(codegen_sentinel) = NULL)
 #define $default()                                                                                 \
     for (_cex__codegen_s * cex$tmpname(codegen_scope)                                                \
                              __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =           \
              _cex__codegen_print_case_enter(cg$var, "default", NULL),                                \
                              *cex$tmpname(codegen_sentinel) = cg$var;                              \
-         cex$tmpname(codegen_sentinel);                                                            \
+         cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;                                                            \
          cex$tmpname(codegen_sentinel) = NULL)
 
 

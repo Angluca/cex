@@ -54,7 +54,7 @@ test$case(random_f32)
 
     for (u32 i = 0; i < 100000; i++) {
         f32 r1 = Random.f32(&rnd);
-        uassert(r1 >= 0.0f && r1 <= 1.0f);
+        tassert(r1 >= 0.0f && r1 <= 1.0f);
     }
 
     return EOK;

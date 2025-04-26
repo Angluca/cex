@@ -53,10 +53,14 @@ struct DIR
 DIR*
 opendir(const char* dirpath)
 {
-    char buffer[MAX_PATH];
-    snprintf(buffer, MAX_PATH, "%s\\*", dirpath);
+    char buffer[MAX_PATH + 10];
+    snprintf(buffer, sizeof(buffer), "%s\\*", dirpath);
 
     DIR* dir = (DIR*)realloc(NULL, sizeof(DIR));
+    if (dir == NULL) {
+        errno = ENOMEM;
+        goto fail;
+    }
     memset(dir, 0, sizeof(DIR));
 
     dir->hFind = FindFirstFile(buffer, &dir->data);
@@ -82,6 +86,10 @@ readdir(DIR* dirp)
 {
     if (dirp->dirent == NULL) {
         dirp->dirent = (struct dirent*)realloc(NULL, sizeof(struct dirent));
+        if (dirp->dirent == NULL) {
+            errno = ENOMEM;
+            return NULL;
+        }
         memset(dirp->dirent, 0, sizeof(struct dirent));
     } else {
         if (!FindNextFile(dirp->hFind, &dirp->data)) {
@@ -282,8 +290,27 @@ cex_os__fs__stat(const char* path)
     }
 
 #ifdef _WIN32
+    // NOTE: for mingw64 _stat() doesn't do well when path has trailing /
+    usize plen = strlen(path);
+    if (unlikely(plen >= PATH_MAX)) {
+        result.error = Error.overflow;
+        return result;
+    }
+
+    char clean_path[PATH_MAX + 10];
+    memcpy(clean_path, path, plen + 1); // including \0
+    if (unlikely(clean_path[plen - 1] == '/' || clean_path[plen - 1] == '\\')) {
+        for (u32 i = plen; --i > 0;) {
+            if (clean_path[i] == '/' || clean_path[i] == '\\') {
+                clean_path[i] = '\0';
+            } else {
+                break;
+            }
+        }
+    }
+
     struct _stat statbuf;
-    if (unlikely(_stat(path, &statbuf) < 0)) {
+    if (unlikely(_stat(clean_path, &statbuf) < 0)) {
         result.error = os.get_last_error();
         return result;
     }
@@ -398,9 +425,7 @@ cex_os__fs__dir_walk(
     DIR* dp = opendir(path);
 
     if (unlikely(dp == NULL)) {
-        if (errno == ENOENT) {
-            result = Error.not_found;
-        }
+        result = os.get_last_error();
         goto end;
     }
 
@@ -460,11 +485,6 @@ cex_os__fs__dir_walk(
             result = err;
             goto end;
         }
-    }
-
-    if (errno != 0) {
-        result = strerror(errno);
-        goto end;
     }
 
     result = EOK;
@@ -1073,16 +1093,16 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
         }
 
         if (!CreateProcessA(
-                NULL,  // Application name (use command line)
-                cmd,   // Command line
-                NULL,  // Process security attributes
-                NULL,  // Thread security attributes
-                TRUE,  // Inherit handles
-                0,     // Creation flags
-                NULL,  // Environment
-                NULL,  // Current directory
-                &si,   // Startup info
-                &pi    // Process information
+                NULL, // Application name (use command line)
+                cmd,  // Command line
+                NULL, // Process security attributes
+                NULL, // Thread security attributes
+                TRUE, // Inherit handles
+                0,    // Creation flags
+                NULL, // Environment
+                NULL, // Current directory
+                &si,  // Startup info
+                &pi   // Process information
             )) {
             result = os.get_last_error();
             goto end;
@@ -1125,25 +1145,25 @@ end:
 static OSPlatform_e
 cex_os__platform__current(void)
 {
-#ifdef _WIN32
+#if defined(_WIN32)
     return OSPlatform__win;
-#elif __linux__
+#elif defined(__linux__)
     return OSPlatform__linux;
-#elif __APPLE__ && __MACH__
+#elif defined(__APPLE__) || defined(__MACH__)
     return OSPlatform__macos;
-#elif __unix__
-#    ifdef __FreeBSD__
+#elif defined(__unix__)
+#    if defined(__FreeBSD__)
     return OSPlatform__freebsd;
-#    elif __NetBSD__
+#    elif defined(__NetBSD__)
     return OSPlatform__netbsd;
-#    elif __OpenBSD__
+#    elif defined(__OpenBSD__)
     return OSPlatform__openbsd;
-#    elif __ANDROID__
+#    elif defined(__ANDROID__)
     return OSPlatform__android;
 #    else
 #        error "Untested platform. Need more?"
 #    endif
-#elif __wasm__
+#elif defined(__wasm__)
     return OSPlatform__wasm;
 #else
 #    error "Untested platform. Need more?"

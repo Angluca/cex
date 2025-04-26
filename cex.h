@@ -1,7 +1,7 @@
 #pragma once
 #ifndef CEX_HEADER_H
 #define CEX_HEADER_H
-/* 
+/*
 # CEX.C - Comprehensively EXtended C Language (cex-c.org)
                                                                 MOCCA - Make Old C Cexy Again!
 
@@ -13,18 +13,18 @@ cex.h contains build system, unit test runner, small standard lib and help syste
 
 Visit https://cex-c.org for more information
 
-## GETTING STARTED 
+## GETTING STARTED
 (existing project, when cex.c exists in the project root directory)
 ```
 1. > cd project_dir
-2. > gcc/clang ./cex.c -o ./cex     (need only once, then cex will rebuil itself) 
+2. > gcc/clang ./cex.c -o ./cex     (need only once, then cex will rebuil itself)
 3. > ./cex --help                   get info about available commands
 ```
 
-## GETTING STARTED 
+## GETTING STARTED
 (bare cex.h file, and nothing else)
 ```
-1. > download https://cex-c.org/cex.h or copy existing one 
+1. > download https://cex-c.org/cex.h or copy existing one
 2. > mkdir project_dir
 3. > cd project_dir
 4. > gcc/clang -D CEX_NEW -x c ./cex.h    prime cex.c and build system
@@ -85,13 +85,24 @@ Use `cex -D config` to reset all project config flags to defaults
 /// disables float printing for io.printf/et al functions (code size reduction)
 // #define CEX_SPRINTF_NOFLOAT
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
+#include <errno.h>
 #include <stdalign.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <errno.h>
+
+#if defined(__APPLE__) || defined(__MACH__)
+// NOTE: Apple SDK defines sprintf as a macro, this messes str.sprintf() calls, because
+//      sprintf() part is expanded as macro.
+#    ifdef sprintf
+#        undef sprintf
+#    endif
+#    ifdef vsprintf
+#        undef vsprintf
+#    endif
+#endif
 
 
 
@@ -195,9 +206,9 @@ __cex__fprintf_dummy(void)
 
 #endif
 
-#if __INTELLISENSE__
-// VS code linter doesn't support __FILE_NAME__ builtin macro
-#    define __FILE_NAME__ __FILE__
+#ifndef __FILE_NAME__
+#    define __FILE_NAME__                                                                          \
+        (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
 #ifndef CEX_LOG_LVL
@@ -349,8 +360,23 @@ __cex__fprintf_dummy(void)
 /**
  *                 ASSERTIONS MACROS
  */
+#ifndef mem$asan_enabled
+#    if defined(__has_feature)
+#        if __has_feature(address_sanitizer)
+#            define mem$asan_enabled() 1
+#        else
+#            define mem$asan_enabled() 0
+#        endif
+#    else
+#        if defined(__SANITIZE_ADDRESS__)
+#            define mem$asan_enabled() 1
+#        else
+#            define mem$asan_enabled() 0
+#        endif
+#    endif
+#endif // mem$asan_enabled
 
-#ifdef __SANITIZE_ADDRESS__
+#if mem$asan_enabled()
 // This should be linked when gcc sanitizer enabled
 void __sanitizer_print_stack_trace();
 #    define sanitizer_stack_trace() __sanitizer_print_stack_trace()
@@ -361,6 +387,8 @@ void __sanitizer_print_stack_trace();
 #ifdef NDEBUG
 #    define uassertf(cond, format, ...) ((void)(0))
 #    define uassert(cond) ((void)(0))
+#    define uassert_disable() ((void)0)
+#    define uassert_enable() ((void)0)
 #    define __cex_test_postmortem_exists() 0
 #else
 
@@ -439,14 +467,14 @@ __attribute__((noinline)) void __cex__panic(void);
     })
 
 #if defined(_WIN32) || defined(_WIN64)
-    #define breakpoint() __debugbreak()
+#    define breakpoint() __debugbreak()
 #elif defined(__APPLE__)
-    #define breakpoint() __builtin_debugtrap()
+#    define breakpoint() __builtin_debugtrap()
 #elif defined(__linux__) || defined(__unix__)
-    #define breakpoint() __builtin_trap()
+#    define breakpoint() __builtin_trap()
 #else
-    #include <signal.h>
-    #define breakpoint() raise(SIGTRAP)
+#    include <signal.h>
+#    define breakpoint() raise(SIGTRAP)
 #endif
 
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
@@ -474,11 +502,18 @@ __attribute__((noinline)) void __cex__panic(void);
 #endif
 
 #define e$except_errno(_expression)                                                                \
-    if (unlikely(                                                                                  \
-            ((_expression) == -1) &&                                                               \
-            (log$error("`%s` failed errno: %d, msg: %s\n", #_expression, errno, strerror(errno)),  \
-             1)                                                                                    \
-        ))
+    for (int _tmp_errno = 0; unlikely(                                                             \
+             ((_tmp_errno == 0) && ((_expression) == -1) && ((_tmp_errno = errno), 1) &&           \
+              (log$error(                                                                          \
+                   "`%s` failed errno: %d, msg: %s\n",                                             \
+                   #_expression,                                                                   \
+                   _tmp_errno,                                                                     \
+                   strerror(_tmp_errno)                                                            \
+               ),                                                                                  \
+               1) &&                                                                               \
+              (errno = _tmp_errno, 1))                                                             \
+         );                                                                                        \
+         _tmp_errno = 1)
 
 #define e$except_null(_expression)                                                                 \
     if (unlikely(((_expression) == NULL) && (log$error("`%s` returned NULL\n", #_expression), 1)))
@@ -617,21 +652,11 @@ _Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
          it.val = (iter_func))
 
 
-// Check windows
-#if _WIN32 || _WIN64
-#    if _WIN64
-#        define CEX_ENV64BIT
-#    else
-#        define CEX_ENV32BIT
-#    endif
-#endif
-
-// Check GCC
-#if __GNUC__
-#    if __x86_64__ || __ppc64__
-#        define CEX_ENV64BIT
-#    else
-#        define CEX_ENV32BIT
+#if defined(__GNUC__) && !defined(__clang__)
+// NOTE: GCC < 12, has some weird warnings for arr$len temp pragma push + missing-field-initializers
+#    if (__GNUC__ < 12)
+#        pragma GCC diagnostic ignored "-Wsizeof-pointer-div"
+#        pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #    endif
 #endif
 
@@ -753,11 +778,6 @@ void _cex_allocator_arena_cleanup(IAllocator* allc);
 #    endif
 #endif
 
-#if defined(__SANITIZE_ADDRESS__)
-#    define mem$asan_enabled() 1
-#else
-#    define mem$asan_enabled() 0
-#endif
 
 #ifdef CEX_TEST
 #    define _mem$asan_poison_mark(addr, c, size) memset(addr, c, size)
@@ -785,7 +805,7 @@ void __asan_poison_memory_region(void const volatile* addr, size_t size);
 void __asan_unpoison_memory_region(void const volatile* addr, size_t size);
 void* __asan_region_is_poisoned(void* beg, size_t size);
 
-#    if defined(__SANITIZE_ADDRESS__)
+#    if mem$asan_enabled()
 #        define mem$asan_poison(addr, size)                                                        \
             ({                                                                                     \
                 void* _addr = (addr);                                                              \
@@ -1129,7 +1149,15 @@ struct _cexds__arr_new_kwargs_s
     ((a) = _cexds__arrgrowf((a), sizeof *(a), (add_len), (min_cap), alignof(typeof(*a)), NULL))
 
 
-// NOLINT
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 12)
+#define arr$len(arr)                                                                               \
+    ({                                                                                             \
+        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0])) /* check if array or ptr */   \
+            ? _cexds__arr_len(arr)                                   /* some pointer or arr$ */    \
+            : (sizeof(arr) / sizeof((arr)[0])                        /* static array[] */          \
+              );                                                                                   \
+    })
+#else
 #define arr$len(arr)                                                                               \
     ({                                                                                             \
         _Pragma("GCC diagnostic push");                                                            \
@@ -1143,7 +1171,13 @@ struct _cexds__arr_new_kwargs_s
         /* NOLINTEND */                                                                            \
         _Pragma("GCC diagnostic pop");                                                             \
     })
-// NOLINT
+#endif
+
+static inline void*
+_cex__get_buf_addr(void* a)
+{
+    return (a != NULL) ? &((char*)a)[0] : NULL;
+}
 
 #define for$each(v, array, array_len...)                                                           \
     /* NOLINTBEGIN*/                                                                               \
@@ -1151,7 +1185,7 @@ struct _cexds__arr_new_kwargs_s
     usize cex$tmpname(arr_length) = (sizeof(cex$tmpname(arr_length_opt)) > 0)                      \
                                       ? cex$tmpname(arr_length_opt)[0]                             \
                                       : arr$len(array); /* prevents multi call of (length)*/       \
-    typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
+    typeof((array)[0])* cex$tmpname(arr_arrp) = _cex__get_buf_addr(array);                         \
     usize cex$tmpname(arr_index) = 0;                                                              \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
     /* NOLINTEND */                                                                                \
@@ -1160,6 +1194,7 @@ struct _cexds__arr_new_kwargs_s
           ((v) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1));                               \
          cex$tmpname(arr_index)++)
 
+
 #define for$eachp(v, array, array_len...)                                                          \
     /* NOLINTBEGIN*/                                                                               \
     usize cex$tmpname(arr_length_opt)[] = { array_len }; /* decide if user passed array_len */     \
@@ -1167,7 +1202,7 @@ struct _cexds__arr_new_kwargs_s
                                       ? cex$tmpname(arr_length_opt)[0]                             \
                                       : arr$len(array); /* prevents multi call of (length)*/       \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
-    typeof((array)[0])* cex$tmpname(arr_arrp) = &(array)[0];                                       \
+    typeof((array)[0])* cex$tmpname(arr_arrp) = _cex__get_buf_addr(array);                         \
     usize cex$tmpname(arr_index) = 0;                                                              \
     /* NOLINTEND */                                                                                \
     for (typeof((array)[0])* v = cex$tmpname(arr_arrp);                                            \
@@ -3633,10 +3668,10 @@ typedef struct _cex__codegen_s
 // clang-format off
 #define $scope(format, ...) \
     for (_cex__codegen_s* cex$tmpname(codegen_scope)  \
-                __attribute__ ((__cleanup__(_cex__codegen_print_scope_exit))) =  \
-                _cex__codegen_print_scope_enter(cg$var, format, __VA_ARGS__),\
-        *cex$tmpname(codegen_sentinel) = cg$var;\
-        cex$tmpname(codegen_sentinel); \
+                __attribute__ ((__cleanup__(_cex__codegen_print_scope_exit))) =     \
+                _cex__codegen_print_scope_enter(cg$var, format, __VA_ARGS__),       \
+        *cex$tmpname(codegen_sentinel) = cg$var;                                    \
+        cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;        \
         cex$tmpname(codegen_sentinel) = NULL)
 #define $func(format, ...) $scope(format, __VA_ARGS__)
 // clang-format on
@@ -3659,17 +3694,17 @@ typedef struct _cex__codegen_s
 #define $switch(format, ...) $scope("switch (" format ") ", __VA_ARGS__)
 #define $case(format, ...)                                                                         \
     for (_cex__codegen_s * cex$tmpname(codegen_scope)                                                \
-                             __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =           \
-             _cex__codegen_print_case_enter(cg$var, "case " format, __VA_ARGS__),                    \
-                             *cex$tmpname(codegen_sentinel) = cg$var;                              \
-         cex$tmpname(codegen_sentinel);                                                            \
+            __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =           \
+            _cex__codegen_print_case_enter(cg$var, "case " format, __VA_ARGS__),                    \
+            *cex$tmpname(codegen_sentinel) = cg$var;                              \
+         cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;                                                            \
          cex$tmpname(codegen_sentinel) = NULL)
 #define $default()                                                                                 \
     for (_cex__codegen_s * cex$tmpname(codegen_scope)                                                \
                              __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =           \
              _cex__codegen_print_case_enter(cg$var, "default", NULL),                                \
                              *cex$tmpname(codegen_sentinel) = cg$var;                              \
-         cex$tmpname(codegen_sentinel);                                                            \
+         cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;                                                            \
          cex$tmpname(codegen_sentinel) = NULL)
 
 
@@ -3723,7 +3758,7 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #    endif
 
 #    ifndef cexy$cc_args_sanitizer
-#        if defined(_WIN32)
+#        if defined(_WIN32) || defined(MACOS_X) || defined(__APPLE__)
 #            if defined(__clang__)
 /// Debug mode and tests sanitizer flags (may be overridden by user)
 #                define cexy$cc_args_sanitizer                                                     \
@@ -4083,7 +4118,7 @@ struct __cex_namespace__CexParser
 #else
 #    include <dirent.h>
 #    include <fcntl.h>
-#    include <linux/limits.h>
+#    include <limits.h>
 #    include <sys/stat.h>
 #    include <sys/types.h>
 #    include <unistd.h>
@@ -8495,18 +8530,19 @@ cex_str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterat
             return (str_s){ 0 };
         }
         ctx->split_by_len = strlen(split_by);
+        uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
         if (ctx->split_by_len == 0) {
             iterator->stopped = 1;
             return (str_s){ 0 };
         }
-        uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
 
         isize idx = _cex_str__index(&s, split_by, ctx->split_by_len);
         if (idx < 0) {
             idx = s.len;
         }
         ctx->cursor = idx;
+        ctx->str_len = s.len; // this prevents s being changed in a loop
         iterator->idx.i = 0;
         if (idx == 0) {
             // first line is \n
@@ -8515,12 +8551,12 @@ cex_str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterat
             return str.slice.sub(s, 0, idx);
         }
     } else {
-        if (ctx->cursor >= s.len) {
+        if (unlikely(ctx->cursor >= ctx->str_len)) {
             iterator->stopped = 1;
             return (str_s){ 0 };
         }
         ctx->cursor++;
-        if (unlikely(ctx->cursor == s.len)) {
+        if (unlikely(ctx->cursor == ctx->str_len)) {
             // edge case, we have separator at last col
             // it's not an error, return empty split token
             iterator->idx.i++;
@@ -10103,7 +10139,11 @@ cex_io_ftell(FILE* file, usize* size)
 usize
 cex_io__file__size(FILE* file)
 {
-    if (file == NULL) {
+    if (unlikely(file == NULL)) {
+        return 0;
+    }
+    if (unlikely(io.isatty(file))) {
+        // Using extra check, because fstat() for stdin/err/out is platform specific
         return 0;
     }
 #ifdef _WIN32
@@ -10276,10 +10316,8 @@ cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
     }
     uassert(s != NULL);
 
-    log$debug("START: fcur: %ld, cur: %ld\n", ftell(file), cursor);
     int c = EOF;
     while ((c = fgetc(file)) != EOF) {
-        log$debug("1. fcur: %ld, cur: %ld, c: '%c'\n", ftell(file), cursor, (char)c);
         if (unlikely(c == '\n')) {
             // Handle windows \r\n new lines also
             if (cursor > 0 && buf[cursor - 1] == '\r') {
@@ -11343,10 +11381,14 @@ struct DIR
 DIR*
 opendir(const char* dirpath)
 {
-    char buffer[MAX_PATH];
-    snprintf(buffer, MAX_PATH, "%s\\*", dirpath);
+    char buffer[MAX_PATH + 10];
+    snprintf(buffer, sizeof(buffer), "%s\\*", dirpath);
 
     DIR* dir = (DIR*)realloc(NULL, sizeof(DIR));
+    if (dir == NULL) {
+        errno = ENOMEM;
+        goto fail;
+    }
     memset(dir, 0, sizeof(DIR));
 
     dir->hFind = FindFirstFile(buffer, &dir->data);
@@ -11372,6 +11414,10 @@ readdir(DIR* dirp)
 {
     if (dirp->dirent == NULL) {
         dirp->dirent = (struct dirent*)realloc(NULL, sizeof(struct dirent));
+        if (dirp->dirent == NULL) {
+            errno = ENOMEM;
+            return NULL;
+        }
         memset(dirp->dirent, 0, sizeof(struct dirent));
     } else {
         if (!FindNextFile(dirp->hFind, &dirp->data)) {
@@ -11548,6 +11594,10 @@ cex_os__fs__mkpath(const char* path)
     }
     usize dir_path_len = 0;
 
+#ifdef CEX_TEST
+        log$trace("Making path: %s\n", path);
+#endif
+
     for$iter(str_s, it, str.slice.iter_split(dir, "\\/", &it.iterator))
     {
         if (dir_path_len > 0) {
@@ -11558,6 +11608,9 @@ cex_os__fs__mkpath(const char* path)
         }
         e$ret(str.slice.copy(dir_path + dir_path_len, it.val, sizeof(dir_path) - dir_path_len));
         dir_path_len += it.val.len;
+#ifdef CEX_TEST
+        log$trace("Making dir: %s\n", dir_path);
+#endif
         e$ret(os.fs.mkdir(dir_path));
     }
     return EOK;
@@ -11572,8 +11625,27 @@ cex_os__fs__stat(const char* path)
     }
 
 #ifdef _WIN32
+    // NOTE: for mingw64 _stat() doesn't do well when path has trailing /
+    usize plen = strlen(path);
+    if (unlikely(plen >= PATH_MAX)) {
+        result.error = Error.overflow;
+        return result;
+    }
+
+    char clean_path[PATH_MAX + 10];
+    memcpy(clean_path, path, plen + 1); // including \0
+    if (unlikely(clean_path[plen - 1] == '/' || clean_path[plen - 1] == '\\')) {
+        for (u32 i = plen; --i > 0;) {
+            if (clean_path[i] == '/' || clean_path[i] == '\\') {
+                clean_path[i] = '\0';
+            } else {
+                break;
+            }
+        }
+    }
+
     struct _stat statbuf;
-    if (unlikely(_stat(path, &statbuf) < 0)) {
+    if (unlikely(_stat(clean_path, &statbuf) < 0)) {
         result.error = os.get_last_error();
         return result;
     }
@@ -11688,9 +11760,7 @@ cex_os__fs__dir_walk(
     DIR* dp = opendir(path);
 
     if (unlikely(dp == NULL)) {
-        if (errno == ENOENT) {
-            result = Error.not_found;
-        }
+        result = os.get_last_error();
         goto end;
     }
 
@@ -11750,11 +11820,6 @@ cex_os__fs__dir_walk(
             result = err;
             goto end;
         }
-    }
-
-    if (errno != 0) {
-        result = strerror(errno);
-        goto end;
     }
 
     result = EOK;
@@ -12363,16 +12428,16 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
         }
 
         if (!CreateProcessA(
-                NULL,  // Application name (use command line)
-                cmd,   // Command line
-                NULL,  // Process security attributes
-                NULL,  // Thread security attributes
-                TRUE,  // Inherit handles
-                0,     // Creation flags
-                NULL,  // Environment
-                NULL,  // Current directory
-                &si,   // Startup info
-                &pi    // Process information
+                NULL, // Application name (use command line)
+                cmd,  // Command line
+                NULL, // Process security attributes
+                NULL, // Thread security attributes
+                TRUE, // Inherit handles
+                0,    // Creation flags
+                NULL, // Environment
+                NULL, // Current directory
+                &si,  // Startup info
+                &pi   // Process information
             )) {
             result = os.get_last_error();
             goto end;
@@ -12415,25 +12480,25 @@ end:
 static OSPlatform_e
 cex_os__platform__current(void)
 {
-#ifdef _WIN32
+#if defined(_WIN32)
     return OSPlatform__win;
-#elif __linux__
+#elif defined(__linux__)
     return OSPlatform__linux;
-#elif __APPLE__ && __MACH__
+#elif defined(__APPLE__) || defined(__MACH__)
     return OSPlatform__macos;
-#elif __unix__
-#    ifdef __FreeBSD__
+#elif defined(__unix__)
+#    if defined(__FreeBSD__)
     return OSPlatform__freebsd;
-#    elif __NetBSD__
+#    elif defined(__NetBSD__)
     return OSPlatform__netbsd;
-#    elif __OpenBSD__
+#    elif defined(__OpenBSD__)
     return OSPlatform__openbsd;
-#    elif __ANDROID__
+#    elif defined(__ANDROID__)
     return OSPlatform__android;
 #    else
 #        error "Untested platform. Need more?"
 #    endif
-#elif __wasm__
+#elif defined(__wasm__)
     return OSPlatform__wasm;
 #else
 #    error "Untested platform. Need more?"
@@ -12850,7 +12915,7 @@ cex_test_unmute(Exc test_result)
         fflush(stdout);
         putc('\0', stdout);
         fflush(stdout);
-        isize flen = ftell(ctx->out_stream);
+        isize flen = io.file.size(ctx->out_stream);
         io.rewind(ctx->out_stream);
         dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
 
@@ -12923,9 +12988,6 @@ cex_test_main_fn(int argc, char** argv)
             uassert(false && "TODO: test this");
         }
     }
-    // TODO: win32
-    // ctx->orig_stdout_fd = _dup(_fileno(stdout));
-    // ctx->orig_stderr_fd = _dup(_fileno(stderr));
 
     ctx->orig_stdout_fd = dup(fileno(stdout));
     ctx->orig_stderr_fd = dup(fileno(stderr));
@@ -12982,7 +13044,12 @@ cex_test_main_fn(int argc, char** argv)
         uassert_enable(); // unconditionally enable previously disabled asserts
 #endif
         Exc err = EOK;
+        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
+        alloc_heap->stats.n_allocs = 0;
+        alloc_heap->stats.n_free = 0;
+
         if (ctx->setup_case_fn && (err = ctx->setup_case_fn()) != EOK) {
+            fflush(stdout);
             fprintf(
                 stderr,
                 "[%s] test$setup() failed with '%s' (suite %s stopped)\n",
@@ -12994,9 +13061,6 @@ cex_test_main_fn(int argc, char** argv)
         }
 
         cex_test_mute();
-        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
-        alloc_heap->stats.n_allocs = 0;
-        alloc_heap->stats.n_free = 0;
         err = t.test_fn();
         if (ctx->quiet_mode && err != EOK) {
             fprintf(stdout, "[%s] %s\n", ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL", err);
@@ -13025,6 +13089,7 @@ cex_test_main_fn(int argc, char** argv)
             }
         }
         if (ctx->teardown_case_fn && (err = ctx->teardown_case_fn()) != EOK) {
+            fflush(stdout);
             fprintf(
                 stderr,
                 "[%s] test$teardown() failed with %s (suite %s stopped)\n",
@@ -14746,6 +14811,7 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
     }
 
     log$info("Tests building: %d tests processed, %d tests built\n", n_tests, n_built);
+    fflush(stdout);
 
     if (str.match(cmd, "(run|debug)")) {
         e$ret(cexy.test.run(target, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
@@ -14845,7 +14911,7 @@ cexy__utils__make_new_project(const char* proj_dir)
         log$info("Compiling new cex app for a new project...\n");
         var old_dir = os.fs.getcwd(_);
         e$ret(os.fs.chdir(proj_dir));
-        os$cmd(cexy$cc, "-o", "cex", "cex.c");
+        e$ret(os$cmd(cexy$cex_self_cc, "-o", "cex", "cex.c"));
         e$ret(os.fs.chdir(old_dir));
         log$info("New project has been created in %s\n", proj_dir);
     }
@@ -15148,7 +15214,7 @@ CexParser_create(char* content, u32 content_len, bool fold_scopes)
         content_len = str.len(content);
     }
     CexParser_c lx = { .content = content,
-                       .content_end = content + content_len,
+                       .content_end = (content) ? content + content_len : NULL,
                        .cur = content,
                        .fold_scopes = fold_scopes };
     return lx;
@@ -15751,7 +15817,7 @@ CexParser_decl_parse(
                     // Use only doxygen style comments for docs
                     if (str.slice.match(cmt, "(/**|/*!)*")) {
                         result->docs = cmt;
-                    } else if (str.slice.starts_with(cmt, str$s("///"))){
+                    } else if (str.slice.starts_with(cmt, str$s("///"))) {
                         if (prev_t.type == CexTkn__comment_single && result->docs.buf) {
                             // Trying extend previous /// comment
                             result->docs.len = (cmt.buf - result->docs.buf) + cmt.len;

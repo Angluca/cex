@@ -1,0 +1,72 @@
+name: ExperimentalWorkflow
+
+on:
+  push:
+    branches: [ experiments ]
+  pull_request:
+    branches: [ experiments ]
+
+
+jobs:
+  tests-windows:
+    name: ${{ matrix.sys.runs-on }}-${{ matrix.sys.msys }}-${{ matrix.cex_preset }}
+    runs-on: ${{ matrix.sys.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        cex_preset: 
+          - CEX_DEBUG
+          - CEX_RELEASE
+          - CEX_NDEBUG
+        sys:
+          - msys: mingw64
+            runs-on: 'windows-latest'
+          - msys: ucrt64
+            runs-on: 'windows-latest'
+          - msys: clang64
+            runs-on: 'windows-latest'
+          #- msys: clangarm64
+          #  runs-on: 'windows-11-arm'
+
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: 'Setup MSYS2'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{matrix.sys.msys}}
+          update: true
+          install: >-
+            git
+          pacboy: >-
+            toolchain:p
+
+      - name: 'Test cc version / config'
+        run: |
+          git config --global core.autocrlf input
+          cc --version
+
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: cex initial build
+        run: |
+          ulimit -c unlimited 
+          ls -la
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex.exe 
+          ./cex.exe -D${{ matrix.cex_preset }} config
+
+      - name: cex unit tests
+        run: |
+          ./cex.exe test run all
+
+      - uses: actions/upload-artifact@master # capture all binaries
+        if: always()
+        with:
+          name: ${{ github.job }}_build_exe_${{ matrix.sys.runs-on }}-${{ matrix.sys.msys }}-${{ matrix.cex_preset }}
+          path: build/

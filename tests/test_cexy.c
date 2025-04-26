@@ -1,5 +1,5 @@
 #define TBUILDDIR "tests/build/cexytest/"
-#define cexy$cc_include "-I.","-I" TBUILDDIR
+#define cexy$cc_include "-I.", "-I" TBUILDDIR
 #include "src/all.c"
 
 test$setup_case()
@@ -45,7 +45,7 @@ test$case(test_target_make_with_ext)
         e$assert(!os.path.exists(TBUILDDIR "my_src/") && "must not exist!");
         e$assert(!os.path.exists(TBUILDDIR "my_tgt/") && "must not exist!");
         e$ret(os.fs.mkpath(src));
-    
+
 
         e$ret(io.file.save(src, "#include <my_src2.c>"));
         tassert(!os.path.exists(TBUILDDIR "my_tgt_dir/"));
@@ -149,6 +149,7 @@ test$case(test_src_changed_include_direct_changes)
 {
     mem$scope(tmem$, _)
     {
+        (void)_;
         char* tgt = TBUILDDIR " my_tgt";
         char* src = TBUILDDIR "my_src.c";
         tassert_eq(0, cexy.src_include_changed(NULL, src, NULL));
@@ -176,6 +177,7 @@ test$case(test_src_changed_include)
 {
     mem$scope(tmem$, _)
     {
+        (void)_;
         char* tgt = TBUILDDIR "my_tgt";
         char* src = TBUILDDIR "my_src.c";
         char* src2 = TBUILDDIR "my_src2.c";
@@ -195,22 +197,19 @@ test$case(test_src_changed_include)
 
 test$case(test_src_changed_include_skips_system)
 {
-    mem$scope(tmem$, _)
-    {
-        char* tgt = TBUILDDIR "my_tgt";
-        char* src = TBUILDDIR "my_src.c";
-        char* src2 = TBUILDDIR "my_src2.c";
+    char* tgt = TBUILDDIR "my_tgt";
+    char* src = TBUILDDIR "my_src.c";
+    char* src2 = TBUILDDIR "my_src2.c";
 
-        e$ret(io.file.save(tgt, ""));
-        e$ret(io.file.save(src, "#include <my_src2.c>"));
-        e$ret(io.file.save(src2, "// I am include"));
-        tassert_eq(0, cexy.src_include_changed(tgt, src, NULL));
+    e$ret(io.file.save(tgt, ""));
+    e$ret(io.file.save(src, "#include <my_src2.c>"));
+    e$ret(io.file.save(src2, "// I am include"));
+    tassert_eq(0, cexy.src_include_changed(tgt, src, NULL));
 
-        os.sleep(1500);
-        tassert_eq(0, cexy.src_include_changed(tgt, src, NULL));
-        e$ret(io.file.save(src2, "// I am include again"));
-        tassert_eq(0, cexy.src_include_changed(tgt, src, NULL));
-    }
+    os.sleep(1500);
+    tassert_eq(0, cexy.src_include_changed(tgt, src, NULL));
+    e$ret(io.file.save(src2, "// I am include again"));
+    tassert_eq(0, cexy.src_include_changed(tgt, src, NULL));
     return EOK;
 }
 

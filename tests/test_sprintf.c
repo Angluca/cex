@@ -166,29 +166,29 @@ test$case(stb_sprintf_orig)
     tassert(cexsp__snprintf(NULL, 0, " %s     %d", "b", 123) == -1);
 
     // ' modifier. Non-standard, but supported by glibc.
-    CHECK2("1,200,000", "%'d", 1200000); 
-    CHECK2("-100,006,789", "%'d", -100006789); 
+    CHECK2("1,200,000", "%'d", 1200000);
+    CHECK2("-100,006,789", "%'d", -100006789);
 #if !defined(_MSC_VER) || _MSC_VER >= 1600
-    CHECK2("9,888,777,666", "%'lld", 9888777666ll); 
+    CHECK2("9,888,777,666", "%'lld", 9888777666ll);
 #endif
-    CHECK2("200,000,000.000000", "%'18f", 2e8); 
-    CHECK2("100,056,789", "%'.0f", 100056789.0); 
-    CHECK2("100,056,789.0", "%'.1f", 100056789.0); 
-    CHECK2("000,001,200,000", "%'015d", 1200000); 
+    CHECK2("200,000,000.000000", "%'18f", 2e8);
+    CHECK2("100,056,789", "%'.0f", 100056789.0);
+    CHECK2("100,056,789.0", "%'.1f", 100056789.0);
+    CHECK2("000,001,200,000", "%'015d", 1200000);
 
     // things not supported by glibc
 #if USE_STB
     CHECK2("(null)", "%s", ret_null_char());
     CHECK2("123,4abc:", "%'x:", 0x1234ABC);
-    CHECK2("100000000", "%b", 256); 
-    CHECK3("0b10 0B11", "%#b %#B", 2, 3); 
+    CHECK2("100000000", "%b", 256);
+    CHECK3("0b10 0B11", "%#b %#B", 2, 3);
     CHECK4("2 3 4", "%I64d %I32d %Id", 2ll, 3, 4ll);
     CHECK3("1k 2.54 M", "%$_d %$.2d", 1000, 2536000);
     CHECK3("2.42 Mi 2.4 M", "%$$.2d %$$$d", 2536000, 2536000);
 
     // different separators
     cexsp__set_separators(' ', ',');
-    CHECK2("12 345,678900", "%'f", 12345.6789);  
+    CHECK2("12 345,678900", "%'f", 12345.6789);
 #endif
 
     return EOK;
@@ -305,13 +305,13 @@ test$case(stb_sprintf_strings)
         tassert_eq("123", str.fmt(_, "%.3s", "123456789"));
         tassert_eq("123", str.fmt(_, "%.3S", str$s("123456789")));
         /*
-        * Damage control wrong args (these are intentional bugs, trying to mitigate them)
-        */
+         * Damage control wrong args (these are intentional bugs, trying to mitigate them)
+         */
         // NOTE: cases below are invalid use of %s/%S and arguments
-        // but CEX attempts gracefully handle them if possible 
+        // but CEX attempts gracefully handle them if possible
         tassert_eq("(%s-bad)", str.fmt(_, "%s", 7));
         tassert_eq("(null)", str.fmt(_, "%s", 0));
-        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S", (str_s){.len = 65536, .buf = "baz"}));
+        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S", (str_s){ .len = 65536, .buf = "baz" }));
         u64 baad = 0xfe03ba0d;
         (void)baad;
 #ifdef _WIN32
@@ -320,25 +320,40 @@ test$case(stb_sprintf_strings)
         // tassert_eq("(%S-bad)", str.fmt(_, "%S",  baad)); // segv
         // uassert(false && "Teest");
 
-        tassert_eq("", str.fmt(_, "%s", str$s(""))); // win mismatch
-        tassert_eq("", str.fmt(_, "%s",  (str_s){0})); // win mismatch ''
-        tassert_eq("(%s-bad)", str.fmt(_, "%s",  baad));
-#if !defined(__SANITIZE_ADDRESS__)
-        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S",  "foo", 123)); // win asan crash
-#endif
-        tassert_eq("(%S-bad)", str.fmt(_, "%S", (str_s){.len = 6, .buf = (void*)0xfe03ba0d}));
+        tassert_eq("", str.fmt(_, "%s", str$s("")));    // win mismatch
+        tassert_eq("", str.fmt(_, "%s", (str_s){ 0 })); // win mismatch ''
+        tassert_eq("(%s-bad)", str.fmt(_, "%s", baad));
+#    if !mem$asan_enabled()
+        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S", "foo", 123)); // win asan crash
+#    endif
+        tassert_eq("(%S-bad)", str.fmt(_, "%S", (str_s){ .len = 6, .buf = (void*)0xfe03ba0d }));
         // tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("123456789"))); // mismatch \t
 #else
-        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S",  baad));
-        tassert_eq("(%S-bad/overflow)", str.fmt(_, "%S",  "foo"));
+        // the below stuff is implementation specific or even UB! Trying doing the best to catch.
+        char* fmt_bad = str.fmt(_, "%S", baad);
+        tassertf(
+            str.eq(fmt_bad, "(%S-bad/overflow)") || str.eq(fmt_bad, "(null)"),
+            "(u65)baad fortatted as: %s",
+            fmt_bad
+        );
+        fmt_bad = str.fmt(_, "%S", "foo");
+        tassertf(
+            str.eq(fmt_bad, "(%S-bad/overflow)") || str.eq(fmt_bad, "(null)"),
+            " \"foo\" fortatted as: %s",
+            fmt_bad
+        );
+        fmt_bad = str.fmt(_, "%S", NULL);
+        tassertf(
+            str.eq(fmt_bad, "") || str.eq(fmt_bad, "(null)"),
+            " \"NULL\" fortatted as: %s",
+            fmt_bad
+        );
         tassert_eq("(null)", str.fmt(_, "%s", str$s("")));
-        tassert_eq("", str.fmt(_, "%S", NULL)); // win segv
-        tassert_eq("(%s-bad)", str.fmt(_, "%s",  str$s("foo"))); // win segv
-        tassert_eq("(null)", str.fmt(_, "%s",  (str_s){0})); // win mismatch ''
+        tassert_eq("(%s-bad)", str.fmt(_, "%s", str$s("foo"))); // win segv
+        tassert_eq("(null)", str.fmt(_, "%s", (str_s){ 0 }));   // win mismatch ''
         tassert_eq("(%s-bad)", str.fmt(_, "%s", str$s("foo"))); // win segv!
         // tassert_eq("(%s-bad)", str.fmt(_, "%s",  baad)); // segv on linux
 #endif
-
     }
 
     return EOK;

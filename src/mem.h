@@ -113,11 +113,6 @@ void _cex_allocator_arena_cleanup(IAllocator* allc);
 #    endif
 #endif
 
-#if defined(__SANITIZE_ADDRESS__)
-#    define mem$asan_enabled() 1
-#else
-#    define mem$asan_enabled() 0
-#endif
 
 #ifdef CEX_TEST
 #    define _mem$asan_poison_mark(addr, c, size) memset(addr, c, size)
@@ -145,7 +140,7 @@ void __asan_poison_memory_region(void const volatile* addr, size_t size);
 void __asan_unpoison_memory_region(void const volatile* addr, size_t size);
 void* __asan_region_is_poisoned(void* beg, size_t size);
 
-#    if defined(__SANITIZE_ADDRESS__)
+#    if mem$asan_enabled()
 #        define mem$asan_poison(addr, size)                                                        \
             ({                                                                                     \
                 void* _addr = (addr);                                                              \

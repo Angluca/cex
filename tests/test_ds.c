@@ -15,7 +15,7 @@ add_to_arr(arr$(int) * arr)
 static void
 add_to_str(arr$(const char*) * arr)
 {
-    char buf[10] = { "buf" };
+    static char buf[10] = { "buf" };
 
     arr$push(*arr, "foooo");
     arr$push(*arr, "barrr");
@@ -39,6 +39,8 @@ test$case(test_array)
 
     add_to_arr(&array);
     add_to_str(&array2);
+    tassert_eq(arr$len(array2), 7);
+
     for (usize i = 0; i < arr$len(array); ++i) {
         io.printf("%d \n", array[i]);
     }
@@ -110,11 +112,7 @@ static char buffer[256];
 char*
 strkey(int n)
 {
-#if defined(_WIN32) && defined(__STDC_WANT_SECURE_LIB__)
-    sprintf_s(buffer, sizeof(buffer), "test_%d", n);
-#else
-    sprintf(buffer, "test_%d", n);
-#endif
+    str.sprintf(buffer, sizeof(buffer), "test_%d", n);
     return buffer;
 }
 
@@ -1136,6 +1134,7 @@ test$case(test_mem_scope_lifetime_test)
         tassert_eq(arr$cap(arr), 16);
         mem$scope(tmem$, ta)
         {
+            (void)ta;
             uassert_disable();
             arr$pushm(arr, 170, 180, 190);
             // tassert(old_arr = arr);

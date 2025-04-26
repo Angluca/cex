@@ -1,4 +1,4 @@
-/* 
+/*
 # CEX.C - Comprehensively EXtended C Language (cex-c.org)
                                                                 MOCCA - Make Old C Cexy Again!
 
@@ -10,18 +10,18 @@ cex.h contains build system, unit test runner, small standard lib and help syste
 
 Visit https://cex-c.org for more information
 
-## GETTING STARTED 
+## GETTING STARTED
 (existing project, when cex.c exists in the project root directory)
 ```
 1. > cd project_dir
-2. > gcc/clang ./cex.c -o ./cex     (need only once, then cex will rebuil itself) 
+2. > gcc/clang ./cex.c -o ./cex     (need only once, then cex will rebuil itself)
 3. > ./cex --help                   get info about available commands
 ```
 
-## GETTING STARTED 
+## GETTING STARTED
 (bare cex.h file, and nothing else)
 ```
-1. > download https://cex-c.org/cex.h or copy existing one 
+1. > download https://cex-c.org/cex.h or copy existing one
 2. > mkdir project_dir
 3. > cd project_dir
 4. > gcc/clang -D CEX_NEW -x c ./cex.h    prime cex.c and build system
@@ -82,10 +82,21 @@ Use `cex -D config` to reset all project config flags to defaults
 /// disables float printing for io.printf/et al functions (code size reduction)
 // #define CEX_SPRINTF_NOFLOAT
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
+#include <errno.h>
 #include <stdalign.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <errno.h>
+
+#if defined(__APPLE__) || defined(__MACH__)
+// NOTE: Apple SDK defines sprintf as a macro, this messes str.sprintf() calls, because
+//      sprintf() part is expanded as macro.
+#    ifdef sprintf
+#        undef sprintf
+#    endif
+#    ifdef vsprintf
+#        undef vsprintf
+#    endif
+#endif

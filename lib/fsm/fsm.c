@@ -81,6 +81,7 @@ fsm_super(fsm_c* self, const fsm_event_s* e)
     }
 
     FsmStateHandler_f prev_state = self->_handler;
+    (void)prev_state;
 
     // HACK: preventing double call of super() from self->_super_handler
     // set to NULL, and if it's called from prev_super, the assert self->_handler_super will fail

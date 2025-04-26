@@ -503,8 +503,8 @@ test$case(test_tassert_f32)
     b = 0;
     tassert_ne(a, b);
 
-    a = 1.0f/3.0f;
-    b = 1.0f/3.0f;
+    a = 1.0f / 3.0f;
+    b = 1.0f / 3.0f;
     tassert_eq(a, b);
 
     tassert_eq_almost(a, b, 0);
@@ -602,8 +602,8 @@ test$case(test_tassert_f64)
     b = 0;
     tassert_ne(a, b);
 
-    a = 1.0/3.0;
-    b = 1.0/3.0;
+    a = 1.0 / 3.0;
+    b = 1.0 / 3.0;
     tassert_eq(a, b);
 
     tassert_eq_almost(a, b, 0);
@@ -673,7 +673,7 @@ test$case(test_tassert_error)
 
 test$case(test_tassert_eq_string)
 {
-    char buf[21] = {"foo"};
+    char buf[21] = { "foo" };
     char* s = "foo";
     tassert_eq(s, "foo");
     tassert_ne(s, NULL);
@@ -688,7 +688,7 @@ test$case(test_tassert_eq_string)
 
 test$case(test_tassert_eq_slice)
 {
-    tassert_eq(str.sstr(NULL), (str_s){0});
+    tassert_eq(str.sstr(NULL), (str_s){ 0 });
     tassert_eq(str.sstr(""), str$s(""));
     tassert_eq(str.sstr("foo"), str$s("foo"));
     tassert_eq(str.sstr("foo"), str.sub("foobar", 0, 3));
@@ -699,9 +699,10 @@ test$case(test_tassert_eq_slice)
 
 test$case(test_tassert_eq_arr)
 {
-    mem$scope(tmem$, _) {
-        arr$(int) a = arr$new(a,_);
-        arr$(i32) b = arr$new(b,_);
+    mem$scope(tmem$, _)
+    {
+        arr$(int) a = arr$new(a, _);
+        arr$(i32) b = arr$new(b, _);
 
         arr$pushm(a, 1, 2, 3);
         arr$pushm(b, 1, 2, 3);
@@ -716,9 +717,10 @@ test$case(test_tassert_eq_arr)
 
 test$case(test_tassert_eq_arr_vs_static)
 {
-    mem$scope(tmem$, _) {
-        i32 b[] = {1, 2, 3}; 
-        arr$(int) a = arr$new(a,_);
+    mem$scope(tmem$, _)
+    {
+        i32 b[] = { 1, 2, 3 };
+        arr$(int) a = arr$new(a, _);
 
         arr$pushm(a, 1, 2, 3);
         tassert_eq_arr(a, b);
@@ -729,37 +731,33 @@ test$case(test_tassert_eq_arr_vs_static)
 
 test$case(test_tassert_static_arr_vs_static)
 {
-    mem$scope(tmem$, _) {
-        i32 a[] = {1, 2, 3}; 
-        i32 b[] = {1, 2, 3}; 
-        tassert_eq_arr(a, b);
-    }
-
+    i32 a[] = { 1, 2, 3 };
+    i32 b[] = { 1, 2, 3 };
+    tassert_eq_arr(a, b);
     return EOK;
 }
 
 
 test$case(test_tassert_static_arr_vs_null)
 {
-    mem$scope(tmem$, _) {
-        i32* a = NULL;
-        i32* b = NULL;
-        tassert_eq_arr(a, b);
-    }
+    i32* a = NULL;
+    i32* b = NULL;
+    tassert_eq_arr(a, b);
 
     return EOK;
 }
 
 test$case(test_tassert_struct_arr)
 {
-    mem$scope(tmem$, _) {
+    mem$scope(tmem$, _)
+    {
 
-        arr$(str_s) a = arr$new(a,_);
-        arr$(str_s) b = arr$new(b,_);
-        str_s s = str$s("foo"); 
+        arr$(str_s) a = arr$new(a, _);
+        arr$(str_s) b = arr$new(b, _);
+        str_s s = str$s("foo");
 
-        arr$pushm(a, s, {0}, s);
-        arr$pushm(b, s, {0}, s);
+        arr$pushm(a, s, { 0 }, s);
+        arr$pushm(b, s, { 0 }, s);
         tassert_eq_arr(a, b);
     }
 
@@ -772,7 +770,7 @@ test$case(test_tassert_eq_mem)
     str_s b = str.sstr(f);
     tassert_eq(a, b);
     tassert_eq_mem(a, b);
-    tassert_eq_mem(a, (str_s){.buf = f, .len = strlen(f)});
+    tassert_eq_mem(a, (str_s){ .buf = f, .len = strlen(f) });
 
     return EOK;
 }

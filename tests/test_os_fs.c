@@ -4,7 +4,7 @@
 test$setup_case()
 {
     e$ret(os.fs.remove_tree(TBUILDDIR));
-    e$ret(os.fs.mkdir(TBUILDDIR));
+    e$ret(os.fs.mkpath(TBUILDDIR));
     return EOK;
 }
 test$teardown_case()
@@ -366,7 +366,15 @@ test$case(test_os_path_exists)
     tassert_eq(1, os.path.exists(__FILE__));
     tassert_eq(0, os.path.exists("./tests/test_os_posix.cpp"));
 
-    tassert_eq(1, os.path.exists("tests/"));
+    var st = os.fs.stat("tests");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(1, os.path.exists("tests"));
+
+#ifdef _WIN32
+    st = os.fs.stat(".\\tests\\");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(1, os.path.exists("tests\\"));
+#endif
 
     char buf[PATH_MAX + 10];
     memset(buf, 'a', arr$len(buf));
@@ -374,6 +382,54 @@ test$case(test_os_path_exists)
     uassert_disable();
 
     tassert_eq(0, os.path.exists(buf));
+
+    return EOK;
+}
+
+test$case(test_dir_stat)
+{
+    tassert_eq(0, os.path.exists(NULL));
+    tassert_eq(0, os.path.exists(""));
+    tassert_eq(1, os.path.exists("."));
+    tassert_eq(1, os.path.exists(".."));
+    tassert_eq(1, os.path.exists("./tests"));
+    tassert_eq(1, os.path.exists(__FILE__));
+    tassert_eq(0, os.path.exists("./tests/test_os_posix.cpp"));
+
+    var st = os.fs.stat("tests");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(st.is_directory, true);
+    tassert_ne(st.mtime, 0);
+
+    st = os.fs.stat("./tests");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(st.is_directory, true);
+    tassert_ne(st.mtime, 0);
+
+    st = os.fs.stat("./tests//");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(st.is_directory, true);
+
+    st = os.fs.stat("tests/");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(st.is_directory, true);
+
+#ifdef _WIN32
+    st = os.fs.stat(".\\tests\\");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(st.is_directory, true);
+    tassert_eq(1, os.path.exists("tests\\"));
+
+    st = os.fs.stat("tests\\");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(st.is_directory, true);
+    tassert_eq(1, os.path.exists("tests\\"));
+
+    st = os.fs.stat("tests\\\\");
+    tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
+    tassert_eq(st.is_directory, true);
+    tassert_eq(1, os.path.exists("tests\\"));
+#endif
 
     return EOK;
 }
@@ -668,7 +724,8 @@ test$case(test_os_copy_file)
     tassert_eq(ftype.is_symlink, 0);
     tassert_eq(ftype.is_other, 0);
 
-    mem$scope(tmem$, _) {
+    mem$scope(tmem$, _)
+    {
         var content = io.file.load(TBUILDDIR "mytestfile.txt2", _);
         tassert(content);
         tassert_eq(content, "foo");

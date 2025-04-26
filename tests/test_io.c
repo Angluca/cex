@@ -2,8 +2,10 @@
 
 test$teardown_suite()
 {
-    if(os.fs.remove("tests/data/text_file_write.txt")) {}
-    if(os.fs.remove("tests/data/text_file_fprintf.txt")) {}
+    if (os.fs.remove("tests/data/text_file_write.txt")) {
+    }
+    if (os.fs.remove("tests/data/text_file_fprintf.txt")) {
+    }
     return EOK;
 }
 
@@ -28,6 +30,9 @@ test$case(test_readall)
     str_s content;
     tassert_eq(Error.ok, io.fread_all(file, &content, mem$));
 
+    var stat = os.fs.stat("tests/data/text_file_50b.txt");
+    tassert_eq(stat.is_valid, 1);
+    tassert_eq(stat.size, 50);
     tassert_eq(50, io.file.size(file));
     tassert_eq(
         "000000001\n"
@@ -67,8 +72,11 @@ test$case(test_read_all_empty)
 
 test$case(test_is_atty)
 {
-    tassert_eq(1, io.isatty(stderr));
-    tassert_eq(1, io.isatty(stdin));
+    // Not the case when running on CI
+    if (io.isatty(stderr)) {
+        tassert_eq(1, io.isatty(stderr));
+        tassert_eq(1, io.isatty(stdin));
+    }
     if (_cex_test__mainfn_state.out_stream) {
         // NOTE: stdout - in test runner is captured to file
         tassert_eq(0, io.isatty(stdout));
@@ -83,14 +91,14 @@ test$case(test_is_atty)
 
 test$case(test_read_all_stdin)
 {
-    tassert_eq(0, io.file.size(stdin));
-    tassert_eq(1, io.isatty(stdin));
-
-    str_s content;
-    tassert_eq(
-        "io.fread_all() not allowed for pipe/socket/std[in/out/err]",
-        io.fread_all(stdin, &content, mem$)
-    );
+    if (io.isatty(stdin)) {
+        tassert_eq(0, io.file.size(stdin));
+        str_s content;
+        tassert_eq(
+            "io.fread_all() not allowed for pipe/socket/std[in/out/err]",
+            io.fread_all(stdin, &content, mem$)
+        );
+    }
     return EOK;
 }
 test$case(test_file_size)
@@ -100,8 +108,12 @@ test$case(test_file_size)
     tassert_eq(50, io.file.size(file));
     tassert_eq(0, io.file.size(NULL));
     tassert_eq(0, io.file.size(stdin));
-    tassert_eq(0, io.file.size(stderr));
-    // tassert_eq(0, io.file.size(stdout)); // CEX test runners hijacks stdout to file, it has size
+    if (io.isatty(stderr)) {
+        tassert_eq(0, io.file.size(stderr));
+    }
+    if (io.isatty(stderr)) {
+        tassert_eq(0, io.file.size(stdout));
+    }
     io.fclose(&file);
 
     return EOK;
@@ -594,9 +606,12 @@ test$case(test_fload)
     tassert_eq("000000001\n0", content);
     mem$free(mem$, content);
 
-    content = io.file.load("/dev/console", mem$);
-    tassert_ne(0, errno);
-    tassert_eq(content, NULL);
+    if (os.platform.current() != OSPlatform__macos) {
+        content = io.file.load("/dev/console", mem$);
+        tassert_ne(0, errno);
+        tassert_eq(content, NULL);
+    }
+
     mem$free(mem$, content);
 
     return EOK;
