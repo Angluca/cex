@@ -194,6 +194,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(page->capacity - page->cursor >= rec.size + rec.ptr_padding + rec.ptr_alignment);
     uassert(page->cursor % 8 == 0);
     uassert(rec.ptr_padding <= 8);
+    uassertf((usize)page->data % 8 == 0, "page.data offset: %zi\n", (page->data - (char*)page));
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
     uassert((((usize)(page_rec) & ((8) - 1)) == 0) && "unaligned pointer");

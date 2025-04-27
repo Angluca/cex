@@ -1,62 +1,14 @@
-name: Tests
+name: DevTests
 
 on:
   push:
-    branches: [ master, ci_test]
+    branches: [ dev]
   pull_request:
-    branches: [ master ]
+    branches: [ dev ]
 
 
 jobs:
-  linux-ubuntu2204:
-    runs-on: ubuntu-22.04
-
-    strategy:
-      # Don't abort runners if a single one fails
-      fail-fast: false
-
-      matrix:
-        compiler: ["gcc-10", "gcc-11", "gcc-12", "clang-13", "clang-14", "clang-15"]
-        cex_preset: ["CEX_DEBUG", "CEX_RELEASE", "CEX_NDEBUG"]
-
-    steps:
-      - name: Checkout cex
-        uses: actions/checkout@v4
-
-      - uses: ./.github/actions/env_setup
-        name: Setup env
-
-      - name: cc setup
-        run: |
-          #sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-          #sudo apt-get update
-          sudo apt-get install ${{ matrix.compiler }}
-          echo "Replacing: cc to ${{ matrix.compiler }}"
-          sudo rm /usr/bin/cc
-          sudo ln -s /usr/bin/${{ matrix.compiler }} /usr/bin/cc 
-          echo "cc --version"
-          cc --version
-
-      - name: cex initial build
-        run: |
-          ulimit -c unlimited 
-          ls -la
-          echo "Priming cex tool"
-          cc -g ./cex.c -o ./cex 
-          ./cex -D${{ matrix.cex_preset }} config
-
-      - name: cex unit tests
-        run: |
-          ./cex test run all
-
-      - uses: actions/upload-artifact@master # capture all crashes as build artifacts
-        if: always()
-        with:
-          name: ${{ github.job }}_coredumps_${{ matrix.optimize}}
-          path: /var/cores
-          if-no-files-found: ignore
-
-  linux-ubuntu2404:
+  tests-linux:
     runs-on: ubuntu-latest
 
     strategy:
@@ -64,8 +16,8 @@ jobs:
       fail-fast: false
 
       matrix:
-        compiler: ["gcc-12", "gcc-13", "gcc-14", "clang-16", "clang-17", "clang-18"]
-        cex_preset: ["CEX_DEBUG", "CEX_RELEASE", "CEX_NDEBUG"]
+        compiler: ["gcc", "clang"]
+        cex_preset: ["CEX_DEBUG", "CEX_X32"]
 
     steps:
       - name: Checkout cex
@@ -111,16 +63,11 @@ jobs:
       matrix:
         cex_preset: 
           - CEX_DEBUG
-          - CEX_RELEASE
-          - CEX_NDEBUG
         msys:
           - mingw64
-          - ucrt64
           - clang64
         runs-on:
-          - 'windows-2019'
-          - 'windows-2022'
-          - 'windows-2025'
+          - 'windows-latest'
 
     defaults:
       run:
@@ -173,12 +120,9 @@ jobs:
       matrix:
         cex_preset: 
           - CEX_DEBUG
-          - CEX_RELEASE
-          - CEX_NDEBUG
         runs-on:
-          - macos-13
-          - macos-14
-          - macos-15
+          - macos-13      # x86
+          - macos-latest  # arm64
     steps:
       - name: Checkout cex
         uses: actions/checkout@v4

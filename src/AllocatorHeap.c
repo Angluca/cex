@@ -44,14 +44,14 @@ _cex_allocator_heap__validate(IAllocator self)
 static inline u64
 _cex_allocator_heap__hdr_set(u64 size, u8 ptr_offset, u8 alignment)
 {
-    size &= 0xFFFFFFFFFFFF; // Mask to 48 bits
+    size &= 0xFFFFFFFFFFFFULL; // Mask to 48 bits
     return size | ((u64)ptr_offset << 48) | ((u64)alignment << 56);
 }
 
 static inline usize
 _cex_allocator_heap__hdr_get_size(u64 alloc_hdr)
 {
-    return alloc_hdr & 0xFFFFFFFFFFFF;
+    return alloc_hdr & 0xFFFFFFFFFFFFULL;
 }
 
 static inline u8
@@ -72,16 +72,22 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
 
     usize size = alloc_size;
 
-    if (unlikely(
-            alloc_size == 0 || alloc_size > PTRDIFF_MAX || (u64)alloc_size > (u64)0xFFFFFFFFFFFF ||
-            alignment > 64
-        )) {
+    if (unlikely(alloc_size == 0 || alloc_size > PTRDIFF_MAX || alignment > 64)) {
         uassert(alloc_size > 0 && "zero size");
         uassert(alloc_size > PTRDIFF_MAX && "size is too high");
-        uassert((u64)alloc_size < (u64)0xFFFFFFFFFFFF && "size is too high, or negative overflow");
         uassert(alignment <= 64);
         return 0;
     }
+
+#if UINTPTR_MAX > 0xFFFFFFFFU
+    // Only 64 bit
+    if (unlikely((u64)alloc_size > (u64)0xFFFFFFFFFFFFULL)) {
+        uassert(
+            (u64)alloc_size < (u64)0xFFFFFFFFFFFFULL && "size is too high, or negative overflow"
+        );
+        return 0;
+    }
+#endif
 
     if (alignment < 8) {
         _Static_assert(alignof(void*) <= 8, "unexpected ptr alignment");

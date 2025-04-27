@@ -915,7 +915,7 @@ typedef struct
 
 } AllocatorArena_c;
 
-_Static_assert(sizeof(AllocatorArena_c) == 256, "size!");
+_Static_assert(sizeof(AllocatorArena_c) <= 256, "size!");
 _Static_assert(offsetof(AllocatorArena_c, alloc) == 0, "base must be the 1st struct member");
 
 typedef struct allocator_arena_page_s
@@ -925,10 +925,12 @@ typedef struct allocator_arena_page_s
     u32 cursor;           // current allocated size of this page
     u32 capacity;         // max capacity of this page (excluding header)
     void* last_alloc;     // last allocated pointer (viable for realloc)
-    u8 __poison_area[32]; // barrier of sanitizer poison + space reserve
+    u8 __poison_area[(sizeof(usize) == 8 ? 32: 44)]; // barrier of sanitizer poison + space reserve
     char data[];          // trailing chunk of data
 } allocator_arena_page_s;
 _Static_assert(sizeof(allocator_arena_page_s) == 64, "size!");
+_Static_assert(alignof(allocator_arena_page_s) == 64, "align");
+_Static_assert(offsetof(allocator_arena_page_s, data) == 64, "data must be aligned to 64");
 
 typedef struct allocator_arena_rec_s
 {
@@ -1016,10 +1018,9 @@ typedef struct
     u16 el_align;
     usize capacity;
     usize length; // This MUST BE LAST before __poison_area
-    u8 __poison_area[sizeof(usize)];
+    u8 __poison_area[8];
 } _cexds__array_header;
 _Static_assert(alignof(_cexds__array_header) == alignof(usize), "align");
-_Static_assert(sizeof(_cexds__array_header) % alignof(max_align_t) == 0, "align size");
 _Static_assert(
     sizeof(usize) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
     "size for x64 is 48 / for x32 is 32"
@@ -3112,19 +3113,19 @@ typedef struct os_cmd_c
 
 typedef struct os_fs_stat_s
 {
-    union
-    {
-        Exc error;
-        time_t mtime;
-    };
     u64 is_valid : 1;
     u64 is_directory : 1;
     u64 is_symlink : 1;
     u64 is_file : 1;
     u64 is_other : 1;
     u64 size : 48;
+    union
+    {
+        Exc error;
+        time_t mtime;
+    };
 } os_fs_stat_s;
-_Static_assert(sizeof(os_fs_stat_s) == sizeof(u64) * 2, "size?");
+_Static_assert(sizeof(os_fs_stat_s) <= sizeof(u64) * 2, "size?");
 
 typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* user_ctx);
 
@@ -4290,14 +4291,14 @@ _cex_allocator_heap__validate(IAllocator self)
 static inline u64
 _cex_allocator_heap__hdr_set(u64 size, u8 ptr_offset, u8 alignment)
 {
-    size &= 0xFFFFFFFFFFFF; // Mask to 48 bits
+    size &= 0xFFFFFFFFFFFFULL; // Mask to 48 bits
     return size | ((u64)ptr_offset << 48) | ((u64)alignment << 56);
 }
 
 static inline usize
 _cex_allocator_heap__hdr_get_size(u64 alloc_hdr)
 {
-    return alloc_hdr & 0xFFFFFFFFFFFF;
+    return alloc_hdr & 0xFFFFFFFFFFFFULL;
 }
 
 static inline u8
@@ -4318,16 +4319,21 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
 
     usize size = alloc_size;
 
-    if (unlikely(
-            alloc_size == 0 || alloc_size > PTRDIFF_MAX || (u64)alloc_size > (u64)0xFFFFFFFFFFFF ||
-            alignment > 64
-        )) {
+    if (unlikely(alloc_size == 0 || alloc_size > PTRDIFF_MAX || alignment > 64)) {
         uassert(alloc_size > 0 && "zero size");
         uassert(alloc_size > PTRDIFF_MAX && "size is too high");
-        uassert((u64)alloc_size < (u64)0xFFFFFFFFFFFF && "size is too high, or negative overflow");
         uassert(alignment <= 64);
         return 0;
     }
+
+#if UINTPTR_MAX > 0xFFFFFFFFU
+    if (unlikely((u64)alloc_size > (u64)0xFFFFFFFFFFFFULL)) {
+        uassert(
+            (u64)alloc_size < (u64)0xFFFFFFFFFFFFULL && "size is too high, or negative overflow"
+        );
+        return 0;
+    }
+#endif
 
     if (alignment < 8) {
         _Static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
@@ -4779,6 +4785,7 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(page->capacity - page->cursor >= rec.size + rec.ptr_padding + rec.ptr_alignment);
     uassert(page->cursor % 8 == 0);
     uassert(rec.ptr_padding <= 8);
+    uassertf((usize)page->data % 8 == 0, "page.data offset: %zi\n", (page->data - (char*)page));
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
     uassert((((usize)(page_rec) & ((8) - 1)) == 0) && "unaligned pointer");
@@ -5367,9 +5374,8 @@ typedef struct
 {
     usize hash[_CEXDS_BUCKET_LENGTH];
     ptrdiff_t index[_CEXDS_BUCKET_LENGTH];
-} _cexds__hash_bucket; // in 32-bit, this is one 64-byte cache line; in 64-bit, each array is one
-                       // 64-byte cache line
-_Static_assert(sizeof(_cexds__hash_bucket) == 128, "cacheline aligned");
+} _cexds__hash_bucket;
+_Static_assert(sizeof(_cexds__hash_bucket) % 64 == 0, "cacheline aligned");
 
 typedef struct _cexds__hash_index
 {
@@ -5584,18 +5590,14 @@ _cexds__hash_string(const char* str, usize str_cap, usize seed)
 static inline usize
 _cexds__siphash_bytes(const void* p, usize len, usize seed)
 {
-    unsigned char* d = (unsigned char*)p;
-    usize i, j;
-    usize v0, v1, v2, v3, data;
-
     // hash that works on 32- or 64-bit registers without knowing which we have
     // (computes different results on 32-bit and 64-bit platform)
     // derived from siphash, but on 32-bit platforms very different as it uses 4 32-bit state not 4
     // 64-bit
-    v0 = ((((usize)0x736f6d65 << 16) << 16) + 0x70736575) ^ seed;
-    v1 = ((((usize)0x646f7261 << 16) << 16) + 0x6e646f6d) ^ ~seed;
-    v2 = ((((usize)0x6c796765 << 16) << 16) + 0x6e657261) ^ seed;
-    v3 = ((((usize)0x74656462 << 16) << 16) + 0x79746573) ^ ~seed;
+    usize v0 = ((((usize)0x736f6d65 << 16) << 16) + 0x70736575) ^ seed;
+    usize v1 = ((((usize)0x646f7261 << 16) << 16) + 0x6e646f6d) ^ ~seed;
+    usize v2 = ((((usize)0x6c796765 << 16) << 16) + 0x6e657261) ^ seed;
+    usize v3 = ((((usize)0x74656462 << 16) << 16) + 0x79746573) ^ ~seed;
 
 #ifdef _CEXDS_TEST_SIPHASH_2_4
     // hardcoded with key material in the siphash test vectors
@@ -5623,10 +5625,17 @@ _cexds__siphash_bytes(const void* p, usize len, usize seed)
         v3 ^= v0;                                                                                  \
     } while (0)
 
+    unsigned char* d = (unsigned char*)p;
+    usize data = 0;
+    usize i = 0;
+    usize j = 0;
     for (i = 0; i + sizeof(usize) <= len; i += sizeof(usize), d += sizeof(usize)) {
-        data = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
-        data |= (usize)(d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24))
-             << 16 << 16; // discarded if usize == 4
+        data = (usize)d[0] | ((usize)d[1] << 8) | ((usize)d[2] << 16) | ((usize)d[3] << 24);
+
+#if UINTPTR_MAX > 0xFFFFFFFFU
+        // 64 bits only
+        data |= (usize)(d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24)) << 16 << 16;
+#endif
 
         v3 ^= data;
         for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) {
@@ -5666,9 +5675,7 @@ _cexds__siphash_bytes(const void* p, usize len, usize seed)
 #ifdef _CEXDS_SIPHASH_2_4
     return v0 ^ v1 ^ v2 ^ v3;
 #else
-    return v1 ^ v2 ^
-           v3; // slightly stronger since v0^v3 in above cancels out final round operation? I
-               // tweeted at the authors of SipHash about this but they didn't reply
+    return v1 ^ v2 ^ v3;
 #endif
 }
 
@@ -6340,7 +6347,10 @@ static u32
 cexsp__format_s_check_va_item_string_len(char const* s, u32 limit)
 {
     uassertf((usize)s > UINT16_MAX, "%%s va_arg pointer looks too low, wrong va type? s:%p\n", s);
+#if UINTPTR_MAX > 0xFFFFFFFFU
+    // Only for 64-bit
     uassertf((isize)s > 0, "%%s va_arg pointer looks too high/negative, wrong va type? s: %p\n", s);
+#endif
     char const* sn = s;
     while (limit && *sn) { // WARNING: if getting segfault here, typically %s format messes with int
         ++sn;
@@ -6518,7 +6528,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 break;
             // are we 64-bit on intmax? (c99)
             case 'j':
-                fl |= (sizeof(size_t) == 8) ? CEXSP__INTMAX : 0;
+                fl |= (sizeof(intmax_t) == 8) ? CEXSP__INTMAX : 0;
                 ++f;
                 break;
             // are we 64-bit on size_t or ptrdiff_t? (c99)
@@ -7043,9 +7053,10 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
 
             case 'p': // pointer
                 fl |= (sizeof(void*) == 8) ? CEXSP__INTMAX : 0;
-                pr = sizeof(void*) * 2;
-                fl &= ~CEXSP__LEADINGZERO; // 'p' only prints the pointer with zeros
-                                           // fall through - to X
+                // pr = sizeof(void*) * 2;
+                // fl &= ~CEXSP__LEADINGZERO; // 'p' only prints the pointer with zeros
+                fl |= CEXSP__LEADING_0X; // 'p' only prints the pointer with zeros
+                fallthrough();
 
             case 'X': // upper hex
             case 'x': // lower hex
@@ -7070,7 +7081,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 // clear tail, and clear leading if value is zero
                 tail[0] = 0;
                 if (n64 == 0) {
-                    lead[0] = 0;
+                    // lead[0] = 0;
                     if (pr == 0) {
                         l = 0;
                         cs = 0;

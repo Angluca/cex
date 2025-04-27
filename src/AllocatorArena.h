@@ -30,7 +30,7 @@ typedef struct
 
 } AllocatorArena_c;
 
-_Static_assert(sizeof(AllocatorArena_c) == 256, "size!");
+_Static_assert(sizeof(AllocatorArena_c) <= 256, "size!");
 _Static_assert(offsetof(AllocatorArena_c, alloc) == 0, "base must be the 1st struct member");
 
 typedef struct allocator_arena_page_s
@@ -40,10 +40,12 @@ typedef struct allocator_arena_page_s
     u32 cursor;           // current allocated size of this page
     u32 capacity;         // max capacity of this page (excluding header)
     void* last_alloc;     // last allocated pointer (viable for realloc)
-    u8 __poison_area[32]; // barrier of sanitizer poison + space reserve
+    u8 __poison_area[(sizeof(usize) == 8 ? 32: 44)]; // barrier of sanitizer poison + space reserve
     char data[];          // trailing chunk of data
 } allocator_arena_page_s;
 _Static_assert(sizeof(allocator_arena_page_s) == 64, "size!");
+_Static_assert(alignof(allocator_arena_page_s) == 64, "align");
+_Static_assert(offsetof(allocator_arena_page_s, data) == 64, "data must be aligned to 64");
 
 typedef struct allocator_arena_rec_s
 {

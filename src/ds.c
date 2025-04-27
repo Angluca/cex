@@ -190,9 +190,8 @@ typedef struct
 {
     usize hash[_CEXDS_BUCKET_LENGTH];
     ptrdiff_t index[_CEXDS_BUCKET_LENGTH];
-} _cexds__hash_bucket; // in 32-bit, this is one 64-byte cache line; in 64-bit, each array is one
-                       // 64-byte cache line
-_Static_assert(sizeof(_cexds__hash_bucket) == 128, "cacheline aligned");
+} _cexds__hash_bucket;
+_Static_assert(sizeof(_cexds__hash_bucket) % 64 == 0, "cacheline aligned");
 
 typedef struct _cexds__hash_index
 {
@@ -407,18 +406,14 @@ _cexds__hash_string(const char* str, usize str_cap, usize seed)
 static inline usize
 _cexds__siphash_bytes(const void* p, usize len, usize seed)
 {
-    unsigned char* d = (unsigned char*)p;
-    usize i, j;
-    usize v0, v1, v2, v3, data;
-
     // hash that works on 32- or 64-bit registers without knowing which we have
     // (computes different results on 32-bit and 64-bit platform)
     // derived from siphash, but on 32-bit platforms very different as it uses 4 32-bit state not 4
     // 64-bit
-    v0 = ((((usize)0x736f6d65 << 16) << 16) + 0x70736575) ^ seed;
-    v1 = ((((usize)0x646f7261 << 16) << 16) + 0x6e646f6d) ^ ~seed;
-    v2 = ((((usize)0x6c796765 << 16) << 16) + 0x6e657261) ^ seed;
-    v3 = ((((usize)0x74656462 << 16) << 16) + 0x79746573) ^ ~seed;
+    usize v0 = ((((usize)0x736f6d65 << 16) << 16) + 0x70736575) ^ seed;
+    usize v1 = ((((usize)0x646f7261 << 16) << 16) + 0x6e646f6d) ^ ~seed;
+    usize v2 = ((((usize)0x6c796765 << 16) << 16) + 0x6e657261) ^ seed;
+    usize v3 = ((((usize)0x74656462 << 16) << 16) + 0x79746573) ^ ~seed;
 
 #ifdef _CEXDS_TEST_SIPHASH_2_4
     // hardcoded with key material in the siphash test vectors
@@ -446,10 +441,17 @@ _cexds__siphash_bytes(const void* p, usize len, usize seed)
         v3 ^= v0;                                                                                  \
     } while (0)
 
+    unsigned char* d = (unsigned char*)p;
+    usize data = 0;
+    usize i = 0;
+    usize j = 0;
     for (i = 0; i + sizeof(usize) <= len; i += sizeof(usize), d += sizeof(usize)) {
-        data = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
-        data |= (usize)(d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24))
-             << 16 << 16; // discarded if usize == 4
+        data = (usize)d[0] | ((usize)d[1] << 8) | ((usize)d[2] << 16) | ((usize)d[3] << 24);
+
+#if UINTPTR_MAX > 0xFFFFFFFFU
+        // 64 bits only
+        data |= (usize)(d[4] | (d[5] << 8) | (d[6] << 16) | (d[7] << 24)) << 16 << 16;
+#endif
 
         v3 ^= data;
         for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) {
@@ -489,9 +491,7 @@ _cexds__siphash_bytes(const void* p, usize len, usize seed)
 #ifdef _CEXDS_SIPHASH_2_4
     return v0 ^ v1 ^ v2 ^ v3;
 #else
-    return v1 ^ v2 ^
-           v3; // slightly stronger since v0^v3 in above cancels out final round operation? I
-               // tweeted at the authors of SipHash about this but they didn't reply
+    return v1 ^ v2 ^ v3;
 #endif
 }
 

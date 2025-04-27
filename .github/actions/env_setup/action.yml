@@ -19,6 +19,14 @@ runs:
         sudo bash -c 'echo "/var/cores/core.%e.%t.%p" > /proc/sys/kernel/core_pattern'
         sudo sysctl -w fs.suid_dumpable=2
 
+        echo "Install i386 arch"
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
+        sudo apt install gcc-multilib
+        sudo apt install clang llvm lld
+        sudo apt install libc6-dev-i386
+
+
     - name: test access to core dump directory
       shell: bash
       run: |

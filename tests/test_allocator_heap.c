@@ -88,13 +88,29 @@ test$case(test_allocator_heap_default_alignment)
 test$case(test_allocator_heap_alloc_header)
 {
 
-    tassert_eq(alignof(u64), 8);
     tassert_eq(sizeof(u64), 8);
-    u64 hdr = _cex_allocator_heap__hdr_set(0x123456789ABC, 0xCD, 0xEF);
-    tassert_eq(hdr, 0xefcd123456789abc);
-    tassert_eq(0x123456789ABC, _cex_allocator_heap__hdr_get_size(hdr));
-    tassert_eq(0xCD, _cex_allocator_heap__hdr_get_offset(hdr));
-    tassert_eq(0xEF, _cex_allocator_heap__hdr_get_alignment(hdr));
+    if (sizeof(usize) == 8) {
+        // 64bit (some sanity check assumptions about our arch)
+        tassert_eq(alignof(u64), 8);
+        tassert_eq(alignof(usize), 8);
+        tassert_eq(alignof(void*), 8);
+        u64 hdr = _cex_allocator_heap__hdr_set(0x123456789ABC, 0xCD, 0xEF);
+        tassert_eq(hdr, 0xefcd123456789abc);
+        tassert_eq(0x123456789ABC, _cex_allocator_heap__hdr_get_size(hdr));
+        tassert_eq(0xCD, _cex_allocator_heap__hdr_get_offset(hdr));
+        tassert_eq(0xEF, _cex_allocator_heap__hdr_get_alignment(hdr));
+    } else {
+        // 32bit (some sanity check assumptions about our arch)
+        tassert_eq(alignof(u64), 4);
+        tassert_eq(alignof(usize), 4);
+        tassert_eq(alignof(void*), 4);
+        u64 hdr = _cex_allocator_heap__hdr_set(0x123456, 0xCD, 0xEF);
+        io.printf("%lx\n", hdr);
+        tassert_eq(hdr, 0xefcd000000123456);
+        tassert_eq(0x123456, _cex_allocator_heap__hdr_get_size(hdr));
+        tassert_eq(0xCD, _cex_allocator_heap__hdr_get_offset(hdr));
+        tassert_eq(0xEF, _cex_allocator_heap__hdr_get_alignment(hdr));
+    }
 
     return EOK;
 }
@@ -266,7 +282,7 @@ test$case(test_allocator_heap_realloc_random_align)
             tassert(v == 'Z');
         }
         a[0] = 0xCD;
-        a[size-1] = 0xAB;
+        a[size - 1] = 0xAB;
 
         if (al < 8) {
             tassert((usize)a % 8 == 0 && "expected aligned to 8");
@@ -278,14 +294,14 @@ test$case(test_allocator_heap_realloc_random_align)
         // u8* old_a = a;
         usize new_size = (i % 2 == 0) ? size * 2 : size / 2;
         if (al > 1 && i % 2 != 0) {
-            new_size = ((size / al) / 2) * 2 * al;            
+            new_size = ((size / al) / 2) * 2 * al;
             tassert(new_size <= size);
             tassert(new_size % al == 0);
         }
 
 
         a = mem$realloc(mem$, a, new_size, al);
-        // tassert_eq(a[-1], 0xf7);  // ASAN poison check 
+        // tassert_eq(a[-1], 0xf7);  // ASAN poison check
         tassert(a != NULL);
         tassert(a[0] == 0xCD);
         if (new_size > size) {
@@ -293,9 +309,8 @@ test$case(test_allocator_heap_realloc_random_align)
             {
                 tassert(v == 'Z');
             }
-            tassert(a[size-1] == 0xAB);
-            for(u32 j = size; j < new_size; j++)
-            {
+            tassert(a[size - 1] == 0xAB);
+            for (u32 j = size; j < new_size; j++) {
                 tassert_eq(a[j], 0xf7);
             }
         } else {
@@ -304,7 +319,7 @@ test$case(test_allocator_heap_realloc_random_align)
                 tassert(v == 'Z');
             }
             if (new_size == size) {
-                tassert(a[size-1] == 0xAB);
+                tassert(a[size - 1] == 0xAB);
             }
         }
 

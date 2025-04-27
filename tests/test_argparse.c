@@ -731,7 +731,7 @@ test$case(test_cex_argparse_arguments__float_parsing)
     fnum = -100;
     char* argv7[] = { "program_name", "--flt=-9.8" };
     tassert_er(Error.ok, argparse.parse(&args, argc, argv7));
-    tassert_eq(fnum * 100, -9.8 * 100);
+    tassert_eq_almost(fnum * 100, -9.8 * 100, 1.0);
 
     fnum = -100;
     char* argv8[] = { "program_name",

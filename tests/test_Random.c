@@ -179,7 +179,7 @@ test$case(random_buf)
 
     alignas(2) u8 b3[43] = {0};
 
-    uassert(((u64)b3+1) % 4 != 0 && "expected unaligned");
+    uassert(((usize)b3+1) % 4 != 0 && "expected unaligned");
 
     Random.seed(&rnd, 0);
     Random.buf(&rnd, b3+1, sizeof(b3)-1); // Unaligned!

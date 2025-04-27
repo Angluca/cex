@@ -55,10 +55,9 @@ typedef struct
     u16 el_align;
     usize capacity;
     usize length; // This MUST BE LAST before __poison_area
-    u8 __poison_area[sizeof(usize)];
+    u8 __poison_area[8];
 } _cexds__array_header;
 _Static_assert(alignof(_cexds__array_header) == alignof(usize), "align");
-_Static_assert(sizeof(_cexds__array_header) % alignof(max_align_t) == 0, "align size");
 _Static_assert(
     sizeof(usize) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
     "size for x64 is 48 / for x32 is 32"

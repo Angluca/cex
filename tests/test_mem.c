@@ -21,15 +21,15 @@ test$case(test_aligned_size)
     // alignas(64) char buf[127] = {0};
     char* buf = mem$malloc(mem$, 128, 64);
 
-    log$debug("Initial buf addr: %p buf %%64: %zu\n", buf, ((u64)buf) % (u64)64L);
+    log$debug("Initial buf addr: %p buf %%64: %zu\n", buf, ((usize)buf) % (usize)64L);
 
-    tassert(((u64)&buf[0]) % 64 == 0);
-    tassert(((u64)buf) % 64 == 0);
-    tassert(((u64)mem$aligned_pointer(&buf[0], 64)) % 64 == 0);
+    tassert(((usize)&buf[0]) % 64 == 0);
+    tassert(((usize)buf) % 64 == 0);
+    tassert(((usize)mem$aligned_pointer(&buf[0], 64)) % 64 == 0);
 
-    tassert(((u64)&buf[0]) % 64 == 0);
-    tassert(((u64)buf) % 64 == 0);
-    tassert(((u64)mem$aligned_pointer(buf, 64)) % 64 == 0);
+    tassert(((usize)&buf[0]) % 64 == 0);
+    tassert(((usize)buf) % 64 == 0);
+    tassert(((usize)mem$aligned_pointer(buf, 64)) % 64 == 0);
     log$debug("After buf addr: %p add2: %p\n", buf, &buf[0]);
 
     tassertf(

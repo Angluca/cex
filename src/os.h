@@ -19,19 +19,19 @@ typedef struct os_cmd_c
 
 typedef struct os_fs_stat_s
 {
-    union
-    {
-        Exc error;
-        time_t mtime;
-    };
     u64 is_valid : 1;
     u64 is_directory : 1;
     u64 is_symlink : 1;
     u64 is_file : 1;
     u64 is_other : 1;
     u64 size : 48;
+    union
+    {
+        Exc error;
+        time_t mtime;
+    };
 } os_fs_stat_s;
-_Static_assert(sizeof(os_fs_stat_s) == sizeof(u64) * 2, "size?");
+_Static_assert(sizeof(os_fs_stat_s) <= sizeof(u64) * 2, "size?");
 
 typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* user_ctx);
 

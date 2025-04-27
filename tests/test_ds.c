@@ -810,12 +810,12 @@ test$case(test_hashmap_hash)
     // We created the same string, but stored in different places
     const char* key = "foobar";
     char key_buf[10] = "foobar";
-    char key_buf2[6] = "foobar";
+    char key_buf2[7] = "foobar";
     str_s key_str = str.sbuf(key_buf2, sizeof(key_buf2));
 
     // Make sure pointers are different
     tassert(str.slice.eq(key_str, str$s("foobar")));
-    tassert_eq(sizeof(key_buf2), 6);
+    tassert_eq(sizeof(key_buf2), 7);
     tassert(key_str.buf != key);
     tassert(key_buf != key);
     tassert(key_buf != key_str.buf);
@@ -889,24 +889,6 @@ test$case(test_hashmap_bufkey)
     return EOK;
 }
 
-#define _hm$test(t, k)                                                                             \
-    ({                                                                                             \
-        void* key = (typeof((t)->key)[1]){ k };                                                    \
-        size_t key_len = 0;                                                                        \
-        size_t key_size = sizeof((t)->key);                                                        \
-        _Generic(                                                                                  \
-            &((t)->key),                                                                           \
-            char(**): _Generic(                                                                    \
-                (k),                                                                               \
-                char*: (key_len = 0),                                                              \
-                str_s: (key = *(((size_t**)key) + 1)),                                             \
-                default: (key = NULL)                                                              \
-            ),                                                                                     \
-            str_s*: (key_len = 0),                                                                 \
-            default: (key_len = 0)                                                                 \
-        );                                                                                         \
-        io.printf("key: %p, key_len: %ld, key_size: %ld\n", key, key_len, key_size);                  \
-    })
 
 test$case(test_hashmap_cex_string)
 {
@@ -928,27 +910,6 @@ test$case(test_hashmap_cex_string)
     tassert_eq(hm$del(smap, str$s("bar")), 1);
     tassert_eq(hm$del(smap, str$s("baz")), 1);
     tassert_eq(hm$len(smap), 0);
-
-    hm$(int, int) imap;
-    hm$(char*, int) cmap;
-    (void)imap;
-
-    char* c = "foobar";
-    str_s s = (str_s){ .buf = c, .len = 6 };
-
-
-    _hm$test(imap, 2);
-
-    _hm$test(smap, str.sstr("bar"));
-    _hm$test(smap, str$s("bar"));
-    _hm$test(smap, s);
-    // _hm$test(smap, "foo");
-
-    _hm$test(cmap, "foobar");
-    _hm$test(cmap, c);
-    // _hm$test(cmap, s);
-    // _hm$test(cmap, str$s("xxxyyyzzz").buf);
-
 
     hm$free(smap);
     return EOK;

@@ -510,6 +510,7 @@ test$case(test_allocator_arena_pointer_lifetime)
             (void*)rec <
             (void*)allc->last_page + sizeof(allocator_arena_page_s) + allc->last_page->capacity
         );
+        tassert_eq(rec->size, 100);
         mem$scope(arena, _)
         {
             u8* p2 = mem$malloc(_, 100);
@@ -520,6 +521,7 @@ test$case(test_allocator_arena_pointer_lifetime)
                 (void*)rec2 <
                 (void*)allc->last_page + sizeof(allocator_arena_page_s) + allc->last_page->capacity
             );
+            tassert_eq(rec2->size, 100);
             tassert(_cex_allocator_arena__check_pointer_valid(allc, p2));
             uassert_disable();
             tassert(!_cex_allocator_arena__check_pointer_valid(allc, p));
@@ -567,7 +569,7 @@ test$case(test_allocator_mem_scope_exit_oversized_page)
     {
         // allocate some memory
         u8* p = mem$malloc(arena, 128);
-        allocator_arena_rec_s* rec = (allocator_arena_rec_s*)(p - sizeof(allocator_arena_rec_s));
+        allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
         tassert_eq(rec->size, 128);
         memset(p, 0xAA, 128);
         (void)p;
@@ -578,8 +580,7 @@ test$case(test_allocator_mem_scope_exit_oversized_page)
             memset(p, 0xBB, 4096);
             memset(p, 0xab, 1);
             (void)p;
-            allocator_arena_rec_s* rec = (allocator_arena_rec_s*)(p - sizeof(allocator_arena_rec_s)
-            );
+            allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(p);
             tassert_eq(rec->size, 4096);
         }
     }

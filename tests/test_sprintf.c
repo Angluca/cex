@@ -66,9 +66,7 @@ test$case(stb_sprintf_orig)
     CHECK3("33 555", "%hi %d", (short)33, 555L);
     CHECK2("9888777666", "%llu", 9888777666llu);
 
-#ifndef CEX_ENV32BIT
     CHECK4("-1 2 -3", "%ji %zi %ti", (intmax_t)-1, (isize)2, (ptrdiff_t)-3);
-#endif
 
     // floating-point numbers
     CHECK2("-3.000000", "%f", -3.0);
@@ -131,16 +129,16 @@ test$case(stb_sprintf_orig)
 #    endif
 #endif
 
-    // %p
-#if USE_STB
-#    ifdef CEX_ENV32BIT
-    CHECK2("00000000", "%p", (void*)NULL);
-#    else
-    CHECK2("0000000000000000", "%p", (void*)NULL);
-#    endif
-#else
-    CHECK2("(nil)", "%p", (void*)NULL);
-#endif
+    printf("libc %%p: %p\n", (void*)0x1234ABC);
+    printf("libc %%p = NULL: %p\n", NULL);
+    if (sizeof(usize) == 8) {
+        // 64 bits
+        CHECK2("0x1234abcdef0707", "%p", (void*)0x1234ABCDef0707);
+    } else {
+        // 32 bits
+        CHECK2("0x1234abc", "%p", (void*)0x1234ABC);
+    }
+    CHECK2("0x0", "%p", (void*)NULL);
 
     // snprintf
     tassert(cexsp__snprintf(buf, 100, " %s     %d", "b", 123) == 10);

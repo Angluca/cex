@@ -111,7 +111,7 @@ test$case(test_file_size)
     if (io.isatty(stderr)) {
         tassert_eq(0, io.file.size(stderr));
     }
-    if (io.isatty(stderr)) {
+    if (io.isatty(stdout)) {
         tassert_eq(0, io.file.size(stdout));
     }
     io.fclose(&file);
@@ -505,7 +505,7 @@ test$case(test_fprintf_to_file)
     FILE* file;
     tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_fprintf.txt", "w+"));
 
-    char buf[4] = { "1234" };
+    char buf[] = { "1234" };
     str_s s1 = str.sbuf(buf, 4);
     tassert_eq(s1.len, 4);
     tassert_eq(s1.buf[3], '4');
@@ -528,9 +528,8 @@ test$case(test_write)
     FILE* file;
     tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_write.txt", "w+"));
 
-    char buf[4] = { "1234" };
-
-    tassert_eq(EOK, io.fwrite(file, buf, sizeof(char), arr$len(buf)));
+    char buf[5] = { "1234" };
+    tassert_eq(EOK, io.fwrite(file, buf, sizeof(char), 4));
 
     str_s content;
     io.rewind(file);

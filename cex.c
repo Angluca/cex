@@ -6,6 +6,10 @@
 // This is for CI (allowing substitute compiler with env var)
 #define cexy$cex_self_cc "cc"
 
+#    ifdef CEX_TEST_NOASAN
+#        define cexy$cc_args_sanitizer
+#    endif
+
 #    if defined(CEX_DEBUG)
 #        define cexy$cex_self_args cexy$cc_args_sanitizer
 #        define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
@@ -20,12 +24,22 @@
 #        define cexy$test_cc_args                                                                  \
             "-DCEX_TEST", "-DNDEBUG", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",            \
                 "-Itests/", "-O2"
+#    elif defined(CEX_X32)
+#        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
+#        define cexy$test_cc_args                                                                  \
+            "-DCEX_TEST", "-O0", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",            \
+                "-Itests/", "-m32", cexy$cc_args_sanitizer
 #    else
 #        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #    endif
 
-#    ifdef CEX_TEST_NOASAN
-#        define cexy$cc_args_sanitizer
+
+#    ifdef CEX_OLD_GCC
+#        define cexy$cc "gcc-14"
+#    endif
+
+#    ifdef CEX_OLD_GCC
+#        define cexy$cc "gcc-14"
 #    endif
 
 #    ifdef CEX_OLD_GCC

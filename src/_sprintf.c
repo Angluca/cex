@@ -79,7 +79,10 @@ static u32
 cexsp__format_s_check_va_item_string_len(char const* s, u32 limit)
 {
     uassertf((usize)s > UINT16_MAX, "%%s va_arg pointer looks too low, wrong va type? s:%p\n", s);
+#if UINTPTR_MAX > 0xFFFFFFFFU
+    // Only for 64-bit
     uassertf((isize)s > 0, "%%s va_arg pointer looks too high/negative, wrong va type? s: %p\n", s);
+#endif
     char const* sn = s;
     while (limit && *sn) { // WARNING: if getting segfault here, typically %s format messes with int
         ++sn;
@@ -257,7 +260,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 break;
             // are we 64-bit on intmax? (c99)
             case 'j':
-                fl |= (sizeof(size_t) == 8) ? CEXSP__INTMAX : 0;
+                fl |= (sizeof(intmax_t) == 8) ? CEXSP__INTMAX : 0;
                 ++f;
                 break;
             // are we 64-bit on size_t or ptrdiff_t? (c99)
@@ -782,9 +785,10 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
 
             case 'p': // pointer
                 fl |= (sizeof(void*) == 8) ? CEXSP__INTMAX : 0;
-                pr = sizeof(void*) * 2;
-                fl &= ~CEXSP__LEADINGZERO; // 'p' only prints the pointer with zeros
-                                           // fall through - to X
+                // pr = sizeof(void*) * 2;
+                // fl &= ~CEXSP__LEADINGZERO; // 'p' only prints the pointer with zeros
+                fl |= CEXSP__LEADING_0X; // 'p' only prints the pointer with zeros
+                fallthrough();
 
             case 'X': // upper hex
             case 'x': // lower hex
@@ -809,7 +813,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 // clear tail, and clear leading if value is zero
                 tail[0] = 0;
                 if (n64 == 0) {
-                    lead[0] = 0;
+                    // lead[0] = 0;
                     if (pr == 0) {
                         l = 0;
                         cs = 0;
