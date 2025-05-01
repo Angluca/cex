@@ -487,6 +487,14 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
             io.printf("-------------------------------------\n");
             io.printf("Running Tests: %s\n", target);
             io.printf("-------------------------------------\n\n");
+        } else {
+            if (!os.path.exists(target)) {
+                return e$raise(
+                    Error.not_found,
+                    "Test file not found: %s",
+                    target
+                );
+            }
         }
 
         for$each(test_src, os.fs.find(target, true, _))

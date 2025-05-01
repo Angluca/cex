@@ -152,6 +152,7 @@ struct __cex_namespace__os {
 
     struct {
         Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
+        bool            (*exists)(char* cmd_exe);
         FILE*           (*fstderr)(os_cmd_c* self);
         FILE*           (*fstdin)(os_cmd_c* self);
         FILE*           (*fstdout)(os_cmd_c* self);

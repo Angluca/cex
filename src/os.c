@@ -1036,6 +1036,86 @@ cex_os__cmd__write_line(os_cmd_c* self, char* line)
     return EOK;
 }
 
+static bool
+cex_os__cmd__exists(char* cmd_exe)
+{
+    if (cmd_exe == NULL || cmd_exe[0] == '\0') {
+        return false;
+    }
+    mem$scope(tmem$, _)
+    {
+#ifdef _WIN32
+        const char* extensions[] = { ".exe", ".cmd", ".bat" };
+        bool has_ext = str.find(os.path.basename(cmd_exe, _), ".") != NULL;
+
+        if (str.find(cmd_exe, "/") != NULL || str.find(cmd_exe, "\\") != NULL) {
+            if (has_ext) {
+                return os.path.exists(cmd_exe);
+            } else {
+                for$each(ext, extensions)
+                {
+                    char* exe = str.fmt(_, "%s%s", cmd_exe, ext);
+                    os_fs_stat_s stat = os.fs.stat(exe);
+                    if (stat.is_valid && stat.is_file) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        str_s path_env = str.sstr(os.env.get("PATH", NULL));
+        if (path_env.buf == NULL) {
+            return false;
+        }
+
+        for$iter(str_s, it, str.slice.iter_split(path_env, ";", &it.iterator))
+        {
+            if (has_ext) {
+                char* exe = str.fmt(_, "%S/%s", it.val, cmd_exe);
+                os_fs_stat_s stat = os.fs.stat(exe);
+                if (stat.is_valid && stat.is_file) {
+                    return true;
+                }
+            } else {
+                for$each(ext, extensions)
+                {
+                    char* exe = str.fmt(_, "%S/%s%s", it.val, cmd_exe, ext);
+                    os_fs_stat_s stat = os.fs.stat(exe);
+                    if (stat.is_valid && stat.is_file) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+#else
+        if (str.find(cmd_exe, "/") != NULL) {
+            os_fs_stat_s stat = os.fs.stat(cmd_exe);
+            if (stat.is_valid && stat.is_file && access(cmd_exe, X_OK) == 0) {
+                return true; // check if executable
+            }
+            return false;
+        }
+
+        str_s path_env = str.sstr(os.env.get("PATH", NULL));
+        if (path_env.buf == NULL) {
+            return false;
+        }
+
+        for$iter(str_s, it, str.slice.iter_split(path_env, ":", &it.iterator))
+        {
+            char* exe = str.fmt(_, "%S/%s", it.val, cmd_exe);
+            os_fs_stat_s stat = os.fs.stat(exe);
+            if (stat.is_valid && stat.is_file && access(exe, X_OK) == 0) {
+                return true;
+            }
+        }
+#endif
+    }
+    return false;
+}
+
 static Exception
 cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 {
@@ -1233,6 +1313,7 @@ const struct __cex_namespace__os os = {
 
     .cmd = {
         .create = cex_os__cmd__create,
+        .exists = cex_os__cmd__exists,
         .fstderr = cex_os__cmd__fstderr,
         .fstdin = cex_os__cmd__fstdin,
         .fstdout = cex_os__cmd__fstdout,

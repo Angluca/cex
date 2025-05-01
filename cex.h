@@ -3246,6 +3246,7 @@ struct __cex_namespace__os {
 
     struct {
         Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
+        bool            (*exists)(char* cmd_exe);
         FILE*           (*fstderr)(os_cmd_c* self);
         FILE*           (*fstdin)(os_cmd_c* self);
         FILE*           (*fstdout)(os_cmd_c* self);
@@ -4327,6 +4328,7 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
     }
 
 #if UINTPTR_MAX > 0xFFFFFFFFU
+    // Only 64 bit
     if (unlikely((u64)alloc_size > (u64)0xFFFFFFFFFFFFULL)) {
         uassert(
             (u64)alloc_size < (u64)0xFFFFFFFFFFFFULL && "size is too high, or negative overflow"
@@ -11605,10 +11607,6 @@ cex_os__fs__mkpath(const char* path)
     }
     usize dir_path_len = 0;
 
-#ifdef CEX_TEST
-        log$trace("Making path: %s\n", path);
-#endif
-
     for$iter(str_s, it, str.slice.iter_split(dir, "\\/", &it.iterator))
     {
         if (dir_path_len > 0) {
@@ -11619,9 +11617,6 @@ cex_os__fs__mkpath(const char* path)
         }
         e$ret(str.slice.copy(dir_path + dir_path_len, it.val, sizeof(dir_path) - dir_path_len));
         dir_path_len += it.val.len;
-#ifdef CEX_TEST
-        log$trace("Making dir: %s\n", dir_path);
-#endif
         e$ret(os.fs.mkdir(dir_path));
     }
     return EOK;
@@ -12382,6 +12377,86 @@ cex_os__cmd__write_line(os_cmd_c* self, char* line)
     return EOK;
 }
 
+static bool
+cex_os__cmd__exists(char* cmd_exe)
+{
+    if (cmd_exe == NULL || cmd_exe[0] == '\0') {
+        return false;
+    }
+    mem$scope(tmem$, _)
+    {
+#ifdef _WIN32
+        const char* extensions[] = { ".exe", ".cmd", ".bat" };
+        bool has_ext = str.find(os.path.basename(cmd_exe, _), ".") != NULL;
+
+        if (str.find(cmd_exe, "/") != NULL || str.find(cmd_exe, "\\") != NULL) {
+            if (has_ext) {
+                return os.path.exists(cmd_exe);
+            } else {
+                for$each(ext, extensions)
+                {
+                    char* exe = str.fmt(_, "%s%s", cmd_exe, ext);
+                    os_fs_stat_s stat = os.fs.stat(exe);
+                    if (stat.is_valid && stat.is_file) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        str_s path_env = str.sstr(os.env.get("PATH", NULL));
+        if (path_env.buf == NULL) {
+            return false;
+        }
+
+        for$iter(str_s, it, str.slice.iter_split(path_env, ";", &it.iterator))
+        {
+            if (has_ext) {
+                char* exe = str.fmt(_, "%S/%s", it.val, cmd_exe);
+                os_fs_stat_s stat = os.fs.stat(exe);
+                if (stat.is_valid && stat.is_file) {
+                    return true;
+                }
+            } else {
+                for$each(ext, extensions)
+                {
+                    char* exe = str.fmt(_, "%S/%s%s", it.val, cmd_exe, ext);
+                    os_fs_stat_s stat = os.fs.stat(exe);
+                    if (stat.is_valid && stat.is_file) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+#else
+        if (str.find(cmd_exe, "/") != NULL) {
+            os_fs_stat_s stat = os.fs.stat(cmd_exe);
+            if (stat.is_valid && stat.is_file && access(cmd_exe, X_OK) == 0) {
+                return true; // check if executable
+            }
+            return false;
+        }
+
+        str_s path_env = str.sstr(os.env.get("PATH", NULL));
+        if (path_env.buf == NULL) {
+            return false;
+        }
+
+        for$iter(str_s, it, str.slice.iter_split(path_env, ":", &it.iterator))
+        {
+            char* exe = str.fmt(_, "%S/%s", it.val, cmd_exe);
+            os_fs_stat_s stat = os.fs.stat(exe);
+            if (stat.is_valid && stat.is_file && access(exe, X_OK) == 0) {
+                return true;
+            }
+        }
+#endif
+    }
+    return false;
+}
+
 static Exception
 cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
 {
@@ -12579,6 +12654,7 @@ const struct __cex_namespace__os os = {
 
     .cmd = {
         .create = cex_os__cmd__create,
+        .exists = cex_os__cmd__exists,
         .fstderr = cex_os__cmd__fstderr,
         .fstdin = cex_os__cmd__fstdin,
         .fstdout = cex_os__cmd__fstdout,
@@ -13784,6 +13860,14 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
             io.printf("-------------------------------------\n");
             io.printf("Running Tests: %s\n", target);
             io.printf("-------------------------------------\n\n");
+        } else {
+            if (!os.path.exists(target)) {
+                return e$raise(
+                    Error.not_found,
+                    "Test file not found: %s",
+                    target
+                );
+            }
         }
 
         for$each(test_src, os.fs.find(target, true, _))

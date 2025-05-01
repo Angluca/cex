@@ -1,6 +1,19 @@
 #include "src/all.c"
 #include "src/all.h"
 
+#define TBUILDDIR "tests/build/os_cmd_test/"
+test$setup_case()
+{
+    e$ret(os.fs.remove_tree(TBUILDDIR));
+    e$ret(os.fs.mkpath(TBUILDDIR));
+    return EOK;
+}
+test$teardown_case()
+{
+    e$ret(os.fs.remove_tree(TBUILDDIR));
+    return EOK;
+}
+
 char*
 test_app(char* app_name, IAllocator allc)
 {
@@ -21,6 +34,41 @@ test_app(char* app_name, IAllocator allc)
     );
     log$debug("Making test app: %s\n", result);
     return result;
+}
+
+test$case(os_cmd_exists)
+{
+    tassert_eq(false, os.cmd.exists(""));
+    tassert_eq(false, os.cmd.exists(NULL));
+    tassert_eq(false, os.cmd.exists("alskdislkdfjslkfjk"));
+    tassert_eq(true, os.cmd.exists("./cex"));
+
+    tassert_eq(true, os.path.exists(TBUILDDIR));
+    tassert_eq(false, os.cmd.exists(TBUILDDIR));
+
+#ifdef _WIN32
+    e$ret(io.file.save(TBUILDDIR "mycmd1.exe", "test"));
+    e$ret(io.file.save(TBUILDDIR "mycmd2.bat", "test"));
+    e$ret(io.file.save(TBUILDDIR "mycmd3.cmd", "test"));
+
+    tassert_eq(true, os.cmd.exists(TBUILDDIR "mycmd1.exe"));
+    tassert_eq(true, os.cmd.exists(TBUILDDIR "mycmd2.bat"));
+    tassert_eq(true, os.cmd.exists(TBUILDDIR "mycmd3.cmd"));
+
+    tassert_eq(true, os.cmd.exists(TBUILDDIR "mycmd1"));
+    tassert_eq(true, os.cmd.exists(TBUILDDIR "mycmd2"));
+    tassert_eq(true, os.cmd.exists(TBUILDDIR "mycmd3"));
+
+    tassert_eq(true, os.cmd.exists("cmd"));
+    tassert_eq(true, os.cmd.exists("cmd.exe"));
+    tassert_eq(true, os.cmd.exists("./cex.exe"));
+    tassert_eq(true, os.cmd.exists(".\\cex.exe"));
+    tassert_eq(true, os.cmd.exists(".\\cex"));
+#else
+    tassert_eq(true, os.cmd.exists("ls"));
+#endif
+
+    return EOK;
 }
 
 test$case(os_cmd_create)
