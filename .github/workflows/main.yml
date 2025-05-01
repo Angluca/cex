@@ -49,13 +49,6 @@ jobs:
         run: |
           ./cex test run all
 
-      - uses: actions/upload-artifact@master # capture all crashes as build artifacts
-        if: always()
-        with:
-          name: ${{ github.job }}_coredumps_${{ matrix.optimize}}
-          path: /var/cores
-          if-no-files-found: ignore
-
   linux-ubuntu2404:
     runs-on: ubuntu-latest
 
@@ -96,11 +89,6 @@ jobs:
       - name: cex unit tests
         run: |
           ./cex test run all
-
-      - uses: actions/upload-artifact@master # capture all binaries
-        with:
-          name: ${{ github.job }}_build_exe_${{ matrix.compiler }}-${{ matrix.cex_preset }}
-          path: build/
 
 
   tests-windows:
@@ -159,12 +147,6 @@ jobs:
         run: |
           ./cex.exe test run all
 
-      - uses: actions/upload-artifact@master # capture all binaries
-        if: always()
-        with:
-          name: ${{ github.job }}_build_exe_${{ matrix.runs-on }}-${{ matrix.msys }}-${{ matrix.cex_preset }}
-          path: build/
-
   tests-macos:
     name: ${{ matrix.runs-on }}-${{ matrix.cex_preset }}
     runs-on: ${{ matrix.runs-on }}
@@ -201,7 +183,3 @@ jobs:
           ./cex test run all
           #./cex test run tests/test_io.c -o
 
-      - uses: actions/upload-artifact@master # capture all binaries
-        with:
-          name: ${{ github.job }}_build_exe_${{ matrix.runs-on }}-${{ matrix.cex_preset }}
-          path: build/
