@@ -1081,6 +1081,7 @@ cex_os__cmd__exists(char* cmd_exe)
                 for$each(ext, extensions)
                 {
                     char* exe = str.fmt(_, "%S/%s%s", it.val, cmd_exe, ext);
+                    log$debug("Checking exe: %s\n", exe);
                     os_fs_stat_s stat = os.fs.stat(exe);
                     if (stat.is_valid && stat.is_file) {
                         return true;
