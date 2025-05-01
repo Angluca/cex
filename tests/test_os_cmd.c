@@ -38,6 +38,9 @@ test_app(char* app_name, IAllocator allc)
 
 test$case(os_cmd_exists)
 {
+    log$debug("Current platform: %s\n", os.platform.current_str());
+    log$debug("PATH env: %s\n", os.env.get("PATH", NULL));
+
     tassert_eq(false, os.cmd.exists(""));
     tassert_eq(false, os.cmd.exists(NULL));
     tassert_eq(false, os.cmd.exists("alskdislkdfjslkfjk"));
@@ -59,8 +62,8 @@ test$case(os_cmd_exists)
     tassert_eq(true, os.cmd.exists(TBUILDDIR "mycmd2"));
     tassert_eq(true, os.cmd.exists(TBUILDDIR "mycmd3"));
 
-    tassert_eq(true, os.cmd.exists("cmd"));
     tassert_eq(true, os.cmd.exists("cmd.exe"));
+    tassert_eq(true, os.cmd.exists("cmd"));
     tassert_eq(true, os.cmd.exists("./cex.exe"));
     tassert_eq(true, os.cmd.exists(".\\cex.exe"));
     tassert_eq(true, os.cmd.exists(".\\cex"));
