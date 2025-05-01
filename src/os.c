@@ -509,6 +509,7 @@ _os__fs__remove_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx
     (void)ftype;
     e$except_silent(err, cex_os__fs__remove(path))
     {
+        log$trace("Error removing: %s\n", path);
         return err;
     }
     return EOK;
@@ -529,8 +530,72 @@ cex_os__fs__remove_tree(const char* path)
     }
     e$except_silent(err, cex_os__fs__remove(path))
     {
+        log$trace("Error removing: %s\n", path);
         return err;
     }
+    return EOK;
+}
+
+struct _os_fs_copy_tree_ctx_s
+{
+    str_s src_dir;
+    str_s dest_dir;
+};
+
+static Exception
+_os__fs__copy_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
+{
+    struct _os_fs_copy_tree_ctx_s* ctx = user_ctx;
+    mem$scope(tmem$, _)
+    {
+        uassert(str.starts_with(path, ctx->src_dir.buf) && "file must start with source dir");
+        char* out_file = str.fmt(_, "%S/%S", ctx->dest_dir, str.sub(path, ctx->src_dir.len, 0));
+
+        if (ftype.is_file) {
+            e$ret(os.fs.mkpath(out_file));
+            e$ret(os.fs.copy(path, out_file));
+        } else {
+            // Making empty directory if necessary
+            char* out_dir = str.fmt(_, "%s/", out_file);
+            e$ret(os.fs.mkpath(out_dir));
+        }
+    }
+
+    return EOK;
+}
+
+static Exception
+cex_os__fs__copy_tree(const char* src_dir, const char* dst_dir)
+{
+    if (src_dir == NULL || src_dir[0] == '\0') {
+        return Error.argument;
+    }
+    os_fs_stat_s s = os.fs.stat(src_dir);
+    if (!s.is_valid) {
+        return s.error;
+    }
+    if (!s.is_directory) {
+        return Error.argument;
+    }
+
+    if (dst_dir == NULL || dst_dir[0] == '\0') {
+        return Error.argument;
+    }
+    if (os.path.exists(dst_dir)) {
+        return Error.exists;
+    }
+
+    // TODO: add absolute path overlap check
+
+    struct _os_fs_copy_tree_ctx_s ctx = {
+        .src_dir = str.sstr(src_dir),
+        .dest_dir = str.sstr(dst_dir),
+    };
+    e$except_silent(err, cex_os__fs__dir_walk(src_dir, true, _os__fs__copy_tree_walker, &ctx))
+    {
+        return err;
+    }
+
     return EOK;
 }
 
@@ -1333,6 +1398,7 @@ const struct __cex_namespace__os os = {
     .fs = {
         .chdir = cex_os__fs__chdir,
         .copy = cex_os__fs__copy,
+        .copy_tree = cex_os__fs__copy_tree,
         .dir_walk = cex_os__fs__dir_walk,
         .find = cex_os__fs__find,
         .getcwd = cex_os__fs__getcwd,

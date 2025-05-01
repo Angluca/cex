@@ -259,6 +259,7 @@ struct __cex_namespace__cexy {
 
     struct {
         char*           (*git_hash)(IAllocator allc);
+        Exception       (*git_lib_fetch)(const char* git_url, const char* git_label, const char* out_dir, bool update_existing, bool preserve_dirs, const char** repo_paths, usize repo_paths_len);
         Exception       (*make_new_project)(const char* proj_dir);
     } utils;
 

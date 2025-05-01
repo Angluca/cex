@@ -96,15 +96,25 @@ jobs:
 
       - name: cex initial build
         run: |
+          echo "Who am I"
+          whoami
+
+          echo "ulimit"
           ulimit -c unlimited 
           ls -la
+
+          echo "git --version"
+          git --version
+
           echo "Priming cex tool"
           cc -g ./cex.c -o ./cex.exe 
           ./cex.exe -D${{ matrix.cex_preset }} config
 
       - name: cex unit tests
         run: |
+          ps aux | grep git || echo "no git"
           ./cex.exe test run all
+          ps aux | grep git || echo "no git"
 
       - uses: actions/upload-artifact@master # capture all binaries
         if: always()

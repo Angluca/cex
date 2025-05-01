@@ -1,5 +1,7 @@
+#define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
 #define TBUILDDIR "tests/build/cexytest/"
 #define cexy$cc_include "-I.", "-I" TBUILDDIR
+#define cexy$build_dir TBUILDDIR
 #include "src/all.c"
 
 test$setup_case()
@@ -225,5 +227,295 @@ test$case(test_src_changed_include_skips_system)
     return EOK;
 }
 
+
+test$case(test_lib_fetch_check_args)
+{
+    mem$scope(tmem$, _)
+    {
+        (void)_;
+        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        tassert_er(
+            Error.argument,
+            cexy.utils.git_lib_fetch("", "HEAD", TBUILDDIR, false, true, paths, arr$len(paths))
+        );
+        tassert_er(
+            Error.argument,
+            cexy.utils.git_lib_fetch(NULL, "HEAD", TBUILDDIR, false, true, paths, arr$len(paths))
+        );
+
+        arr$(const char*) paths2 = arr$new(paths2, _);
+        arr$pushm(paths2, "a", "b", "c");
+        tassert_er(
+            Error.argument,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.gi",
+                "HEAD",
+                TBUILDDIR,
+                false,
+                true,
+                paths2,
+                arr$len(paths2)
+            )
+        );
+    }
+    return EOK;
+}
+
+test$case(test_git_lib_fetch)
+{
+    mem$scope(tmem$, _)
+    {
+        (void)_;
+        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        tassert(!os.path.exists(TBUILDDIR "/out/"));
+        tassert_er(
+            Error.ok,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.git",
+                "HEAD",
+                TBUILDDIR "out/",
+                false,
+                true,
+                paths,
+                arr$len(paths)
+            )
+        );
+
+        tassert(os.path.exists(TBUILDDIR "/out/"));
+        tassert(os.path.exists(TBUILDDIR "/out/cex.h"));
+        tassert(os.path.exists(TBUILDDIR "/out/lib/test/fff.h"));
+        tassert(os.path.exists(TBUILDDIR "/out/lib/random/Random.c"));
+        tassert(os.path.exists(TBUILDDIR "/out/lib/random/Random.h"));
+
+        // cwd changed back
+        tassert(os.path.exists("cex.h"));
+        tassert(os.path.exists("cex.c"));
+        tassert(os.path.exists("tests/"));
+    }
+    return EOK;
+}
+
+test$case(test_git_lib_fetch_no_preserve_dirs)
+{
+    mem$scope(tmem$, _)
+    {
+        (void)_;
+        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        tassert(!os.path.exists(TBUILDDIR "/out/"));
+
+        tassert_er(
+            Error.ok,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.git",
+                NULL,
+                TBUILDDIR "out/",
+                false,
+                false,
+                paths,
+                arr$len(paths)
+            )
+        );
+
+        tassert(os.path.exists(TBUILDDIR "/out/"));
+        tassert(os.path.exists(TBUILDDIR "/out/cex.h"));
+        tassert(os.path.exists(TBUILDDIR "/out/fff.h"));
+        tassert(os.path.exists(TBUILDDIR "/out/random/Random.c"));
+        tassert(os.path.exists(TBUILDDIR "/out/random/Random.h"));
+    }
+    return EOK;
+}
+
+test$case(test_git_lib_fetch_no_rewrite)
+{
+    mem$scope(tmem$, _)
+    {
+        (void)_;
+        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        tassert(!os.path.exists(TBUILDDIR "/out/"));
+
+        tassert_er(
+            Error.ok,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.git",
+                NULL,
+                TBUILDDIR "out/",
+                false,
+                false,
+                paths,
+                arr$len(paths)
+            )
+        );
+
+        tassert(os.path.exists(TBUILDDIR "/out/"));
+        tassert(os.path.exists(TBUILDDIR "/out/cex.h"));
+        tassert(os.path.exists(TBUILDDIR "/out/fff.h"));
+        tassert(os.path.exists(TBUILDDIR "/out/random/Random.c"));
+        tassert(os.path.exists(TBUILDDIR "/out/random/Random.h"));
+
+        u32 nfiles = 0;
+        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
+        {
+            nfiles++;
+            var stat = os.fs.stat(it);
+            tassert(stat.is_valid);
+            tassert(stat.size > 100);
+
+            // "Edit" files
+            tassert_er(EOK, io.file.save(it, "foo"));
+        }
+        tassert_ge(nfiles, 4);
+
+        // This run should be dry (all exist all ignored)
+        tassert_er(
+            Error.ok,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.git",
+                NULL,
+                TBUILDDIR "out/",
+                false,
+                false,
+                paths,
+                arr$len(paths)
+            )
+        );
+
+        nfiles = 0;
+        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
+        {
+            nfiles++;
+            var stat = os.fs.stat(it);
+            tassert(stat.is_valid);
+            tassert_eq(stat.size, 3);
+        }
+        tassert_ge(nfiles, 4);
+
+        // Remove cex.h and make lib update again
+        tassert_eq(EOK, os.fs.remove(TBUILDDIR "/out/cex.h"));
+        tassert_er(
+            Error.ok,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.git",
+                NULL,
+                TBUILDDIR "out/",
+                false,
+                false,
+                paths,
+                arr$len(paths)
+            )
+        );
+        nfiles = 0;
+        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
+        {
+            nfiles++;
+            var stat = os.fs.stat(it);
+            tassert(stat.is_valid);
+            // cex.h got updated, because it didn't exist
+            if (str.ends_with(it, "cex.h")) {
+                tassert_gt(stat.size, 100);
+            } else {
+                tassert_eq(stat.size, 3);
+            }
+        }
+        tassert_ge(nfiles, 4);
+    }
+    return EOK;
+}
+
+test$case(test_git_lib_fetch_update)
+{
+    mem$scope(tmem$, _)
+    {
+        (void)_;
+        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        tassert(!os.path.exists(TBUILDDIR "/out/"));
+
+        tassert_er(
+            Error.ok,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.git",
+                NULL,
+                TBUILDDIR "out/",
+                false,
+                false,
+                paths,
+                arr$len(paths)
+            )
+        );
+
+        tassert(os.path.exists(TBUILDDIR "/out/"));
+        tassert(os.path.exists(TBUILDDIR "/out/cex.h"));
+        tassert(os.path.exists(TBUILDDIR "/out/fff.h"));
+        tassert(os.path.exists(TBUILDDIR "/out/random/Random.c"));
+        tassert(os.path.exists(TBUILDDIR "/out/random/Random.h"));
+
+        u32 nfiles = 0;
+        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
+        {
+            nfiles++;
+            var stat = os.fs.stat(it);
+            tassert(stat.is_valid);
+            tassert(stat.size > 100);
+
+            // "Edit" files
+            tassert_er(EOK, io.file.save(it, "foo"));
+        }
+        tassert_ge(nfiles, 4);
+        tassert_eq(EOK, io.file.save(TBUILDDIR "/out/random/MyFile.h", "bar"));
+
+
+        // This run should be dry (all exist all ignored)
+        tassert_er(
+            Error.ok,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.git",
+                NULL,
+                TBUILDDIR "out/",
+                false,
+                false,
+                paths,
+                arr$len(paths)
+            )
+        );
+
+        nfiles = 0;
+        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
+        {
+            nfiles++;
+            var stat = os.fs.stat(it);
+            tassert(stat.is_valid);
+            tassert_eq(stat.size, 3);
+        }
+        tassert_ge(nfiles, 5);
+
+        tassert_er(
+            Error.ok,
+            cexy.utils.git_lib_fetch(
+                "https://github.com/alexveden/cex.git",
+                NULL,
+                TBUILDDIR "out/",
+                true, // update
+                false,
+                paths,
+                arr$len(paths)
+            )
+        );
+
+        nfiles = 0;
+        tassert(os.path.exists(TBUILDDIR "/out/random/MyFile.h"));
+        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
+        {
+            nfiles++;
+            var stat = os.fs.stat(it);
+            tassert(stat.is_valid);
+            if (str.ends_with(it, "MyFile.h")) {
+                tassert_eq(stat.size, 3);
+            } else {
+                tassert_gt(stat.size, 100);
+            }
+        }
+        tassert_ge(nfiles, 5);
+    }
+    return EOK;
+}
 
 test$main();

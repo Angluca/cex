@@ -5,6 +5,9 @@
 #pragma once
 #include "cex_header.h"
 
+#define cex$version 10101
+#define cex$version_str "1.1.1-beta"
+
 /*
  *                 CORE TYPES
  */

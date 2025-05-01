@@ -114,6 +114,9 @@ Use `cex -D config` to reset all project config flags to defaults
  * @brief CEX core file
  */
 
+#define cex$version 10101
+#define cex$version_str "1.1.1-beta"
+
 /*
  *                 CORE TYPES
  */
@@ -3267,6 +3270,7 @@ struct __cex_namespace__os {
     struct {
         Exception       (*chdir)(const char* path);
         Exception       (*copy)(const char* src_path, const char* dst_path);
+        Exception       (*copy_tree)(const char* src_path, const char* dest_path);
         Exception       (*dir_walk)(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx);
         arr$(char*)     (*find)(const char* path, bool is_recursive, IAllocator allc);
         char*           (*getcwd)(IAllocator allc);
@@ -3984,6 +3988,7 @@ struct __cex_namespace__cexy {
 
     struct {
         char*           (*git_hash)(IAllocator allc);
+        Exception       (*git_lib_fetch)(const char* git_url, const char* git_label, const char* out_dir, bool update_existing, bool preserve_dirs, const char** repo_paths, usize repo_paths_len);
         Exception       (*make_new_project)(const char* proj_dir);
     } utils;
 
@@ -11851,6 +11856,7 @@ _os__fs__remove_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx
     (void)ftype;
     e$except_silent(err, cex_os__fs__remove(path))
     {
+        log$trace("Error removing: %s\n", path);
         return err;
     }
     return EOK;
@@ -11871,8 +11877,72 @@ cex_os__fs__remove_tree(const char* path)
     }
     e$except_silent(err, cex_os__fs__remove(path))
     {
+        log$trace("Error removing: %s\n", path);
         return err;
     }
+    return EOK;
+}
+
+struct _os_fs_copy_tree_ctx_s
+{
+    str_s src_dir;
+    str_s dest_dir;
+};
+
+static Exception
+_os__fs__copy_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
+{
+    struct _os_fs_copy_tree_ctx_s* ctx = user_ctx;
+    mem$scope(tmem$, _)
+    {
+        uassert(str.starts_with(path, ctx->src_dir.buf) && "file must start with source dir");
+        char* out_file = str.fmt(_, "%S/%S", ctx->dest_dir, str.sub(path, ctx->src_dir.len, 0));
+
+        if (ftype.is_file) {
+            e$ret(os.fs.mkpath(out_file));
+            e$ret(os.fs.copy(path, out_file));
+        } else {
+            // Making empty directory if necessary
+            char* out_dir = str.fmt(_, "%s/", out_file);
+            e$ret(os.fs.mkpath(out_dir));
+        }
+    }
+
+    return EOK;
+}
+
+static Exception
+cex_os__fs__copy_tree(const char* src_dir, const char* dst_dir)
+{
+    if (src_dir == NULL || src_dir[0] == '\0') {
+        return Error.argument;
+    }
+    os_fs_stat_s s = os.fs.stat(src_dir);
+    if (!s.is_valid) {
+        return s.error;
+    }
+    if (!s.is_directory) {
+        return Error.argument;
+    }
+
+    if (dst_dir == NULL || dst_dir[0] == '\0') {
+        return Error.argument;
+    }
+    if (os.path.exists(dst_dir)) {
+        return Error.exists;
+    }
+
+    // TODO: add absolute path overlap check
+
+    struct _os_fs_copy_tree_ctx_s ctx = {
+        .src_dir = str.sstr(src_dir),
+        .dest_dir = str.sstr(dst_dir),
+    };
+    e$except_silent(err, cex_os__fs__dir_walk(src_dir, true, _os__fs__copy_tree_walker, &ctx))
+    {
+        return err;
+    }
+
     return EOK;
 }
 
@@ -12675,6 +12745,7 @@ const struct __cex_namespace__os os = {
     .fs = {
         .chdir = cex_os__fs__chdir,
         .copy = cex_os__fs__copy,
+        .copy_tree = cex_os__fs__copy_tree,
         .dir_walk = cex_os__fs__dir_walk,
         .find = cex_os__fs__find,
         .getcwd = cex_os__fs__getcwd,
@@ -14825,12 +14896,14 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
 
     mem$scope(tmem$, _)
     {
+        bool has_git = os.cmd.exists("git");
         io.printf("\nTools installed:\n");
-        io.printf("* git                       %s\n", os.cmd.exists("git") ? "OK" : "Not found");
+        io.printf("* git                       %s\n", has_git ? "OK" : "Not found");
 
         io.printf("\nGlobal environment:\n");
+        io.printf("* Cex Version               %s\n", cex$version_str);
+        io.printf("* Git Hash                  %s\n", has_git ? cexy.utils.git_hash(_) : "(no git)");
         io.printf("* os.platform.current()     %s\n", os.platform.to_str(os.platform.current()));
-        io.printf("* GitHash                   %s\n", cexy.utils.git_hash(_));
         io.printf("* ./cex -D<ARGS> config     %s\n", cex$stringize(_CEX_SELF_DARGS));
     }
 
@@ -15264,7 +15337,7 @@ cexy__utils__git_hash(IAllocator allc)
             return NULL;
         }
 
-        if (!str.slice.match(clean_hash, "[0-9a-fA-F+]")){
+        if (!str.slice.match(clean_hash, "[0-9a-fA-F+]")) {
             log$error("`git rev-parse HEAD` expected hexadecimal hash, got: '%S'\n", clean_hash);
             return NULL;
         }
@@ -15272,6 +15345,139 @@ cexy__utils__git_hash(IAllocator allc)
         return str.fmt(allc, "%S", clean_hash);
     }
     return NULL;
+}
+
+static Exception
+cexy__utils__git_lib_fetch(
+    const char* git_url,
+    const char* git_label,
+    const char* out_dir,
+    bool update_existing,
+    bool preserve_dirs,
+    const char** repo_paths,
+    usize repo_paths_len
+)
+{
+    if (git_url == NULL || git_url[0] == '\0') {
+        return e$raise(Error.argument, "Empty or null git_url");
+    }
+    if (!str.ends_with(git_url, ".git")) {
+        return e$raise(Error.argument, "git_url must end with .git, got: %s", git_url);
+    }
+    if (git_label == NULL || git_label[0] == '\0') {
+        git_label = "HEAD";
+    }
+    log$info("Checking libs from: %s @ %s\n", git_url, git_label);
+    const char* out_build_dir = cexy$build_dir "/cexy_git/";
+    e$ret(os.fs.mkpath(out_build_dir));
+
+    mem$scope(tmem$, _)
+    {
+        bool needs_update = false;
+        for$each(it, repo_paths, repo_paths_len)
+        {
+            const char* out_file = (preserve_dirs)
+                                     ? str.fmt(_, "%s/%s", out_dir, it)
+                                     : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
+
+            log$info("Lib file: %s -> %s\n", it, out_file);
+            if (!os.path.exists(out_file)) {
+                needs_update = true;
+            }
+        }
+        if (!needs_update && !update_existing) {
+            log$info("Nothing to update, lib files exist, run with update flag if needed\n");
+            return EOK;
+        }
+
+        str_s base_name = os.path.split(git_url, false);
+        e$assert(base_name.len > 4);
+        e$assert(str.slice.ends_with(base_name, str$s(".git")));
+        base_name = str.slice.sub(base_name, 0, -4);
+
+        const char* repo_dir = str.fmt(_, "%s/%S/", out_build_dir, base_name);
+        e$ret(os.fs.remove_tree(repo_dir));
+
+        e$ret(os$cmd(
+            "git",
+            "clone",
+            "--depth=1",
+            "--quiet",
+            "--filter=blob:none",
+            "--no-checkout",
+            "--",
+            git_url,
+            repo_dir
+        ));
+
+
+        arr$(const char*)
+            git_checkout_args = arr$new(git_checkout_args, _, .capacity = repo_paths_len + 10);
+        arr$pushm(git_checkout_args, "git", "-C", repo_dir, "checkout", git_label, "--");
+        arr$pusha(git_checkout_args, repo_paths, repo_paths_len);
+        arr$push(git_checkout_args, NULL);
+        e$ret(os$cmda(git_checkout_args));
+
+        for$each(it, repo_paths, repo_paths_len)
+        {
+            const char* in_path = str.fmt(_, "%s/%s", repo_dir, it);
+
+            const char* out_path = (preserve_dirs)
+                                     ? str.fmt(_, "%s/%s", out_dir, it)
+                                     : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
+            var in_stat = os.fs.stat(in_path);
+            if (!in_stat.is_valid) {
+                return e$raise(in_stat.error, "Invalid stat for path: %s", in_path);
+            }
+
+            var out_stat = os.fs.stat(out_path);
+            if (!out_stat.is_valid || update_existing) {
+                log$info("Updating file: %s -> %s\n", it, out_path);
+                if (in_stat.is_directory) {
+                    if (out_stat.is_valid && update_existing) {
+                        e$assert(out_stat.is_directory && "out_path expected to be a directory");
+                        str_s src_dir = str.sstr(in_path);
+                        str_s dst_dir = str.sstr(out_path);
+                        for$each(fname, os.fs.find(str.fmt(_, "%S/*", src_dir), true, _))
+                        {
+                            e$assert(str.starts_with(fname, in_path));
+                            char* out_file = str.fmt(
+                                _,
+                                "%S/%S",
+                                dst_dir,
+                                str.sub(fname, src_dir.len, 0)
+                            );
+                            log$debug("Replacing: %s\n", out_file);
+                            e$ret(os.fs.mkpath(out_file));
+                            if (os.path.exists(out_file)) {
+                                e$ret(os.fs.remove(out_file));
+                            }
+                            e$ret(os.fs.copy(fname, out_file));
+                        }
+
+                    } else {
+                        e$ret(os.fs.copy_tree(in_path, out_path));
+                    }
+                } else {
+                    // Updating single file
+                    if (out_stat.is_valid && update_existing) {
+                        e$ret(os.fs.remove(out_path));
+                    }
+                    e$ret(os.fs.mkpath(out_path));
+                    e$ret(os.fs.copy(in_path, out_path));
+                }
+            }
+        }
+
+#ifdef _WIN32
+        // WTF, windows git makes some files read-only which fails remove_tree later!
+        e$ret(os$cmd("attrib", "-r", str.fmt(_, "%s/*", out_build_dir), "/s", "/d"));
+#endif
+    }
+    // We are done, cleanup!
+    e$ret(os.fs.remove_tree(out_build_dir));
+
+    return EOK;
 }
 
 const struct __cex_namespace__cexy cexy = {
@@ -15308,6 +15514,7 @@ const struct __cex_namespace__cexy cexy = {
 
     .utils = {
         .git_hash = cexy__utils__git_hash,
+        .git_lib_fetch = cexy__utils__git_lib_fetch,
         .make_new_project = cexy__utils__make_new_project,
     },
 

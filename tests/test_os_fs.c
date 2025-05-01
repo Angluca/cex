@@ -736,4 +736,72 @@ test$case(test_os_copy_file)
 
     return EOK;
 }
+
+
+test$case(test_os_copy_tree)
+{
+    
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/foo/"));
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/foo/aaa/"));
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/bar/"));
+
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/foo/1.txt", "1"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/foo/2.txt", "2"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/3.txt", "3"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/4.txt", "4"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/foo/aaa/5.txt", "5"));
+
+    tassert(os.path.exists(TBUILDDIR "in/foo/1.txt"));
+    tassert(os.path.exists(TBUILDDIR "in/foo/2.txt"));
+    tassert(os.path.exists(TBUILDDIR "in/bar/"));
+    tassert(os.path.exists(TBUILDDIR "in/3.txt"));
+    tassert(os.path.exists(TBUILDDIR "in/4.txt"));
+    tassert(os.path.exists(TBUILDDIR "in/foo/aaa/5.txt"));
+
+    tassert(!os.path.exists(TBUILDDIR "out/"));
+    tassert_er(Error.ok, os.fs.copy_tree(TBUILDDIR "in/", TBUILDDIR "out/"));
+
+    tassert(os.path.exists(TBUILDDIR "out/"));
+    tassert(os.path.exists(TBUILDDIR "out/foo/1.txt"));
+    tassert(os.path.exists(TBUILDDIR "out/foo/2.txt"));
+    tassert(os.path.exists(TBUILDDIR "out/bar/"));
+    tassert(os.path.exists(TBUILDDIR "out/3.txt"));
+    tassert(os.path.exists(TBUILDDIR "out/4.txt"));
+    tassert(os.path.exists(TBUILDDIR "out/foo/aaa/5.txt"));
+    return EOK;
+}
+
+test$case(test_os_copy_tree_sanity_checks)
+{
+    
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/foo/"));
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/foo/aaa/"));
+    tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/bar/"));
+
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/foo/1.txt", "1"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/foo/2.txt", "2"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/3.txt", "3"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/4.txt", "4"));
+    tassert_er(Error.ok, io.file.save(TBUILDDIR "in/foo/aaa/5.txt", "5"));
+
+    tassert_er(Error.argument, os.fs.copy_tree(NULL, TBUILDDIR "out/"));
+    tassert_er(Error.argument, os.fs.copy_tree("", TBUILDDIR "out/"));
+    tassert_er(Error.argument, os.fs.copy_tree(TBUILDDIR "in/3.txt", TBUILDDIR "out/"));
+    tassert_er(Error.argument, os.fs.copy_tree(TBUILDDIR "in", NULL));
+    tassert_er(Error.argument, os.fs.copy_tree(TBUILDDIR "in", ""));
+    tassert_er(Error.not_found, os.fs.copy_tree(TBUILDDIR "inalskdjalksjd", ""));
+    tassert_er(Error.exists, os.fs.copy_tree(TBUILDDIR "in", TBUILDDIR "in/foo"));
+
+    tassert_er(Error.ok, os.fs.copy_tree(TBUILDDIR "in", TBUILDDIR "out"));
+    tassert(os.path.exists(TBUILDDIR "out/"));
+    tassert(os.path.exists(TBUILDDIR "out/foo/1.txt"));
+    tassert(os.path.exists(TBUILDDIR "out/foo/2.txt"));
+    tassert(os.path.exists(TBUILDDIR "out/bar/"));
+    tassert(os.path.exists(TBUILDDIR "out/3.txt"));
+    tassert(os.path.exists(TBUILDDIR "out/4.txt"));
+    tassert(os.path.exists(TBUILDDIR "out/foo/aaa/5.txt"));
+
+    return EOK;
+}
+
 test$main();
