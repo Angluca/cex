@@ -1359,7 +1359,7 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
                     return true;
                 }
 
-                if (*pattern != '?' && *pattern != '[' && *pattern != '\\') {
+                if (*pattern != '?' && *pattern != '[' && *pattern != '(' && *pattern != '\\') {
                     while (str_len > 0 && *pattern != *str) {
                         str++;
                         str_len--;
@@ -1515,7 +1515,8 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
                 }
 
                 if (str_len == 0) {
-                    return *str == *pattern;
+                    // str end reached, pattern also must be at end (null-term)
+                    return *pattern == '\0';
                 }
                 break;
             }

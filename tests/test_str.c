@@ -2179,6 +2179,9 @@ test$case(test_str_match)
     tassert(str.match("abcd", "[!d-f+]?"));
     tassert(str.match("abcf", "[!d-f+]?"));
     tassert(!str.match("abcff", "[!d-f+]?"));
+    tassert(str.match("1234567890abcdefABCDEF", "[0-9a-fA-F+]"));
+    tassert(str.match("f5fca082882b848dd28c470c4d1f111c995cb7bd", "[0-9a-fA-F+]"));
+    tassert(str.slice.match(str$s("f5fca082882b848dd28c470c4d1f111c995cb7bd"), "[0-9a-fA-F+]"));
 
     tassert(!str.match("abc", "(\\"));
     tassert(str.match("abc", "(abc)"));
@@ -2186,6 +2189,7 @@ test$case(test_str_match)
     tassert(str.match("abcdef", "abc(abc|def)"));
     tassert(str.match("abXdef", "ab?(abc|def)"));
     tassert(str.match("abcdef", "(abc|def)(abc|def)"));
+    tassert(str.match("ldkjdef", "*(abc|def)"));
     tassert(!str.match("adef", "(cdef)"));
     tassert(!str.match("bdef", "(cdef)"));
     tassert(!str.match("f", "(cdef)"));
@@ -2236,6 +2240,15 @@ test$case(test_str_slice_match)
     tassert(str.slice.match(str.slice.sub(src, 0, 4), "my_t*"));
     tassert(str.slice.match(str.slice.sub(src, 0, 4), "my_?"));
     tassert(!str.slice.match(str.slice.sub(src, 0, 4), "my_t?"));
+
+    str_s hex_slice = str$s("abcdef ");
+    tassert_eq(str.slice.strip(hex_slice), str$s("abcdef"));
+
+    tassert(str.slice.match(str.slice.strip(hex_slice), "*def"));
+    tassert(str.slice.match(str$s("1234567890abcdef"), "*(def)"));
+    tassert(str.slice.match(str.slice.strip(hex_slice), "*(def)"));
+    tassert(str.slice.match(str.slice.strip(hex_slice), "[0-9a-fA-F+]"));
+
     return EOK;
 }
 
