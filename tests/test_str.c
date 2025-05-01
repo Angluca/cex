@@ -2248,6 +2248,9 @@ test$case(test_str_slice_match)
     tassert(str.slice.match(str$s("1234567890abcdef"), "*(def)"));
     tassert(str.slice.match(str.slice.strip(hex_slice), "*(def)"));
     tassert(str.slice.match(str.slice.strip(hex_slice), "[0-9a-fA-F+]"));
+    tassert(str.slice.match(str.slice.strip(hex_slice), "abcdef"));
+    tassert(str.slice.match(str.slice.strip(hex_slice), "abcde?"));
+    tassert(str.slice.match(str.slice.strip(hex_slice), "abc(def)"));
 
     return EOK;
 }
