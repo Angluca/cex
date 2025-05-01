@@ -62,6 +62,18 @@ test$case(test_target_make_with_ext)
     return EOK;
 }
 
+test$case(test_target_git_hash)
+{
+    mem$scope(tmem$, _)
+    {
+        char* gh = cexy.utils.git_hash(_);
+        tassert_ne(gh, NULL);
+        tassert_ne(gh, "");
+        tassert_ge(str.len(gh), 20);
+    }
+    return EOK;
+}
+
 test$case(test_needs_build_invalid)
 {
     mem$scope(tmem$, _)
