@@ -12,6 +12,7 @@
 ### Fixes
 - `str.match()` - fixed `str.match(s, "*(abc|def)")` pattern handling
 - `str.match()` - fixed `str.slice.match(s, "[a-Z]")` when using on slice view
+- `cex.h` - bare project fixed windows specific lock/initialization issue when building new proj
 
 ## 1.0.0 Change list
 

@@ -15161,8 +15161,22 @@ cexy__utils__make_new_project(const char* proj_dir)
         e$ret(cexy.test.create(test_c, true));
         log$info("Compiling new cex app for a new project...\n");
         var old_dir = os.fs.getcwd(_);
+
         e$ret(os.fs.chdir(proj_dir));
-        e$ret(os$cmd(cexy$cex_self_cc, "-o", "cex", "cex.c"));
+        const char* bin_path = "cex"  cexy$build_ext_exe;
+        char* old_name = str.fmt(_, "%s.old", bin_path);
+        if (os.path.exists(bin_path)) {
+            if (os.path.exists(old_name)) {
+                e$ret(os.fs.remove(old_name));
+            }
+            e$ret(os.fs.rename(bin_path, old_name));
+        }
+        e$ret(os$cmd(cexy$cex_self_cc, "-o", bin_path, "cex.c"));
+        if (os.path.exists(old_name)) {
+            if(os.fs.remove(old_name)) {
+                // WTF: win32 might lock old_name, try to remove it, but maybe no luck
+            }
+        }
         e$ret(os.fs.chdir(old_dir));
         log$info("New project has been created in %s\n", proj_dir);
     }
