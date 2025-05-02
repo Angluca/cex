@@ -7,6 +7,7 @@
 - `os.fs.copy_tree(src_dir, dst_dir)` - added recursive copy of files between folders
 - `cexy.utils.git_lib_fetch()` - fetching/updating arbitrary Git lib (e.g. single header lib) from git
 - `cexy.utils.git_hash()` - getting current git hash of the current repo
+- `cex` - added `cex libfetch` command 
 
 ### Fixes
 - `str.match()` - fixed `str.match(s, "*(abc|def)")` pattern handling

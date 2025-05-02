@@ -134,15 +134,23 @@ See `cex help str.match` for more information about patter syntax.
         { .name = "process",                                                                       \
           .func = cexy.cmd.process,                                                                \
           .help = "Create CEX namespaces from project source code" }
+
 #    define cexy$cmd_new { .name = "new", .func = cexy.cmd.new, .help = "Create new CEX project" }
+
 #    define cexy$cmd_help                                                                          \
         { .name = "help",                                                                          \
           .func = cexy.cmd.help,                                                                   \
           .help = "Search cex.h and project symbols and extract help" }
+
 #    define cexy$cmd_config                                                                        \
         { .name = "config",                                                                        \
           .func = cexy.cmd.config,                                                                 \
           .help = "Check project and system environment and config" }
+
+#    define cexy$cmd_libfetch                                                                        \
+        { .name = "libfetch",                                                                        \
+          .func = cexy.cmd.libfetch,                                                                 \
+          .help = "Get 3rd party libraries via git or install CEX libs" }
 
 #    define cexy$cmd_test                                                                          \
         { .name = "test",                                                                          \
@@ -152,7 +160,7 @@ See `cex help str.match` for more information about patter syntax.
 #    define cexy$cmd_app                                                                           \
         { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
 
-#    define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config
+#    define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config, cexy$cmd_libfetch
 
 #    define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
@@ -244,6 +252,7 @@ struct __cex_namespace__cexy {
     struct {
         Exception       (*config)(int argc, char** argv, void* user_ctx);
         Exception       (*help)(int argc, char** argv, void* user_ctx);
+        Exception       (*libfetch)(int argc, char** argv, void* user_ctx);
         Exception       (*new)(int argc, char** argv, void* user_ctx);
         Exception       (*process)(int argc, char** argv, void* user_ctx);
         Exception       (*simple_app)(int argc, char** argv, void* user_ctx);

@@ -45,9 +45,8 @@ jobs:
           cc -g ./cex.c -o ./cex 
           ./cex -D${{ matrix.cex_preset }} config
 
-      - name: cex unit tests
-        run: |
-          ./cex test run all
+      - uses: ./.github/actions/cex_test
+        name: cex test suite
 
       - uses: actions/upload-artifact@master # capture all binaries
         with:
@@ -110,11 +109,10 @@ jobs:
           cc -g ./cex.c -o ./cex.exe 
           ./cex.exe -D${{ matrix.cex_preset }} config
 
-      - name: cex unit tests
-        run: |
-          ps aux | grep git || echo "no git"
-          ./cex.exe test run all
-          ps aux | grep git || echo "no git"
+      - uses: ./.github/actions/cex_test
+        name: cex test suite
+        with:
+          shell: 'msys2 {0}'
 
       - uses: actions/upload-artifact@master # capture all binaries
         if: always()
@@ -150,10 +148,8 @@ jobs:
           cc -g ./cex.c -o ./cex 
           ./cex -D${{ matrix.cex_preset }} config
 
-      - name: cex unit tests
-        run: |
-          ./cex test run all
-          #./cex test run tests/test_io.c -o
+      - uses: ./.github/actions/cex_test
+        name: cex test suite
 
       - uses: actions/upload-artifact@master # capture all binaries
         with:

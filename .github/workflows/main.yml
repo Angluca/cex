@@ -45,9 +45,8 @@ jobs:
           cc -g ./cex.c -o ./cex 
           ./cex -D${{ matrix.cex_preset }} config
 
-      - name: cex unit tests
-        run: |
-          ./cex test run all
+      - uses: ./.github/actions/cex_test
+        name: cex test suite
 
   linux-ubuntu2404:
     runs-on: ubuntu-latest
@@ -86,9 +85,8 @@ jobs:
           cc -g ./cex.c -o ./cex 
           ./cex -D${{ matrix.cex_preset }} config
 
-      - name: cex unit tests
-        run: |
-          ./cex test run all
+      - uses: ./.github/actions/cex_test
+        name: cex test suite
 
 
   tests-windows:
@@ -143,9 +141,10 @@ jobs:
           cc -g ./cex.c -o ./cex.exe 
           ./cex.exe -D${{ matrix.cex_preset }} config
 
-      - name: cex unit tests
-        run: |
-          ./cex.exe test run all
+      - uses: ./.github/actions/cex_test
+        name: cex test suite
+        with:
+          shell: 'msys2 {0}'
 
   tests-macos:
     name: ${{ matrix.runs-on }}-${{ matrix.cex_preset }}
@@ -178,8 +177,5 @@ jobs:
           cc -g ./cex.c -o ./cex 
           ./cex -D${{ matrix.cex_preset }} config
 
-      - name: cex unit tests
-        run: |
-          ./cex test run all
-          #./cex test run tests/test_io.c -o
-
+      - uses: ./.github/actions/cex_test
+        name: cex test suite

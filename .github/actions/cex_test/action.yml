@@ -1,0 +1,71 @@
+name: CEX Unit Test Action
+inputs:
+  shell:
+    description: 'target shell'
+    required: false
+    default: 'bash'
+
+runs:
+  using: 'composite'
+
+  steps:
+    - name: Runs all CEX unit tests
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: Runs all CEX unit tests"
+        echo "---------------------------------------------------------------------"
+        ./cex test run all
+
+    - name: Cex Help
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: cex help"
+        echo "---------------------------------------------------------------------"
+        ./cex help
+        ./cex help --source u8
+        ./cex help --example str.find
+        ./cex help str.
+
+    - name: Cex New
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: cex new project"
+        echo "---------------------------------------------------------------------"
+        ./cex new my_proj
+        cd my_proj
+        ./cex test run all
+        ./cex app run myapp
+        ./cex process lib/mylib.c
+
+    - name: Cex bare
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: cex new cex.h bare project"
+        echo "---------------------------------------------------------------------"
+        mkdir my_bare_proj
+        cp ./cex.h ./my_bare_proj/cex.h
+        cd my_bare_proj
+        cc -D CEX_NEW -x c ./cex.h -o ./cex
+        ./cex
+        ./cex config
+        ./cex test run all
+        ./cex app run myapp
+        ./cex process lib/mylib.c
+        ./cex libfetch lib/random/
+        ./cex libfetch lib/test/fff.h
+        echo "--------- Random.h tail"
+        tail lib/random/Random.h
+        echo "--------- Random.h clean and content"
+        echo "(clean)" > lib/random/Random.h
+        tail lib/random/Random.h
+        echo "--------- Random.h re-update"
+        ./cex libfetch -U lib/random/
+        tail lib/random/Random.h

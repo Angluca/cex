@@ -1420,7 +1420,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     // clang-format on
     argparse_c cmd_args = {
         .program_name = "./cex",
-        .usage = "check [options]",
+        .usage = "config [options]",
         .description = process_help,
         .epilog = epilog_help,
         argparse$opt_list(argparse$opt_help(), ),
@@ -1465,6 +1465,76 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
 
 
 #    undef $env
+
+    return EOK;
+}
+
+static Exception
+cexy__cmd__libfetch(int argc, char** argv, void* user_ctx)
+{
+    (void)user_ctx;
+
+    // clang-format off
+    const char* process_help = "Fetching 3rd party libraries via git (by default it uses cex git repo as source)";
+    const char* epilog_help = 
+        "\nCommand examples: \n"
+        "cex libfetch lib/test/fff.h                            - fetch signle header lib from CEX repo\n"
+        "cex libfetch -U cex.h                                  - update cex.h to most recent version\n"
+        "cex libfetch lib/random/                               - fetch whole directory recursively from CEX lib\n"
+        "cex libfetch --git-label=v2.0 file.h                   - fetch using specific label or commit\n"
+        "cex libfetch -u https://github.com/m/lib.git file.h    - fetch from arbitrary repo\n"
+        "cex help --example cexy.utils.git_lib_fetch            - you can call it from your cex.c (see example)\n"
+    ;
+    // clang-format on
+
+    const char* git_url = "https://github.com/alexveden/cex.git";
+    const char* git_label = "HEAD";
+    const char* out_dir = "./";
+    bool update_existing = false;
+    bool preserve_dirs = true;
+
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "libfetch [options]",
+        .description = process_help,
+        .epilog = epilog_help,
+        argparse$opt_list(
+            argparse$opt_help(),
+            argparse$opt(&git_url, 'u', "git-url", .help = "Git URL of the repository"),
+            argparse$opt(&git_label, 'l', "git-label", .help = "Git label"),
+            argparse$opt(
+                &out_dir,
+                'o',
+                "out-dir",
+                .help = "Output directory relative to project root"
+            ),
+            argparse$opt(
+                &update_existing,
+                'U',
+                "update",
+                .help = "Force replacing existing code with repository files"
+            ),
+            argparse$opt(
+                &preserve_dirs,
+                'p',
+                "preserve-dirs",
+                .help = "Preserve directory structure as in repo"
+            ),
+        ),
+    };
+    if (argparse.parse(&cmd_args, argc, argv)) {
+        return Error.argsparse;
+    }
+
+    e$ret(cexy.utils.git_lib_fetch(
+        git_url,
+        git_label,
+        out_dir,
+        update_existing,
+        preserve_dirs,
+        (const char**)cmd_args.argv,
+        cmd_args.argc
+    ));
 
     return EOK;
 }
@@ -1624,6 +1694,8 @@ cexy__utils__make_new_project(const char* proj_dir)
             $pn("");
             $func("int main(int argc, char** argv)", "")
             {
+                $pn("(void)argc;");
+                $pn("(void)argv;");
                 $pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
                 $pn("io.printf(\"1 + 2 = %d\\n\", mylib_add(1, 2));");
                 $pn("return 0;");
@@ -2025,10 +2097,10 @@ cexy__utils__git_lib_fetch(
             }
         }
 
-#ifdef _WIN32
+#    ifdef _WIN32
         // WTF, windows git makes some files read-only which fails remove_tree later!
         e$ret(os$cmd("attrib", "-r", str.fmt(_, "%s/*", out_build_dir), "/s", "/d"));
-#endif
+#    endif
     }
     // We are done, cleanup!
     e$ret(os.fs.remove_tree(out_build_dir));
@@ -2055,6 +2127,7 @@ const struct __cex_namespace__cexy cexy = {
     .cmd = {
         .config = cexy__cmd__config,
         .help = cexy__cmd__help,
+        .libfetch = cexy__cmd__libfetch,
         .new = cexy__cmd__new,
         .process = cexy__cmd__process,
         .simple_app = cexy__cmd__simple_app,

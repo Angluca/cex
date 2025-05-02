@@ -1,5 +1,6 @@
 # CEX.C - Comprehensively EXtended C Language
 MOCCA - Make Old C Cexy Again!
+![Test suite](https://github.com/alexveden/cex/actions/workflows/main.yml/badge.svg)
 
 
 CEX is self-contained C language extension, the only dependency is one of gcc/clang compilers.
