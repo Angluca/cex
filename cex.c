@@ -7,7 +7,7 @@
 #    define cexy$cex_self_cc "cc"
 
 #    ifdef CEX_TEST_NOASAN
-#        define cexy$cc_args_sanitizer
+#        define cexy$cc_args_sanitizer "-fstack-protector-strong"
 #    endif
 
 #    if defined(CEX_DEBUG)
