@@ -104,8 +104,10 @@ Use `cex -D config` to reset all project config flags to defaults
 #    endif
 #endif
 
-#define cex$version 10100
-#define cex$version_str "1.1.20250503-beta"
+#define cex$version_major 0
+#define cex$version_minor 11
+#define cex$version_patch 1
+#define cex$version_date "2025-05-03"
 
 
 
@@ -14926,7 +14928,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
         }
 
         io.printf("\nGlobal environment:\n");
-        io.printf("* Cex Version               %s\n", cex$version_str);
+        io.printf("* Cex Version               %d.%d.%d (%s)\n", cex$version_major, cex$version_minor, cex$version_patch, cex$version_date);
         io.printf("* Git Hash                  %s\n", has_git ? cexy.utils.git_hash(_) : "(no git)");
         io.printf("* os.platform.current()     %s\n", os.platform.to_str(os.platform.current()));
         io.printf("* ./cex -D<ARGS> config     %s\n", cex$stringize(_CEX_SELF_DARGS));

@@ -1,6 +1,6 @@
 # CEX Release Notes
 
-## 1.1.20250501 Change list
+## 0.11.0 Change list
 
 ### Changes / improvements
 - `os.cmd.exists()` - added function for checking if command exists in PATH
@@ -19,7 +19,7 @@
 - `str.match()` - fixed `str.slice.match(s, "[a-Z]")` when using on slice view
 - `cex.h` - bare project fixed windows specific lock/initialization issue when building new proj
 
-## 1.0.0 Change list
+## 0.10.0 Change list
 
 ### Changes / improvements
 - Added 32-bit support + CI tests
