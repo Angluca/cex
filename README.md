@@ -176,7 +176,7 @@ CEX is tested on various platforms, compiler versions, sanitizers, and optimizat
 | Linux Ubuntu 2404 x64 |  ✅ | ✅ |✅ |✅ |
 | Linux Ubuntu 2404 x32 |  ✅ | ✅ |✅ |✅ |
 | Linux Alpine x86_64 | ✅  |✅  |✅ |✅ |
-| Linux Alpine x86 |✅   |✅  |✅ |✅ |
+| Linux Alpine x86 |   |  |✅ |✅ |
 | Linux Alpine aarch64 |   |  |✅ |✅ |
 | Linux Alpine armhf |   |  |✅ |✅ |
 | Linux Alpine loongarch64 |   |  |✅ |✅ |

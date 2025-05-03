@@ -192,7 +192,6 @@ jobs:
           - CEX_NDEBUG
         arch:
           - x86_64
-          - x86
     steps:
       - uses: actions/checkout@v2
 
@@ -211,6 +210,10 @@ jobs:
           apk add file
           apk add pkgconf
           apk add zlib-dev
+          apk add compiler-rt
+          echo "Replacing: cc to clang"
+          rm /usr/bin/cc
+          ln -s /usr/bin/clang /usr/bin/cc 
 
       - name: Environment
         shell: alpine.sh {0}
