@@ -179,3 +179,56 @@ jobs:
 
       - uses: ./.github/actions/cex_test
         name: cex test suite
+
+  tests-linux-alpine:
+    name: alpine-${{ matrix.arch }}-${{ matrix.cex_preset }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cex_preset: 
+          - CEX_RELEASE
+          - CEX_TEST_NOASAN
+        arch:
+          - x86_64
+          - x86
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup latest Alpine Linux
+        uses: jirutka/setup-alpine@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Run script inside Alpine chroot as root
+        shell: alpine.sh --root {0}
+        run: |
+          cat /etc/alpine-release
+          apk add gcc
+          apk add musl-dev
+          apk add git
+          apk add file
+          apk add pkgconf
+          apk add zlib-dev
+
+      - name: Environment
+        shell: alpine.sh {0}
+        run: |
+          cc --version
+
+      - name: cex initial build
+        shell: alpine.sh {0}
+        run: |
+          ls -la  # as you would expect, you're in your workspace directory
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex 
+          echo "Compiled cex executable"
+          file ./cex
+          echo "CEX config"
+          ./cex -D${{ matrix.cex_preset }} config
+
+      - uses: ./.github/actions/cex_test
+        name: cex test suite
+        with:
+          shell: 'alpine.sh {0}'
+
