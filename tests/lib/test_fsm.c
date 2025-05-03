@@ -1,6 +1,6 @@
 #include "src/all.c"
-#include <lib/fsm/fsm.c>
-#include <lib/test/fff.h>
+#include "lib/fsm/fsm.c"
+#include "lib/test/fff.h"
 
 IAllocator allocator;
 
