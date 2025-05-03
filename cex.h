@@ -117,9 +117,6 @@ Use `cex -D config` to reset all project config flags to defaults
  * @brief CEX core file
  */
 
-#define cex$version 10101
-#define cex$version_str "1.1.1-beta"
-
 /*
  *                 CORE TYPES
  */
