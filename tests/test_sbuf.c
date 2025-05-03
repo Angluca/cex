@@ -218,8 +218,8 @@ test$case(test_sbuf_sprintf)
 
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s) + 1);
-    tassert_eq(s[sbuf.len(&s)], -1);
-    tassert_eq(s[sbuf.capacity(&s)], -1);
+    tassert_eq((u8)s[sbuf.len(&s)], 0xff);
+    tassert_eq((u8)s[sbuf.capacity(&s)], 0xff);
 
     tassert_eq(EOK, sbuf.appendf(&s, "%s", "123"));
     tassert_eq("123", s);
@@ -333,8 +333,8 @@ test$case(test_sbuf_appendf_static)
 
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s) + 1);
-    tassert_eq(s[sbuf.len(&s)], -1);
-    tassert_eq(s[sbuf.capacity(&s)], -1);
+    tassert_eq((u8)s[sbuf.len(&s)], 0xff);
+    tassert_eq((u8)s[sbuf.capacity(&s)], 0xff);
 
 
     tassert_eq(EOK, sbuf.appendf(&s, "%s", "123"));

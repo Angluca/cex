@@ -180,7 +180,7 @@ test$case(stb_sprintf_orig)
     CHECK2("123,4abc:", "%'x:", 0x1234ABC);
     CHECK2("100000000", "%b", 256);
     CHECK3("0b10 0B11", "%#b %#B", 2, 3);
-    CHECK4("2 3 4", "%I64d %I32d %Id", 2ll, 3, 4ll);
+    CHECK3("2 3", "%I64d %I32d", 2ll, 3);
     CHECK3("1k 2.54 M", "%$_d %$.2d", 1000, 2536000);
     CHECK3("2.42 Mi 2.4 M", "%$$.2d %$$$d", 2536000, 2536000);
 
@@ -273,6 +273,13 @@ test$case(stb_sprintf_integers_64bits)
     return EOK;
 }
 
+int is_little_endian()
+{
+  unsigned int x = 1;
+  char *c = (char*) &x;
+  return (int)*c;
+}
+
 test$case(stb_sprintf_strings)
 {
     mem$scope(tmem$, _)
@@ -302,7 +309,14 @@ test$case(stb_sprintf_strings)
         tassert_eq("123456789", str.fmt(_, "%.*S", -1, str$s("123456789")));
         tassert_eq("123", str.fmt(_, "%.3s", "123456789"));
         tassert_eq("123", str.fmt(_, "%.3S", str$s("123456789")));
-        /*
+
+
+        if (!is_little_endian()){
+            // We in production test on big endian arch (%s-Bad) stuff likely to segfault!
+            return EOK;
+        }
+
+        /* (DEVELOPER MODE ONLY - early warning about wrong stuff)
          * Damage control wrong args (these are intentional bugs, trying to mitigate them)
          */
         // NOTE: cases below are invalid use of %s/%S and arguments

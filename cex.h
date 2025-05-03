@@ -104,6 +104,9 @@ Use `cex -D config` to reset all project config flags to defaults
 #    endif
 #endif
 
+#define cex$version 10100
+#define cex$version_str "1.1.20250503-beta"
+
 
 
 /*
@@ -3771,7 +3774,7 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
                     "-fsanitize-address-use-after-scope", "-fsanitize=address",                    \
                         "-fsanitize=undefined", "-fstack-protector-strong"
 #            else
-#                define cexy$cc_args_sanitizer
+#                define cexy$cc_args_sanitizer "-fstack-protector-strong"
 #            endif
 #        else
 #            define cexy$cc_args_sanitizer                                                         \
@@ -3790,15 +3793,10 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #        define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
 #    endif
 
-#    ifndef cexy$test_cc_args
+#    ifndef cexy$cc_args_test
 /// Test runner compiler flags (may be overridden by user)
-#        define cexy$test_cc_args                                                                  \
-            "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3",            \
-                "-Itests/", cexy$cc_args_sanitizer
-#    endif
-
-#    ifndef cexy$test_launcher
-#        define cexy$test_launcher
+#        define cexy$cc_args_test                                                                  \
+            cexy$cc_args_debug, "-DCEX_TEST", "-Wno-unused-function", "-Itests/"
 #    endif
 
 #    ifndef cexy$cex_self_args
@@ -3806,15 +3804,22 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #        define cexy$cex_self_args
 #    endif
 
-
-#    ifndef cexy$ld_args
-/// Linker flags (e.g. -L./lib/path/) (may be overridden by user)
-#        define cexy$ld_args
+#    ifndef cexy$pkgconf_cmd
+/// Dependency resolver command: pkg-config, pkgconf, etc. May be used in cross-platform compilation
+#        define cexy$pkgconf_cmd "pkgconf"
 #    endif
 
-#    ifndef cexy$ld_libs
-/// Linker libs  (e.g. -lm) (may be overridden by user)
-#        define cexy$ld_libs
+/// Helper macro for running cexy.utils.pkgconf() a dependency resolver for libs
+#    define cexy$pkgconf(allocator, out_cc_args, pkgconf_args...)                                  \
+        ({                                                                                         \
+            char* _args[] = { pkgconf_args };                                                      \
+            usize _args_len = arr$len(_args);                                                      \
+            cexy.utils.pkgconf(allocator, out_cc_args, _args, _args_len);                          \
+        })
+
+#    ifndef cexy$ld_args
+/// Linker flags (e.g. -L./lib/path/ -lmylib -lm) (may be overridden by user)
+#        define cexy$ld_args
 #    endif
 
 #    ifndef cexy$debug_cmd
@@ -3876,10 +3881,10 @@ See `cex help str.match` for more information about patter syntax.
           .func = cexy.cmd.config,                                                                 \
           .help = "Check project and system environment and config" }
 
-#    define cexy$cmd_libfetch                                                                        \
-        { .name = "libfetch",                                                                        \
-          .func = cexy.cmd.libfetch,                                                                 \
-          .help = "Get 3rd party libraries via git or install CEX libs" }
+#    define cexy$cmd_libfetch                                                                      \
+        { .name = "libfetch",                                                                      \
+          .func = cexy.cmd.libfetch,                                                               \
+          .help = "Get 3rd party source code via git or install CEX libs" }
 
 #    define cexy$cmd_test                                                                          \
         { .name = "test",                                                                          \
@@ -3889,7 +3894,8 @@ See `cex help str.match` for more information about patter syntax.
 #    define cexy$cmd_app                                                                           \
         { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
 
-#    define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config, cexy$cmd_libfetch
+#    define cexy$cmd_all                                                                           \
+        cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config, cexy$cmd_libfetch
 
 #    define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
@@ -3999,6 +4005,7 @@ struct __cex_namespace__cexy {
         char*           (*git_hash)(IAllocator allc);
         Exception       (*git_lib_fetch)(const char* git_url, const char* git_label, const char* out_dir, bool update_existing, bool preserve_dirs, const char** repo_paths, usize repo_paths_len);
         Exception       (*make_new_project)(const char* proj_dir);
+        Exception       (*pkgconf)(IAllocator allc, arr$(char*)* out_cc_args, char** pkgconf_args, usize pkgconf_args_len);
     } utils;
 
     // clang-format on
@@ -13952,19 +13959,7 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
             char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
             arr$(char*) args = arr$new(args, _);
             if (is_debug) {
-                if (str.ends_with(target, "test_*.c")) {
-                    return e$raise(
-                        Error.argument,
-                        "Debug expect direct file path, i.e. tests/test_some_file.c, got: %s",
-                        target
-                    );
-                }
                 arr$pushm(args, cexy$debug_cmd);
-            } else {
-                // [optional] program to run test program
-                // might be a debugger or `wine` simulator for win32 cross build
-                char* launcher[] = { cexy$test_launcher };
-                arr$pusha(args, launcher);
             }
             arr$pushm(args, test_target, );
             if (str.ends_with(target, "test_*.c")) {
@@ -14892,11 +14887,10 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$cc_args_sanitizer    " cex$stringize(cexy$cc_args_sanitizer) "\n"                                \
     "* cexy$cc_args_release      " cex$stringize(cexy$cc_args_release) "\n"                                \
     "* cexy$cc_args_debug        " cex$stringize(cexy$cc_args_debug) "\n"                                \
+    "* cexy$cc_args_test         " cex$stringize(cexy$cc_args_test) "\n"                           \
     "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
-    "* cexy$ld_libs              " cex$stringize(cexy$ld_libs) "\n"                                \
-    "* cexy$test_cc_args         " cex$stringize(cexy$test_cc_args) "\n"                           \
-    "* cexy$test_launcher        " cex$stringize(cexy$test_launcher) "\n"                           \
     "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
+    "* cexy$pkgconf_cmd          " cex$stringize(cexy$pkgconf_cmd) "\n"                              \
     "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"\
     "* cexy$cex_self_args        " cex$stringize(cexy$cex_self_args) "\n"\
     "* cexy$cex_self_cc          " cexy$cex_self_cc "\n" // clang-format on
@@ -14906,8 +14900,33 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     mem$scope(tmem$, _)
     {
         bool has_git = os.cmd.exists("git");
+        bool has_pkg_config = os.cmd.exists("pkg-config");
         io.printf("\nTools installed:\n");
-        io.printf("* git                       %s\n", has_git ? "OK" : "Not found");
+        io.printf("* git (optional)            %s\n", has_git ? "OK" : "Not found");
+        if (has_pkg_config) {
+            io.printf("* pkg-config (optional)     %s\n", "OK");
+        } else {
+            switch (os.platform.current()) {
+                case OSPlatform__win:
+                    io.printf(
+                        "* pkg-config (optional)     %s\n",
+                        "Not found (try `pacman -S pkg-config` via MSYS2)"
+                    );
+                    break;
+                case OSPlatform__macos:
+                    io.printf(
+                        "* pkg-config (optional)     %s\n",
+                        "Not found (try `brew install pkg-config`)"
+                    );
+                    break;
+                default:
+                    io.printf(
+                        "* pkg-config (optional)     %s\n",
+                        "Not found (try to install `pkg-config` using package manager)"
+                    );
+                    break;
+            }
+        }
 
         io.printf("\nGlobal environment:\n");
         io.printf("* Cex Version               %s\n", cex$version_str);
@@ -15041,15 +15060,13 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
             arr$(char*) args = arr$new(args, _);
             arr$pushm(args, cexy$cc, );
             // NOTE: reconstructing char*[] because some cexy$ variables might be empty
-            char* cc_args_test[] = { cexy$test_cc_args };
+            char* cc_args_test[] = { cexy$cc_args_test };
             char* cc_include[] = { cexy$cc_include };
             char* cc_ld_args[] = { cexy$ld_args };
-            char* cc_ld_libs[] = { cexy$ld_libs };
             arr$pusha(args, cc_args_test);
             arr$pusha(args, cc_include);
-            arr$pusha(args, cc_ld_args);
             arr$push(args, test_src);
-            arr$pusha(args, cc_ld_libs);
+            arr$pusha(args, cc_ld_args);
             arr$pushm(args, "-o", test_target);
 
 
@@ -15163,7 +15180,7 @@ cexy__utils__make_new_project(const char* proj_dir)
         var old_dir = os.fs.getcwd(_);
 
         e$ret(os.fs.chdir(proj_dir));
-        const char* bin_path = "cex"  cexy$build_ext_exe;
+        const char* bin_path = "cex" cexy$build_ext_exe;
         char* old_name = str.fmt(_, "%s.old", bin_path);
         if (os.path.exists(bin_path)) {
             if (os.path.exists(old_name)) {
@@ -15173,7 +15190,7 @@ cexy__utils__make_new_project(const char* proj_dir)
         }
         e$ret(os$cmd(cexy$cex_self_cc, "-o", bin_path, "cex.c"));
         if (os.path.exists(old_name)) {
-            if(os.fs.remove(old_name)) {
+            if (os.fs.remove(old_name)) {
                 // WTF: win32 might lock old_name, try to remove it, but maybe no luck
             }
         }
@@ -15369,17 +15386,15 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
         char* cc_args_release[] = { cexy$cc_args_release };
         char* cc_args_debug[] = { cexy$cc_args_debug };
         char* cc_include[] = { cexy$cc_include };
-        char* cc_ld_args[] = { cexy$ld_args };
-        char* cc_ld_libs[] = { cexy$ld_libs };
+        char* ld_args[] = { cexy$ld_args };
         if (is_release_mode) {
             arr$pusha(args, cc_args_release);
         } else {
             arr$pusha(args, cc_args_debug);
         }
         arr$pusha(args, cc_include);
-        arr$pusha(args, cc_ld_args);
         arr$push(args, (char*)target);
-        arr$pusha(args, cc_ld_libs);
+        arr$pusha(args, ld_args);
         arr$pushm(args, "-o", app_exec);
 
 
@@ -15440,6 +15455,108 @@ cexy__utils__git_hash(IAllocator allc)
         return str.fmt(allc, "%S", clean_hash);
     }
     return NULL;
+}
+
+static Exception
+_cexy__utils__pkgconf_parse(IAllocator allc, arr$(char*) * out_cc_args, char* pkgconf_output)
+{
+    e$assert(pkgconf_output != NULL);
+    e$assert(out_cc_args != NULL);
+    e$assert(allc != NULL);
+
+    char* cur = pkgconf_output;
+    char* arg = NULL;
+    while (*cur) {
+        switch (*cur) {
+            case ' ':
+            case '\t':
+            case '\v':
+            case '\f':
+            case '\n':
+            case '\r': {
+                if (arg) {
+                    str_s a = {.buf = arg, .len = cur - arg}; 
+                    arr$push(*out_cc_args, str.slice.clone(a, allc));
+                }
+                arg = NULL;
+                break;
+            }
+            case '"':
+            case '\'': {
+                if (!arg) {
+                    arg = cur;
+                }
+                char quote = *cur;
+                cur++;
+                while (*cur) {
+                    if (*cur == '\\') {
+                        cur += 2;
+                        continue;
+                    }
+                    if (*cur == quote) {
+                        break;
+                    }
+                    cur++;
+                }
+                break;
+            }
+            default: {
+                if (!arg) {
+                    arg = cur;
+                }
+                if (*cur == '\\') {
+                    cur++;
+                }
+                break;
+            }
+        }
+
+        if (*cur) {
+            cur++;
+        }
+    }
+
+    if (arg) {
+        str_s a = {.buf = arg, .len = cur - arg}; 
+        arr$push(*out_cc_args, str.slice.clone(a, allc));
+    }
+
+    return EOK;
+}
+
+static Exception
+cexy__utils__pkgconf(
+    IAllocator allc,
+    arr$(char*) * out_cc_args,
+    char** pkgconf_args,
+    usize pkgconf_args_len
+)
+{
+    e$assert(allc->meta.is_arena && "expected ArenaAllocator or mem$scope(tmem$, _)");
+    e$assert(out_cc_args != NULL);
+    e$assert(pkgconf_args != NULL);
+    e$assert(pkgconf_args_len > 0);
+
+    os_cmd_c c = { 0 };
+
+    mem$arena(2048, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, cexy$pkgconf_cmd);
+        arr$pusha(args, pkgconf_args, pkgconf_args_len);
+        arr$push(args, NULL);
+        e$ret(os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .combine_stdouterr = true }));
+
+        char* output = os.cmd.read_all(&c, _);
+        e$except_silent(err, os.cmd.join(&c, 0, NULL))
+        {
+            log$error("%s program error:\n%s\n", cexy$pkgconf_cmd, output);
+            return err;
+        }
+        e$ret(_cexy__utils__pkgconf_parse(allc, out_cc_args, output));
+    }
+
+    return EOK;
 }
 
 static Exception
@@ -15612,6 +15729,7 @@ const struct __cex_namespace__cexy cexy = {
         .git_hash = cexy__utils__git_hash,
         .git_lib_fetch = cexy__utils__git_lib_fetch,
         .make_new_project = cexy__utils__make_new_project,
+        .pkgconf = cexy__utils__pkgconf,
     },
 
     // clang-format on

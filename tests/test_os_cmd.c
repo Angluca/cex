@@ -416,7 +416,46 @@ test$case(os_cmd_run_read_all)
     return EOK;
 }
 
+test$case(os_cmd_env_inheritance)
+{
+    os_cmd_c c = { 0 };
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        e$ret(os.env.set("TEST_CEX_ENV", "cool!"));
+        arr$pushm(args, test_app("write_env", _), "TEST_CEX_ENV", NULL);
+        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
 
+        char* output = os.cmd.read_all(&c, _);
+        tassert(output != NULL);
+        printf("%s\n", output);
+        int err_code = 0;
+        tassert_er(Error.ok, os.cmd.join(&c, 0, &err_code));
+        tassert(str.starts_with(output, "TEST_CEX_ENV=cool!"));
+        tassert_eq(err_code, 0);
+    }
+    return EOK;
+}
 
+test$case(os_cmd_env_inheritance_cmd_run)
+{
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        e$ret(os.env.set("TEST_CEX_ENV1", "cool!"));
+        tassert_er(EOK, os$cmd(test_app("write_env", _), "TEST_CEX_ENV1"));
+    }
+    return EOK;
+}
+
+test$case(os_cmd_env_inheritance_cmd_run_not_found)
+{
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) args = arr$new(args, _);
+        tassert_er(Error.runtime, os$cmd(test_app("write_env", _), "TEST_CEX_ENV_ASLDKJLDJS"));
+    }
+    return EOK;
+}
 
 test$main();

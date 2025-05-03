@@ -4,7 +4,7 @@
 // These settings can be set via `./cex -D CEX_WINE config` command
 
 // This is for CI (allowing substitute compiler with env var)
-#define cexy$cex_self_cc "cc"
+#    define cexy$cex_self_cc "cc"
 
 #    ifdef CEX_TEST_NOASAN
 #        define cexy$cc_args_sanitizer
@@ -15,19 +15,19 @@
 #        define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
 #    elif defined(CEX_RELEASE)
 #        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
-#        define cexy$test_cc_args                                                                  \
-            "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",            \
-                "-Itests/", "-O3"
+#        define cexy$cc_args_test                                                                  \
+            "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g", "-Itests/", \
+                "-O3"
 #    elif defined(CEX_NDEBUG)
 #        define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
 #        define cexy$cc_args_sanitizer
-#        define cexy$test_cc_args                                                                  \
-            "-DCEX_TEST", "-DNDEBUG", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",            \
+#        define cexy$cc_args_test                                                                  \
+            "-DCEX_TEST", "-DNDEBUG", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g", \
                 "-Itests/", "-O2"
 #    elif defined(CEX_X32)
 #        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
-#        define cexy$test_cc_args                                                                  \
-            "-DCEX_TEST", "-O0", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",            \
+#        define cexy$cc_args_test                                                                  \
+            "-DCEX_TEST", "-O0", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g",      \
                 "-Itests/", "-m32", cexy$cc_args_sanitizer
 #    else
 #        define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
@@ -49,7 +49,7 @@
 #    ifdef CEX_WINE
 #        define cexy$cc "x86_64-w64-mingw32-gcc"
 #        define cexy$cc_args_sanitizer
-#        define cexy$test_launcher "wine"
+#        define cexy$debug_cmd "wine"
 #        define cexy$build_ext_exe ".exe"
 #    endif
 
@@ -104,7 +104,7 @@ cmd_custom_test(int argc, char** argv, void* user_ctx)
         for$each(src, test_app_src)
         {
             char* tgt_ext = NULL;
-            char* test_launcher[] = { cexy$test_launcher };
+            char* test_launcher[] = { cexy$debug_cmd };
             if (arr$len(test_launcher) > 0 && str.eq(test_launcher[0], "wine")) {
                 tgt_ext = str.fmt(_, ".%s", "win");
             } else {
@@ -194,11 +194,20 @@ cex_bundle(void)
         $pn("#ifndef CEX_HEADER_H");
         $pn("#define CEX_HEADER_H");
 
+        time_t t = time(NULL);
+        struct tm tm = *localtime(&t);
+        char date[16];
+        sprintf(date, "%04d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
         char* cex_header;
         e$except_null(cex_header = io.file.load("src/cex_header.h", _))
         {
             exit(1);
         }
+        uassert(str.find(cex_header, "{date}") && "{date} template not found in cex_header.h");
+        cex_header = str.replace(cex_header, "{date}", date, _);
+        uassert(cex_header != NULL);
+
         $pn(cex_header);
 
         for$each(hdr, bundle)

@@ -100,3 +100,6 @@ Use `cex -D config` to reset all project config flags to defaults
 #        undef vsprintf
 #    endif
 #endif
+
+#define cex$version 10100
+#define cex$version_str "1.1.{date}-beta"

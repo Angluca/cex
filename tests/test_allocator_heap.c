@@ -101,9 +101,10 @@ test$case(test_allocator_heap_alloc_header)
         tassert_eq(0xEF, _cex_allocator_heap__hdr_get_alignment(hdr));
     } else {
         // 32bit (some sanity check assumptions about our arch)
-        tassert_eq(alignof(u64), 4);
-        tassert_eq(alignof(usize), 4);
-        tassert_eq(alignof(void*), 4);
+        // NOTE: armv7 might have alignment 8
+        tassert(alignof(u64) == 4 || alignof(u64) == 8);
+        tassert(alignof(usize) == 4 || alignof(usize) == 8);
+        tassert(alignof(void*) == 4 || alignof(void*) == 8);
         u64 hdr = _cex_allocator_heap__hdr_set(0x123456, 0xCD, 0xEF);
         io.printf("%lx\n", hdr);
         tassert_eq(hdr, 0xefcd000000123456);

@@ -1,6 +1,6 @@
 # CEX Release Notes
 
-## 1.1.1 Change list
+## 1.1.20250501 Change list
 
 ### Changes / improvements
 - `os.cmd.exists()` - added function for checking if command exists in PATH
@@ -8,6 +8,11 @@
 - `cexy.utils.git_lib_fetch()` - fetching/updating arbitrary Git lib (e.g. single header lib) from git
 - `cexy.utils.git_hash()` - getting current git hash of the current repo
 - `cex` - added `cex libfetch` command 
+- Added Alpine Linux support (multiarch + libc musl) + CI
+- Added tests for multiple architectures (including big endian): x86_64 (native), x86 (native), aarch64, armhf, armv7, loongarch64, ppc64le, riscv64, and s390x
+- `cexy.utils.pkgconf() / cexy$pkgconf` - system dependency resolving utility function
+- Added automatic timestamp generation in cex version when bundling
+- Removed redundant `cexy$` vars, renamed `cexy$cc_args_test`
 
 ### Fixes
 - `str.match()` - fixed `str.match(s, "*(abc|def)")` pattern handling

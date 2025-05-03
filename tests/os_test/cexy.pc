@@ -1,0 +1,10 @@
+prefix=/usr/my user/local
+exec_prefix=${prefix}
+libdir="${exec_prefix}/lib"
+includedir=/my\ path\ with\ spaces//include/
+
+Name: libcex
+Description: Test pkgconfig file
+Version: 7.68.0
+Libs: -L"${libdir}" -lcurl -lmycexy
+Cflags: -I${includedir}

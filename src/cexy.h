@@ -42,7 +42,7 @@
                     "-fsanitize-address-use-after-scope", "-fsanitize=address",                    \
                         "-fsanitize=undefined", "-fstack-protector-strong"
 #            else
-#                define cexy$cc_args_sanitizer
+#                define cexy$cc_args_sanitizer "-fstack-protector-strong"
 #            endif
 #        else
 #            define cexy$cc_args_sanitizer                                                         \
@@ -61,15 +61,10 @@
 #        define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
 #    endif
 
-#    ifndef cexy$test_cc_args
+#    ifndef cexy$cc_args_test
 /// Test runner compiler flags (may be overridden by user)
-#        define cexy$test_cc_args                                                                  \
-            "-DCEX_TEST", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-g3",            \
-                "-Itests/", cexy$cc_args_sanitizer
-#    endif
-
-#    ifndef cexy$test_launcher
-#        define cexy$test_launcher
+#        define cexy$cc_args_test                                                                  \
+            cexy$cc_args_debug, "-DCEX_TEST", "-Wno-unused-function", "-Itests/"
 #    endif
 
 #    ifndef cexy$cex_self_args
@@ -77,15 +72,22 @@
 #        define cexy$cex_self_args
 #    endif
 
-
-#    ifndef cexy$ld_args
-/// Linker flags (e.g. -L./lib/path/) (may be overridden by user)
-#        define cexy$ld_args
+#    ifndef cexy$pkgconf_cmd
+/// Dependency resolver command: pkg-config, pkgconf, etc. May be used in cross-platform compilation
+#        define cexy$pkgconf_cmd "pkgconf"
 #    endif
 
-#    ifndef cexy$ld_libs
-/// Linker libs  (e.g. -lm) (may be overridden by user)
-#        define cexy$ld_libs
+/// Helper macro for running cexy.utils.pkgconf() a dependency resolver for libs
+#    define cexy$pkgconf(allocator, out_cc_args, pkgconf_args...)                                  \
+        ({                                                                                         \
+            char* _args[] = { pkgconf_args };                                                      \
+            usize _args_len = arr$len(_args);                                                      \
+            cexy.utils.pkgconf(allocator, out_cc_args, _args, _args_len);                          \
+        })
+
+#    ifndef cexy$ld_args
+/// Linker flags (e.g. -L./lib/path/ -lmylib -lm) (may be overridden by user)
+#        define cexy$ld_args
 #    endif
 
 #    ifndef cexy$debug_cmd
@@ -147,10 +149,10 @@ See `cex help str.match` for more information about patter syntax.
           .func = cexy.cmd.config,                                                                 \
           .help = "Check project and system environment and config" }
 
-#    define cexy$cmd_libfetch                                                                        \
-        { .name = "libfetch",                                                                        \
-          .func = cexy.cmd.libfetch,                                                                 \
-          .help = "Get 3rd party libraries via git or install CEX libs" }
+#    define cexy$cmd_libfetch                                                                      \
+        { .name = "libfetch",                                                                      \
+          .func = cexy.cmd.libfetch,                                                               \
+          .help = "Get 3rd party source code via git or install CEX libs" }
 
 #    define cexy$cmd_test                                                                          \
         { .name = "test",                                                                          \
@@ -160,7 +162,8 @@ See `cex help str.match` for more information about patter syntax.
 #    define cexy$cmd_app                                                                           \
         { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
 
-#    define cexy$cmd_all cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config, cexy$cmd_libfetch
+#    define cexy$cmd_all                                                                           \
+        cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config, cexy$cmd_libfetch
 
 #    define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
@@ -270,6 +273,7 @@ struct __cex_namespace__cexy {
         char*           (*git_hash)(IAllocator allc);
         Exception       (*git_lib_fetch)(const char* git_url, const char* git_label, const char* out_dir, bool update_existing, bool preserve_dirs, const char** repo_paths, usize repo_paths_len);
         Exception       (*make_new_project)(const char* proj_dir);
+        Exception       (*pkgconf)(IAllocator allc, arr$(char*)* out_cc_args, char** pkgconf_args, usize pkgconf_args_len);
     } utils;
 
     // clang-format on
