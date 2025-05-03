@@ -187,8 +187,9 @@ jobs:
       fail-fast: false
       matrix:
         cex_preset: 
+          - CEX_DEBUG
           - CEX_RELEASE
-          - CEX_TEST_NOASAN
+          - CEX_NDEBUG
         arch:
           - x86_64
           - x86
@@ -204,7 +205,7 @@ jobs:
         shell: alpine.sh --root {0}
         run: |
           cat /etc/alpine-release
-          apk add gcc
+          apk add clang
           apk add musl-dev
           apk add git
           apk add file
