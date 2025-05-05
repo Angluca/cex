@@ -331,7 +331,7 @@ test$case(test_for_arr)
     {
         isize i = v - array;
         tassert_eq(n, i);
-        io.printf("v: %s, i: %ld\n", *v, i);
+        io.printf("v: %s, i: %zd\n", *v, i);
         n++;
     }
 
@@ -340,7 +340,7 @@ test$case(test_for_arr)
     {
         isize i = v - buf;
         tassert_eq(n, i);
-        io.printf("v: %c, i: %ld\n", *v, i);
+        io.printf("v: %c, i: %zd\n", *v, i);
         n++;
     }
 

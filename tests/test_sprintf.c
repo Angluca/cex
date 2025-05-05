@@ -273,11 +273,52 @@ test$case(stb_sprintf_integers_64bits)
     return EOK;
 }
 
-int is_little_endian()
+test$case(stb_sprintf_size_t)
 {
-  unsigned int x = 1;
-  char *c = (char*) &x;
-  return (int)*c;
+    mem$scope(tmem$, _)
+    {
+        usize _i64 = 123;
+        isize _u64 = 123;
+
+        tassert_eq("123", str.fmt(_, "%zd", _i64));
+        tassert_eq("123", str.fmt(_, "%zu", _u64));
+
+        tassert_eq("-123", str.fmt(_, "%zd", -_i64));
+
+#if __SIZEOF_POINTER__ == 8
+        _i64 = INT64_MAX;
+        _u64 = INT64_MAX;
+        tassert_eq("9223372036854775807", str.fmt(_, "%zd", _i64));
+        tassert_eq("9223372036854775807", str.fmt(_, "%zu", _u64));
+
+        _i64 = INT64_MIN;
+        _u64 = UINT64_MAX;
+        tassert_eq("-9223372036854775808", str.fmt(_, "%zd", _i64));
+        tassert_eq("18446744073709551615", str.fmt(_, "%zu", _u64));
+        tassert_eq("-1", str.fmt(_, "%zd", _u64));
+#else
+        _i64 = INT32_MAX;
+        _u64 = INT32_MAX;
+        tassert_eq("2147483647", str.fmt(_, "%zd", _i64));
+        tassert_eq("2147483647", str.fmt(_, "%zu", _u64));
+
+        _i64 = INT32_MIN;
+        _u64 = UINT32_MAX;
+        tassert_eq("-2147483648", str.fmt(_, "%zd", _i64));
+        tassert_eq("4294967295", str.fmt(_, "%zu", _u64));
+        tassert_eq("-1", str.fmt(_, "%zd", _u64));
+#endif
+    }
+
+    return EOK;
+}
+
+int
+is_little_endian()
+{
+    unsigned int x = 1;
+    char* c = (char*)&x;
+    return (int)*c;
 }
 
 test$case(stb_sprintf_strings)
@@ -311,7 +352,7 @@ test$case(stb_sprintf_strings)
         tassert_eq("123", str.fmt(_, "%.3S", str$s("123456789")));
 
 
-        if (!is_little_endian()){
+        if (!is_little_endian()) {
             // We in production test on big endian arch (%s-Bad) stuff likely to segfault!
             return EOK;
         }
