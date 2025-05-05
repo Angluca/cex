@@ -812,8 +812,12 @@ cex_os__fs__copy(const char* src_path, const char* dst_path)
 
 defer:
     mem$free(mem$, buf);
-    close(src_fd);
-    close(dst_fd);
+    if (src_fd >= 0) {
+        close(src_fd);
+    }
+    if (dst_fd >= 0) {
+        close(dst_fd);
+    }
     return result;
 #endif
 }
