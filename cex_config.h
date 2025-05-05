@@ -28,8 +28,10 @@
 #    define cexy$cc "gcc-14"
 #endif
 
-#ifdef CEX_OLD_GCC
-#    define cexy$cc "gcc-14"
+#ifdef CEX_VALGRIND
+#    define cexy$cc_args_sanitizer "-fstack-protector-strong"
+#    define cexy$cc_args "-O0", "-Wall", "-Wextra", "-Werror", "-gdwarf-4"
+#    define cexy$debug_cmd "valgrind", "--leak-check=full", "--show-leak-kinds=all", "--error-exitcode=1"
 #endif
 
 #ifdef CEX_WINE
