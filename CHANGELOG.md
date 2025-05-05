@@ -3,6 +3,7 @@
 ## latest
 ### Changes / improvements
 - Code base cleanup
+- refactor(cexy)!: removed `cexy$cc_args_release/debug` - now it's `cexy$cc_args` (controlled by cex -DSOME_CONF config)
 ### Fixes
 
 
