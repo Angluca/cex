@@ -854,6 +854,30 @@ cex_os__path__exists(const char* file_path)
 }
 
 static char*
+cex_os__path__abs(const char* path, IAllocator allc)
+{
+    uassert(allc != NULL);
+    if (path == NULL || path[0] == '\0') {
+        return NULL;
+    }
+
+    char buffer[PATH_MAX];
+
+#ifdef _WIN32
+    DWORD result = GetFullPathNameA(path, sizeof(buffer), buffer, NULL);
+    if (result == 0 || result > sizeof(buffer)-1) {
+        return NULL;
+    }
+#else
+    if (realpath(path, buffer) == NULL) {
+        return NULL;
+    }
+#endif
+
+    return str.clone(buffer, allc);
+}
+
+static char*
 cex_os__path__join(const char** parts, u32 parts_len, IAllocator allc)
 {
     char sep[2] = { os$PATH_SEP, '\0' };
@@ -1415,6 +1439,7 @@ const struct __cex_namespace__os os = {
     },
 
     .path = {
+        .abs = cex_os__path__abs,
         .basename = cex_os__path__basename,
         .dirname = cex_os__path__dirname,
         .exists = cex_os__path__exists,

@@ -3272,7 +3272,7 @@ struct __cex_namespace__os {
     struct {
         Exception       (*chdir)(const char* path);
         Exception       (*copy)(const char* src_path, const char* dst_path);
-        Exception       (*copy_tree)(const char* src_path, const char* dest_path);
+        Exception       (*copy_tree)(const char* src_dir, const char* dst_dir);
         Exception       (*dir_walk)(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx);
         arr$(char*)     (*find)(const char* path, bool is_recursive, IAllocator allc);
         char*           (*getcwd)(IAllocator allc);
@@ -3285,6 +3285,7 @@ struct __cex_namespace__os {
     } fs;
 
     struct {
+        char*           (*abs)(const char* file_path, IAllocator allc);
         char*           (*basename)(const char* path, IAllocator allc);
         char*           (*dirname)(const char* path, IAllocator allc);
         bool            (*exists)(const char* file_path);
@@ -12234,6 +12235,30 @@ cex_os__path__exists(const char* file_path)
 }
 
 static char*
+cex_os__path__abs(const char* path, IAllocator allc)
+{
+    uassert(allc != NULL);
+    if (path == NULL || path[0] == '\0') {
+        return NULL;
+    }
+
+    char buffer[PATH_MAX];
+
+#ifdef _WIN32
+    DWORD result = GetFullPathNameA(path, sizeof(buffer), buffer, NULL);
+    if (result == 0 || result > sizeof(buffer)-1) {
+        return NULL;
+    }
+#else
+    if (realpath(path, buffer) == NULL) {
+        return NULL;
+    }
+#endif
+
+    return str.clone(buffer, allc);
+}
+
+static char*
 cex_os__path__join(const char** parts, u32 parts_len, IAllocator allc)
 {
     char sep[2] = { os$PATH_SEP, '\0' };
@@ -12795,6 +12820,7 @@ const struct __cex_namespace__os os = {
     },
 
     .path = {
+        .abs = cex_os__path__abs,
         .basename = cex_os__path__basename,
         .dirname = cex_os__path__dirname,
         .exists = cex_os__path__exists,

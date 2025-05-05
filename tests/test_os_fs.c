@@ -740,7 +740,7 @@ test$case(test_os_copy_file)
 
 test$case(test_os_copy_tree)
 {
-    
+
     tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/foo/"));
     tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/foo/aaa/"));
     tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/bar/"));
@@ -773,7 +773,7 @@ test$case(test_os_copy_tree)
 
 test$case(test_os_copy_tree_sanity_checks)
 {
-    
+
     tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/foo/"));
     tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/foo/aaa/"));
     tassert_er(EOK, os.fs.mkpath(TBUILDDIR "in/bar/"));
@@ -800,6 +800,42 @@ test$case(test_os_copy_tree_sanity_checks)
     tassert(os.path.exists(TBUILDDIR "out/3.txt"));
     tassert(os.path.exists(TBUILDDIR "out/4.txt"));
     tassert(os.path.exists(TBUILDDIR "out/foo/aaa/5.txt"));
+
+    return EOK;
+}
+
+
+test$case(test_os_path_abs)
+{
+    tassert_eq(os.path.abs(NULL, mem$), NULL);
+    tassert_eq(os.path.abs("", mem$), NULL);
+
+    mem$scope(tmem$, _)
+    {
+        var p = os.fs.getcwd(_);
+        tassert(p != NULL);
+        tassert_eq(true, str.ends_with(p, "cex"));
+
+        var abs_cwd = os.path.abs(".", _);
+        tassert(abs_cwd != NULL);
+        tassert(str.starts_with(abs_cwd, p));
+        tassert_eq(true, str.ends_with(abs_cwd, "cex"));
+
+        abs_cwd = os.path.abs("tests/..", _);
+        tassert(abs_cwd != NULL);
+        tassert(str.starts_with(abs_cwd, p));
+        tassert_eq(true, str.ends_with(abs_cwd, "cex"));
+        tassert(os.path.exists(abs_cwd));
+
+        if (os.platform.current() == OSPlatform__win) {
+            tassert(str.find(abs_cwd, "\\")); 
+            tassert(str.find(abs_cwd, ":\\")); // drive letter
+            tassert(!str.find(abs_cwd, "/")); // path converted to backslashes
+        } else {
+            tassert(str.find(abs_cwd, "/"));
+            tassert(!str.find(abs_cwd, "\\"));
+        }
+    }
 
     return EOK;
 }

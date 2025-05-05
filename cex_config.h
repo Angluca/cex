@@ -30,7 +30,7 @@
 
 #ifdef CEX_VALGRIND
 #    define cexy$cc_args_sanitizer "-fstack-protector-strong"
-#    define cexy$cc_args "-O0", "-Wall", "-Wextra", "-Werror", "-gdwarf-4"
+#    define cexy$cc_args "-O0", "-Wall", "-Wextra", "-Werror", "-gdwarf-4", "-DCEX_VALGRIND"
 #    define cexy$debug_cmd                                                                         \
         "valgrind", "--leak-check=full", "--show-leak-kinds=definite,indirect,possible",           \
             "--error-exitcode=1", "--track-fds=yes", "--track-origins=yes"
@@ -38,7 +38,7 @@
 
 #ifdef CEX_WINE
 #    define cexy$cc "x86_64-w64-mingw32-gcc"
-#    define cexy$cc_args_sanitizer
+#    define cexy$cc_args_sanitizer "-g3"
 #    define cexy$debug_cmd "wine"
 #    define cexy$build_ext_exe ".exe"
 #endif

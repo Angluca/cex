@@ -5,6 +5,8 @@
 - Code base cleanup
 - refactor(cexy)!: removed `cexy$cc_args_release/debug` - now it's `cexy$cc_args` (controlled by cex -DSOME_CONF config)
 - Added Valgrind to CI (extra memory leak check, uninitialized variables check, file handle leaks checks) + available on non x86 architectures
+- `os.path.abs()` - getting absolute path from any other path
+
 ### Fixes
 - Fixed memleaks after program destruction - hanging tmem$ last page (Valgrind issue)
 - Fixed memleaks for test runner - list of tests were not cleaned up (Valgrind issue)
