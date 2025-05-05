@@ -105,9 +105,9 @@ Use `cex -D config` to reset all project config flags to defaults
 #endif
 
 #define cex$version_major 0
-#define cex$version_minor 11
-#define cex$version_patch 1
-#define cex$version_date "2025-05-03"
+#define cex$version_minor 12
+#define cex$version_patch 0
+#define cex$version_date "2025-05-05"
 
 
 
@@ -3782,20 +3782,15 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #        endif
 #    endif
 
-#    ifndef cexy$cc_args_release
-/// Release mode compiler flags (may be overridden by user)
-#        define cexy$cc_args_release "-Wall", "-Wextra", "-O2", "-g"
-#    endif
-
-#    ifndef cexy$cc_args_debug
-/// Debug mode compiler flags (may be overridden by user)
-#        define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
+#    ifndef cexy$cc_args
+/// Common compiler flags (may be overridden by user)
+#        define cexy$cc_args "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
 #    endif
 
 #    ifndef cexy$cc_args_test
 /// Test runner compiler flags (may be overridden by user)
 #        define cexy$cc_args_test                                                                  \
-            cexy$cc_args_debug, "-DCEX_TEST", "-Wno-unused-function", "-Itests/"
+            cexy$cc_args, "-DCEX_TEST", "-Wno-unused-function", "-Itests/"
 #    endif
 
 #    ifndef cexy$cex_self_args
@@ -14884,8 +14879,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$cc                   " cexy$cc "\n"                                                    \
     "* cexy$cc_include           " cex$stringize(cexy$cc_include) "\n"                             \
     "* cexy$cc_args_sanitizer    " cex$stringize(cexy$cc_args_sanitizer) "\n"                                \
-    "* cexy$cc_args_release      " cex$stringize(cexy$cc_args_release) "\n"                                \
-    "* cexy$cc_args_debug        " cex$stringize(cexy$cc_args_debug) "\n"                                \
+    "* cexy$cc_args              " cex$stringize(cexy$cc_args) "\n"                                \
     "* cexy$cc_args_test         " cex$stringize(cexy$cc_args_test) "\n"                           \
     "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
     "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
@@ -15335,7 +15329,6 @@ static Exception
 cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
 {
     (void)user_ctx;
-    bool is_release_mode = false;
     argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "app [options] {run,build,create,clean,debug} APP_NAME [--app-options app args]",
@@ -15343,12 +15336,6 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
         // .epilog = _cexy$cmd_test_epilog,
         argparse$opt_list(
             argparse$opt_help(),
-            argparse$opt(
-                &is_release_mode,
-                'r',
-                "release",
-                .help = "build in release mode (uses: cexy$cc_args_release)"
-            ),
         ),
     };
 
@@ -15382,15 +15369,10 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, cexy$cc, );
         // NOTE: reconstructing char*[] because some cexy$ variables might be empty
-        char* cc_args_release[] = { cexy$cc_args_release };
-        char* cc_args_debug[] = { cexy$cc_args_debug };
+        char* cc_args[] = { cexy$cc_args };
         char* cc_include[] = { cexy$cc_include };
         char* ld_args[] = { cexy$ld_args };
-        if (is_release_mode) {
-            arr$pusha(args, cc_args_release);
-        } else {
-            arr$pusha(args, cc_args_debug);
-        }
+        arr$pusha(args, cc_args);
         arr$pusha(args, cc_include);
         arr$push(args, (char*)target);
         arr$pusha(args, ld_args);

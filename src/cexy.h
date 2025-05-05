@@ -51,20 +51,15 @@
 #        endif
 #    endif
 
-#    ifndef cexy$cc_args_release
-/// Release mode compiler flags (may be overridden by user)
-#        define cexy$cc_args_release "-Wall", "-Wextra", "-O2", "-g"
-#    endif
-
-#    ifndef cexy$cc_args_debug
-/// Debug mode compiler flags (may be overridden by user)
-#        define cexy$cc_args_debug "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
+#    ifndef cexy$cc_args
+/// Common compiler flags (may be overridden by user)
+#        define cexy$cc_args "-Wall", "-Wextra", "-g3", cexy$cc_args_sanitizer
 #    endif
 
 #    ifndef cexy$cc_args_test
 /// Test runner compiler flags (may be overridden by user)
 #        define cexy$cc_args_test                                                                  \
-            cexy$cc_args_debug, "-DCEX_TEST", "-Wno-unused-function", "-Itests/"
+            cexy$cc_args, "-DCEX_TEST", "-Wno-unused-function", "-Itests/"
 #    endif
 
 #    ifndef cexy$cex_self_args
