@@ -3401,6 +3401,12 @@ struct _cex_test_context_s
         if (_cex_test__mainfn_state.test_cases) {                                                  \
             arr$free(_cex_test__mainfn_state.test_cases);                                          \
         }                                                                                          \
+        if (_cex_test__mainfn_state.orig_stdout_fd) {                                              \
+            close(_cex_test__mainfn_state.orig_stdout_fd);\
+        }                                                                                          \
+        if (_cex_test__mainfn_state.orig_stderr_fd) {                                              \
+            close(_cex_test__mainfn_state.orig_stderr_fd);\
+        }                                                                                          \
         return ret_code;                                                                           \
     }
 
