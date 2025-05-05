@@ -25,13 +25,6 @@ jobs:
           - armv7
           - loongarch64
           - ppc64le
-        include:
-          - cex_preset: CEX_VALGRIND
-            arch: x86_64
-          - cex_preset: CEX_VALGRIND
-            arch: x86
-          - cex_preset: CEX_VALGRIND
-            arch: aarch64
     steps:
       - uses: actions/checkout@v2
 
@@ -50,7 +43,6 @@ jobs:
           apk add file
           apk add pkgconf
           apk add zlib-dev
-          apk add valgrind || echo "valgrind is not available for this arch"
 
       - name: Environment
         shell: alpine.sh {0}
@@ -76,9 +68,59 @@ jobs:
       - name: valgrind tests
         shell: alpine.sh {0}
         run: |
-          if command -v valgrind >/dev/null 2>&1; then
-            ./cex -DCEX_VALGRIND config
-            ./cex test debug all
-          else
-            echo "valgrind is not available on this arch"
-          fi
+          ./cex -DCEX_VALGRIND config
+          ./cex test debug all
+
+  tests-linux-valgrind:
+    name: alpine-${{ matrix.arch }}-${{ matrix.cex_preset }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cex_preset: CEX_VALGRIND
+            arch: x86_64
+          - cex_preset: CEX_VALGRIND
+            arch: x86
+          - cex_preset: CEX_VALGRIND
+            arch: aarch64
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup latest Alpine Linux
+        uses: jirutka/setup-alpine@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Run script inside Alpine chroot as root
+        shell: alpine.sh --root {0}
+        run: |
+          cat /etc/alpine-release
+          apk add gcc
+          apk add musl-dev
+          apk add git
+          apk add file
+          apk add pkgconf
+          apk add zlib-dev
+          apk add valgrind
+
+      - name: Environment
+        shell: alpine.sh {0}
+        run: |
+          cc --version
+
+      - name: cex initial build
+        shell: alpine.sh {0}
+        run: |
+          ls -la  # as you would expect, you're in your workspace directory
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex 
+          echo "Compiled cex executable"
+          file ./cex
+          echo "CEX config"
+          ./cex -DCEX_VALGRIND config
+
+      - name: valgrind tests
+        shell: alpine.sh {0}
+        run: |
+          ./cex test debug all
