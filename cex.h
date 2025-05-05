@@ -3397,7 +3397,11 @@ struct _cex_test_context_s
     {                                                                                              \
         test$env_check();                                                                          \
         argv[0] = __FILE__;                                                                        \
-        return cex_test_main_fn(argc, argv);                                                       \
+        int ret_code = cex_test_main_fn(argc, argv);                                               \
+        if (_cex_test__mainfn_state.test_cases) {                                                  \
+            arr$free(_cex_test__mainfn_state.test_cases);                                          \
+        }                                                                                          \
+        return ret_code;                                                                           \
     }
 
 #define test$setup_suite()                                                                         \
@@ -4255,6 +4259,19 @@ _cex_allocator_arena_cleanup(IAllocator* allc)
 {
     uassert(allc != NULL);
     AllocatorArena.destroy(*allc);
+}
+
+// NOTE: destructor(0) - zero priority is lowest for destructors
+__attribute__((destructor(0))) 
+void _cex_global_allocators_destructor() {
+    AllocatorArena_c* allc = (AllocatorArena_c*)tmem$;
+    allocator_arena_page_s* page = allc->last_page;
+    while (page) {
+        var tpage = page->prev_page;
+        mem$free(mem$, page);
+        page = tpage;
+    }
+
 }
 
 
