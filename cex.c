@@ -17,6 +17,12 @@ main(int argc, char** argv)
     cex_bundle();
     cexy$initialize();
 
+#ifdef CEX_VALGRIND
+    e$except(err, os.env.set("CEX_VALGRIND", "1")){
+    }
+#endif
+
+
     // clang-format off
     argparse_c args = {
         .description = cexy$description,
