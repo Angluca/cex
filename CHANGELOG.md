@@ -5,6 +5,8 @@
 - Code base cleanup
 - refactor(cexy)!: removed `cexy$cc_args_release/debug` - now it's `cexy$cc_args` (controlled by cex -DSOME_CONF config)
 ### Fixes
+- Fixed memleaks after program destruction - hanging tmem$ last page (Valgrind issue)
+- Fixed memleaks for test runner - list of tests were not cleaned up (Valgrind issue)
 
 
 ## 0.11.0 Change list
