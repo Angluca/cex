@@ -145,7 +145,20 @@ cex_bundle(void)
         time_t t = time(NULL);
         struct tm tm = *localtime(&t);
         char date[16];
-        sprintf(date, "%04d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+        e$except(
+            err,
+            str.sprintf(
+                date,
+                sizeof(date),
+                "%04d-%02d-%02d",
+                tm.tm_year + 1900,
+                tm.tm_mon + 1,
+                tm.tm_mday
+            )
+        )
+        {
+            exit(1);
+        }
 
         char* cex_header;
         e$except_null(cex_header = io.file.load("src/cex_header.h", _))
