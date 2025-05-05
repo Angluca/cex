@@ -54,9 +54,9 @@ struct _cex_test_context_s
 
 #define test$case(NAME)                                                                             \
     extern struct _cex_test_context_s _cex_test__mainfn_state;                                      \
-    static Exception cext_test_##NAME();                                                            \
-    static void cext_test_register_##NAME(void) __attribute__((constructor));                       \
-    static void cext_test_register_##NAME(void)                                                     \
+    static Exception cex_test_##NAME();                                                            \
+    static void cex_test_register_##NAME(void) __attribute__((constructor));                       \
+    static void cex_test_register_##NAME(void)                                                     \
     {                                                                                               \
         if (_cex_test__mainfn_state.test_cases == NULL) {                                           \
             _cex_test__mainfn_state.test_cases = arr$new(_cex_test__mainfn_state.test_cases, mem$); \
@@ -65,10 +65,10 @@ struct _cex_test_context_s
         arr$push(                                                                                   \
             _cex_test__mainfn_state.test_cases,                                                     \
             (struct _cex_test_case_s                                                                \
-            ){ .test_fn = &cext_test_##NAME, .test_name = #NAME, .test_line = __LINE__ }            \
+            ){ .test_fn = &cex_test_##NAME, .test_name = #NAME, .test_line = __LINE__ }            \
         );                                                                                          \
     }                                                                                               \
-    Exception test$NOOPT cext_test_##NAME(void)
+    Exception test$NOOPT cex_test_##NAME(void)
 
 
 #ifndef CEX_TEST
@@ -102,47 +102,47 @@ struct _cex_test_context_s
 
 #define test$setup_suite()                                                                         \
     extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
-    static Exception cext_test__setup_suite_fn();                                                  \
-    static void cext_test__register_setup_suite_fn(void) __attribute__((constructor));             \
-    static void cext_test__register_setup_suite_fn(void)                                           \
+    static Exception cex_test__setup_suite_fn();                                                  \
+    static void cex_test__register_setup_suite_fn(void) __attribute__((constructor));             \
+    static void cex_test__register_setup_suite_fn(void)                                           \
     {                                                                                              \
         uassert(_cex_test__mainfn_state.setup_suite_fn == NULL);                                   \
-        _cex_test__mainfn_state.setup_suite_fn = &cext_test__setup_suite_fn;                       \
+        _cex_test__mainfn_state.setup_suite_fn = &cex_test__setup_suite_fn;                       \
     }                                                                                              \
-    Exception test$NOOPT cext_test__setup_suite_fn(void)
+    Exception test$NOOPT cex_test__setup_suite_fn(void)
 
 #define test$teardown_suite()                                                                      \
     extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
-    static Exception cext_test__teardown_suite_fn();                                               \
-    static void cext_test__register_teardown_suite_fn(void) __attribute__((constructor));          \
-    static void cext_test__register_teardown_suite_fn(void)                                        \
+    static Exception cex_test__teardown_suite_fn();                                               \
+    static void cex_test__register_teardown_suite_fn(void) __attribute__((constructor));          \
+    static void cex_test__register_teardown_suite_fn(void)                                        \
     {                                                                                              \
         uassert(_cex_test__mainfn_state.teardown_suite_fn == NULL);                                \
-        _cex_test__mainfn_state.teardown_suite_fn = &cext_test__teardown_suite_fn;                 \
+        _cex_test__mainfn_state.teardown_suite_fn = &cex_test__teardown_suite_fn;                 \
     }                                                                                              \
-    Exception test$NOOPT cext_test__teardown_suite_fn(void)
+    Exception test$NOOPT cex_test__teardown_suite_fn(void)
 
 #define test$setup_case()                                                                          \
     extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
-    static Exception cext_test__setup_case_fn();                                                   \
-    static void cext_test__register_setup_case_fn(void) __attribute__((constructor));              \
-    static void cext_test__register_setup_case_fn(void)                                            \
+    static Exception cex_test__setup_case_fn();                                                   \
+    static void cex_test__register_setup_case_fn(void) __attribute__((constructor));              \
+    static void cex_test__register_setup_case_fn(void)                                            \
     {                                                                                              \
         uassert(_cex_test__mainfn_state.setup_case_fn == NULL);                                    \
-        _cex_test__mainfn_state.setup_case_fn = &cext_test__setup_case_fn;                         \
+        _cex_test__mainfn_state.setup_case_fn = &cex_test__setup_case_fn;                         \
     }                                                                                              \
-    Exception test$NOOPT cext_test__setup_case_fn(void)
+    Exception test$NOOPT cex_test__setup_case_fn(void)
 
 #define test$teardown_case()                                                                       \
     extern struct _cex_test_context_s _cex_test__mainfn_state;                                     \
-    static Exception cext_test__teardown_case_fn();                                                \
-    static void cext_test__register_teardown_case_fn(void) __attribute__((constructor));           \
-    static void cext_test__register_teardown_case_fn(void)                                         \
+    static Exception cex_test__teardown_case_fn();                                                \
+    static void cex_test__register_teardown_case_fn(void) __attribute__((constructor));           \
+    static void cex_test__register_teardown_case_fn(void)                                         \
     {                                                                                              \
         uassert(_cex_test__mainfn_state.teardown_case_fn == NULL);                                 \
-        _cex_test__mainfn_state.teardown_case_fn = &cext_test__teardown_case_fn;                   \
+        _cex_test__mainfn_state.teardown_case_fn = &cex_test__teardown_case_fn;                   \
     }                                                                                              \
-    Exception test$NOOPT cext_test__teardown_case_fn(void)
+    Exception test$NOOPT cex_test__teardown_case_fn(void)
 
 #define _test$tassert_fn(a, b)                                                                     \
     ({                                                                                             \
