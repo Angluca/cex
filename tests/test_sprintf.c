@@ -356,8 +356,13 @@ test$case(stb_sprintf_strings)
             // We in production test on big endian arch (%s-Bad) stuff likely to segfault!
             return EOK;
         }
+        char *valgrind_env = getenv("VALGRIND");
+        if (valgrind_env && valgrind_env[0] == '1') {
+            // Running under VALGRIND, causes errors, this is expected, just skip
+            return EOK;
+        }
 
-        /* (DEVELOPER MODE ONLY - early warning about wrong stuff)
+        /* (DEVELOPER MODE ONLY - early warning about wrong stuff / ASAN / VALGRIND failing)
          * Damage control wrong args (these are intentional bugs, trying to mitigate them)
          */
         // NOTE: cases below are invalid use of %s/%S and arguments

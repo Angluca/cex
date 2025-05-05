@@ -23,27 +23,27 @@ test$case(test_token_next_entity)
     mem$scope(tmem$, _){
         arr$(cex_token_s) items = arr$new(items, _);
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__preproc);
         tassert_eq(arr$len(items), 1);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__macro_const);
         tassert_eq(arr$len(items), 2);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__macro_func);
         tassert_eq(arr$len(items), 1);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__macro_func);
         tassert_eq(arr$len(items), 1);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__eof);
         tassert_eq(arr$len(items), 0);
     }
@@ -65,17 +65,17 @@ test$case(test_extern_vars)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__var_decl);
         tassert_eq(arr$len(items), 4);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_decl);
         tassert_eq(arr$len(items), 5);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__var_decl);
         tassert_eq(arr$len(items), 7);
 
@@ -101,17 +101,17 @@ test$case(test_extern_funcs)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_decl);
         tassert_eq(arr$len(items), 4);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__global_misc);
         tassert_eq(arr$len(items), 5);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d children: %ld\n%S\n", t.type, arr$len(items), t.value);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_decl);
         tassert_eq(arr$len(items), 7);
     }
@@ -132,17 +132,17 @@ test$case(test_funcs_decl_def)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_decl);
         tassert_eq(arr$len(items), 4);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_def);
         tassert_eq(arr$len(items), 4);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_def);
         tassert_eq(arr$len(items), 6);
     }
@@ -169,47 +169,47 @@ test$case(test_struct_def)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert_eq(arr$len(items), 6);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert_eq(arr$len(items), 4);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert_eq(arr$len(items), 4);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert_eq(arr$len(items), 4);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert_eq(arr$len(items), 7);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_decl);
         tassert_eq(arr$len(items), 5);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert_eq(arr$len(items), 3);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__var_def);
         tassert_eq(arr$len(items), 7);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__var_decl);
         tassert_eq(arr$len(items), 4);
     }
@@ -230,17 +230,17 @@ test$case(test_cex_struct_def)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_decl);
         tassert_eq(arr$len(items), 8);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_def);
         tassert_eq(arr$len(items), 7);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_struct);
         tassert_eq(arr$len(items), 4);
     }
@@ -265,7 +265,7 @@ test$case(test_funcs_decl_parse)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_decl);
         tassert_eq(arr$len(items), 5);
 
@@ -345,7 +345,7 @@ test$case(test_funcs_def_parse_args)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_decl);
 
 
@@ -417,7 +417,7 @@ test$case(test_funcs_def_multiline)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_def);
 
 
@@ -457,7 +457,7 @@ test$case(test_funcs_decl_parse_ret_type)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_def);
 
         cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
@@ -583,7 +583,7 @@ test$case(test_funcs_decl_parse_macros)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__macro_func);
 
 
@@ -666,7 +666,7 @@ test$case(test_funcs_decl_with_paren_attrs)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_def);
 
         cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
@@ -721,7 +721,7 @@ test$case(test_extra_ignore_keywords)
         arr$(cex_token_s) items = arr$new(items, _);
 
         t = CexParser_next_entity(&lx, &items);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_def);
 
         const char* extra_ignore = "(foo|bar)";
@@ -786,14 +786,14 @@ test$case(test_cex_struct_def_decl)
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_decl);
         tassert_eq(arr$len(items), 8);
         tassert(d == NULL);
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_def);
         tassert_eq(arr$len(items), 7);
         tassert(d != NULL);
@@ -805,7 +805,7 @@ test$case(test_cex_struct_def_decl)
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_struct);
         tassert_eq(arr$len(items), 4);
         tassert(d != NULL);
@@ -834,14 +834,14 @@ test$case(test_cex_decl_multiline)
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_struct);
         tassert(d != NULL);
         tassert_eq(d->line, 1);
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_struct);
         tassert(d != NULL);
         tassert_eq(d->line, 6);
@@ -875,7 +875,7 @@ test$case(test_struct_decl_with_attr)
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert(d != NULL);
 
@@ -904,7 +904,7 @@ test$case(test_simple_typedef_decl)
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert(d != NULL);
         tassert_eq(d->name, str$s("sbuf_c"));
@@ -937,7 +937,7 @@ test$case(test_unnamed_types)
 
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
-        log$debug("Entity:  type: %d type_str: '%s' children: %ld\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
+        log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__typedef);
         tassert(d == NULL);
     }
@@ -961,7 +961,7 @@ test$case(test_unnamed_types_typedef)
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
         log$debug(
-            "Entity:  type: %d type_str: '%s' children: %ld\n%S\n",
+            "Entity:  type: %d type_str: '%s' children: %zu\n%S\n",
             t.type,
             CexTkn_str[t.type],
             arr$len(items),
@@ -999,7 +999,7 @@ test$case(test_multiline_single_docstr)
         t = CexParser_next_entity(&lx, &items);
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
         log$debug(
-            "Entity:  type: %d type_str: '%s' children: %ld\n%S\n",
+            "Entity:  type: %d type_str: '%s' children: %zu\n%S\n",
             t.type,
             CexTkn_str[t.type],
             arr$len(items),
