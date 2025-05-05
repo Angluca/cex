@@ -178,12 +178,12 @@ CEX is tested on various platforms, compiler versions, sanitizers, and optimizat
 | Linux Alpine x86_64 | ✅| ✅  |✅  |✅ |✅ |
 | Linux Alpine x86 | ✅  | |  |✅ |✅ |
 | Linux Alpine aarch64 | ✅|   |  |✅ |✅ |
-| Linux Alpine armhf | ✅|   |  |✅ |✅ |
-| Linux Alpine armv7 | ✅|   |  |✅ |✅ |
+| Linux Alpine armhf | |   |  |✅ |✅ |
+| Linux Alpine armv7 |  |   |  |✅ |✅ |
 | Linux Alpine loongarch64 |  |  |  |✅ |✅ |
-| Linux Alpine ppc64le | ✅  |  |  |✅ |✅ |
+| Linux Alpine ppc64le |   |  |  |✅ |✅ |
 | Linux Alpine riscv64 |  |  |  |✅ |✅ |
-| Linux Alpine s390x | ✅ |  |  |✅ |✅ |
+| Linux Alpine s390x |  |  |  |✅ |✅ |
 | Windows 2019 (Win10) x64 | |  ✅ | ✅ |✅ |✅ |
 | Windows 2022 (Win10) x64 | |  ✅ | ✅ |✅ |✅ |
 | Windows 2025 (Win11) x64 | |  ✅ | ✅ |✅ |✅ |

@@ -58,6 +58,11 @@ jobs:
       matrix:
         compiler: ["gcc-12", "gcc-13", "gcc-14", "clang-16", "clang-17", "clang-18"]
         cex_preset: ["CEX_DEBUG", "CEX_RELEASE", "CEX_NDEBUG"]
+        include:
+          - cex_preset: CEX_VALGRIND
+            compiler: "gcc-14"
+          - cex_preset: CEX_VALGRIND
+            compiler: "clang-18"
 
     steps:
       - name: Checkout cex

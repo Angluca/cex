@@ -15,7 +15,6 @@ jobs:
       matrix:
         cex_preset: 
           - CEX_RELEASE
-          - CEX_VALGRIND
         arch:
           - x86_64
           - x86
@@ -26,6 +25,13 @@ jobs:
           - armv7
           - loongarch64
           - ppc64le
+        include:
+          - cex_preset: CEX_VALGRIND
+            arch: x86_64
+          - cex_preset: CEX_VALGRIND
+            arch: x86
+          - cex_preset: CEX_VALGRIND
+            arch: aarch64
     steps:
       - uses: actions/checkout@v2
 
