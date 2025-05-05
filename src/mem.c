@@ -14,8 +14,8 @@ _cex_allocator_arena_cleanup(IAllocator* allc)
     AllocatorArena.destroy(*allc);
 }
 
-// NOTE: destructor(0) - zero priority is lowest for destructors
-__attribute__((destructor(0))) 
+// NOTE: destructor(101) - 101 lowest priority for destructors
+__attribute__((destructor(101))) 
 void _cex_global_allocators_destructor() {
     AllocatorArena_c* allc = (AllocatorArena_c*)tmem$;
     allocator_arena_page_s* page = allc->last_page;
