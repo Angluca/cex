@@ -168,27 +168,28 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 - Macos - x64 / arm64 (clang)
 
 ### Test suite
-CEX is tested on various platforms, compiler versions, sanitizers, and optimization flags, ensuring future compatibility and stability. Sanitizers verify the absence of memory leaks, buffer overflows, and undefined behavior. Additionally, tests with release flags confirm that compiler optimizations do not interfere with the code logic.
+CEX is tested on various platforms, compiler versions, sanitizers, and optimization flags, ensuring future compatibility and stability. Sanitizers and Valgrind verify the absence of memory leaks, buffer overflows, and undefined behavior. Additionally, tests with release flags confirm that compiler optimizations do not interfere with the code logic.
 
-| OS / Build type   |      UBSAN      |  ASAN | Release -O3 | Release -NDEBUG -O2 |
-|:----------|:-------------:|:------:| :-----: | :-----: |
-| Linux Ubuntu 2204 x64 |  ✅ | ✅ |✅ |✅ |
-| Linux Ubuntu 2404 x64 |  ✅ | ✅ |✅ |✅ |
-| Linux Ubuntu 2404 x32 |  ✅ | ✅ |✅ |✅ |
-| Linux Alpine x86_64 | ✅  |✅  |✅ |✅ |
-| Linux Alpine x86 |   |  |✅ |✅ |
-| Linux Alpine aarch64 |   |  |✅ |✅ |
-| Linux Alpine armhf |   |  |✅ |✅ |
-| Linux Alpine loongarch64 |   |  |✅ |✅ |
-| Linux Alpine ppc64le |   |  |✅ |✅ |
-| Linux Alpine riscv64 |   |  |✅ |✅ |
-| Linux Alpine s390x |   |  |✅ |✅ |
-| Windows 2019 (Win10) x64 |  ✅ | ✅ |✅ |✅ |
-| Windows 2022 (Win10) x64 |  ✅ | ✅ |✅ |✅ |
-| Windows 2025 (Win11) x64 |  ✅ | ✅ |✅ |✅ |
-| MacOS 13 x64 |  ✅ | ✅ |✅ |✅ |
-| MacOS 14 arm64 |  ✅ | ✅ |✅ |✅ |
-| MacOS 15 arm64 |  ✅ | ✅ |✅ |✅ |
+| OS / Build type   | Valgrind |     UBSAN      |  ASAN | Release -O3 | Release -NDEBUG -O2 |
+|:----------|:---------:|:-------------:|:------:| :-----: | :-----: |
+| Linux Ubuntu 2204 x64 |   ✅ |✅ | ✅ |✅ |✅ |
+| Linux Ubuntu 2404 x64 | ✅|  ✅ | ✅ |✅ |✅ |
+| Linux Ubuntu 2404 x32 |✅ |  ✅ | ✅ |✅ |✅ |
+| Linux Alpine x86_64 | ✅| ✅  |✅  |✅ |✅ |
+| Linux Alpine x86 | ✅  | |  |✅ |✅ |
+| Linux Alpine aarch64 | ✅|   |  |✅ |✅ |
+| Linux Alpine armhf | ✅|   |  |✅ |✅ |
+| Linux Alpine armv7 | ✅|   |  |✅ |✅ |
+| Linux Alpine loongarch64 |  |  |  |✅ |✅ |
+| Linux Alpine ppc64le | ✅  |  |  |✅ |✅ |
+| Linux Alpine riscv64 |  |  |  |✅ |✅ |
+| Linux Alpine s390x | ✅ |  |  |✅ |✅ |
+| Windows 2019 (Win10) x64 | |  ✅ | ✅ |✅ |✅ |
+| Windows 2022 (Win10) x64 | |  ✅ | ✅ |✅ |✅ |
+| Windows 2025 (Win11) x64 | |  ✅ | ✅ |✅ |✅ |
+| MacOS 13 x64 |  |  ✅ | ✅ |✅ |✅ |
+| MacOS 14 arm64 |  |  ✅ | ✅ |✅ |✅ |
+| MacOS 15 arm64 | |  ✅ | ✅ |✅ |✅ |
 
 
 ## Licence
