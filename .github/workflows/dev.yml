@@ -31,6 +31,7 @@ jobs:
           #sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           #sudo apt-get update
           sudo apt-get install ${{ matrix.compiler }}
+          sudo apt-get install valgrind
           echo "Replacing: cc to ${{ matrix.compiler }}"
           sudo rm /usr/bin/cc
           sudo ln -s /usr/bin/${{ matrix.compiler }} /usr/bin/cc 
@@ -47,6 +48,11 @@ jobs:
 
       - uses: ./.github/actions/cex_test
         name: cex test suite
+
+      - name: valgrind tests
+        run: |
+          ./cex -DCEX_VALGRIND config
+          ./cex test debug all
 
       - uses: actions/upload-artifact@master # capture all binaries
         with:
@@ -189,6 +195,7 @@ jobs:
           apk add file
           apk add pkgconf
           apk add zlib-dev
+          apk add valgrind
 
       - name: Environment
         shell: alpine.sh {0}
@@ -212,3 +219,9 @@ jobs:
           ./cex test run all
           #./cex test run tests/test_allocator_heap.c
           #./cex test run tests/test_sprintf.c
+      #
+      - name: valgrind tests
+        shell: alpine.sh {0}
+        run: |
+          ./cex -DCEX_VALGRIND config
+          ./cex test debug all
