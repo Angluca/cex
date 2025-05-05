@@ -65,25 +65,18 @@ jobs:
         run: |
           ./cex test run all
 
-      - name: valgrind tests
-        shell: alpine.sh {0}
-        run: |
-          ./cex -DCEX_VALGRIND config
-          ./cex test debug all
-
   tests-linux-valgrind:
     name: alpine-${{ matrix.arch }}-${{ matrix.cex_preset }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - cex_preset: CEX_VALGRIND
-            arch: x86_64
-          - cex_preset: CEX_VALGRIND
-            arch: x86
-          - cex_preset: CEX_VALGRIND
-            arch: aarch64
+        cex_preset: 
+          - CEX_VALGRIND
+        arch:
+          - x86_64
+          - x86
+          - aarch64
     steps:
       - uses: actions/checkout@v2
 
@@ -118,7 +111,7 @@ jobs:
           echo "Compiled cex executable"
           file ./cex
           echo "CEX config"
-          ./cex -DCEX_VALGRIND config
+          ./cex -D${{ matrix.cex_preset }} config
 
       - name: valgrind tests
         shell: alpine.sh {0}
