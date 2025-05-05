@@ -1,4 +1,4 @@
-name: Multi Arch
+name: Multi-arch
 
 on:
   push:
@@ -15,6 +15,7 @@ jobs:
       matrix:
         cex_preset: 
           - CEX_RELEASE
+          - CEX_VALGRIND
         arch:
           - x86_64
           - x86
@@ -43,6 +44,7 @@ jobs:
           apk add file
           apk add pkgconf
           apk add zlib-dev
+          apk add valgrind || echo "valgrind is not available for this arch"
 
       - name: Environment
         shell: alpine.sh {0}
@@ -64,3 +66,13 @@ jobs:
         shell: alpine.sh {0}
         run: |
           ./cex test run all
+
+      - name: valgrind tests
+        shell: alpine.sh {0}
+        run: |
+          if command -v valgrind >/dev/null 2>&1; then
+            ./cex -DCEX_VALGRIND config
+            ./cex test debug all
+          else
+            echo "valgrind is not available on this arch"
+          fi
