@@ -81,6 +81,10 @@ _CexParser__scan_number(CexParser_c* lx)
             case '*':
             case '+':
             case '-':
+            case ',':
+            case ')':
+            case ']':
+            case '}':
                 lx$rewind(lx);
                 return t;
         }

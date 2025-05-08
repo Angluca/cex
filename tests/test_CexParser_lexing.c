@@ -104,6 +104,11 @@ test$case(test_token_numbers)
         { "0X1234567890abcdefABCDEF   !  ", "0X1234567890abcdefABCDEF", CexTkn__number },
         { "0b01010101   !  ", "0b01010101", CexTkn__number },
         { "0.12", "0.12", CexTkn__number },
+        { "0.12,", "0.12", CexTkn__number },
+        { "0.12)", "0.12", CexTkn__number },
+        { "0.12]", "0.12", CexTkn__number },
+        { "0.12}", "0.12", CexTkn__number },
+        { "0.12(", "0.12(", CexTkn__number }, // WARNING: invalid syntax!
     };
     for$each(it, tokens)
     {
