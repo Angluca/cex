@@ -820,177 +820,177 @@ test$case(str_to__signed_num)
 
     num = 0;
     s = "1";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 1);
 
     num = 0;
     s = " ";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = " -";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = " +";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "+";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "100";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 100);
 
     num = 0;
     s = "      -100";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, -100);
 
     num = 0;
     s = "      +100";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 100);
 
     num = 0;
     s = "-100";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, -100);
 
     num = 10;
     s = "0";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "0xf";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 15);
 
     num = 0;
     s = "-0xf";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, -15);
 
 
     num = 0;
     s = "0x0F";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 15);
 
 
     num = 0;
     s = "0x0A";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 10);
 
     num = 0;
     s = "0x0a";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 10);
 
     num = 0;
     s = "127";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, INT8_MAX);
 
     num = 0;
     s = "-127";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, -127);
 
     num = 0;
     s = "-128";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, INT8_MIN);
 
     num = 0;
     s = "-129";
-    tassert_er(Error.overflow, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.overflow, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "128";
-    tassert_er(Error.overflow, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.overflow, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "-0x80";
-    tassert_er(Error.ok, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.ok, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, -128);
     tassert_eq(num, INT8_MIN);
 
     num = 0;
     s = "-0x";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
     s = "0x7f";
-    tassert_er(Error.ok, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.ok, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 127);
     tassert_eq(num, INT8_MAX);
 
     num = 0;
     s = "0x80";
-    tassert_er(Error.overflow, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.overflow, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
     s = "-100";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, -100, 100));
     tassert_eq(num, -100);
 
     num = 0;
     s = "-101";
-    tassert_er(Error.overflow, cex_str__to_signed_num(s, &num, -100, 100));
+    tassert_er(Error.overflow, cex_str__to_signed_num(s, 0, &num, -100, 100));
 
     num = 0;
     s = "101";
-    tassert_er(Error.overflow, cex_str__to_signed_num(s, &num, -100, 100));
+    tassert_er(Error.overflow, cex_str__to_signed_num(s, 0, &num, -100, 100));
 
     num = 0;
     s = "-000000000127    ";
-    tassert_er(EOK, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, -127);
 
     num = 0;
     s = "    ";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
     s = "12 2";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
     s = "-000000000127a";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
     s = "-000000000127h";
-    tassert_er(Error.argument, cex_str__to_signed_num(s, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
 
     num = 0;
     s = "-9223372036854775807";
-    tassert_er(Error.ok, cex_str__to_signed_num(s, &num, INT64_MIN + 1, INT64_MAX));
+    tassert_er(Error.ok, cex_str__to_signed_num(s, 0, &num, INT64_MIN + 1, INT64_MAX));
     tassert_eq(num, -9223372036854775807L);
 
     num = 0;
     s = "-9223372036854775808";
-    tassert_er(Error.overflow, cex_str__to_signed_num(s, &num, INT64_MIN + 1, INT64_MAX));
+    tassert_er(Error.overflow, cex_str__to_signed_num(s, 0, &num, INT64_MIN + 1, INT64_MAX));
 
     num = 0;
     s = "9223372036854775807";
-    tassert_er(Error.ok, cex_str__to_signed_num(s, &num, INT64_MIN + 1, INT64_MAX));
+    tassert_er(Error.ok, cex_str__to_signed_num(s, 0, &num, INT64_MIN + 1, INT64_MAX));
     tassert_eq(num, 9223372036854775807L);
 
     num = 0;
     s = "9223372036854775808";
-    tassert_er(Error.overflow, cex_str__to_signed_num(s, &num, INT64_MIN + 1, INT64_MAX));
+    tassert_er(Error.overflow, cex_str__to_signed_num(s, 0, &num, INT64_MIN + 1, INT64_MAX));
 
     return EOK;
 }
@@ -1123,161 +1123,161 @@ test$case(str_to__unsigned_num)
 
     num = 0;
     s = "1";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 1);
 
     num = 0;
     s = " ";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = " -";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = " +";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "+";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "100";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 100);
 
     num = 0;
     s = "      -100";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 0;
     s = "      +100";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 100);
 
     num = 0;
     s = "-100";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 10;
     s = "0";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "0xf";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 15);
 
     num = 0;
     s = "0x";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 0;
     s = "-0xf";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
 
     num = 0;
     s = "0x0F";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 15);
 
 
     num = 0;
     s = "0x0A";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 10);
 
     num = 0;
     s = "0x0a";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 10);
 
     num = 0;
     s = "127";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, INT8_MAX);
 
     num = 0;
     s = "-127";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 0;
     s = "-128";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 0;
     s = "255";
-    tassert_er(Error.ok, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.ok, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 255);
 
     num = 0;
     s = "256";
-    tassert_er(Error.overflow, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.overflow, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "0xff";
-    tassert_er(Error.ok, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.ok, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 255);
     tassert_eq(num, UINT8_MAX);
 
 
     num = 0;
     s = "100";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, 100));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, 100));
     tassert_eq(num, 100);
 
     num = 0;
     s = "101";
-    tassert_er(Error.overflow, cex_str__to_unsigned_num(s, &num, 100));
+    tassert_er(Error.overflow, cex_str__to_unsigned_num(s, 0, &num, 100));
 
 
     num = 0;
     s = "000000000127    ";
-    tassert_er(EOK, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(EOK, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
     tassert_eq(num, 127);
 
     num = 0;
     s = "    ";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 0;
     s = "12 2";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 0;
     s = "000000000127a";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 0;
     s = "000000000127h";
-    tassert_er(Error.argument, cex_str__to_unsigned_num(s, &num, UINT8_MAX));
+    tassert_er(Error.argument, cex_str__to_unsigned_num(s, 0, &num, UINT8_MAX));
 
     num = 0;
     s = "9223372036854775807";
-    tassert_er(Error.ok, cex_str__to_unsigned_num(s, &num, UINT64_MAX));
+    tassert_er(Error.ok, cex_str__to_unsigned_num(s, 0, &num, UINT64_MAX));
     tassert_eq(num, 9223372036854775807L);
 
     num = 0;
     s = "9223372036854775807";
-    tassert_er(Error.ok, cex_str__to_unsigned_num(s, &num, UINT64_MAX));
+    tassert_er(Error.ok, cex_str__to_unsigned_num(s, 0, &num, UINT64_MAX));
     tassert_eq(num, 9223372036854775807L);
 
     num = 0;
     s = "18446744073709551615";
-    tassert_er(Error.ok, cex_str__to_unsigned_num(s, &num, UINT64_MAX));
+    tassert_er(Error.ok, cex_str__to_unsigned_num(s, 0, &num, UINT64_MAX));
     tassert(num == UINT64_C(18446744073709551615));
 
     num = 0;
     s = "18446744073709551616";
-    tassert_er(Error.overflow, cex_str__to_unsigned_num(s, &num, UINT64_MAX));
+    tassert_er(Error.overflow, cex_str__to_unsigned_num(s, 0, &num, UINT64_MAX));
 
     return EOK;
 }
@@ -1304,6 +1304,10 @@ test$case(test_str_to_u8)
     tassert_er(Error.ok, str.convert.to_u8(s, &num));
     tassert_eq(num, 0);
 
+    num = 0;
+    s = "0";
+    tassert_er(Error.ok, str$convert(s, &num));
+    tassert_eq(num, 0);
 
     return EOK;
 }
@@ -1391,190 +1395,190 @@ test$case(str_to__double)
 
     num = 0;
     s = "1";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 1.0);
 
     num = 0;
     s = "1.5";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 1.5);
 
     num = 0;
     s = "-1.5";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, -1.5);
 
     num = 0;
     s = "1e3";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 1000);
 
     num = 0;
     s = "1e-3";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 1e-3);
 
     num = 0;
     s = "123e-30";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 123e-30);
 
     num = 0;
     s = "123e+30";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 123e+30);
 
     num = 0;
     s = "123.321E+30";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 123.321e+30);
 
     num = 0;
     s = "-0.";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, -0.0);
 
     num = 0;
     s = "+.5";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 0.5);
 
     num = 0;
     s = ".0e10";
-    tassert_er(EOK, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(EOK, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 0.0);
 
     num = 0;
     s = ".";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 0.0);
 
     num = 0;
     s = ".e10";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 0.0);
 
     num = 0;
     s = "00000000001.e00000010";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 10000000000.0);
 
     num = 0;
     s = "e10";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "10e";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "10e0.3";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "10a";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "10.0a";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "10.0e-a";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "      10.5     ";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, 10.5);
 
     num = 0;
     s = "      10.5     z";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "n";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "na";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "nan";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, NAN);
 
     num = 0;
     s = "   NAN    ";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, NAN);
 
     num = 0;
     s = "   NaN    ";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, NAN);
 
     num = 0;
     s = "   nan    y";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "   nanny";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "inf";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, INFINITY);
 
     num = 0;
     s = "INF";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, INFINITY);
     tassert(isinf(num));
 
     num = 0;
     s = "-iNf";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, -INFINITY);
     tassert(isinf(num));
 
     num = 0;
     s = "-infinity";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, -INFINITY);
     tassert(isinf(num));
 
     num = 0;
     s = "   INFINITY   ";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
     tassert_eq(num, INFINITY);
     tassert(isinf(num));
 
     num = 0;
     s = "INFINITY0";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "INFO";
-    tassert_er(Error.argument, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.argument, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "1e100";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "1e101";
-    tassert_er(Error.overflow, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.overflow, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "1e-100";
-    tassert_er(Error.ok, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.ok, cex_str__to_double(s, 0, &num, -100, 100));
 
     num = 0;
     s = "1e-101";
-    tassert_er(Error.overflow, cex_str__to_double(s, &num, -100, 100));
+    tassert_er(Error.overflow, cex_str__to_double(s, 0, &num, -100, 100));
 
     return EOK;
 }
@@ -2479,6 +2483,138 @@ test$case(test_cmp_slice_ignore_case)
         arr$sort(items, str.slice.qscmpi);
         tassert_eq_arr(items, expected);
     }
+    return EOK;
+}
+
+test$case(test_str_convert_macro_u8)
+{
+    char b[] = {"200"};
+    u8 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, 200);
+    return EOK;
+}
+
+test$case(test_str_convert_macro_i8)
+{
+    char b[] = {"-20"};
+    i8 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, -20);
+    return EOK;
+}
+
+test$case(test_str_convert_macro_u16)
+{
+    char b[] = {"200"};
+    u16 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, 200);
+    return EOK;
+}
+
+test$case(test_str_convert_macro_i16)
+{
+    char b[] = {"-20"};
+    i16 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, -20);
+    return EOK;
+}
+
+
+test$case(test_str_convert_macro_u32)
+{
+    char b[] = {"200"};
+    u32 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, 200);
+    return EOK;
+}
+
+test$case(test_str_convert_macro_i32)
+{
+    char b[] = {"-20"};
+    i32 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, -20);
+    return EOK;
+}
+
+
+test$case(test_str_convert_macro_u64)
+{
+    char b[] = {"200"};
+    u64 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, 200);
+    return EOK;
+}
+
+test$case(test_str_convert_macro_i64)
+{
+    char b[] = {"-20"};
+    i64 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, -20);
+    return EOK;
+}
+
+test$case(test_str_convert_macro_f32)
+{
+    char b[] = {"200"};
+    f32 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, 200);
+    return EOK;
+}
+
+test$case(test_str_convert_macro_f64)
+{
+    char b[] = {"-20"};
+    i64 num = 0;
+    tassert_er(EOK, str$convert("8", &num));
+    tassert_eq(num, 8);
+    tassert_er(EOK, str$convert(str$s("9"), &num));
+    tassert_eq(num, 9);
+    tassert_er(EOK, str$convert(b, &num));
+    tassert_eq(num, -20);
     return EOK;
 }
 

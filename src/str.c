@@ -633,7 +633,7 @@ cex_str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterat
 
 
 static Exception
-cex_str__to_signed_num(const char* self, i64* num, i64 num_min, i64 num_max)
+cex_str__to_signed_num(const char* self, usize len, i64* num, i64 num_min, i64 num_max)
 {
     _Static_assert(sizeof(i64) == 8, "unexpected u64 size");
     uassert(num_min < num_max);
@@ -648,7 +648,9 @@ cex_str__to_signed_num(const char* self, i64* num, i64 num_min, i64 num_max)
     }
 
     const char* s = self;
-    usize len = strlen(self);
+    if (len == 0) {
+        len = strlen(self);
+    }
     usize i = 0;
 
     for (; s[i] == ' ' && i < len; i++) {
@@ -720,7 +722,7 @@ cex_str__to_signed_num(const char* self, i64* num, i64 num_min, i64 num_max)
 }
 
 static Exception
-cex_str__to_unsigned_num(const char* s, u64* num, u64 num_max)
+cex_str__to_unsigned_num(const char* s, usize len, u64* num, u64 num_max)
 {
     _Static_assert(sizeof(u64) == 8, "unexpected u64 size");
     uassert(num_max > 0);
@@ -730,7 +732,9 @@ cex_str__to_unsigned_num(const char* s, u64* num, u64 num_max)
         return Error.argument;
     }
 
-    usize len = strlen(s);
+    if (len == 0) {
+        len = strlen(s);
+    }
     usize i = 0;
 
     for (; s[i] == ' ' && i < len; i++) {
@@ -801,7 +805,7 @@ cex_str__to_unsigned_num(const char* s, u64* num, u64 num_max)
 }
 
 static Exception
-cex_str__to_double(const char* self, double* num, i32 exp_min, i32 exp_max)
+cex_str__to_double(const char* self, usize len, double* num, i32 exp_min, i32 exp_max)
 {
     _Static_assert(sizeof(double) == 8, "unexpected double precision");
     if (unlikely(self == NULL)) {
@@ -809,7 +813,9 @@ cex_str__to_double(const char* self, double* num, i32 exp_min, i32 exp_max)
     }
 
     const char* s = self;
-    usize len = strlen(s);
+    if (len == 0) {
+        len = strlen(s);
+    }
     usize i = 0;
     double number = 0.0;
 
@@ -977,104 +983,166 @@ cex_str__to_double(const char* self, double* num, i32 exp_min, i32 exp_max)
 }
 
 static Exception
-cex_str__convert__to_f32(const char* s, f32* num)
+cex_str__convert__to_f32s(str_s s, f32* num)
 {
     uassert(num != NULL);
     f64 res = 0;
-    Exc r = cex_str__to_double(s, &res, -37, 38);
+    Exc r = cex_str__to_double(s.buf, s.len, &res, -37, 38);
     *num = (f32)res;
     return r;
 }
 
 static Exception
-cex_str__convert__to_f64(const char* s, f64* num)
+cex_str__convert__to_f64s(str_s s, f64* num)
 {
     uassert(num != NULL);
-    return cex_str__to_double(s, num, -307, 308);
+    return cex_str__to_double(s.buf, s.len, num, -307, 308);
+}
+
+static Exception
+cex_str__convert__to_i8s(str_s s, i8* num)
+{
+    uassert(num != NULL);
+    i64 res = 0;
+    Exc r = cex_str__to_signed_num(s.buf, s.len, &res, INT8_MIN, INT8_MAX);
+    *num = res;
+    return r;
+}
+
+static Exception
+cex_str__convert__to_i16s(str_s s, i16* num)
+{
+    uassert(num != NULL);
+    i64 res = 0;
+    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT16_MIN, INT16_MAX);
+    *num = res;
+    return r;
+}
+
+static Exception
+cex_str__convert__to_i32s(str_s s, i32* num)
+{
+    uassert(num != NULL);
+    i64 res = 0;
+    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT32_MIN, INT32_MAX);
+    *num = res;
+    return r;
+}
+
+
+static Exception
+cex_str__convert__to_i64s(str_s s, i64* num)
+{
+    uassert(num != NULL);
+    i64 res = 0;
+    // NOTE:INT64_MIN+1 because negating of INT64_MIN leads to UB!
+    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT64_MIN + 1, INT64_MAX);
+    *num = res;
+    return r;
+}
+
+static Exception
+cex_str__convert__to_u8s(str_s s, u8* num)
+{
+    uassert(num != NULL);
+    u64 res = 0;
+    Exc r = cex_str__to_unsigned_num(s.buf, s.len, &res, UINT8_MAX);
+    *num = res;
+    return r;
+}
+
+static Exception
+cex_str__convert__to_u16s(str_s s, u16* num)
+{
+    uassert(num != NULL);
+    u64 res = 0;
+    Exc r = cex_str__to_unsigned_num(s.buf, s.len, &res, UINT16_MAX);
+    *num = res;
+    return r;
+}
+
+static Exception
+cex_str__convert__to_u32s(str_s s, u32* num)
+{
+    uassert(num != NULL);
+    u64 res = 0;
+    Exc r = cex_str__to_unsigned_num(s.buf, s.len, &res, UINT32_MAX);
+    *num = res;
+    return r;
+}
+
+static Exception
+cex_str__convert__to_u64s(str_s s, u64* num)
+{
+    uassert(num != NULL);
+    u64 res = 0;
+    Exc r = cex_str__to_unsigned_num(s.buf, s.len, &res, UINT64_MAX);
+    *num = res;
+
+    return r;
+}
+
+static Exception
+cex_str__convert__to_f32(const char* s, f32* num)
+{
+    return cex_str__convert__to_f32s(str.sstr(s), num);
+}
+
+static Exception
+cex_str__convert__to_f64(const char* s, f64* num)
+{
+    return cex_str__convert__to_f64s(str.sstr(s), num);
 }
 
 static Exception
 cex_str__convert__to_i8(const char* s, i8* num)
 {
-    uassert(num != NULL);
-    i64 res = 0;
-    Exc r = cex_str__to_signed_num(s, &res, INT8_MIN, INT8_MAX);
-    *num = res;
-    return r;
+    return cex_str__convert__to_i8s(str.sstr(s), num);
 }
 
 static Exception
 cex_str__convert__to_i16(const char* s, i16* num)
 {
-    uassert(num != NULL);
-    i64 res = 0;
-    var r = cex_str__to_signed_num(s, &res, INT16_MIN, INT16_MAX);
-    *num = res;
-    return r;
+    return cex_str__convert__to_i16s(str.sstr(s), num);
 }
 
 static Exception
 cex_str__convert__to_i32(const char* s, i32* num)
 {
-    uassert(num != NULL);
-    i64 res = 0;
-    var r = cex_str__to_signed_num(s, &res, INT32_MIN, INT32_MAX);
-    *num = res;
-    return r;
+    return cex_str__convert__to_i32s(str.sstr(s), num);
 }
 
 
 static Exception
 cex_str__convert__to_i64(const char* s, i64* num)
 {
-    uassert(num != NULL);
-    i64 res = 0;
-    // NOTE:INT64_MIN+1 because negating of INT64_MIN leads to UB!
-    var r = cex_str__to_signed_num(s, &res, INT64_MIN + 1, INT64_MAX);
-    *num = res;
-    return r;
+    return cex_str__convert__to_i64s(str.sstr(s), num);
 }
 
 static Exception
 cex_str__convert__to_u8(const char* s, u8* num)
 {
-    uassert(num != NULL);
-    u64 res = 0;
-    Exc r = cex_str__to_unsigned_num(s, &res, UINT8_MAX);
-    *num = res;
-    return r;
+    return cex_str__convert__to_u8s(str.sstr(s), num);
 }
 
 static Exception
 cex_str__convert__to_u16(const char* s, u16* num)
 {
-    uassert(num != NULL);
-    u64 res = 0;
-    Exc r = cex_str__to_unsigned_num(s, &res, UINT16_MAX);
-    *num = res;
-    return r;
+    return cex_str__convert__to_u16s(str.sstr(s), num);
 }
 
 static Exception
 cex_str__convert__to_u32(const char* s, u32* num)
 {
-    uassert(num != NULL);
-    u64 res = 0;
-    Exc r = cex_str__to_unsigned_num(s, &res, UINT32_MAX);
-    *num = res;
-    return r;
+    return cex_str__convert__to_u32s(str.sstr(s), num);
 }
 
 static Exception
 cex_str__convert__to_u64(const char* s, u64* num)
 {
-    uassert(num != NULL);
-    u64 res = 0;
-    Exc r = cex_str__to_unsigned_num(s, &res, UINT64_MAX);
-    *num = res;
-
-    return r;
+    return cex_str__convert__to_u64s(str.sstr(s), num);
 }
+
 
 static char*
 _cex_str__fmt_callback(const char* buf, void* user, u32 len)
@@ -1617,15 +1685,25 @@ const struct __cex_namespace__str str = {
 
     .convert = {
         .to_f32 = cex_str__convert__to_f32,
+        .to_f32s = cex_str__convert__to_f32s,
         .to_f64 = cex_str__convert__to_f64,
+        .to_f64s = cex_str__convert__to_f64s,
         .to_i16 = cex_str__convert__to_i16,
+        .to_i16s = cex_str__convert__to_i16s,
         .to_i32 = cex_str__convert__to_i32,
+        .to_i32s = cex_str__convert__to_i32s,
         .to_i64 = cex_str__convert__to_i64,
+        .to_i64s = cex_str__convert__to_i64s,
         .to_i8 = cex_str__convert__to_i8,
+        .to_i8s = cex_str__convert__to_i8s,
         .to_u16 = cex_str__convert__to_u16,
+        .to_u16s = cex_str__convert__to_u16s,
         .to_u32 = cex_str__convert__to_u32,
+        .to_u32s = cex_str__convert__to_u32s,
         .to_u64 = cex_str__convert__to_u64,
+        .to_u64s = cex_str__convert__to_u64s,
         .to_u8 = cex_str__convert__to_u8,
+        .to_u8s = cex_str__convert__to_u8s,
     },
 
     .slice = {
