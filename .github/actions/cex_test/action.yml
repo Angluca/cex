@@ -30,6 +30,15 @@ runs:
         ./cex help --example str.find
         ./cex help str.
 
+    - name: Cex Stats
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: cex stats"
+        echo "---------------------------------------------------------------------"
+        ./cex stats -v
+
     - name: Cex New
       shell: ${{ inputs.shell }}
       run: |
