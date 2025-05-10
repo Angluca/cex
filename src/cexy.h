@@ -154,11 +154,16 @@ See `cex help str.match` for more information about patter syntax.
           .func = cexy.cmd.simple_test,                                                            \
           .help = "Generic unit test build/run/debug" }
 
+#    define cexy$cmd_stats                                                                          \
+        { .name = "stats",                                                                          \
+          .func = cexy.cmd.stats,                                                            \
+          .help = "Calculate project lines of code and quality stats" }
+
 #    define cexy$cmd_app                                                                           \
         { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
 
 #    define cexy$cmd_all                                                                           \
-        cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config, cexy$cmd_libfetch
+        cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_stats, cexy$cmd_config, cexy$cmd_libfetch
 
 #    define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
@@ -255,6 +260,7 @@ struct __cex_namespace__cexy {
         Exception       (*process)(int argc, char** argv, void* user_ctx);
         Exception       (*simple_app)(int argc, char** argv, void* user_ctx);
         Exception       (*simple_test)(int argc, char** argv, void* user_ctx);
+        Exception       (*stats)(int argc, char** argv, void* user_ctx);
     } cmd;
 
     struct {

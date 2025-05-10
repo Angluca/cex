@@ -3936,11 +3936,16 @@ See `cex help str.match` for more information about patter syntax.
           .func = cexy.cmd.simple_test,                                                            \
           .help = "Generic unit test build/run/debug" }
 
+#    define cexy$cmd_stats                                                                          \
+        { .name = "stats",                                                                          \
+          .func = cexy.cmd.stats,                                                            \
+          .help = "Calculate project lines of code and quality stats" }
+
 #    define cexy$cmd_app                                                                           \
         { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
 
 #    define cexy$cmd_all                                                                           \
-        cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_config, cexy$cmd_libfetch
+        cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_stats, cexy$cmd_config, cexy$cmd_libfetch
 
 #    define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
 
@@ -4037,6 +4042,7 @@ struct __cex_namespace__cexy {
         Exception       (*process)(int argc, char** argv, void* user_ctx);
         Exception       (*simple_app)(int argc, char** argv, void* user_ctx);
         Exception       (*simple_test)(int argc, char** argv, void* user_ctx);
+        Exception       (*stats)(int argc, char** argv, void* user_ctx);
     } cmd;
 
     struct {
@@ -14800,6 +14806,178 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     return EOK;
 }
 
+static Exception
+cexy__cmd__stats(int argc, char** argv, void* user_ctx)
+{
+    (void)user_ctx;
+
+    // clang-format off
+    const char* stats_help = ""
+    "Parses full project code and calculates lines of code and code quality metrics"
+    ;
+    // clang-format on
+
+    bool verbose = false;
+    argparse_c cmd_args = {
+        .program_name = "./cex",
+        .usage = "stats [options] [src/*.c] [path/some_file.c] [!exclude/*.c]",
+        .description = stats_help,
+        argparse$opt_list(
+            argparse$opt_group("Options"),
+            argparse$opt_help(),
+            argparse$opt(&verbose, 'v', "verbose", .help = "prints individual file lines as well"),
+        ),
+    };
+    e$ret(argparse.parse(&cmd_args, argc, argv));
+
+
+    struct code_stats
+    {
+        u32 n_files;
+        u32 n_asserts;
+        u32 n_lines_code;
+        u32 n_lines_comments;
+        u32 n_lines_total;
+    } code_stats = { 0 }, test_stats = { 0 };
+
+    mem$scope(tmem$, _)
+    {
+        hm$(char*, bool) src_files = hm$new(src_files, _, .capacity = 1024);
+        hm$(char*, bool) excl_files = hm$new(excl_files, _, .capacity = 128);
+
+        const char* target = argparse.next(&cmd_args);
+        if (target == NULL) { target = "*.[ch]"; }
+
+        do {
+            bool is_exclude = false;
+            if (target[0] == '!') {
+                if (target[1] == '\0') { continue; }
+                is_exclude = true;
+                target++;
+            }
+            for$each (src_fn, os.fs.find(target, true, _)) {
+                char* p = os.path.abs(src_fn, _);
+                if (is_exclude) {
+                    log$trace("Ignoring: %s\n", p);
+                    hm$set(excl_files, p, true);
+                } else {
+                    hm$set(src_files, p, true);
+                    // log$trace("Including: %s\n", p);
+                }
+            }
+        } while ((target = argparse.next(&cmd_args)));
+
+        // WARNING: sorting of hashmap items is a dead end, hash indexes get invalidated
+        qsort(src_files, hm$len(src_files), sizeof(*src_files), str.qscmp);
+
+        if (verbose) {
+            io.printf("Files found: %d excluded: %d\n", hm$len(src_files), hm$len(excl_files));
+        }
+        for$each (src_fn, src_files) {
+            if (hm$getp(excl_files, src_fn.key)) { continue; }
+
+            char* basename = os.path.basename(src_fn.key, _);
+            if (str.eq(basename, "cex.h") && str.eq(target, "*.[ch]")) { continue; }
+            struct code_stats* stats = (str.find(basename, "test") != NULL) ? &test_stats
+                                                                            : &code_stats;
+
+            mem$scope(tmem$, _)
+            {
+                char* code = io.file.load(src_fn.key, _);
+                if (!code) { return e$raise(Error.os, "Error opening file: '%s'", src_fn); }
+                stats->n_files++;
+
+                if (code[0] != '\0') { stats->n_lines_total++; }
+                CexParser_c lx = CexParser.create(code, 0, false);
+                cex_token_s t;
+
+                u32 last_line = 0;
+                u32 file_loc = 0;
+                while ((t = CexParser.next_token(&lx)).type) {
+                    if (t.type == CexTkn__error) {
+                        return e$raise(
+                            Error.integrity,
+                            "Error parsing file %s, at line: %d, cursor: %d",
+                            src_fn,
+                            lx.line,
+                            (i32)(lx.cur - lx.content)
+                        );
+                    }
+                    switch (t.type) {
+                        case CexTkn__ident:
+                            if (t.value.len >= 6) {
+                                for (usize i = 0; i < t.value.len; i++) {
+                                    t.value.buf[i] = tolower(t.value.buf[i]);
+                                }
+                                if (str.slice.starts_with(t.value, str$s("uassert")) ||
+                                    str.slice.starts_with(t.value, str$s("assert")) ||
+                                    str.slice.starts_with(t.value, str$s("ensure")) ||
+                                    str.slice.starts_with(t.value, str$s("enforce")) ||
+                                    str.slice.starts_with(t.value, str$s("expect")) ||
+                                    str.slice.starts_with(t.value, str$s("e$assert")) ||
+                                    str.slice.starts_with(t.value, str$s("tassert"))) {
+                                    stats->n_asserts++;
+                                }
+                            }
+                            goto def;
+                        case CexTkn__comment_multi: {
+                            for$each (c, t.value.buf, t.value.len) {
+                                if (c == '\n') { stats->n_lines_comments++; }
+                            }
+                            fallthrough();
+                        }
+                        case CexTkn__comment_single:
+                            stats->n_lines_comments++;
+                            break;
+                        case CexTkn__preproc: {
+                            for$each (c, t.value.buf, t.value.len) {
+                                if (c == '\n') {
+                                    stats->n_lines_code++;
+                                    file_loc++;
+                                }
+                            }
+                            fallthrough();
+                        }
+                        default:
+                        def:
+                            if (last_line < lx.line) {
+                                stats->n_lines_code++;
+                                file_loc++;
+                                stats->n_lines_total += (lx.line - last_line);
+                                last_line = lx.line;
+                            }
+                            break;
+                    }
+                }
+                if (verbose) {
+                    char* pcur = str.replace(src_fn.key, os.fs.getcwd(_), ".", _);
+                    io.printf("%5d loc | %s\n", file_loc, pcur); 
+                }
+            }
+        }
+    }
+
+    // clang-format off
+    io.printf("Project stats\n");
+    io.printf("--------------------------------------------------------\n");
+    io.printf("%-25s|  %10s  |  %10s  |\n", "Metric", "Code   ", "Tests   ");
+    io.printf("--------------------------------------------------------\n");
+    io.printf("%-25s|  %10d  |  %10d  |\n", "Files", code_stats.n_files, test_stats.n_files);
+    io.printf("%-25s|  %10d  |  %10d  |\n", "Asserts", code_stats.n_asserts, test_stats.n_asserts);
+    io.printf("%-25s|  %10d  |  %10d  |\n", "Lines of code", code_stats.n_lines_code, test_stats.n_lines_code);
+    io.printf("%-25s|  %10d  |  %10d  |\n", "Lines of comments", code_stats.n_lines_comments, test_stats.n_lines_comments);
+    io.printf("%-25s|  %10.2f%% |  %10.2f%% |\n", "Asserts per LOC",
+        (code_stats.n_lines_code) ? ((double)code_stats.n_asserts/(double)code_stats.n_lines_code*100.0) : 0.0, 
+        (test_stats.n_lines_code) ? ((double)test_stats.n_asserts/(double)test_stats.n_lines_code*100.0) : 0.0
+        ); 
+    io.printf("%-25s|  %10.2f%% |         <<<  |\n", "Total asserts per LOC",
+        (code_stats.n_lines_code) ? ((double)(code_stats.n_asserts+test_stats.n_asserts)/(double)code_stats.n_lines_code*100.0) : 0.0 
+        );
+    io.printf("--------------------------------------------------------\n");
+    // clang-format on
+    return EOK;
+}
+
 static bool
 _cexy__is_str_pattern(const char* s)
 {
@@ -16125,6 +16303,7 @@ const struct __cex_namespace__cexy cexy = {
         .process = cexy__cmd__process,
         .simple_app = cexy__cmd__simple_app,
         .simple_test = cexy__cmd__simple_test,
+        .stats = cexy__cmd__stats,
     },
 
     .test = {
@@ -16258,11 +16437,7 @@ _CexParser__scan_string(CexParser_c* lx)
                 if (t.type == CexTkn__string) { return t; }
                 break;
             default: {
-                bool is_allowed = false;
-                if (c >= 0x20 && c <= 0x7E) {
-                    if (!(c == '"' || c == '\\')) { is_allowed = true; }
-                }
-                if (unlikely(!is_allowed)) {
+                if (unlikely((u8)c < 0x20)) {
                     t.type = CexTkn__error;
                     t.value = (str_s){ 0 };
                     return t;
