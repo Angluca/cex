@@ -14924,8 +14924,8 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
                             for$each (c, t.value.buf, t.value.len) {
                                 if (c == '\n') { stats->n_lines_comments++; }
                             }
-                            fallthrough();
                         }
+                            fallthrough();
                         case CexTkn__comment_single:
                             stats->n_lines_comments++;
                             break;
@@ -14936,8 +14936,8 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
                                     file_loc++;
                                 }
                             }
-                            fallthrough();
                         }
+                            fallthrough();
                         default:
                         def:
                             if (last_line < lx.line) {
@@ -14951,7 +14951,7 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
                 }
                 if (verbose) {
                     char* pcur = str.replace(src_fn.key, os.fs.getcwd(_), ".", _);
-                    io.printf("%5d loc | %s\n", file_loc, pcur); 
+                    io.printf("%5d loc | %s\n", file_loc, pcur);
                 }
             }
         }
