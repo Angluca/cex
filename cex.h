@@ -13536,12 +13536,8 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         log$info("Rebuilding self: %s -> %s\n", cex_source, bin_path);
         char* old_name = str.fmt(_, "%s.old", bin_path);
         if (os.path.exists(bin_path)) {
-            if (os.fs.remove(old_name)) {
-            }
-            e$except(err, os.fs.rename(bin_path, old_name))
-            {
-                goto fail_recovery;
-            }
+            if (os.fs.remove(old_name)) {}
+            e$except (err, os.fs.rename(bin_path, old_name)) { goto fail_recovery; }
         }
         arr$(const char*) args = arr$new(args, _, .capacity = 64);
         sbuf_c dargs_sbuf = sbuf.create(256, _);
@@ -13549,8 +13545,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         e$goto(sbuf.append(&dargs_sbuf, "-D_CEX_SELF_DARGS=\""), err);
 
         i32 dflag_idx = 1;
-        for$each(darg, argv + 1, argc - 1)
-        {
+        for$each (darg, argv + 1, argc - 1) {
             if (str.starts_with(darg, "-D")) {
                 if (!str.eq(darg, "-D")) {
                     arr$push(args, darg);
@@ -13569,18 +13564,15 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         if (dflag_idx == 1) {
             // new compilation no flags (maybe due to source changes, we need to maintain old flags)
             log$trace("Preserving CEX_SELF_DARGS: %s\n", _CEX_SELF_DARGS);
-            for$iter(str_s, it, str.slice.iter_split(str.sstr(_CEX_SELF_DARGS), " ", &it.iterator))
-            {
+            for$iter (
+                str_s,
+                it,
+                str.slice.iter_split(str.sstr(_CEX_SELF_DARGS), " ", &it.iterator)
+            ) {
                 str_s clean_it = str.slice.strip(it.val);
-                if (clean_it.len == 0) {
-                    continue;
-                }
-                if (!str.slice.starts_with(clean_it, str$s("-D"))) {
-                    continue;
-                }
-                if (str.slice.eq(clean_it, str$s("-D"))) {
-                    continue;
-                }
+                if (clean_it.len == 0) { continue; }
+                if (!str.slice.starts_with(clean_it, str$s("-D"))) { continue; }
+                if (str.slice.eq(clean_it, str$s("-D"))) { continue; }
                 var _darg = str.fmt(_, "%S", clean_it);
                 arr$push(args, _darg);
                 e$goto(sbuf.appendf(&dargs_sbuf, "%s ", _darg), err);
@@ -13597,42 +13589,24 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         arr$pushm(args, "-o", bin_path, cex_source, NULL);
         _os$args_print("CMD:", args, arr$len(args));
         os_cmd_c _cmd = { 0 };
-        e$except(err, os.cmd.run(args, arr$len(args), &_cmd))
-        {
-            goto fail_recovery;
-        }
-        e$except(err, os.cmd.join(&_cmd, 0, NULL))
-        {
-            goto fail_recovery;
-        }
+        e$except (err, os.cmd.run(args, arr$len(args), &_cmd)) { goto fail_recovery; }
+        e$except (err, os.cmd.join(&_cmd, 0, NULL)) { goto fail_recovery; }
 
         // All good new build successful, remove old binary
-        if (os.fs.remove(old_name)) {
-        }
+        if (os.fs.remove(old_name)) {}
 
         // run rebuilt cex executable again
         arr$clear(args);
         arr$pushm(args, bin_path);
-        for$each(darg, argv + dflag_idx, argc - dflag_idx)
-        {
-            arr$push(args, darg);
-        }
+        for$each (darg, argv + dflag_idx, argc - dflag_idx) { arr$push(args, darg); }
         arr$pushm(args, NULL);
         _os$args_print("CMD:", args, arr$len(args));
-        e$except(err, os.cmd.run(args, arr$len(args), &_cmd))
-        {
-            goto err;
-        }
-        if (os.cmd.join(&_cmd, 0, NULL)) {
-            goto err;
-        }
+        e$except (err, os.cmd.run(args, arr$len(args), &_cmd)) { goto err; }
+        if (os.cmd.join(&_cmd, 0, NULL)) { goto err; }
         exit(0); // unconditionally exit after build was successful
     fail_recovery:
         if (os.path.exists(old_name)) {
-            e$except(err, os.fs.rename(old_name, bin_path))
-            {
-                goto err;
-            }
+            e$except (err, os.fs.rename(old_name, bin_path)) { goto err; }
         }
         goto err;
     err:
@@ -13689,17 +13663,13 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
     {
         arr$(const char*) incl_path = arr$new(incl_path, _);
         if (arr$len(alt_include_path) > 0) {
-            for$each(p, alt_include_path)
-            {
+            for$each (p, alt_include_path) {
                 arr$push(incl_path, p);
-                if (!os.path.exists(p)) {
-                    log$warn("alt_include_path not exists: %s\n", p);
-                }
+                if (!os.path.exists(p)) { log$warn("alt_include_path not exists: %s\n", p); }
             }
         } else {
             const char* def_incl_path[] = { cexy$cc_include };
-            for$each(p, def_incl_path)
-            {
+            for$each (p, def_incl_path) {
                 const char* clean_path = p;
                 if (str.starts_with(p, "-I")) {
                     clean_path = p + 2;
@@ -13723,9 +13693,7 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
         CexParser_c lx = CexParser.create(code, 0, true);
         cex_token_s t;
         while ((t = CexParser.next_token(&lx)).type) {
-            if (t.type != CexTkn__preproc) {
-                continue;
-            }
+            if (t.type != CexTkn__preproc) { continue; }
             if (str.slice.starts_with(t.value, str$s("include"))) {
                 str_s incf = str.slice.sub(t.value, strlen("include"), 0);
                 incf = str.slice.strip(incf);
@@ -13750,12 +13718,10 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
                 mem$scope(tmem$, _)
                 {
                     char extensions[] = { 'c', 'h' };
-                    for$each(ext, extensions)
-                    {
+                    for$each (ext, extensions) {
                         char* inc_fn = str.fmt(_, "%S%c", incf, ext);
                         uassert(inc_fn != NULL);
-                        for$each(inc_dir, incl_path)
-                        {
+                        for$each (inc_dir, incl_path) {
                             char* try_path = os$path_join(_, inc_dir, inc_fn);
                             uassert(try_path != NULL);
                             var src_meta = os.fs.stat(try_path);
@@ -13803,8 +13769,7 @@ cexy_src_changed(const char* target_path, arr$(char*) src_array)
     }
 
     bool has_error = false;
-    for$each(p, src_array, src_array_len)
-    {
+    for$each (p, src_array, src_array_len) {
         var ftype = os.fs.stat(p);
         if (!ftype.is_valid) {
             (void)e$raise(ftype.error, "Error src: %s", p);
@@ -13813,9 +13778,7 @@ cexy_src_changed(const char* target_path, arr$(char*) src_array)
             (void)e$raise("Bad type", "src is not a file: %s", p);
             has_error = true;
         } else {
-            if (has_error) {
-                continue;
-            }
+            if (has_error) { continue; }
             if (ftype.mtime > target_ftype.mtime) {
                 log$trace("Source changed '%s'\n", p);
                 return true;
@@ -13878,10 +13841,7 @@ cexy_target_make(
         );
         uassert(result != NULL && "memory error");
     }
-    e$except(err, os.fs.mkpath(result))
-    {
-        mem$free(allocator, result);
-    }
+    e$except (err, os.fs.mkpath(result)) { mem$free(allocator, result); }
 
     return result;
 }
@@ -13907,9 +13867,7 @@ cexy__test__create(const char* target, bool include_sample)
         cg$init(&buf);
         $pn("#define CEX_IMPLEMENTATION");
         $pn("#include \"cex.h\"");
-        if (include_sample) {
-            $pn("#include \"lib/mylib.c\"");
-        }
+        if (include_sample) { $pn("#include \"lib/mylib.c\""); }
         $pn("");
         $pn("//test$setup_case() {return EOK;}");
         $pn("//test$teardown_case() {return EOK;}");
@@ -13967,9 +13925,7 @@ cexy__test__make_target_pattern(const char** target)
             *target
         );
     }
-    if (str.eq(*target, "all")) {
-        *target = "tests/test_*.c";
-    }
+    if (str.eq(*target, "all")) { *target = "tests/test_*.c"; }
 
     if (!str.match(*target, "*test*.c")) {
         return e$raise(
@@ -14000,18 +13956,13 @@ cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
             }
         }
 
-        for$each(test_src, os.fs.find(target, true, _))
-        {
+        for$each (test_src, os.fs.find(target, true, _)) {
             n_tests++;
             char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
             arr$(char*) args = arr$new(args, _);
-            if (is_debug) {
-                arr$pushm(args, cexy$debug_cmd);
-            }
+            if (is_debug) { arr$pushm(args, cexy$debug_cmd); }
             arr$pushm(args, test_target, );
-            if (str.ends_with(target, "test_*.c")) {
-                arr$push(args, "--quiet");
-            }
+            if (str.ends_with(target, "test_*.c")) { arr$push(args, "--quiet"); }
             arr$pusha(args, argv, argc);
             arr$push(args, NULL);
             if (os$cmda(args)) {
@@ -14053,33 +14004,26 @@ static str_s
 _cexy__process_make_brief_docs(cex_decl_s* decl)
 {
     str_s brief_str = { 0 };
-    if (!decl->docs.buf) {
-        return brief_str;
-    }
+    if (!decl->docs.buf) { return brief_str; }
 
     if (str.slice.starts_with(decl->docs, str$s("///"))) {
         // doxygen style ///
         brief_str = str.slice.strip(str.slice.sub(decl->docs, 3, 0));
     } else if (str.slice.match(decl->docs, "/\\*[\\*!]*")) {
         // doxygen style /** or /*!
-        for$iter(
+        for$iter (
             str_s,
             it,
             str.slice.iter_split(str.slice.sub(decl->docs, 3, -2), "\n", &it.iterator)
-        )
-        {
+        ) {
             str_s line = str.slice.strip(it.val);
-            if (line.len == 0) {
-                continue;
-            }
+            if (line.len == 0) { continue; }
             brief_str = line;
             break;
         }
     }
     isize bridx = (str.slice.index_of(brief_str, str$s("@brief")));
-    if (bridx == -1) {
-        bridx = str.slice.index_of(brief_str, str$s("\\brief"));
-    }
+    if (bridx == -1) { bridx = str.slice.index_of(brief_str, str$s("\\brief")); }
     if (bridx != -1) {
         brief_str = str.slice.strip(str.slice.sub(brief_str, bridx + strlen("@brief"), 0));
     }
@@ -14098,8 +14042,7 @@ _cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
         $pn("// Autogenerated by CEX");
         $pn("// clang-format off");
         $pn("");
-        for$each(it, decls)
-        {
+        for$each (it, decls) {
             str_s clean_name = it->name;
             if (str.slice.starts_with(clean_name, str$s("cex_"))) {
                 clean_name = str.slice.sub(clean_name, 4, 0);
@@ -14127,9 +14070,7 @@ _cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
                 clean_name = str.slice.sub(clean_name, 1 + subn.len + 2, 0);
             }
             str_s brief_str = _cexy__process_make_brief_docs(it);
-            if (brief_str.len) {
-                $pf("/// %S", brief_str);
-            }
+            if (brief_str.len) { $pf("/// %S", brief_str); }
             $pf("%-15s (*%S)(%s);", it->ret_type, clean_name, it->args);
         }
 
@@ -14143,9 +14084,7 @@ _cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
     }
     $pa("%s", ";");
 
-    if (!cg$is_valid()) {
-        return e$raise(Error.runtime, "Code generation error occured\n");
-    }
+    if (!cg$is_valid()) { return e$raise(Error.runtime, "Code generation error occured\n"); }
     return EOK;
 }
 
@@ -14160,8 +14099,7 @@ _cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out
         $pn("// Autogenerated by CEX");
         $pn("// clang-format off");
         $pn("");
-        for$each(it, decls)
-        {
+        for$each (it, decls) {
             str_s clean_name = it->name;
             if (str.slice.starts_with(clean_name, str$s("cex_"))) {
                 clean_name = str.slice.sub(clean_name, 4, 0);
@@ -14201,9 +14139,7 @@ _cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out
     }
     $pa("%s", ";");
 
-    if (!cg$is_valid()) {
-        return e$raise(Error.runtime, "Code generation error occured\n");
-    }
+    if (!cg$is_valid()) { return e$raise(Error.runtime, "Code generation error occured\n"); }
     return EOK;
 }
 
@@ -14240,8 +14176,7 @@ _cexy__process_update_code(
             e$ret(sbuf.appendf(&new_code, "%.*S\n", code_buf.len, code_buf));                      \
         code_buf = (str_s){ 0 }
 #    define $dump_prev_comment()                                                                   \
-        for$each(it, items)                                                                        \
-        {                                                                                          \
+        for$each (it, items) {                                                                     \
             if (it.type == CexTkn__comment_single || it.type == CexTkn__comment_multi) {           \
                 e$ret(sbuf.appendf(&new_code, "%.*S\n", it.value.len, it.value));                  \
             } else {                                                                               \
@@ -14254,55 +14189,39 @@ _cexy__process_update_code(
                 e$assert(!is_header && "expected in .c file buf got header");
                 $dump_prev();
                 $dump_prev_comment();
-                if (!has_module_def) {
-                    e$ret(sbuf.appendf(&new_code, "%s\n", cex_c_var_def));
-                }
+                if (!has_module_def) { e$ret(sbuf.appendf(&new_code, "%s\n", cex_c_var_def)); }
                 has_module_def = true;
             } else if (t.type == CexTkn__cex_module_decl) {
                 e$assert(is_header && "expected in .h file buf got source");
                 $dump_prev();
                 $dump_prev_comment();
-                if (!has_module_decl) {
-                    e$ret(sbuf.appendf(&new_code, "%s\n", cex_h_var_decl));
-                }
+                if (!has_module_decl) { e$ret(sbuf.appendf(&new_code, "%s\n", cex_h_var_decl)); }
                 has_module_decl = true;
             } else if (t.type == CexTkn__cex_module_struct) {
                 e$assert(is_header && "expected in .h file buf got source");
                 $dump_prev();
                 $dump_prev_comment();
-                if (!has_module_struct) {
-                    e$ret(sbuf.appendf(&new_code, "%s\n", cex_h_struct));
-                }
+                if (!has_module_struct) { e$ret(sbuf.appendf(&new_code, "%s\n", cex_h_struct)); }
                 has_module_struct = true;
             } else {
-                if (code_buf.buf == NULL) {
-                    code_buf.buf = t.value.buf;
-                }
+                if (code_buf.buf == NULL) { code_buf.buf = t.value.buf; }
                 code_buf.len = t.value.buf - code_buf.buf + t.value.len;
             }
         }
-        if (code_buf.len) {
-            e$ret(sbuf.appendf(&new_code, "%.*S\n", code_buf.len, code_buf));
-        }
+        if (code_buf.len) { e$ret(sbuf.appendf(&new_code, "%.*S\n", code_buf.len, code_buf)); }
         if (!is_header) {
             if (!has_module_def) {
-                if (only_update) {
-                    return EOK;
-                }
+                if (only_update) { return EOK; }
                 e$ret(sbuf.appendf(&new_code, "\n%s\n", cex_c_var_def));
             }
             e$ret(io.file.save(code_file, new_code));
         } else {
             if (!has_module_struct) {
-                if (only_update) {
-                    return EOK;
-                }
+                if (only_update) { return EOK; }
                 e$ret(sbuf.appendf(&new_code, "\n%s\n", cex_h_struct));
             }
             if (!has_module_decl) {
-                if (only_update) {
-                    return EOK;
-                }
+                if (only_update) { return EOK; }
                 e$ret(sbuf.appendf(&new_code, "%s\n", cex_h_var_decl));
             }
             e$ret(io.file.save(code_file, new_code));
@@ -14327,9 +14246,7 @@ _cexy__fn_match(str_s fn_name, str_s ns_prefix)
         char* fn_private = str.fmt(_, "%S__*", ns_prefix);
         char* fn_private_cex = str.fmt(_, "cex_%S__*", ns_prefix);
 
-        if (str.slice.starts_with(fn_name, str$s("_"))) {
-            continue;
-        }
+        if (str.slice.starts_with(fn_name, str$s("_"))) { continue; }
         if (str.slice.match(fn_name, fn_sub_pattern) ||
             str.slice.match(fn_name, fn_sub_pattern_cex)) {
             return true;
@@ -14356,9 +14273,7 @@ _cexy__fn_dotted(str_s fn_name, const char* expected_ns, IAllocator alloc)
     }
 
     isize ns_idx = str.slice.index_of(clean_name, str$s("_"));
-    if (ns_idx < 0) {
-        return (str_s){ 0 };
-    }
+    if (ns_idx < 0) { return (str_s){ 0 }; }
     str_s ns = str.slice.sub(clean_name, 0, ns_idx);
     clean_name = str.slice.sub(clean_name, ns.len + 1, 0);
 
@@ -14449,12 +14364,9 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 
     mem$scope(tmem$, _)
     {
-        for$each(src_fn, os.fs.find(target, true, _))
-        {
+        for$each (src_fn, os.fs.find(target, true, _)) {
             char* basename = os.path.basename(src_fn, _);
-            if (str.starts_with(basename, "test") || str.eq(basename, "cex.c")) {
-                continue;
-            }
+            if (str.starts_with(basename, "test") || str.eq(basename, "cex.c")) { continue; }
             mem$scope(tmem$, _)
             {
                 e$assert(str.ends_with(src_fn, ".c") && "file must end with .c");
@@ -14495,18 +14407,10 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
                         );
                     }
                     cex_decl_s* d = CexParser.decl_parse(&lx, t, items, cexy$process_ignore_kw, _);
-                    if (d == NULL) {
-                        continue;
-                    }
-                    if (d->type != CexTkn__func_def) {
-                        continue;
-                    }
-                    if (d->is_inline && d->is_static) {
-                        continue;
-                    }
-                    if (!_cexy__fn_match(d->name, ns_prefix)) {
-                        continue;
-                    }
+                    if (d == NULL) { continue; }
+                    if (d->type != CexTkn__func_def) { continue; }
+                    if (d->is_inline && d->is_static) { continue; }
+                    if (!_cexy__fn_match(d->name, ns_prefix)) { continue; }
                     log$trace("FN: %S ret_type: '%s' args: '%s'\n", d->name, d->ret_type, d->args);
                     arr$push(decls, d);
                 }
@@ -14555,16 +14459,12 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 static bool
 _cexy__is_str_pattern(const char* s)
 {
-    if (s == NULL) {
-        return false;
-    }
+    if (s == NULL) { return false; }
     char pat[] = { '*', '?', '(', '[' };
 
     while (*s) {
         for (u32 i = 0; i < arr$len(pat); i++) {
-            if (unlikely(pat[i] == *s)) {
-                return true;
-            }
+            if (unlikely(pat[i] == *s)) { return true; }
         }
         s++;
     }
@@ -14588,6 +14488,148 @@ _cexy__help_qscmp_decls_type(const void* a, const void* b)
     }
 }
 
+static const char*
+_cexy__colorize_ansi(str_s token, str_s exact_match, char current_char)
+{
+    if (token.len == 0) { return "\033[0m"; }
+
+    static const char* types[] = {
+        "\033[1;31m", // exact match red
+        "\033[1;33m", // keywords
+        "\033[1;32m", // types
+        "\033[1;34m", // func/macro call
+        "\033[1;35m", // #macro
+    };
+    static struct
+    {
+        str_s item;
+        u8 style;
+    } keywords[] = {
+        { str$s("return"), 1 },
+        { str$s("if"), 1 },
+        { str$s("else"), 1 },
+        { str$s("while"), 1 },
+        { str$s("do"), 1 },
+        { str$s("goto"), 1 },
+        { str$s("mem$"), 1 },
+        { str$s("tmem$"), 1 },
+        { str$s("mem$scope"), 1 },
+        { str$s("IAllocator"), 1 },
+        { str$s("for$each"), 1 },
+        { str$s("for$iter"), 1 },
+        { str$s("e$except"), 1 },
+        { str$s("e$except_silent"), 1 },
+        { str$s("e$except_silent"), 1 },
+        { str$s("char"), 2 },
+        { str$s("var"), 2 },
+        { str$s("arr$"), 2 },
+        { str$s("Exception"), 2 },
+        { str$s("Exc"), 2 },
+        { str$s("const"), 2 },
+        { str$s("FILE"), 2 },
+        { str$s("int"), 2 },
+        { str$s("bool"), 2 },
+        { str$s("void"), 2 },
+        { str$s("usize"), 2 },
+        { str$s("isize"), 2 },
+        { str$s("struct"), 2 },
+        { str$s("enum"), 2 },
+        { str$s("union"), 2 },
+        { str$s("u8"), 2 },
+        { str$s("i8"), 2 },
+        { str$s("u16"), 2 },
+        { str$s("i16"), 2 },
+        { str$s("u32"), 2 },
+        { str$s("i32"), 2 },
+        { str$s("u64"), 2 },
+        { str$s("i64"), 2 },
+        { str$s("f64"), 2 },
+        { str$s("f32"), 2 },
+    };
+    if (token.buf != NULL) {
+        if (str.slice.eq(token, exact_match)) { return types[0]; }
+        for$each (it, keywords) {
+            if (it.item.len == token.len) {
+                if (memcmp(it.item.buf, token.buf, token.len) == 0) {
+                    uassert(it.style < arr$len(types));
+                    return types[it.style];
+                }
+            }
+        }
+        if (current_char == '(') {
+            // looks like function/macro call
+            return types[3];
+        }
+        if (str.slice.ends_with(token, str$s("_s")) || str.slice.ends_with(token, str$s("_e")) ||
+            str.slice.ends_with(token, str$s("_c"))) {
+            return types[2];
+        }
+        if (token.buf[0] == '#') { return types[4]; }
+    }
+
+    return "\033[0m"; // no color, not matced
+}
+static void
+_cexy__colorize_print(str_s code, str_s name)
+{
+    if (code.buf == NULL || !io.isatty(stdout)) {
+        io.printf("%S", code);
+        return;
+    }
+
+    str_s token = { .buf = code.buf, .len = 0 };
+    bool in_token = false;
+    (void)name;
+    for (usize i = 0; i < code.len; i++) {
+        char c = code.buf[i];
+
+        if (!in_token) {
+            if (isalpha(c) || c == '_' || c == '$' || c == '#') {
+                in_token = true;
+                token.buf = &code.buf[i];
+                token.len = 1;
+            } else {
+                putc(c, stdout);
+            }
+        } else {
+            switch (c) {
+                case ' ':
+                case '\t':
+                case '\n':
+                case '\r':
+                case '\v':
+                case '\f':
+                case '(':
+                case ')':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case ';':
+                case '*':
+                case '/':
+                case '+':
+                case '-':
+                case ',': {
+                    char _c = c;
+                    if (c == ' ' && i < code.len - 1 && code.buf[i+1] == '(') {
+                        _c = '(';
+                    }
+                    io.printf("%s%S\033[0m", _cexy__colorize_ansi(token, name, _c), token);
+                    putc(c, stdout);
+                    in_token = false;
+                    break;
+                }
+                default:
+                    token.len++;
+            }
+        }
+    }
+
+    if (in_token) { io.printf("%s%S\033[0m", _cexy__colorize_ansi(token, name, 0), token); }
+    return;
+}
+
 static Exception
 _cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source, bool show_example)
 {
@@ -14603,39 +14645,42 @@ _cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source, bool sh
             }
         }
         if (d->docs.buf) {
-            io.printf("%S\n", d->docs);
+            _cexy__colorize_print(d->docs, name);
+            io.printf("\n");
         }
         if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
             io.printf("#define ");
         }
 
         if (sbuf.len(&d->ret_type)) {
-            io.printf("%s ", d->ret_type);
+            _cexy__colorize_print(str.sstr(d->ret_type), name);
+            io.printf(" ");
         }
 
-        io.printf("%S ", name);
+        _cexy__colorize_print(name, name);
+        io.printf(" ");
 
         if (sbuf.len(&d->args)) {
-            io.printf("(%s)", d->args);
+            io.printf("(");
+            _cexy__colorize_print(str.sstr(d->args), name);
+            io.printf(")");
         }
         if (!show_source && d->type == CexTkn__func_def) {
             io.printf(";");
         } else if (d->body.buf) {
-            io.printf("%S;", d->body);
+            _cexy__colorize_print(d->body, name);
+            io.printf(";");
         }
         io.printf("\n");
 
-        if (!show_example) {
-            return EOK;
-        }
+        if (!show_example) { return EOK; }
         // Looking for a random example
         srand(time(NULL));
         io.printf("\nSearching for examples of '%S'\n", name);
         arr$(char*) sources = os.fs.find("./*.[hc]", true, _);
 
         u32 n_used = 0;
-        for$each(src_fn, sources)
-        {
+        for$each (src_fn, sources) {
             mem$scope(tmem$, _)
             {
                 char* code = io.file.load(src_fn, _);
@@ -14647,26 +14692,19 @@ _cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source, bool sh
                 CexParser_c lx = CexParser.create(code, 0, true);
                 cex_token_s t;
                 while ((t = CexParser.next_entity(&lx, &items)).type) {
-                    if (t.type == CexTkn__error) {
-                        break;
-                    }
-                    if (t.type != CexTkn__func_def) {
-                        continue;
-                    }
+                    if (t.type == CexTkn__error) { break; }
+                    if (t.type != CexTkn__func_def) { continue; }
                     cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
-                    if (d == NULL) {
-                        continue;
-                    }
-                    if (d->body.buf == NULL) {
-                        continue;
-                    }
+                    if (d == NULL) { continue; }
+                    if (d->body.buf == NULL) { continue; }
                     if (str.slice.index_of(d->body, name) != -1) {
                         n_used++;
                         double dice = (double)rand() / (RAND_MAX + 1.0);
                         if (dice < 0.25) {
                             io.printf("\n\nFound at %s:%d\n", src_fn, d->line);
                             io.printf("%s %S(%s)\n", d->ret_type, d->name, d->args);
-                            io.printf("%S\n", d->body);
+                            _cexy__colorize_print(d->body, name);
+                            io.printf("\n");
                             return EOK;
                         }
                     }
@@ -14730,9 +14768,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
             ),
         ),
     };
-    if (argparse.parse(&cmd_args, argc, argv)) {
-        return Error.argsparse;
-    }
+    if (argparse.parse(&cmd_args, argc, argv)) { return Error.argsparse; }
     const char* query = argparse.next(&cmd_args);
     str_s query_s = str.sstr(query);
 
@@ -14757,8 +14793,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         hm$(char*, char*) cex_ns_map = hm$new(cex_ns_map, arena, .capacity = 256);
         hm$set(cex_ns_map, "./cexy.h", "cex");
 
-        for$each(src_fn, sources)
-        {
+        for$each (src_fn, sources) {
             mem$scope(tmem$, _)
             {
                 var basename = os.path.basename(src_fn, _);
@@ -14782,9 +14817,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         break;
                     }
                     cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, arena);
-                    if (d == NULL) {
-                        continue;
-                    }
+                    if (d == NULL) { continue; }
 
                     d->file = src_fn;
                     if (d->type == CexTkn__cex_module_struct || d->type == CexTkn__cex_module_def) {
@@ -14801,9 +14834,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                             }
                         } else if (d->type == CexTkn__typedef ||
                                    d->type == CexTkn__cex_module_struct) {
-                            if (!hm$getp(names, d->name)) {
-                                hm$set(names, d->name, d);
-                            }
+                            if (!hm$getp(names, d->name)) { hm$set(names, d->name, d); }
                         }
                     } else {
                         if (d->type == CexTkn__func_def) {
@@ -14817,17 +14848,14 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                                            : d->name;
 
                         if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
+                            if (d->type == CexTkn__cex_module_def) { continue; }
                             // We have full match display full help
                             return _cexy__display_full_info(d, base_ns, show_source, show_example);
                         }
 
                         bool has_match = false;
-                        if (str.slice.match(d->name, query_pattern)) {
-                            has_match = true;
-                        }
-                        if (str.slice.match(fndotted, query_pattern)) {
-                            has_match = true;
-                        }
+                        if (str.slice.match(d->name, query_pattern)) { has_match = true; }
+                        if (str.slice.match(fndotted, query_pattern)) { has_match = true; }
                         if (is_namespace_filter) {
                             str_s prefix = str.sub(query, 0, -1);
                             str_s sub_name = str.slice.sub(d->name, 0, prefix.len);
@@ -14840,22 +14868,17 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                                 has_match = true;
                             }
                         }
-                        if (has_match) {
-                            hm$set(names, d->name, d);
-                        }
+                        if (has_match) { hm$set(names, d->name, d); }
                     }
                 }
-                if (arr$len(names) == 0) {
-                    continue;
-                }
+                if (arr$len(names) == 0) { continue; }
             }
         }
 
         // WARNING: sorting of hashmap items is a dead end, hash indexes get invalidated
         qsort(names, hm$len(names), sizeof(*names), _cexy__help_qscmp_decls_type);
 
-        for$each(it, names)
-        {
+        for$each (it, names) {
             if (query == NULL) {
                 switch (it.value->type) {
                     case CexTkn__cex_module_struct:
@@ -14920,9 +14943,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
         .epilog = epilog_help,
         argparse$opt_list(argparse$opt_help(), ),
     };
-    if (argparse.parse(&cmd_args, argc, argv)) {
-        return Error.argsparse;
-    }
+    if (argparse.parse(&cmd_args, argc, argv)) { return Error.argsparse; }
     // clang-format off
 #define $env                                                                                \
     "\ncexy$* variables used in build system, see `cex help 'cexy$cc'` for more info\n"            \
@@ -14975,7 +14996,13 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
         }
 
         io.printf("\nGlobal environment:\n");
-        io.printf("* Cex Version               %d.%d.%d (%s)\n", cex$version_major, cex$version_minor, cex$version_patch, cex$version_date);
+        io.printf(
+            "* Cex Version               %d.%d.%d (%s)\n",
+            cex$version_major,
+            cex$version_minor,
+            cex$version_patch,
+            cex$version_date
+        );
         io.printf("* Git Hash                  %s\n", has_git ? cexy.utils.git_hash(_) : "(no git)");
         io.printf("* os.platform.current()     %s\n", os.platform.to_str(os.platform.current()));
         io.printf("* ./cex -D<ARGS> config     %s\n", cex$stringize(_CEX_SELF_DARGS));
@@ -15040,9 +15067,7 @@ cexy__cmd__libfetch(int argc, char** argv, void* user_ctx)
             ),
         ),
     };
-    if (argparse.parse(&cmd_args, argc, argv)) {
-        return Error.argsparse;
-    }
+    if (argparse.parse(&cmd_args, argc, argv)) { return Error.argsparse; }
 
     e$ret(cexy.utils.git_lib_fetch(
         git_url,
@@ -15095,14 +15120,11 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
     (void)n_built;
     mem$scope(tmem$, _)
     {
-        for$each(test_src, os.fs.find(target, true, _))
-        {
+        for$each (test_src, os.fs.find(target, true, _)) {
             char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
             log$trace("Test src: %s -> %s\n", test_src, test_target);
             n_tests++;
-            if (!cexy.src_include_changed(test_target, test_src, NULL)) {
-                continue;
-            }
+            if (!cexy.src_include_changed(test_target, test_src, NULL)) { continue; }
             arr$(char*) args = arr$new(args, _);
             arr$pushm(args, cexy$cc, );
             // NOTE: reconstructing char*[] because some cexy$ variables might be empty
@@ -15229,9 +15251,7 @@ cexy__utils__make_new_project(const char* proj_dir)
         const char* bin_path = "cex" cexy$build_ext_exe;
         char* old_name = str.fmt(_, "%s.old", bin_path);
         if (os.path.exists(bin_path)) {
-            if (os.path.exists(old_name)) {
-                e$ret(os.fs.remove(old_name));
-            }
+            if (os.path.exists(old_name)) { e$ret(os.fs.remove(old_name)); }
             e$ret(os.fs.rename(bin_path, old_name));
         }
         e$ret(os$cmd(cexy$cex_self_cc, "-o", bin_path, "cex.c"));
@@ -15307,9 +15327,7 @@ cexy__app__run(const char* target, bool is_debug, int argc, char** argv)
         e$ret(cexy.app.find_app_target_src(_, &app_src));
         char* app_exe = cexy.target_make(app_src, cexy$build_dir, target, _);
         arr$(char*) args = arr$new(args, _);
-        if (is_debug) {
-            arr$pushm(args, cexy$debug_cmd);
-        }
+        if (is_debug) { arr$pushm(args, cexy$debug_cmd); }
         arr$pushm(args, app_exe, );
         arr$pusha(args, argv, argc);
         arr$push(args, NULL);
@@ -15387,9 +15405,7 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
         .usage = "app [options] {run,build,create,clean,debug} APP_NAME [--app-options app args]",
         // .description = _cexy$cmd_test_help,
         // .epilog = _cexy$cmd_test_epilog,
-        argparse$opt_list(
-            argparse$opt_help(),
-        ),
+        argparse$opt_list(argparse$opt_help(), ),
     };
 
     e$ret(argparse.parse(&cmd_args, argc, argv));
@@ -15416,9 +15432,7 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
         e$ret(cexy.app.find_app_target_src(_, &target));
         char* app_exec = cexy.target_make(target, cexy$build_dir, target_root, _);
         log$trace("App src: %s -> %s\n", target, app_exec);
-        if (!cexy.src_include_changed(app_exec, target, NULL)) {
-            goto run;
-        }
+        if (!cexy.src_include_changed(app_exec, target, NULL)) { goto run; }
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, cexy$cc, );
         // NOTE: reconstructing char*[] because some cexy$ variables might be empty
@@ -15458,14 +15472,12 @@ cexy__utils__git_hash(IAllocator allc)
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, "git", "rev-parse", "HEAD", NULL);
         os_cmd_c c = { 0 };
-        e$except(err, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .no_window = true }))
-        {
+        e$except (err, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .no_window = true })) {
             return NULL;
         }
         char* output = os.cmd.read_all(&c, _);
         int err_code = 0;
-        e$except_silent(err, os.cmd.join(&c, 0, &err_code))
-        {
+        e$except_silent (err, os.cmd.join(&c, 0, &err_code)) {
             log$error("`git rev-parse HEAD` error: %s err_code: %d\n", err, err_code);
             return NULL;
         }
@@ -15509,7 +15521,7 @@ _cexy__utils__pkgconf_parse(IAllocator allc, arr$(char*) * out_cc_args, char* pk
             case '\n':
             case '\r': {
                 if (arg) {
-                    str_s a = {.buf = arg, .len = cur - arg}; 
+                    str_s a = { .buf = arg, .len = cur - arg };
                     arr$push(*out_cc_args, str.slice.clone(a, allc));
                 }
                 arg = NULL;
@@ -15517,9 +15529,7 @@ _cexy__utils__pkgconf_parse(IAllocator allc, arr$(char*) * out_cc_args, char* pk
             }
             case '"':
             case '\'': {
-                if (!arg) {
-                    arg = cur;
-                }
+                if (!arg) { arg = cur; }
                 char quote = *cur;
                 cur++;
                 while (*cur) {
@@ -15527,31 +15537,23 @@ _cexy__utils__pkgconf_parse(IAllocator allc, arr$(char*) * out_cc_args, char* pk
                         cur += 2;
                         continue;
                     }
-                    if (*cur == quote) {
-                        break;
-                    }
+                    if (*cur == quote) { break; }
                     cur++;
                 }
                 break;
             }
             default: {
-                if (!arg) {
-                    arg = cur;
-                }
-                if (*cur == '\\') {
-                    cur++;
-                }
+                if (!arg) { arg = cur; }
+                if (*cur == '\\') { cur++; }
                 break;
             }
         }
 
-        if (*cur) {
-            cur++;
-        }
+        if (*cur) { cur++; }
     }
 
     if (arg) {
-        str_s a = {.buf = arg, .len = cur - arg}; 
+        str_s a = { .buf = arg, .len = cur - arg };
         arr$push(*out_cc_args, str.slice.clone(a, allc));
     }
 
@@ -15582,8 +15584,7 @@ cexy__utils__pkgconf(
         e$ret(os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .combine_stdouterr = true }));
 
         char* output = os.cmd.read_all(&c, _);
-        e$except_silent(err, os.cmd.join(&c, 0, NULL))
-        {
+        e$except_silent (err, os.cmd.join(&c, 0, NULL)) {
             log$error("%s program error:\n%s\n", cexy$pkgconf_cmd, output);
             return err;
         }
@@ -15610,9 +15611,7 @@ cexy__utils__git_lib_fetch(
     if (!str.ends_with(git_url, ".git")) {
         return e$raise(Error.argument, "git_url must end with .git, got: %s", git_url);
     }
-    if (git_label == NULL || git_label[0] == '\0') {
-        git_label = "HEAD";
-    }
+    if (git_label == NULL || git_label[0] == '\0') { git_label = "HEAD"; }
     log$info("Checking libs from: %s @ %s\n", git_url, git_label);
     const char* out_build_dir = cexy$build_dir "/cexy_git/";
     e$ret(os.fs.mkpath(out_build_dir));
@@ -15620,16 +15619,13 @@ cexy__utils__git_lib_fetch(
     mem$scope(tmem$, _)
     {
         bool needs_update = false;
-        for$each(it, repo_paths, repo_paths_len)
-        {
+        for$each (it, repo_paths, repo_paths_len) {
             const char* out_file = (preserve_dirs)
                                      ? str.fmt(_, "%s/%s", out_dir, it)
                                      : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
 
             log$info("Lib file: %s -> %s\n", it, out_file);
-            if (!os.path.exists(out_file)) {
-                needs_update = true;
-            }
+            if (!os.path.exists(out_file)) { needs_update = true; }
         }
         if (!needs_update && !update_existing) {
             log$info("Nothing to update, lib files exist, run with update flag if needed\n");
@@ -15664,8 +15660,7 @@ cexy__utils__git_lib_fetch(
         arr$push(git_checkout_args, NULL);
         e$ret(os$cmda(git_checkout_args));
 
-        for$each(it, repo_paths, repo_paths_len)
-        {
+        for$each (it, repo_paths, repo_paths_len) {
             const char* in_path = str.fmt(_, "%s/%s", repo_dir, it);
 
             const char* out_path = (preserve_dirs)
@@ -15684,8 +15679,7 @@ cexy__utils__git_lib_fetch(
                         e$assert(out_stat.is_directory && "out_path expected to be a directory");
                         str_s src_dir = str.sstr(in_path);
                         str_s dst_dir = str.sstr(out_path);
-                        for$each(fname, os.fs.find(str.fmt(_, "%S/*", src_dir), true, _))
-                        {
+                        for$each (fname, os.fs.find(str.fmt(_, "%S/*", src_dir), true, _)) {
                             e$assert(str.starts_with(fname, in_path));
                             char* out_file = str.fmt(
                                 _,
@@ -15695,9 +15689,7 @@ cexy__utils__git_lib_fetch(
                             );
                             log$debug("Replacing: %s\n", out_file);
                             e$ret(os.fs.mkpath(out_file));
-                            if (os.path.exists(out_file)) {
-                                e$ret(os.fs.remove(out_file));
-                            }
+                            if (os.path.exists(out_file)) { e$ret(os.fs.remove(out_file)); }
                             e$ret(os.fs.copy(fname, out_file));
                         }
 
@@ -15706,9 +15698,7 @@ cexy__utils__git_lib_fetch(
                     }
                 } else {
                     // Updating single file
-                    if (out_stat.is_valid && update_existing) {
-                        e$ret(os.fs.remove(out_path));
-                    }
+                    if (out_stat.is_valid && update_existing) { e$ret(os.fs.remove(out_path)); }
                     e$ret(os.fs.mkpath(out_path));
                     e$ret(os.fs.copy(in_path, out_path));
                 }
