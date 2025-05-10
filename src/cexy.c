@@ -1105,7 +1105,11 @@ _cexy__colorize_print(str_s code, str_s name)
                 case '-':
                 case ',': {
                     char _c = c;
-                    if (c == ' ' && i < code.len - 1 && code.buf[i + 1] == '(') { _c = '('; }
+                    if (c == ' ' && i < code.len - 1 && code.buf[i + 1] == '(') {
+                        _c = '(';
+                    } else if (c == ')' && i > 2 && token.buf[-1] == '*' && token.buf[-2] == '(') {
+                        _c = '(';
+                    }
                     io.printf("%s%S\033[0m", _cexy__colorize_ansi(token, name, _c), token);
                     putc(c, stdout);
                     in_token = false;
@@ -1157,7 +1161,7 @@ _cexy__display_full_info(
                             io.printf("\n");
                             has_macro = true;
                         }
-                        if (it->docs.buf) { 
+                        if (it->docs.buf) {
 
                             str_s brief_str = _cexy__process_make_brief_docs(it);
                             if (brief_str.len) { io.printf("/// %S\n", brief_str); }
