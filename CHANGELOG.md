@@ -9,6 +9,7 @@
 - `cex help` - added code syntax colors in terminal
 - `json` - added new JSON parser/builder into cex.h core
 - `str$convert()` - typesafe generic macro for converting char*/str_s to any basic numeric type
+- `cex stats` - added new command for calculating project lines of code + quality stats
 
 ### Fixes
 - Fixed memleaks after program destruction - hanging tmem$ last page (Valgrind issue)

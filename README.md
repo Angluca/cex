@@ -51,6 +51,7 @@ CEX language (cexy$) build and project management system
 help                Search cex.h and project symbols and extract help
 process             Create CEX namespaces from project source code
 new                 Create new CEX project
+stats               Calculate project lines of code and quality stats
 config              Check project and system environment and config
 libfetch            Get 3rd party source code via git or install CEX libs
 test                Test running
