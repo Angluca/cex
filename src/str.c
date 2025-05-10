@@ -33,7 +33,7 @@ _cex_str__index(str_s* s, const char* c, u8 clen)
 }
 
 /**
- * @brief Creates string slice of input c-str (NULL tolerant, (str_s){0} on error)
+ * @brief Creates string slice of input C string (NULL tolerant, (str_s){0} on error)
  *
  * @param ccharptr pointer to a string
  * @return
@@ -162,17 +162,17 @@ cex_str_copy(char* dest, const char* src, usize destlen)
 }
 
 char*
-cex_str_replace(const char* str, const char* old_sub, const char* new_sub, IAllocator allc)
+cex_str_replace(const char* s, const char* old_sub, const char* new_sub, IAllocator allc)
 {
-    if (str == NULL || old_sub == NULL || new_sub == NULL || old_sub[0] == '\0') {
+    if (s == NULL || old_sub == NULL || new_sub == NULL || old_sub[0] == '\0') {
         return NULL;
     }
-    size_t str_len = strlen(str);
+    size_t str_len = strlen(s);
     size_t old_sub_len = strlen(old_sub);
     size_t new_sub_len = strlen(new_sub);
 
     size_t count = 0;
-    const char* pos = str;
+    const char* pos = s;
     while ((pos = strstr(pos, old_sub)) != NULL) {
         count++;
         pos += old_sub_len;
@@ -185,7 +185,7 @@ cex_str_replace(const char* str, const char* old_sub, const char* new_sub, IAllo
     new_str[0] = '\0';
 
     char* current_pos = new_str;
-    const char* start = str;
+    const char* start = s;
     while (count--) {
         const char* found = strstr(start, old_sub);
         size_t segment_len = found - start;
@@ -294,21 +294,21 @@ cex_str_findr(const char* haystack, const char* needle)
 }
 
 static isize
-cex_str__slice__index_of(str_s str, str_s needle)
+cex_str__slice__index_of(str_s s, str_s needle)
 {
-    if (unlikely(!str.buf || !needle.buf || needle.len == 0 || needle.len > str.len)) {
+    if (unlikely(!s.buf || !needle.buf || needle.len == 0 || needle.len > s.len)) {
         return -1;
     }
     if (unlikely(needle.len == 1)) {
         char n = needle.buf[0];
-        for (usize i = 0; i < str.len; i++) {
-            if (str.buf[i] == n) {
+        for (usize i = 0; i < s.len; i++) {
+            if (s.buf[i] == n) {
                 return i;
             }
         }
     } else {
-        for (usize i = 0; i <= str.len - needle.len; i++) {
-            if (memcmp(&str.buf[i], needle.buf, needle.len) == 0) {
+        for (usize i = 0; i <= s.len - needle.len; i++) {
+            if (memcmp(&s.buf[i], needle.buf, needle.len) == 0) {
                 return i;
             }
         }
@@ -317,12 +317,12 @@ cex_str__slice__index_of(str_s str, str_s needle)
 }
 
 static bool
-cex_str__slice__starts_with(str_s str, str_s prefix)
+cex_str__slice__starts_with(str_s s, str_s prefix)
 {
-    if (unlikely(!str.buf || !prefix.buf || prefix.len == 0 || prefix.len > str.len)) {
+    if (unlikely(!s.buf || !prefix.buf || prefix.len == 0 || prefix.len > s.len)) {
         return false;
     }
-    return memcmp(str.buf, prefix.buf, prefix.len) == 0;
+    return memcmp(s.buf, prefix.buf, prefix.len) == 0;
 }
 static bool
 cex_str__slice__ends_with(str_s s, str_s suffix)
@@ -334,28 +334,28 @@ cex_str__slice__ends_with(str_s s, str_s suffix)
 }
 
 static bool
-cex_str_starts_with(const char* str, const char* prefix)
+cex_str_starts_with(const char* s, const char* prefix)
 {
-    if (str == NULL || prefix == NULL || prefix[0] == '\0') {
+    if (s == NULL || prefix == NULL || prefix[0] == '\0') {
         return false;
     }
 
-    while (*prefix && *str == *prefix) {
-        ++str, ++prefix;
+    while (*prefix && *s == *prefix) {
+        ++s, ++prefix;
     }
     return *prefix == 0;
 }
 
 static bool
-cex_str_ends_with(const char* str, const char* suffix)
+cex_str_ends_with(const char* s, const char* suffix)
 {
-    if (str == NULL || suffix == NULL || suffix[0] == '\0') {
+    if (s == NULL || suffix == NULL || suffix[0] == '\0') {
         return false;
     }
-    size_t slen = strlen(str);
+    size_t slen = strlen(s);
     size_t sufflen = strlen(suffix);
 
-    return slen >= sufflen && !memcmp(str + slen - sufflen, suffix, sufflen);
+    return slen >= sufflen && !memcmp(s + slen - sufflen, suffix, sufflen);
 }
 
 static str_s
