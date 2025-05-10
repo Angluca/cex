@@ -1,7 +1,7 @@
 #pragma once
 #include "all.h"
 
-#define _CexTknList                                                                                 \
+#define _CexTknList                                                                                \
     X(eof)                                                                                         \
     X(unk)                                                                                         \
     X(error)                                                                                       \
@@ -22,6 +22,8 @@
     X(brace_block)                                                                                 \
     X(paren_block)                                                                                 \
     X(star)                                                                                        \
+    X(minus)                                                                                       \
+    X(plus)                                                                                        \
     X(dot)                                                                                         \
     X(comma)                                                                                       \
     X(eq)                                                                                          \
@@ -61,7 +63,7 @@ typedef struct CexParser_c
     char* content;     // full content
     char* cur;         // current cursor in the source
     char* content_end; // last pointer of the source
-    u32 line;          // current cursor line relative to content beginning 
+    u32 line;          // current cursor line relative to content beginning
     bool fold_scopes;  // count all {} / () / [] as a single token CexTkn_*_block
 } CexParser_c;
 

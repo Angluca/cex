@@ -9,18 +9,14 @@ const char* CexTkn_str[] = {
 // NOTE: lx$ are the temporary macro (will be #undef at the end of this file)
 #define lx$next(lx)                                                                                \
     ({                                                                                             \
-        if (*lx->cur == '\n') {                                                                    \
-            lx->line++;                                                                            \
-        }                                                                                          \
+        if (*lx->cur == '\n') { lx->line++; }                                                      \
         *(lx->cur++);                                                                              \
     })
 #define lx$rewind(lx)                                                                              \
     ({                                                                                             \
         if (lx->cur > lx->content) {                                                               \
             lx->cur--;                                                                             \
-            if (*lx->cur == '\n') {                                                                \
-                lx->line--;                                                                        \
-            }                                                                                      \
+            if (*lx->cur == '\n') { lx->line--; }                                                  \
         }                                                                                          \
     })
 #define lx$peek(lx) (lx->cur < lx->content_end) ? *lx->cur : '\0'
@@ -33,9 +29,7 @@ const char* CexTkn_str[] = {
 CexParser_c
 CexParser_create(char* content, u32 content_len, bool fold_scopes)
 {
-    if (content_len == 0) {
-        content_len = str.len(content);
-    }
+    if (content_len == 0) { content_len = str.len(content); }
     CexParser_c lx = { .content = content,
                        .content_end = (content) ? content + content_len : NULL,
                        .cur = content,
@@ -107,15 +101,22 @@ _CexParser__scan_string(CexParser_c* lx)
                 t.value.len++;
                 break;
             case '\'':
-                if (t.type == CexTkn__char) {
-                    return t;
-                }
+                if (t.type == CexTkn__char) { return t; }
                 break;
             case '"':
-                if (t.type == CexTkn__string) {
+                if (t.type == CexTkn__string) { return t; }
+                break;
+            default: {
+                bool is_allowed = false;
+                if (c >= 0x20 && c <= 0x7E) {
+                    if (!(c == '"' || c == '\\')) { is_allowed = true; }
+                }
+                if (unlikely(!is_allowed)) {
+                    t.type = CexTkn__error;
+                    t.value = (str_s){ 0 };
                     return t;
                 }
-                break;
+            }
         }
         t.value.len++;
     }
@@ -204,9 +205,7 @@ _CexParser__scan_scope(CexParser_c* lx)
         u32 scope_depth = 0;
 
 #define scope$push(c) /* temp macro! */                                                            \
-    if (++scope_depth < sizeof(scope_stack)) {                                                     \
-        scope_stack[scope_depth - 1] = c;                                                          \
-    }
+    if (++scope_depth < sizeof(scope_stack)) { scope_stack[scope_depth - 1] = c; }
 #define scope$pop_if(c) /* temp macro! */                                                          \
     if (scope_depth > 0 && scope_depth <= sizeof(scope_stack) &&                                   \
         scope_stack[scope_depth - 1] == c) {                                                       \
@@ -265,18 +264,14 @@ _CexParser__scan_scope(CexParser_c* lx)
                 case '#': {
                     char* ppstart = lx->cur;
                     var s = _CexParser__scan_preproc(lx);
-                    if (s.value.buf) {
-                        t.value.len += s.value.len + (s.value.buf - ppstart) + 1;
-                    }
+                    if (s.value.buf) { t.value.len += s.value.len + (s.value.buf - ppstart) + 1; }
                     continue;
                 }
             }
             t.value.len++;
             lx$next(lx);
 
-            if (scope_depth == 0) {
-                return t;
-            }
+            if (scope_depth == 0) { return t; }
         }
 
 #undef scope$push
@@ -304,16 +299,10 @@ CexParser_next_token(CexParser_c* lx)
     char c;
     while ((c = lx$peek(lx))) {
         lx$skip_space(lx, c);
-        if (!c) {
-            break;
-        }
+        if (!c) { break; }
 
-        if (isalpha(c) || c == '_' || c == '$') {
-            return _CexParser__scan_ident(lx);
-        }
-        if (isdigit(c)) {
-            return _CexParser__scan_number(lx);
-        }
+        if (isalpha(c) || c == '_' || c == '$') { return _CexParser__scan_ident(lx); }
+        if (isdigit(c)) { return _CexParser__scan_number(lx); }
 
         switch (c) {
             case '\'':
@@ -336,6 +325,10 @@ CexParser_next_token(CexParser_c* lx)
                 return tok$new(CexTkn__eos);
             case ':':
                 return tok$new(CexTkn__colon);
+            case '-':
+                return tok$new(CexTkn__minus);
+            case '+':
+                return tok$new(CexTkn__plus);
             case '?':
                 return tok$new(CexTkn__question);
             case '=': {
@@ -443,9 +436,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                     result.type = CexTkn__macro_const;
 
                     _t = CexParser.next_token(&_lx);
-                    if (_t.type == CexTkn__paren_block) {
-                        result.type = CexTkn__macro_func;
-                    }
+                    if (_t.type == CexTkn__paren_block) { result.type = CexTkn__macro_func; }
                 } else {
                     result.type = CexTkn__preproc;
                 }
@@ -483,9 +474,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
 
             case CexTkn__ident: {
                 if (str.slice.match(t.value, "(typedef|struct|enum|union)")) {
-                    if (result.type != CexTkn__var_decl) {
-                        result.type = CexTkn__typedef;
-                    }
+                    if (result.type != CexTkn__var_decl) { result.type = CexTkn__typedef; }
                 } else if (str.slice.match(t.value, "extern")) {
                     result.type = CexTkn__var_decl;
                 } else if (str.slice.match(t.value, "__cex_namespace__*")) {
@@ -562,17 +551,12 @@ CexParser_decl_parse(
     isize idx = -1;
     isize prev_idx = -1;
 
-    for$each(it, children)
-    {
+    for$each (it, children) {
         idx++;
         switch (it.type) {
             case CexTkn__ident: {
-                if (str.slice.eq(it.value, str$s("static"))) {
-                    result->is_static = true;
-                }
-                if (str.slice.eq(it.value, str$s("inline"))) {
-                    result->is_inline = true;
-                }
+                if (str.slice.eq(it.value, str$s("static"))) { result->is_static = true; }
+                if (str.slice.eq(it.value, str$s("inline"))) { result->is_inline = true; }
                 if (str.slice.match(it.value, ignore_pattern)) {
                     prev_skipped = true;
                     continue;
@@ -667,14 +651,10 @@ CexParser_decl_parse(
                 fallthrough();
             }
             case CexTkn__eos: {
-                if (prev_t.type == CexTkn__paren_block) {
-                    args_idx = prev_idx;
-                }
+                if (prev_t.type == CexTkn__paren_block) { args_idx = prev_idx; }
                 if (decl_token.type == CexTkn__typedef && prev_t.type == CexTkn__ident &&
                     !str.slice.match(prev_t.value, "(struct|enum|union)")) {
-                    if (name_idx < 0) {
-                        name_idx = idx;
-                    }
+                    if (name_idx < 0) { name_idx = idx; }
                     result->name = prev_t.value;
                 }
                 break;
@@ -731,9 +711,7 @@ CexParser_decl_parse(
         case CexTkn__bracket_block:                                                                \
             break;                                                                                 \
         default:                                                                                   \
-            if (sbuf.len(&(buf)) > 0) {                                                            \
-                e$goto(sbuf.append(&(buf), " "), fail);                                            \
-            }                                                                                      \
+            if (sbuf.len(&(buf)) > 0) { e$goto(sbuf.append(&(buf), " "), fail); }                  \
     }                                                                                              \
     e$goto(sbuf.appendf(&(buf), "%S", (tok).value), fail);
     //  <<<<<  #define $append_fmt
@@ -747,8 +725,7 @@ CexParser_decl_parse(
     if (name_idx > 0) {
         // NOTE: parsing return type
         prev_skipped = false;
-        for$each(it, children, name_idx - 1)
-        {
+        for$each (it, children, name_idx - 1) {
             switch (it.type) {
                 case CexTkn__ident: {
                     if (str.slice.match(it.value, ignore_pattern)) {
@@ -825,9 +802,7 @@ CexParser_decl_parse(
                 case CexTkn__comment_single:
                     continue;
                 case CexTkn__bracket_block: {
-                    if (str.slice.starts_with(t.value, str$s("[["))) {
-                        continue;
-                    }
+                    if (str.slice.starts_with(t.value, str$s("[["))) { continue; }
                     fallthrough();
                 }
                 default: {
@@ -843,9 +818,7 @@ CexParser_decl_parse(
         char* cur = lx->cur - 1;
         while (cur > result->name.buf) {
             if (*cur == '\n') {
-                if (result->line > 0) {
-                    result->line--;
-                }
+                if (result->line > 0) { result->line--; }
             }
             cur--;
         }

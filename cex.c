@@ -18,8 +18,7 @@ main(int argc, char** argv)
     cexy$initialize();
 
 #ifdef CEX_VALGRIND
-    e$except(err, os.env.set("CEX_VALGRIND", "1")){
-    }
+    e$except (err, os.env.set("CEX_VALGRIND", "1")) {}
 #endif
 
 
@@ -35,12 +34,8 @@ main(int argc, char** argv)
     };
     // clang-format on
 
-    if (argparse.parse(&args, argc, argv)) {
-        return 1;
-    }
-    if (argparse.run_command(&args, NULL)) {
-        return 1;
-    }
+    if (argparse.parse(&args, argc, argv)) { return 1; }
+    if (argparse.run_command(&args, NULL)) { return 1; }
     return 0;
 }
 
@@ -55,8 +50,7 @@ cmd_custom_test(int argc, char** argv, void* user_ctx)
         log$trace("Finding/building simple os apps in tests/os_test/*.c\n");
         arr$(char*) test_app_src = os.fs.find("tests/os_test/*.c", false, _);
 
-        for$each(src, test_app_src)
-        {
+        for$each (src, test_app_src) {
             char* tgt_ext = NULL;
             char* test_launcher[] = { cexy$debug_cmd };
             if (arr$len(test_launcher) > 0 && str.eq(test_launcher[0], "wine")) {
@@ -67,9 +61,7 @@ cmd_custom_test(int argc, char** argv, void* user_ctx)
             // target app is: build/tests/os_test/<app_name>.[platform][.exe]
             char* target = cexy.target_make(src, cexy$build_dir, tgt_ext, _);
 
-            if (!cexy.src_include_changed(target, src, NULL)) {
-                continue;
-            }
+            if (!cexy.src_include_changed(target, src, NULL)) { continue; }
 
             e$ret(os$cmd(cexy$cc, "-g", "-Wall", "-Wextra", "-o", target, src));
         }
@@ -85,17 +77,12 @@ embed_code(sbuf_c* buf, char* code_path)
     uassertf(os.path.exists(code_path), "not exists: %s", code_path);
 
     FILE* fh;
-    e$except(err, io.fopen(&fh, code_path, "r"))
-    {
-        exit(1);
-    }
+    e$except (err, io.fopen(&fh, code_path, "r")) { exit(1); }
     e$goto(sbuf.append(buf, "\""), fail);
 
     char c;
     while ((c = fgetc(fh))) {
-        if (feof(fh)) {
-            break;
-        }
+        if (feof(fh)) { break; }
         switch (c) {
             case '\\':
                 e$goto(sbuf.append(buf, "\\"), fail);
@@ -128,15 +115,13 @@ cex_bundle(void)
     mem$scope(tmem$, _)
     {
         arr$(char*) src = os.fs.find("src/*.[hc]", false, _);
-        if (!cexy.src_changed("cex.h", src)) {
-            return;
-        }
+        if (!cexy.src_changed("cex.h", src)) { return; }
         const char* bundle[] = {
             "src/cex_base.h", "src/mem.h",          "src/AllocatorHeap.h", "src/AllocatorArena.h",
             "src/ds.h",       "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
             "src/io.h",       "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
             "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexParser.h",
-            "src/cex_maker.h"
+            "src/json.h",     "src/cex_maker.h"
 
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
@@ -151,7 +136,7 @@ cex_bundle(void)
         time_t t = time(NULL);
         struct tm tm = *localtime(&t);
         char date[16];
-        e$except(
+        e$except (
             err,
             str.sprintf(
                 date,
@@ -161,46 +146,30 @@ cex_bundle(void)
                 tm.tm_mon + 1,
                 tm.tm_mday
             )
-        )
-        {
+        ) {
             exit(1);
         }
 
         char* cex_header;
-        e$except_null(cex_header = io.file.load("src/cex_header.h", _))
-        {
-            exit(1);
-        }
+        e$except_null (cex_header = io.file.load("src/cex_header.h", _)) { exit(1); }
         uassert(str.find(cex_header, "{date}") && "{date} template not found in cex_header.h");
         cex_header = str.replace(cex_header, "{date}", date, _);
         uassert(cex_header != NULL);
 
         $pn(cex_header);
 
-        for$each(hdr, bundle)
-        {
+        for$each (hdr, bundle) {
             $pn("\n");
             $pn("/*");
             $pf("*                          %s", hdr);
             $pn("*/");
             FILE* fh;
-            e$except(err, io.fopen(&fh, hdr, "r"))
-            {
-                exit(1);
-            }
+            e$except (err, io.fopen(&fh, hdr, "r")) { exit(1); }
             str_s content;
-            e$except(err, io.fread_all(fh, &content, _))
-            {
-                exit(1);
-            }
-            for$iter(str_s, it, str.slice.iter_split(content, "\n", &it.iterator))
-            {
-                if (str.slice.match(it.val, "#pragma once*")) {
-                    continue;
-                }
-                if (str.slice.match(it.val, "#include \"*\"")) {
-                    continue;
-                }
+            e$except (err, io.fread_all(fh, &content, _)) { exit(1); }
+            for$iter (str_s, it, str.slice.iter_split(content, "\n", &it.iterator)) {
+                if (str.slice.match(it.val, "#pragma once*")) { continue; }
+                if (str.slice.match(it.val, "#include \"*\"")) { continue; }
                 $pf("%S", it.val);
             }
         }
@@ -213,40 +182,25 @@ cex_bundle(void)
         $pn("\n\n");
         $pn("#if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)\n");
 
-        e$except_null(cex_header = io.file.load("src/cex_header.c", _))
-        {
-            exit(1);
-        }
+        e$except_null (cex_header = io.file.load("src/cex_header.c", _)) { exit(1); }
         $pn(cex_header);
 
         $pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
         embed_code(&hbuf, "src/cex_boilerplate.c");
 
-        for$each(hdr, bundle)
-        {
+        for$each (hdr, bundle) {
             char* cfile = str.replace(hdr, ".h", ".c", _);
             $pn("\n");
             $pn("/*");
             $pf("*                          %s", cfile);
             $pn("*/");
             FILE* fh;
-            e$except(err, io.fopen(&fh, cfile, "r"))
-            {
-                exit(1);
-            }
+            e$except (err, io.fopen(&fh, cfile, "r")) { exit(1); }
             str_s content;
-            e$except(err, io.fread_all(fh, &content, _))
-            {
-                exit(1);
-            }
-            for$iter(str_s, it, str.slice.iter_split(content, "\n", &it.iterator))
-            {
-                if (str.slice.match(it.val, "#pragma once*")) {
-                    continue;
-                }
-                if (str.slice.match(it.val, "#include \"*\"")) {
-                    continue;
-                }
+            e$except (err, io.fread_all(fh, &content, _)) { exit(1); }
+            for$iter (str_s, it, str.slice.iter_split(content, "\n", &it.iterator)) {
+                if (str.slice.match(it.val, "#pragma once*")) { continue; }
+                if (str.slice.match(it.val, "#include \"*\"")) { continue; }
                 $pf("%S", it.val);
             }
         }
@@ -257,16 +211,10 @@ cex_bundle(void)
 
         u32 cex_lines = 0;
         (void)cex_lines;
-        for$each(c, hbuf, sbuf.len(&hbuf))
-        {
-            if (c == '\n') {
-                cex_lines++;
-            }
+        for$each (c, hbuf, sbuf.len(&hbuf)) {
+            if (c == '\n') { cex_lines++; }
         }
         log$debug("Saving cex.h: new size: %dKB lines: %d\n", sbuf.len(&hbuf) / 1024, cex_lines);
-        e$except(err, io.file.save("cex.h", hbuf))
-        {
-            exit(1);
-        }
+        e$except (err, io.file.save("cex.h", hbuf)) { exit(1); }
     }
 }

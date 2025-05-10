@@ -8,6 +8,9 @@ ColumnLimit: 100
 AlwaysBreakAfterReturnType: AllDefinitions
 AlwaysBreakAfterDefinitionReturnType: TopLevel
 AllowAllArgumentsOnNextLine: false
+AllowShortBlocksOnASingleLine: Always
+AllowShortLoopsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AlignAfterOpenBracket: BlockIndent
 PenaltyBreakAssignment: 1000
 PenaltyBreakString: 10000
@@ -24,5 +27,7 @@ InsertBraces: true
 BreakStringLiterals: false
 BreakBeforeTernaryOperators: true
 IndentPPDirectives: AfterHash
+IfMacros: [json$key_match, json$key_invalid]
+ForEachMacros: [for$each, for$iter, e$except, e$except_silent, e$except_errno, e$except_null]
 ...
 

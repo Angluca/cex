@@ -108,6 +108,8 @@ test$case(test_token_numbers)
         { "0.12)", "0.12", CexTkn__number },
         { "0.12]", "0.12", CexTkn__number },
         { "0.12}", "0.12", CexTkn__number },
+        { "-0.12}", "-", CexTkn__minus },
+        { "+0.12}", "+", CexTkn__plus },
         { "0.12(", "0.12(", CexTkn__number }, // WARNING: invalid syntax!
     };
     for$each(it, tokens)
@@ -140,6 +142,9 @@ test$case(test_token_string)
         { "'\\''", "\\'", CexTkn__char },
         { "'\"'", "\"", CexTkn__char },
         { " \"'\" ", "'", CexTkn__string },
+        { " \"hello \nworld\" ", NULL, CexTkn__error },
+        { " \"hello \f world\" ", NULL, CexTkn__error },
+        { " \"hello \xff world\" ", NULL, CexTkn__error },
     };
     for$each(it, tokens)
     {
@@ -154,7 +159,9 @@ test$case(test_token_string)
             it.exp_token,
             t.value
         );
-        tassert(t.value.buf >= it.code && t.value.buf < it.code + strlen(it.code));
+        if (t.type != CexTkn__error) {
+            tassert(t.value.buf >= it.code && t.value.buf < it.code + strlen(it.code));
+        }
     }
 
     return EOK;

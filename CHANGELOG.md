@@ -1,11 +1,14 @@
 # CEX Release Notes
 
-## latest
+## 0.12.0 WIP
 ### Changes / improvements
 - Code base cleanup
 - refactor(cexy)!: removed `cexy$cc_args_release/debug` - now it's `cexy$cc_args` (controlled by cex -DSOME_CONF config)
 - Added Valgrind to CI (extra memory leak check, uninitialized variables check, file handle leaks checks) + available on non x86 architectures
 - `os.path.abs()` - getting absolute path from any other path
+- `cex help` - added code syntax colors in terminal
+- `json` - added new JSON parser/builder into cex.h core
+- `str$convert()` - typesafe generic macro for converting char*/str_s to any basic numeric type
 
 ### Fixes
 - Fixed memleaks after program destruction - hanging tmem$ last page (Valgrind issue)
