@@ -1122,7 +1122,13 @@ _cexy__colorize_print(str_s code, str_s name)
 }
 
 static Exception
-_cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source, bool show_example)
+_cexy__display_full_info(
+    cex_decl_s* d,
+    char* base_ns,
+    bool show_source,
+    bool show_example,
+    arr$(cex_decl_s*) cex_ns_decls
+)
 {
     str_s name = d->name;
     mem$scope(tmem$, _)
@@ -1139,6 +1145,31 @@ _cexy__display_full_info(cex_decl_s* d, char* base_ns, bool show_source, bool sh
             _cexy__colorize_print(d->docs, name);
             io.printf("\n");
         }
+        if (cex_ns_decls) {
+            // This only passed if we have cex namespace struct here
+            bool has_macro = false;
+            mem$scope(tmem$, _)
+            {
+                for$each (it, cex_ns_decls) {
+                    if (it->type == CexTkn__macro_func && str.slice.starts_with(it->name, name) &&
+                        it->name.buf[name.len] == '$') {
+                        if (!has_macro) {
+                            io.printf("\n");
+                            has_macro = true;
+                        }
+                        if (it->docs.buf) { 
+
+                            str_s brief_str = _cexy__process_make_brief_docs(it);
+                            if (brief_str.len) { io.printf("/// %S\n", brief_str); }
+                        }
+                        char* l = str.fmt(_, "#define %S(%s)\n", it->name, it->args);
+                        _cexy__colorize_print(str.sstr(l), name);
+                    }
+                }
+            }
+            io.printf("\n\n");
+        }
+
         if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
             io.printf("#define ");
         }
@@ -1299,6 +1330,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     return e$raise(Error.not_found, "Error loading: %s\n", src_fn);
                 }
                 arr$(cex_token_s) items = arr$new(items, _);
+                arr$(cex_decl_s*) all_decls = arr$new(all_decls, _);
 
                 CexParser_c lx = CexParser.create(code, 0, true);
                 cex_token_s t;
@@ -1309,6 +1341,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     }
                     cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, arena);
                     if (d == NULL) { continue; }
+                    arr$push(all_decls, d);
 
                     d->file = src_fn;
                     if (d->type == CexTkn__cex_module_struct || d->type == CexTkn__cex_module_def) {
@@ -1341,7 +1374,13 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
                             if (d->type == CexTkn__cex_module_def) { continue; }
                             // We have full match display full help
-                            return _cexy__display_full_info(d, base_ns, show_source, show_example);
+                            return _cexy__display_full_info(
+                                d,
+                                base_ns,
+                                show_source,
+                                show_example,
+                                (d->type == CexTkn__cex_module_struct) ? all_decls : NULL
+                            );
                         }
 
                         bool has_match = false;
