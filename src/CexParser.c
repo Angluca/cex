@@ -107,11 +107,7 @@ _CexParser__scan_string(CexParser_c* lx)
                 if (t.type == CexTkn__string) { return t; }
                 break;
             default: {
-                bool is_allowed = false;
-                if (c >= 0x20 && c <= 0x7E) {
-                    if (!(c == '"' || c == '\\')) { is_allowed = true; }
-                }
-                if (unlikely(!is_allowed)) {
+                if (unlikely((u8)c < 0x20)) {
                     t.type = CexTkn__error;
                     t.value = (str_s){ 0 };
                     return t;
