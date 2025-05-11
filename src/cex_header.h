@@ -89,6 +89,9 @@ Use `cex -D config` to reset all project config flags to defaults
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
+
 
 #if defined(__APPLE__) || defined(__MACH__)
 // NOTE: Apple SDK defines sprintf as a macro, this messes str.sprintf() calls, because

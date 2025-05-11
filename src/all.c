@@ -14,6 +14,7 @@
 #include "str.c"
 #include "io.c"
 #include "ds.c"
+#include "_subprocess.c"
 #include "os.c"
 #include "argparse.c"
 #include "cex_code_gen.c"
