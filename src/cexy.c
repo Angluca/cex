@@ -1842,6 +1842,10 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
             arr$pusha(args, cc_include);
             arr$push(args, test_src);
             arr$pusha(args, cc_ld_args);
+            char* pkgconf_libargs[] = { cexy$pkgconf_libs };
+            if (arr$len(pkgconf_libargs)) {
+                e$ret(cexy$pkgconf(_, &args, "--cflags", "--libs", cexy$pkgconf_libs));
+            }
             arr$pushm(args, "-o", test_target);
 
 
@@ -2150,6 +2154,10 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
         arr$pusha(args, cc_include);
         arr$push(args, (char*)target);
         arr$pusha(args, ld_args);
+        char* pkgconf_libargs[] = { cexy$pkgconf_libs };
+        if (arr$len(pkgconf_libargs)) {
+            e$ret(cexy$pkgconf(_, &args, "--cflags", "--libs", cexy$pkgconf_libs));
+        }
         arr$pushm(args, "-o", app_exec);
 
 
