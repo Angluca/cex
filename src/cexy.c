@@ -1497,7 +1497,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 
         hm$(str_s, cex_decl_s*) names = hm$new(names, arena, .capacity = 1024);
         hm$(char*, char*) cex_ns_map = hm$new(cex_ns_map, arena, .capacity = 256);
-        hm$set(cex_ns_map, "./cexy.h", "cex");
+        hm$set(cex_ns_map, "./cex.h", "cex");
 
         for$each (src_fn, sources) {
             mem$scope(tmem$, _)
