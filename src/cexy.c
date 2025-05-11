@@ -1639,6 +1639,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 static Exception
 cexy__cmd__config(int argc, char** argv, void* user_ctx)
 {
+    Exc result = EOK;
     (void)argc;
     (void)argv;
     (void)user_ctx;
@@ -1672,6 +1673,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
     "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
     "* cexy$pkgconf_cmd          " cex$stringize(cexy$pkgconf_cmd) "\n"                              \
+    "* cexy$pkgconf_libs         " cex$stringize(cexy$pkgconf_libs) "\n"                              \
     "* cexy$process_ignore_kw    " cex$stringize(cexy$process_ignore_kw) "\n"\
     "* cexy$cex_self_args        " cex$stringize(cexy$cex_self_args) "\n"\
     "* cexy$cex_self_cc          " cexy$cex_self_cc "\n" // clang-format on
@@ -1708,6 +1710,25 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
                     break;
             }
         }
+        if (has_pkg_config) {
+            char* pkgconf_libargs[] = { cexy$pkgconf_libs };
+            if (arr$len(pkgconf_libargs)) {
+                arr$(char*) args = arr$new(args, _);
+                Exc err = cexy$pkgconf(_, &args, "--libs", cexy$pkgconf_libs);
+                if (err == EOK) {
+                    io.printf(
+                        "* pkg-config (libs test)    %s\n",
+                        str.join((const char**)args, arr$len(args), " ", _)
+                    );
+                } else {
+                    io.printf(
+                        "* pkg-config (libs test)    %s[%s]\n",
+                        "ERROR", err
+                    );
+                    result = "Missing Libs";
+                }
+            }
+        }
 
         io.printf("\nGlobal environment:\n");
         io.printf(
@@ -1725,7 +1746,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
 
 #    undef $env
 
-    return EOK;
+    return result;
 }
 
 static Exception
