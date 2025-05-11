@@ -10,10 +10,15 @@
 - `json` - added new JSON parser/builder into cex.h core
 - `str$convert()` - typesafe generic macro for converting char*/str_s to any basic numeric type
 - `cex stats` - added new command for calculating project lines of code + quality stats
+- `cexy$pkgconf_libs` - new universal way of using dependencies in CEXY build system (tests and apps). Uses system (or custom) `pkgconf` command for resolving library settings and compiler args.
+- `cexy$pkgconf_libs` - required libs now checked in `cex config`, user will receive diagnostic error if anything is missing
+- `./cex` - added `compile_flags.txt` generation for clangd LSP/tooling (if that file exists)
 
 ### Fixes
 - Fixed memleaks after program destruction - hanging tmem$ last page (Valgrind issue)
 - Fixed memleaks for test runner - list of tests were not cleaned up (Valgrind issue)
+- `AllocatorArena` - assertion in scope exit with some nested scopes pattern
+- `cex test create` - new tests now include `#define CEX_TEST` + compiler arg removed
 
 
 ## 0.11.0 Change list

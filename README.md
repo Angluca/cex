@@ -79,7 +79,7 @@ The philosophy of CEX revolves around independence and self-containment, minimiz
 - New namespacing capabilities for grouping functions / simulating OOP classes
 - New error handling model (support of stack traceback on errors, assertions with stack trace (with ASAN))
 - Developer experience - unit test runner / code generation / help system included in `cex.h`
-- Code distribution system based on Git and managing dependencies (system libs) with `pkgconf`/`vcpkg` (WIP)
+- Code distribution system based on Git and managing dependencies (system libs) with `pkgconf`/`vcpkg`
 - Simple, but powerful standard lib included in `cex.h`:
     * Generic / type-safe dynamic arrays and hashmaps included
     * Strings refactored: safe-string functions (copy/formatting), dynamic string buffer (`sbuf`), string views/slices (`str_s`), simple pattern matching engine (wildcard patterns).
@@ -87,6 +87,7 @@ The philosophy of CEX revolves around independence and self-containment, minimiz
     * `io` namespace - cross platform IO support, including helper functions, e.g. `io.file.load/save()`
     * `argparse` - convenient argument parsing for CLI tools with built-in commands support
     * `cexy` - fancy project management tool and build system.
+    * `json` - `json.iter` - single pass, non allocating JSON parser, `json.buf` - single pass, single buffer JSON writer.
 
 ## Code example
 ```c
