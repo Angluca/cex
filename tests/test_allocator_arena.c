@@ -624,4 +624,44 @@ test$case(test_mem_arena_with_return)
     return EOK;
 }
 
+test$case(test_mem_arena_nested_cleanup_assert)
+{
+
+    mem$arena(4096, arena)
+    {
+        AllocatorArena_c* allc = (AllocatorArena_c*)arena;
+
+        u8* p = mem$malloc(arena, 100);
+        tassert(p != NULL);
+        memset(p, 0xaa, 100);
+
+        // This needs extra page
+        u8* p2 = mem$malloc(arena, 10040);
+        tassert(p2 != NULL);
+        memset(p2, 0xbb, 10040);
+
+        mem$scope(arena, tal)
+        {
+            tassert_eq(allc->scope_depth, 2);
+            tassert_eq(allc->stats.pages_created, 2);
+
+            u8* p3 = mem$malloc(tal, 100);
+            tassert(p3 != NULL);
+            memset(p3, 0xcc, 100);
+
+            tassert_eq(allc->stats.pages_created, 2);
+            tassert_eq(allc->scope_depth, 2);
+        }
+
+        tassert(p2 != NULL);
+        for$each(c, p2, 10040) {
+            tassert(c == 0xbb);
+        }
+        for$each(c, p, 100) {
+            tassert(c == 0xaa);
+        }
+    }
+    return EOK;
+}
+
 test$main();

@@ -4537,7 +4537,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
             uassert(page->cursor >= free_offset);
 
             usize free_len = page->cursor - free_offset;
-            page->cursor = used_mark;
+            page->cursor = free_offset;
             mem$asan_poison(&page->data[free_offset], free_len);
 
             uassert(self->used >= free_len);
