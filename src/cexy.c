@@ -1,6 +1,7 @@
 #include "all.h"
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
+#    include <ctype.h>
 #    include <time.h>
 
 static void
@@ -12,6 +13,12 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
         char* bin_path = argv[0];
         bool has_darg_before_cmd = (argc > 1 && str.starts_with(argv[1], "-D"));
         (void)has_darg_before_cmd;
+
+#    ifndef cexy$no_compile_flags
+        if (os.path.exists("compile_flags.txt")) {
+            e$except (err, cexy.utils.make_compile_flags("compile_flags.txt", true, NULL)) {}
+        }
+#    endif
 
 #    ifdef _CEX_SELF_BUILD
         if (!has_darg_before_cmd) {
@@ -1903,6 +1910,14 @@ cexy__utils__make_new_project(const char* proj_dir)
         e$ret(os.fs.copy("src/cex_boilerplate.c", cex_c));
 #    endif
 
+        // Simple touching file first ./cex call will update its flags
+        e$ret(io.file.save(os$path_join(_, proj_dir, "compile_flags.txt"), ""));
+
+        // Basic cex-related stuff
+        char* git_ignore = "cex\n"
+                           "build/\n"
+                           "compile_flags.txt\n";
+        e$ret(io.file.save(os$path_join(_, proj_dir, ".gitignore"), git_ignore));
 
         sbuf_c buf = sbuf.create(1024 * 10, _);
         {
@@ -2310,6 +2325,44 @@ cexy__utils__pkgconf(
 }
 
 static Exception
+cexy__utils__make_compile_flags(
+    char* flags_file,
+    bool include_cexy_flags,
+    arr$(char*) cc_flags_or_null
+)
+{
+    mem$scope(tmem$, _)
+    {
+        e$assert(str.ends_with(flags_file, "compile_flags.txt") && "unexpected file name");
+
+        arr$(char*) args = arr$new(args, _);
+        if (include_cexy_flags) {
+            char* cc_args[] = { cexy$cc_args };
+            char* cc_include[] = { cexy$cc_include };
+            arr$pusha(args, cc_args);
+            arr$pusha(args, cc_include);
+            char* pkgconf_libargs[] = { cexy$pkgconf_libs };
+            if (arr$len(pkgconf_libargs)) {
+                e$ret(cexy$pkgconf(_, &args, "--cflags", cexy$pkgconf_libs));
+            }
+        }
+        if (cc_flags_or_null != NULL) { arr$pusha(args, cc_flags_or_null); }
+        if (arr$len(args) == 0) { return e$raise(Error.empty, "Compiler flags are empty"); }
+
+        FILE* fh;
+        e$ret(io.fopen(&fh, flags_file, "w"));
+        for$each (it, args) {
+            if (str.starts_with(it, "-fsanitize")) { continue; }
+            e$goto(io.file.writeln(fh, it), end); // write args
+        }
+    end:
+        io.fclose(&fh);
+    }
+
+    return EOK;
+}
+
+static Exception
 cexy__utils__git_lib_fetch(
     const char* git_url,
     const char* git_label,
@@ -2468,6 +2521,7 @@ const struct __cex_namespace__cexy cexy = {
     .utils = {
         .git_hash = cexy__utils__git_hash,
         .git_lib_fetch = cexy__utils__git_lib_fetch,
+        .make_compile_flags = cexy__utils__make_compile_flags,
         .make_new_project = cexy__utils__make_new_project,
         .pkgconf = cexy__utils__pkgconf,
     },

@@ -64,7 +64,7 @@ __pycache__/
 perf.data
 tmux_run.sh
 .gdb_history
-compile_commands.json
+compile_flags.txt
 .cache
 docs/html/
 /cex
