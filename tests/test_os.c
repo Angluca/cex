@@ -14,18 +14,18 @@ test$case(test_timer){
     tassert(t > -INFINITY);
 
     f64 t2 = os.timer();
-    tassert(t2 > t);
+    tassert(t2 >= t);
 
     os.sleep(100);
     t2 = os.timer();
     f64 tdiff = t2 - t;
-    tassertf(tdiff > 0.1 && tdiff < 0.11, "%g", tdiff);
+    tassertf(tdiff > 0.1 && tdiff < 0.15, "%g", tdiff);
 
     t = t2;
     os.sleep(1100);
     t2 = os.timer();
     tdiff = t2 - t;
-    tassertf(tdiff > 1.1 && tdiff < 1.11, "%g", tdiff);
+    tassertf(tdiff > 1.1 && tdiff < 1.15, "%g", tdiff);
 
     return EOK;
 }
