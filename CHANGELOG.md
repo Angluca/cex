@@ -13,6 +13,7 @@
 - `cexy$pkgconf_libs` - new universal way of using dependencies in CEXY build system (tests and apps). Uses system (or custom) `pkgconf` command for resolving library settings and compiler args.
 - `cexy$pkgconf_libs` - required libs now checked in `cex config`, user will receive diagnostic error if anything is missing
 - `./cex` - added `compile_flags.txt` generation for clangd LSP/tooling (if that file exists)
+- `./cex help <cex_namspace>` - added macro constants + alphabetical sorting
 
 ### Fixes
 - Fixed memleaks after program destruction - hanging tmem$ last page (Valgrind issue)

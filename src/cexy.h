@@ -15,6 +15,7 @@
 #    endif // #ifndef cexy$cex_self_cc
 
 #    ifndef cexy$cc
+/// Default compiler for building tests/apps (by default inferred from ./cex tool compiler)
 #        define cexy$cc cexy$cex_self_cc
 #    endif // #ifndef cexy$cc
 
@@ -86,13 +87,12 @@
 #    endif
 
 #    ifndef cexy$ld_args
-/// Linker flags (e.g. -L./lib/path/ -lmylib -lm) (may be overridden by user)
+/// Linker flags (e.g. -L./lib/path/ -lmylib -lm) (may be overridden)
 #        define cexy$ld_args
 #    endif
 
 #    ifndef cexy$debug_cmd
-/// Command for running debugger for cex test/app debug  (may be overridden by
-/// user)
+/// Command for launching debugger for cex test/app debug (may be overridden)
 #        define cexy$debug_cmd "gdb", "-q", "--args"
 #    endif
 
@@ -132,51 +132,58 @@ See `cex help str.match` for more information about patter syntax.
 #    endif
 
 
-#    define cexy$cmd_process                                                                       \
+#    define _cexy$cmd_process                                                                       \
         { .name = "process",                                                                       \
           .func = cexy.cmd.process,                                                                \
           .help = "Create CEX namespaces from project source code" }
 
-#    define cexy$cmd_new { .name = "new", .func = cexy.cmd.new, .help = "Create new CEX project" }
+#    define _cexy$cmd_new { .name = "new", .func = cexy.cmd.new, .help = "Create new CEX project" }
 
-#    define cexy$cmd_help                                                                          \
+#    define _cexy$cmd_help                                                                          \
         { .name = "help",                                                                          \
           .func = cexy.cmd.help,                                                                   \
           .help = "Search cex.h and project symbols and extract help" }
 
-#    define cexy$cmd_config                                                                        \
+#    define _cexy$cmd_config                                                                        \
         { .name = "config",                                                                        \
           .func = cexy.cmd.config,                                                                 \
           .help = "Check project and system environment and config" }
 
-#    define cexy$cmd_libfetch                                                                      \
+#    define _cexy$cmd_libfetch                                                                      \
         { .name = "libfetch",                                                                      \
           .func = cexy.cmd.libfetch,                                                               \
           .help = "Get 3rd party source code via git or install CEX libs" }
 
+#    define _cexy$cmd_stats                                                                         \
+        { .name = "stats",                                                                         \
+          .func = cexy.cmd.stats,                                                                  \
+          .help = "Calculate project lines of code and quality stats" }
+
+/// Simple test runner command (test runner, debugger launch, etc)
 #    define cexy$cmd_test                                                                          \
         { .name = "test",                                                                          \
           .func = cexy.cmd.simple_test,                                                            \
           .help = "Generic unit test build/run/debug" }
 
-#    define cexy$cmd_stats                                                                         \
-        { .name = "stats",                                                                         \
-          .func = cexy.cmd.stats,                                                                  \
-          .help = "Calculate project lines of code and quality stats" }
 
+/// Simple app build command (unity build, simple linking, runner, debugger launch, etc)
 #    define cexy$cmd_app                                                                           \
         { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
 
+/// All built-in commands for ./cex tool
 #    define cexy$cmd_all                                                                           \
-        cexy$cmd_help, cexy$cmd_process, cexy$cmd_new, cexy$cmd_stats, cexy$cmd_config,            \
-            cexy$cmd_libfetch
+        _cexy$cmd_help, _cexy$cmd_process, _cexy$cmd_new, _cexy$cmd_stats, _cexy$cmd_config,            \
+            _cexy$cmd_libfetch
 
+/// Initialize CEX build system (build itself)
 #    define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
-
+/// ./cex --help description
 #    define cexy$description "\nCEX language (cexy$) build and project management system"
+/// ./cex --help usage
 #    define cexy$usage " [-D] [-D<ARG1>] [-D<ARG2>] command [options] [args]"
 
 // clang-format off
+/// ./cex --help epilog
     #define cexy$epilog \
         "\nYou may try to get help for commands as well, try `cex process --help`\n"\
         "Use `cex -DFOO -DBAR config` to set project config flags\n"\

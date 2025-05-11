@@ -1172,6 +1172,7 @@ _cexy__colorize_ansi(str_s token, str_s exact_match, char current_char)
         "\033[1;32m", // types
         "\033[1;34m", // func/macro call
         "\033[1;35m", // #macro
+        "\033[33m",   // macro const
     };
     static struct
     {
@@ -1229,18 +1230,23 @@ _cexy__colorize_ansi(str_s token, str_s exact_match, char current_char)
                 }
             }
         }
-        if (current_char == '(') {
-            // looks like function/macro call
-            return types[3];
-        }
+        // looks like function/macro call
+        if (current_char == '(') { return types[3]; }
+
+        // CEX style type suffix
         if (str.slice.ends_with(token, str$s("_s")) || str.slice.ends_with(token, str$s("_e")) ||
             str.slice.ends_with(token, str$s("_c"))) {
             return types[2];
         }
+
+        // #preproc directive
         if (token.buf[0] == '#') { return types[4]; }
+
+        // some$macro constant
+        if (str.slice.index_of(token, str$s("$")) >= 0) { return types[5]; }
     }
 
-    return "\033[0m"; // no color, not matced
+    return "\033[0m"; // no color, not matched
 }
 static void
 _cexy__colorize_print(str_s code, str_s name)
@@ -1334,21 +1340,38 @@ _cexy__display_full_info(
             bool has_macro = false;
             mem$scope(tmem$, _)
             {
+                hm$(str_s, cex_decl_s*) macros = hm$new(macros, _, .capacity = 64);
                 for$each (it, cex_ns_decls) {
-                    if (it->type == CexTkn__macro_func && str.slice.starts_with(it->name, name) &&
-                        it->name.buf[name.len] == '$') {
+                    if (!(it->type == CexTkn__macro_func || it->type == CexTkn__macro_const)) {
+                        continue;
+                    }
+                    if (str.slice.starts_with(it->name, name) && it->name.buf[name.len] == '$') {
                         if (!has_macro) {
                             io.printf("\n");
                             has_macro = true;
                         }
-                        if (it->docs.buf) {
-
-                            str_s brief_str = _cexy__process_make_brief_docs(it);
-                            if (brief_str.len) { io.printf("/// %S\n", brief_str); }
+                        if (hm$getp(macros, it->name) != NULL) {
+                            if (it->docs.buf) { hm$set(macros, it->name, it); }
+                            continue; // duplicate
                         }
-                        char* l = str.fmt(_, "#define %S(%s)\n", it->name, it->args);
-                        _cexy__colorize_print(str.sstr(l), name);
+                        hm$set(macros, it->name, it);
                     }
+                }
+                // WARNING: sorting of hashmap items is a dead end, hash indexes get invalidated
+                qsort(macros, hm$len(macros), sizeof(*macros), str.slice.qscmp);
+
+                for$each (it, macros) {
+                    if (it.value->docs.buf) {
+                        str_s brief_str = _cexy__process_make_brief_docs(it.value);
+                        if (brief_str.len) { io.printf("/// %S\n", brief_str); }
+                    }
+                    char* l = NULL;
+                    if (it.value->type == CexTkn__macro_func) {
+                        l = str.fmt(_, "#define %S(%s)\n", it.value->name, it.value->args);
+                    } else {
+                        l = str.fmt(_, "#define %S\n", it.value->name);
+                    }
+                    _cexy__colorize_print(str.sstr(l), name);
                 }
             }
             io.printf("\n\n");
@@ -1721,10 +1744,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
                         str.join((const char**)args, arr$len(args), " ", _)
                     );
                 } else {
-                    io.printf(
-                        "* pkg-config (libs test)    %s[%s]\n",
-                        "ERROR", err
-                    );
+                    io.printf("* pkg-config (libs test)    %s[%s]\n", "ERROR", err);
                     result = "Missing Libs";
                 }
             }
