@@ -1,6 +1,12 @@
 # CEX Release Notes
 
-## 0.12.0 WIP
+## 0.13.0 WIP
+### Changes / improvements
+### Fixes
+
+## 0.12.0
+2025-05-12
+
 ### Changes / improvements
 - Code base cleanup
 - refactor(cexy)!: removed `cexy$cc_args_release/debug` - now it's `cexy$cc_args` (controlled by cex -DSOME_CONF config)
