@@ -3059,7 +3059,7 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #    ifndef cexy$cc_args_test
 /// Test runner compiler flags (may be overridden by user)
 #        define cexy$cc_args_test                                                                  \
-            cexy$cc_args, "-DCEX_TEST", "-Wno-unused-function", "-Itests/"
+            cexy$cc_args, "-Wno-unused-function", "-Itests/"
 #    endif
 
 #    ifndef cexy$cex_self_args
