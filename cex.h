@@ -2506,6 +2506,7 @@ struct __cex_namespace__os {
 
     Exc             (*get_last_error)(void);
     void            (*sleep)(u32 period_millisec);
+    f64             (*timer)();
 
     struct {
         Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
@@ -2543,7 +2544,7 @@ struct __cex_namespace__os {
     } fs;
 
     struct {
-        char*           (*abs)(const char* file_path, IAllocator allc);
+        char*           (*abs)(const char* path, IAllocator allc);
         char*           (*basename)(const char* path, IAllocator allc);
         char*           (*dirname)(const char* path, IAllocator allc);
         bool            (*exists)(const char* file_path);
@@ -11880,6 +11881,24 @@ cex_os_sleep(u32 period_millisec)
 #endif
 }
 
+static f64
+cex_os_timer()
+{
+#ifdef _WIN32
+    static LARGE_INTEGER frequency = {0};
+    if (unlikely(frequency.QuadPart == 0)){
+        QueryPerformanceFrequency(&frequency);
+    }
+    LARGE_INTEGER start;
+    QueryPerformanceCounter(&start);
+    return (f64)(start.QuadPart) / (f64)frequency.QuadPart;
+#else
+    struct timespec start;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    return (f64)start.tv_sec + (f64)start.tv_nsec / 1e9;
+#endif
+}
+
 static Exc
 cex_os_get_last_error(void)
 {
@@ -13143,6 +13162,7 @@ const struct __cex_namespace__os os = {
 
     .get_last_error = cex_os_get_last_error,
     .sleep = cex_os_sleep,
+    .timer = cex_os_timer,
 
     .cmd = {
         .create = cex_os__cmd__create,
@@ -14828,6 +14848,7 @@ static Exception
 cexy__cmd__stats(int argc, char** argv, void* user_ctx)
 {
     (void)user_ctx;
+    f64 tstart = os.timer();
 
     // clang-format off
     const char* stats_help = ""
@@ -14976,7 +14997,7 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
     }
 
     // clang-format off
-    io.printf("Project stats\n");
+    io.printf("Project stats (parsed in %0.3fsec)\n", os.timer()-tstart);
     io.printf("--------------------------------------------------------\n");
     io.printf("%-25s|  %10s  |  %10s  |\n", "Metric", "Code   ", "Tests   ");
     io.printf("--------------------------------------------------------\n");
@@ -15113,7 +15134,7 @@ _cexy__colorize_ansi(str_s token, str_s exact_match, char current_char)
         if (str.slice.index_of(token, str$s("$")) >= 0) { return types[5]; }
     }
 
-    return "\033[0m"; // no color, not matced
+    return "\033[0m"; // no color, not matched
 }
 static void
 _cexy__colorize_print(str_s code, str_s name)

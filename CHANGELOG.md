@@ -14,6 +14,7 @@
 - `cexy$pkgconf_libs` - required libs now checked in `cex config`, user will receive diagnostic error if anything is missing
 - `./cex` - added `compile_flags.txt` generation for clangd LSP/tooling (if that file exists)
 - `./cex help <cex_namspace>` - added macro constants + alphabetical sorting
+- `os.timer()` - implemented high-performance timer (cross-platform)
 
 ### Fixes
 - Fixed memleaks after program destruction - hanging tmem$ last page (Valgrind issue)

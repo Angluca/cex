@@ -961,6 +961,7 @@ static Exception
 cexy__cmd__stats(int argc, char** argv, void* user_ctx)
 {
     (void)user_ctx;
+    f64 tstart = os.timer();
 
     // clang-format off
     const char* stats_help = ""
@@ -1109,7 +1110,7 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
     }
 
     // clang-format off
-    io.printf("Project stats\n");
+    io.printf("Project stats (parsed in %0.3fsec)\n", os.timer()-tstart);
     io.printf("--------------------------------------------------------\n");
     io.printf("%-25s|  %10s  |  %10s  |\n", "Metric", "Code   ", "Tests   ");
     io.printf("--------------------------------------------------------\n");

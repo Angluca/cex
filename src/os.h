@@ -149,6 +149,7 @@ struct __cex_namespace__os {
 
     Exc             (*get_last_error)(void);
     void            (*sleep)(u32 period_millisec);
+    f64             (*timer)();
 
     struct {
         Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
@@ -186,7 +187,7 @@ struct __cex_namespace__os {
     } fs;
 
     struct {
-        char*           (*abs)(const char* file_path, IAllocator allc);
+        char*           (*abs)(const char* path, IAllocator allc);
         char*           (*basename)(const char* path, IAllocator allc);
         char*           (*dirname)(const char* path, IAllocator allc);
         bool            (*exists)(const char* file_path);

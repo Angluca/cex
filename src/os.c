@@ -139,6 +139,24 @@ cex_os_sleep(u32 period_millisec)
 #endif
 }
 
+static f64
+cex_os_timer()
+{
+#ifdef _WIN32
+    static LARGE_INTEGER frequency = {0};
+    if (unlikely(frequency.QuadPart == 0)){
+        QueryPerformanceFrequency(&frequency);
+    }
+    LARGE_INTEGER start;
+    QueryPerformanceCounter(&start);
+    return (f64)(start.QuadPart) / (f64)frequency.QuadPart;
+#else
+    struct timespec start;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    return (f64)start.tv_sec + (f64)start.tv_nsec / 1e9;
+#endif
+}
+
 static Exc
 cex_os_get_last_error(void)
 {
@@ -1402,6 +1420,7 @@ const struct __cex_namespace__os os = {
 
     .get_last_error = cex_os_get_last_error,
     .sleep = cex_os_sleep,
+    .timer = cex_os_timer,
 
     .cmd = {
         .create = cex_os__cmd__create,
