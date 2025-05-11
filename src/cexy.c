@@ -359,6 +359,7 @@ cexy__test__create(const char* target, bool include_sample)
         sbuf_c buf = sbuf.create(1024 * 10, _);
         cg$init(&buf);
         $pn("#define CEX_IMPLEMENTATION");
+        $pn("#define CEX_TEST");
         $pn("#include \"cex.h\"");
         if (include_sample) { $pn("#include \"lib/mylib.c\""); }
         $pn("");
