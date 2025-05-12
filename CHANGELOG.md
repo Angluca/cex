@@ -2,6 +2,7 @@
 
 ## 0.13.0 WIP
 ### Changes / improvements
+- (breaking) `cexy.src_changed()` - refactored with array length argument
 ### Fixes
 
 ## 0.12.0

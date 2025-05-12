@@ -80,13 +80,13 @@ test$case(test_needs_build_invalid)
 {
     mem$scope(tmem$, _)
     {
-        tassert_eq(0, cexy.src_changed(NULL, NULL));
-        tassert_eq(0, cexy.src_changed("", NULL));
+        tassert_eq(0, cexy.src_changed(NULL, NULL, 0));
+        tassert_eq(0, cexy.src_changed("", NULL, 0));
 
         char* tgt = TBUILDDIR " my_tgt";
         arr$(char*) src = arr$new(src, _);
         arr$pushm(src, TBUILDDIR "my_tgt.c");
-        tassert_eq(0, cexy.src_changed("", src));
+        tassert_eq(0, cexy.src_changed("", src, arr$len(src)));
 
         e$ret(io.file.save(src[0], "// hello"));
         tassert(os.path.exists(src[0]));
@@ -102,20 +102,22 @@ test$case(test_needs_build)
     {
         char* tgt = TBUILDDIR " my_tgt";
         arr$(char*) src = arr$new(src, _);
-        arr$pushm(src, TBUILDDIR "my_tgt.c");
+
+        char* src_file = TBUILDDIR "my_tgt.c"; 
+        arr$pushm(src, src_file);
 
         e$ret(io.file.save(src[0], "// hello"));
         tassert(os.path.exists(src[0]));
 
-        tassert_eq(1, cexy.src_changed(tgt, src));
+        tassert_eq(1, cexy.src_changed(tgt, src, arr$len(src)));
 
         e$ret(io.file.save(tgt, ""));
         tassert(os.path.exists(tgt));
-        tassert_eq(0, cexy.src_changed(tgt, src));
+        tassert_eq(0, cexy.src_changed(tgt, &src_file, 1));
         os.sleep(1500);
-        tassert_eq(0, cexy.src_changed(tgt, src));
+        tassert_eq(0, cexy.src_changed(tgt, src, arr$len(src)));
         e$ret(io.file.save(src[0], "// world"));
-        tassert_eq(1, cexy.src_changed(tgt, src));
+        tassert_eq(1, cexy.src_changed(tgt, src, arr$len(src)));
     }
     return EOK;
 }
@@ -134,7 +136,7 @@ test$case(test_needs_build_many_files_not_exists)
         e$ret(io.file.save(src[0], "// hello"));
         tassert(os.path.exists(src[0]));
 
-        tassert_eq(0, cexy.src_changed(tgt, src));
+        tassert_eq(0, cexy.src_changed(tgt, src, arr$len(src)));
     }
     return EOK;
 }
@@ -149,12 +151,12 @@ test$case(test_needs_build_many_files)
         e$ret(io.file.save(src[0], "// hello"));
         e$ret(io.file.save(src[1], "// world"));
         e$ret(io.file.save(tgt, ""));
-        tassert_eq(0, cexy.src_changed(tgt, src));
+        tassert_eq(0, cexy.src_changed(tgt, src, arr$len(src)));
 
         os.sleep(1500);
-        tassert_eq(0, cexy.src_changed(tgt, src));
+        tassert_eq(0, cexy.src_changed(tgt, src, arr$len(src)));
         e$ret(io.file.save(src[1], "// world again"));
-        tassert_eq(1, cexy.src_changed(tgt, src));
+        tassert_eq(1, cexy.src_changed(tgt, src, arr$len(src)));
     }
     return EOK;
 }
