@@ -135,9 +135,18 @@ cmd_build_lua(int argc, char** argv, void* user_ctx)
             arr$clear(args);
             arr$pushm(args, cexy$cc, "-c");
             arr$pusha(args, hm$get(make_vars, str$s("CFLAGS")));
-            if (os.platform.current() == OSPlatform__linux) {
-                arr$pusha(args, hm$get(make_vars, str$s("MYCFLAGS")));
+
+            // NOTE: platform specific compiler flags
+            if (os.platform.current() == OSPlatform__win) {
+                arr$pushm(args, "-DLUA_BUILD_AS_DLL");
+            } else if (os.platform.current() == OSPlatform__linux) {
+                arr$pushm(args, "-DLUA_USE_LINUX");
+            } else if (os.platform.current() == OSPlatform__macos) {
+                arr$pushm(args, "-DLUA_USE_MACOSX");
+            } else {
+                unreachable("Unsupported platform");
             }
+
             arr$pushm(args, src, "-o", tgt);
             arr$push(args, NULL);
             e$ret(os$cmda(args));
@@ -151,10 +160,20 @@ cmd_build_lua(int argc, char** argv, void* user_ctx)
         arr$pusha(args, hm$get(make_vars, str$s("CORE_O")));
         arr$pusha(args, hm$get(make_vars, str$s("AUX_O")));
         arr$pusha(args, hm$get(make_vars, str$s("LIB_O")));
-        if (os.platform.current() == OSPlatform__linux) {
-            arr$pusha(args, hm$get(make_vars, str$s("MYLDFLAGS")));
-            arr$pusha(args, hm$get(make_vars, str$s("MYLIBS")));
+
+        // NOTE: platform specific linker flags
+        if (os.platform.current() == OSPlatform__win) {
+            // NOTE: making .exe build to export symbols to static .a lib, because
+            //       on windows it's mandatory to link dll against the .exe
+            arr$pushm(args, "-Wl,--out-implib,../liblua.a", );
+        } else if (os.platform.current() == OSPlatform__linux) {
+            arr$pushm(args, "-Wl,-E", "-ldl", "-lreadline");
+        } else if (os.platform.current() == OSPlatform__macos) {
+            arr$pushm(args, "-ldl", "-lreadline");
+        } else {
+            unreachable("Unsupported platform");
         }
+
         arr$pusha(args, hm$get(make_vars, str$s("LIBS")));
         arr$pushm(args, NULL);
         e$ret(os$cmda(args));
@@ -187,28 +206,36 @@ cmd_build_lua_lib(int argc, char** argv, void* user_ctx)
     mem$scope(tmem$, _)
     {
         arr$(char*) args = arr$new(args, _);
-        if (os.platform.current() != OSPlatform__win) {
-            arr$pushm(
-                args,
-                cexy$cc,
-                "-shared",
-                "-fPIC",
-                "-Wall",
-                "-Wextra",
-                "-Werror",
-                cexy$cc_include,
-                "-o",
-                LUA_LIB,
-                "lib/mylib.c",
-                "lib/mylib_lua.c",
-                NULL
-            );
-            e$ret(os$cmda(args));
-        } else {
-            uassert(false && "TODO");
+        arr$pushm(
+            args,
+            cexy$cc,
+            "-shared",
+            "-fPIC",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            cexy$cc_include,
+        );
+        if (os.platform.current() == OSPlatform__win) {
+        } else if (os.platform.current() == OSPlatform__macos) {
+            // Mitigating this error
+            // Undefined symbols for architecture arm64:
+            //    "_luaL_checknumber", referenced from:
+            arr$pushm(args, "-undefined", "dynamic_lookup");
+        }
+        arr$pushm(args, "-o", LUA_LIB, "lib/mylib.c", "lib/mylib_lua.c");
+        // Linker options
+        if (os.platform.current() == OSPlatform__win) {
+            // NOTE: on windows it's mandatory to have static symbols to have .dll linkage
+            arr$pushm(args, "-L"LUA_DIR, "-llua");
+        } else if (os.platform.current() == OSPlatform__macos) {
         }
 
-        // Test with
+        arr$pushm(args, NULL);
+        e$ret(os$cmda(args));
+
+        // Test steps
+        // copy .so/.dll into $PATH or near lua folder
         // > lua
         /*
         local mylualib = require "mylualib"
@@ -226,7 +253,7 @@ cmd_test_lua_lib(int argc, char** argv, void* user_ctx)
     (void)argc;
     (void)argv;
     (void)user_ctx;
-    if (!os.path.exists(LUA_DIR "/lua")) {
+    if (!os.path.exists(LUA_DIR "/lua" cexy$build_ext_exe)) {
         return e$raise(Error.not_found, "LUA interpreter not exist, run `./cex build-lua` first");
     }
 
@@ -249,7 +276,7 @@ cmd_test_lua_lib(int argc, char** argv, void* user_ctx)
     e$ret(os.fs.chdir(LUA_DIR));
 
     // Printing out the command output
-    char* lua_cmd[] = { "lua", "mylualib_test.lua", NULL };
+    char* lua_cmd[] = { "./lua", "mylualib_test.lua", NULL };
     e$ret(os$cmda(lua_cmd));
 
     // Another try but with auto checking output

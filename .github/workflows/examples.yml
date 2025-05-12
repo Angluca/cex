@@ -32,6 +32,7 @@ jobs:
           #sudo apt-get update
           sudo apt-get install ${{ matrix.compiler }}
           sudo apt-get install valgrind
+          sudo apt-get install libreadline-dev # only for lua_module!
           echo "Replacing: cc to ${{ matrix.compiler }}"
           sudo rm /usr/bin/cc
           sudo ln -s /usr/bin/${{ matrix.compiler }} /usr/bin/cc 
@@ -48,11 +49,6 @@ jobs:
 
       - uses: ./.github/actions/cex_examples
         name: cex examples suite
-
-      - uses: actions/upload-artifact@master # capture all binaries
-        with:
-          name: ${{ github.job }}_build_exe_${{ matrix.compiler }}-${{ matrix.cex_preset }}
-          path: build/
 
 
   tests-windows:
@@ -114,12 +110,6 @@ jobs:
         with:
           shell: 'msys2 {0}'
 
-      - uses: actions/upload-artifact@master # capture all binaries
-        if: always()
-        with:
-          name: ${{ github.job }}_build_exe_${{ matrix.runs-on }}-${{ matrix.msys }}-${{ matrix.cex_preset }}
-          path: build/
-
   tests-macos:
     name: ${{ matrix.runs-on }}-${{ matrix.cex_preset }}
     runs-on: ${{ matrix.runs-on }}
@@ -138,6 +128,7 @@ jobs:
         run: |
           echo "cc --version"
           cc --version
+          brew install readline   # for lua_module compilation
 
       - name: cex initial build
         run: |
@@ -149,9 +140,4 @@ jobs:
 
       - uses: ./.github/actions/cex_examples
         name: cex examples suite
-
-      - uses: actions/upload-artifact@master # capture all binaries
-        with:
-          name: ${{ github.job }}_build_exe_${{ matrix.runs-on }}-${{ matrix.cex_preset }}
-          path: build/
 
