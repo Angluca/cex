@@ -64,7 +64,7 @@ typedef enum OSPlatform_e
 } OSPlatform_e;
 #undef X
 
-static const char* OSPlatform_str[] = {
+__attribute__((unused)) static const char* OSPlatform_str[] = {
 #define X(name) #name,
     NULL,
     _CexOSPlatformList
@@ -79,7 +79,7 @@ typedef enum OSArch_e
 #undef X
 } OSArch_e;
 
-static const char* OSArch_str[] = {
+__attribute__((unused)) static const char* OSArch_str[] = {
 #define X(name) cex$stringize(name),
     NULL,
     _CexOSArchList
