@@ -2172,9 +2172,14 @@ test$case(test_str_match)
     tassert(str.match("]", "[\\]]"));
     tassert(str.match("[", "[\\[]"));
     tassert(str.match("\\", "[\\\\]"));
+    tassert(!str.match("#abc=", "[a-c+]="));
+    tassert(!str.match("#abc=", "[a-c+]*=*"));
+    tassert(str.match("abc  =", "[a-c +]*=*"));
+    tassert(str.match("abc=", "[a-c +]=*"));
     tassert(str.match("abc", "[a-c+]"));
-    tassert(str.match("abc@", "[a-c+]@"));
+    tassert(!str.match("zabc", "[a-c+]"));
     tassert(str.match("abcfed", "[a-c+]*"));
+    tassert(str.match("abc@", "[a-c+]@"));
     tassert(str.match("abdef", "[a-c+][d-f+]"));
     tassert(!str.match("abcf", "[a-c+]"));
     tassert(str.match("abc+", "[+a-c+]"));

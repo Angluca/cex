@@ -1513,6 +1513,7 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
             }
             case '[': {
                 const char* pstart = pattern;
+                bool has_previous_match = false;
                 while (str_len > 0) {
                     bool negate = false;
                     bool repeating = false;
@@ -1566,8 +1567,9 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
                         return false;
                     } else {
                         pattern++;
+
                         if (matched == negate) {
-                            if (repeating) {
+                            if (repeating && has_previous_match) {
                                 // We have not matched char, but it may match to next pattern
                                 break;
                             }
@@ -1576,6 +1578,7 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
 
                         str++;
                         str_len--;
+                        has_previous_match = true;
                         if (!repeating) {
                             break; // while (*str != '\0') {
                         }
