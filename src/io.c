@@ -20,9 +20,7 @@ cex_io_fopen(FILE** file, const char* filename, const char* mode)
 
     *file = NULL;
 
-    if (filename == NULL) {
-        return Error.argument;
-    }
+    if (filename == NULL) { return Error.argument; }
     if (mode == NULL) {
         uassert(mode != NULL);
         return Error.argument;
@@ -51,9 +49,8 @@ bool
 cex_io_isatty(FILE* file)
 {
     uassert(file != NULL);
-    if (unlikely(file == NULL)) {
-        return false;
-    }
+
+    if (unlikely(file == NULL)) { return false; }
 #ifdef _WIN32
     return _isatty(_fileno(file));
 #else
@@ -120,13 +117,8 @@ cex_io_ftell(FILE* file, usize* size)
 usize
 cex_io__file__size(FILE* file)
 {
-    if (unlikely(file == NULL)) {
-        return 0;
-    }
-    if (unlikely(io.isatty(file))) {
-        // Using extra check, because fstat() for stdin/err/out is platform specific
-        return 0;
-    }
+    if (unlikely(file == NULL)) { return 0; }
+    if (unlikely(io.isatty(file))) { return 0; }
 #ifdef _WIN32
     struct _stat win_stat;
     int ret = _fstat(fileno(file), &win_stat);
@@ -149,18 +141,10 @@ cex_io__file__size(FILE* file)
 Exception
 cex_io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
 {
-    if (file == NULL) {
-        return Error.argument;
-    }
-    if (obj_buffer == NULL) {
-        return Error.argument;
-    }
-    if (obj_el_size == 0) {
-        return Error.argument;
-    }
-    if (obj_count == NULL || *obj_count == 0) {
-        return Error.argument;
-    }
+    if (file == NULL) { return Error.argument; }
+    if (obj_buffer == NULL) { return Error.argument; }
+    if (obj_el_size == 0) { return Error.argument; }
+    if (obj_count == NULL || *obj_count == 0) { return Error.argument; }
 
     const usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, file);
 
@@ -268,18 +252,9 @@ cex_io_fread_all(FILE* file, str_s* s, IAllocator allc)
     return EOK;
 
 fail:
-    *s = (str_s){
-        .buf = NULL,
-        .len = 0,
-    };
-
-    if (cex_io_fseek(file, 0, SEEK_END)) {
-        // unused result
-    }
-
-    if (buf) {
-        mem$free(allc, buf);
-    }
+    *s = (str_s){ .buf = NULL, .len = 0 };
+    if (cex_io_fseek(file, 0, SEEK_END)) {}
+    if (buf) { mem$free(allc, buf); }
     return result;
 }
 
@@ -301,9 +276,7 @@ cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
     while ((c = fgetc(file)) != EOF) {
         if (unlikely(c == '\n')) {
             // Handle windows \r\n new lines also
-            if (cursor > 0 && buf[cursor - 1] == '\r') {
-                cursor--;
-            }
+            if (cursor > 0 && buf[cursor - 1] == '\r') { cursor--; }
             break;
         }
         if (unlikely(c == '\0')) {
@@ -373,9 +346,7 @@ cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
     return Error.ok;
 
 fail:
-    if (buf) {
-        mem$free(allc, buf);
-    }
+    if (buf) { mem$free(allc, buf); }
     *s = (str_s){
         .buf = NULL,
         .len = 0,
@@ -418,15 +389,9 @@ cex_io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, us
         return Error.argument;
     }
 
-    if (obj_buffer == NULL) {
-        return Error.argument;
-    }
-    if (obj_el_size == 0) {
-        return Error.argument;
-    }
-    if (obj_count == 0) {
-        return Error.argument;
-    }
+    if (obj_buffer == NULL) { return Error.argument; }
+    if (obj_el_size == 0) { return Error.argument; }
+    if (obj_count == 0) { return Error.argument; }
 
     const usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, file);
 
@@ -445,21 +410,15 @@ cex_io__file__writeln(FILE* file, char* line)
         uassert(file != NULL);
         return Error.argument;
     }
-    if (line == NULL) {
-        return Error.argument;
-    }
+    if (line == NULL) { return Error.argument; }
     usize line_len = strlen(line);
     usize ret_count = fwrite(line, 1, line_len, file);
-    if (ret_count != line_len) {
-        return Error.io;
-    }
+    if (ret_count != line_len) { return Error.io; }
 
     char new_line[] = { '\n' };
     ret_count = fwrite(new_line, 1, sizeof(new_line), file);
 
-    if (ret_count != sizeof(new_line)) {
-        return Error.io;
-    }
+    if (ret_count != sizeof(new_line)) { return Error.io; }
     return Error.ok;
 }
 
@@ -468,9 +427,7 @@ cex_io_fclose(FILE** file)
 {
     uassert(file != NULL);
 
-    if (*file != NULL) {
-        fclose(*file);
-    }
+    if (*file != NULL) { fclose(*file); }
     *file = NULL;
 }
 
@@ -478,24 +435,16 @@ cex_io_fclose(FILE** file)
 Exception
 cex_io__file__save(const char* path, const char* contents)
 {
-    if (path == NULL) {
-        return Error.argument;
-    }
+    if (path == NULL) { return Error.argument; }
 
-    if (contents == NULL) {
-        return Error.argument;
-    }
+    if (contents == NULL) { return Error.argument; }
 
     FILE* file;
-    e$except_silent(err, cex_io_fopen(&file, path, "w"))
-    {
-        return err;
-    }
+    e$except_silent (err, cex_io_fopen(&file, path, "w")) { return err; }
 
     usize contents_len = strlen(contents);
     if (contents_len > 0) {
-        e$except_silent(err, cex_io_fwrite(file, contents, 1, contents_len))
-        {
+        e$except_silent (err, cex_io_fwrite(file, contents, 1, contents_len)) {
             cex_io_fclose(&file);
             return err;
         }
@@ -515,25 +464,17 @@ cex_io__file__load(const char* path, IAllocator allc)
         return NULL;
     }
     FILE* file;
-    e$except_silent(err, cex_io_fopen(&file, path, "r"))
-    {
-        return NULL;
-    }
+    e$except_silent (err, cex_io_fopen(&file, path, "r")) { return NULL; }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, cex_io_fread_all(file, &out_content, allc))
-    {
+    e$except_silent (err, cex_io_fread_all(file, &out_content, allc)) {
         if (err == Error.eof) {
             uassert(out_content.buf == NULL);
             out_content.buf = mem$malloc(allc, 1);
-            if (out_content.buf) {
-                out_content.buf[0] = '\0';
-            }
+            if (out_content.buf) { out_content.buf[0] = '\0'; }
             goto end;
         }
-        if (out_content.buf) {
-            mem$free(allc, out_content.buf);
-        }
+        if (out_content.buf) { mem$free(allc, out_content.buf); }
         goto end;
     }
 end:
@@ -553,15 +494,10 @@ cex_io__file__readln(FILE* file, IAllocator allc)
     }
 
     str_s out_content = (str_s){ 0 };
-    e$except_silent(err, cex_io_fread_line(file, &out_content, allc))
-    {
-        if (err == Error.eof) {
-            return NULL;
-        }
-
-        if (out_content.buf) {
-            mem$free(allc, out_content.buf);
-        }
+    Exc err = cex_io_fread_line(file, &out_content, allc);
+    if (err) {
+        if (err == Error.eof) { return NULL; }
+        if (out_content.buf) { mem$free(allc, out_content.buf); }
         return NULL;
     }
     return out_content.buf;
