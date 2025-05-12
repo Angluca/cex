@@ -1,6 +1,9 @@
+#pragma once
+
 // These settings can be set via `./cex -D CEX_WINE config` command
 // This is for CI (allowing substitute compiler with env var)
 #define cexy$cex_self_cc "cc"
+#define cexy$src_dir "./examples"
 
 #ifdef CEX_TEST_NOASAN
 #    define cexy$cc_args_sanitizer "-fstack-protector-strong"

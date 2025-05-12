@@ -30,6 +30,7 @@ main(int argc, char** argv)
         argparse$cmd_list(
             cexy$cmd_all,
             { .name = "test", .func = cmd_custom_test, .help = "Test running" },
+            cexy$cmd_app,  /* feel free to make your own if needed */
         ),
     };
     // clang-format on

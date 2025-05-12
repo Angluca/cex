@@ -177,7 +177,8 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
                     clean_path = p + strlen("-iquote=");
                 }
                 if (!os.path.exists(clean_path)) {
-                    log$warn("cexy$cc_include not exists: %s\n", clean_path);
+                    log$trace("cexy$cc_include not exists: %s\n", clean_path);
+                    continue;
                 }
                 arr$push(incl_path, clean_path);
             }
