@@ -7,11 +7,12 @@
 ## CEX Capabilities used
 * Loading Lua sources via git
 * Parsing Lua makefile for C compiler flags
-* Parsing Lua makefile for C compiler flags
 * Conditional compilation for Lua files (only changed files trigger re-compilation)
 * Conditional cross-platform compiler/linker flags
-* Creating `compile_flags.txt` for clang LSP work (including Lua sources from git).
+* Creating `compile_flags.txt` for `clangd` LSP (including Lua sources from git).
 * Unit testing of library logic on host without Lua itself
+* Introducing custom build commands to `./cex` tool
+* Automatic launching `lua` script and grabbing its output for testing expected values
 
 ## Getting started 
 
@@ -19,24 +20,24 @@
 ```
 cd examples/lua_module
 ```
-3. Make cexy build system  (only once) 
+2. Make cexy build system  (only once) 
 ```
 cc ./cex.c -o ./cex
 ```
-4. Installing pre-requisites (on Linux and MacOS)
+3. Installing pre-requisites (on Linux and MacOS)
 ```
 > sudo apt install libreadline-dev
 > brew install readline
 ```
-5. Compiling Lua console
+4. Compiling Lua console
 ```
 ./cex build-lua
 ```
-6. Compiling example module for Lua
+5. Compiling example module for Lua
 ```
 ./cex build-lib
 ```
-7. Running example module in Lua
+6. Running example module in Lua
 ```
 ./cex test-lib
 ```
