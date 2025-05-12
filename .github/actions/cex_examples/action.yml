@@ -1,0 +1,25 @@
+name: CEX Examples Build Action
+inputs:
+  shell:
+    description: 'target shell'
+    required: false
+    default: 'bash'
+
+runs:
+  using: 'composite'
+
+  steps:
+    - name: Cex Example
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: example lua_module"
+        echo "---------------------------------------------------------------------"
+        cd examples/lua_module/
+        clang -g ./cex.c -o ./cex 
+        ./cex config
+        ./cex build-lua
+        ./cex build-lib
+        ./cex test-lib
+
