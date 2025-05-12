@@ -1505,6 +1505,9 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     {
 
         arr$(char*) sources = os.fs.find("./*.[hc]", true, arena);
+        if (os.fs.stat("./cex.h").is_symlink) {
+            arr$push(sources, "./cex.h");
+        }
         arr$sort(sources, str.qscmp);
 
         const char* query_pattern = NULL;

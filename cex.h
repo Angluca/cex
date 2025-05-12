@@ -108,7 +108,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #endif
 
 #define cex$version_major 0
-#define cex$version_minor 12
+#define cex$version_minor 13
 #define cex$version_patch 0
 #define cex$version_date "2025-05-12"
 
@@ -9023,6 +9023,7 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
             }
             case '[': {
                 const char* pstart = pattern;
+                bool has_previous_match = false;
                 while (str_len > 0) {
                     bool negate = false;
                     bool repeating = false;
@@ -9076,8 +9077,9 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
                         return false;
                     } else {
                         pattern++;
+
                         if (matched == negate) {
-                            if (repeating) {
+                            if (repeating && has_previous_match) {
                                 // We have not matched char, but it may match to next pattern
                                 break;
                             }
@@ -9086,6 +9088,7 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
 
                         str++;
                         str_len--;
+                        has_previous_match = true;
                         if (!repeating) {
                             break; // while (*str != '\0') {
                         }
@@ -15392,6 +15395,9 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     {
 
         arr$(char*) sources = os.fs.find("./*.[hc]", true, arena);
+        if (os.fs.stat("./cex.h").is_symlink) {
+            arr$push(sources, "./cex.h");
+        }
         arr$sort(sources, str.qscmp);
 
         const char* query_pattern = NULL;
