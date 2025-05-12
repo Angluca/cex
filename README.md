@@ -3,6 +3,7 @@ MOCCA - Make Old C Cexy Again!
 
 ![Test suite](https://github.com/alexveden/cex/actions/workflows/main.yml/badge.svg)
 ![Multiarch support](https://github.com/alexveden/cex/actions/workflows/multiarch.yml/badge.svg)
+![Examples](https://github.com/alexveden/cex/actions/workflows/examples.yml/badge.svg)
 
 
 CEX is self-contained C language extension, the only dependency is one of gcc/clang compilers.
@@ -193,6 +194,8 @@ CEX is tested on various platforms, compiler versions, sanitizers, and optimizat
 | MacOS 14 arm64 |  |  ✅ | ✅ |✅ |✅ |
 | MacOS 15 arm64 | |  ✅ | ✅ |✅ |✅ |
 
+## Examples
+* [Building Lua + Lua Module in CEX](https://github.com/alexveden/cex/tree/master/examples/lua_module)
 
 ## Licence
 >    MIT License 2023-2025 (c) Alex Veden
