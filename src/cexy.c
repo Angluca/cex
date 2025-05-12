@@ -2244,10 +2244,9 @@ cexy__utils__git_hash(IAllocator allc)
             return NULL;
         }
 
-        arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "git", "rev-parse", "HEAD", NULL);
+        char* args[] = {"git", "rev-parse", "HEAD", NULL};
         os_cmd_c c = { 0 };
-        e$except (err, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .no_window = true })) {
+        e$except (err, os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .no_window = true })) {
             return NULL;
         }
         char* output = os.cmd.read_all(&c, _);
@@ -2356,7 +2355,7 @@ cexy__utils__pkgconf(
         arr$pushm(args, cexy$pkgconf_cmd);
         arr$pusha(args, pkgconf_args, pkgconf_args_len);
         arr$push(args, NULL);
-        e$ret(os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .combine_stdouterr = true }));
+        e$ret(os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true }));
 
         char* output = os.cmd.read_all(&c, _);
         e$except_silent (err, os.cmd.join(&c, 0, NULL)) {

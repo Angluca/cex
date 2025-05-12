@@ -2509,7 +2509,7 @@ struct __cex_namespace__os {
     f64             (*timer)();
 
     struct {
-        Exception       (*create)(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags);
+        Exception       (*create)(os_cmd_c* self, char** args, usize args_len, os_cmd_flags_s* flags);
         bool            (*exists)(char* cmd_exe);
         FILE*           (*fstderr)(os_cmd_c* self);
         FILE*           (*fstdin)(os_cmd_c* self);
@@ -9707,6 +9707,7 @@ bool
 cex_io_isatty(FILE* file)
 {
     uassert(file != NULL);
+
     if (unlikely(file == NULL)) { return false; }
 #ifdef _WIN32
     return _isatty(_fileno(file));
@@ -9775,10 +9776,7 @@ usize
 cex_io__file__size(FILE* file)
 {
     if (unlikely(file == NULL)) { return 0; }
-    if (unlikely(io.isatty(file))) {
-        // Using extra check, because fstat() for stdin/err/out is platform specific
-        return 0;
-    }
+    if (unlikely(io.isatty(file))) { return 0; }
 #ifdef _WIN32
     struct _stat win_stat;
     int ret = _fstat(fileno(file), &win_stat);
@@ -9912,15 +9910,8 @@ cex_io_fread_all(FILE* file, str_s* s, IAllocator allc)
     return EOK;
 
 fail:
-    *s = (str_s){
-        .buf = NULL,
-        .len = 0,
-    };
-
-    if (cex_io_fseek(file, 0, SEEK_END)) {
-        // unused result
-    }
-
+    *s = (str_s){ .buf = NULL, .len = 0 };
+    if (cex_io_fseek(file, 0, SEEK_END)) {}
     if (buf) { mem$free(allc, buf); }
     return result;
 }
@@ -10164,7 +10155,6 @@ cex_io__file__readln(FILE* file, IAllocator allc)
     Exc err = cex_io_fread_line(file, &out_content, allc);
     if (err) {
         if (err == Error.eof) { return NULL; }
-
         if (out_content.buf) { mem$free(allc, out_content.buf); }
         return NULL;
     }
@@ -12653,14 +12643,12 @@ cex_os__path__dirname(const char* path, IAllocator allc)
 }
 
 static Exception
-cex_os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags)
+cex_os__cmd__create(os_cmd_c* self, char** args, usize args_len, os_cmd_flags_s* flags)
 {
-    (void)env;
     uassert(self != NULL);
-    if (args == NULL || arr$len(args) == 0) {
+    if (args == NULL || args_len == 0) {
         return "`args` is empty or null";
     }
-    usize args_len = arr$len(args);
     if (args_len == 1 || args[args_len - 1] != NULL) {
         return "`args` last item must be a NULL";
     }
@@ -16080,10 +16068,9 @@ cexy__utils__git_hash(IAllocator allc)
             return NULL;
         }
 
-        arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, "git", "rev-parse", "HEAD", NULL);
+        char* args[] = {"git", "rev-parse", "HEAD", NULL};
         os_cmd_c c = { 0 };
-        e$except (err, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .no_window = true })) {
+        e$except (err, os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .no_window = true })) {
             return NULL;
         }
         char* output = os.cmd.read_all(&c, _);
@@ -16192,7 +16179,7 @@ cexy__utils__pkgconf(
         arr$pushm(args, cexy$pkgconf_cmd);
         arr$pusha(args, pkgconf_args, pkgconf_args_len);
         arr$push(args, NULL);
-        e$ret(os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .combine_stdouterr = true }));
+        e$ret(os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true }));
 
         char* output = os.cmd.read_all(&c, _);
         e$except_silent (err, os.cmd.join(&c, 0, NULL)) {

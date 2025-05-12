@@ -962,14 +962,12 @@ cex_os__path__dirname(const char* path, IAllocator allc)
 }
 
 static Exception
-cex_os__cmd__create(os_cmd_c* self, arr$(char*) args, arr$(char*) env, os_cmd_flags_s* flags)
+cex_os__cmd__create(os_cmd_c* self, char** args, usize args_len, os_cmd_flags_s* flags)
 {
-    (void)env;
     uassert(self != NULL);
-    if (args == NULL || arr$len(args) == 0) {
+    if (args == NULL || args_len == 0) {
         return "`args` is empty or null";
     }
-    usize args_len = arr$len(args);
     if (args_len == 1 || args[args_len - 1] != NULL) {
         return "`args` last item must be a NULL";
     }

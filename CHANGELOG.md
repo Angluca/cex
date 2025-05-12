@@ -3,6 +3,7 @@
 ## 0.13.0 WIP
 ### Changes / improvements
 - (breaking) `cexy.src_changed()` - refactored with array length argument
+- (breaking) `os.cmd.create()` - refactored arguments supporting pointer/length instead of arr$(char*)
 ### Fixes
 
 ## 0.12.0

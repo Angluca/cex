@@ -79,9 +79,8 @@ test$case(os_cmd_create)
     os_cmd_c c = { 0 };
     mem$scope(tmem$, _)
     {
-        arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, test_app("write_lines", _), NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        char* args[] = {test_app("write_lines", _), NULL};
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
@@ -101,7 +100,7 @@ test$case(os_cmd_file_handles)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         tassert(os.cmd.fstderr(&c) == c._subpr.stderr_file);
         tassert(os.cmd.fstdout(&c) == c._subpr.stdout_file);
@@ -125,7 +124,7 @@ test$case(os_cmd_read_all_small)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stdout", "10", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
@@ -159,7 +158,7 @@ test$case(os_cmd_read_all_huge)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stdout", "100000", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
@@ -183,7 +182,7 @@ test$case(os_cmd_read_line_huge)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stdout", "100000", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* line;
         u32 lcnt = 0;
@@ -207,7 +206,7 @@ test$case(os_cmd_read_all_only_stdout)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stderr", "10", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
@@ -228,7 +227,7 @@ test$case(os_cmd_read_all_combined_stderr)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stderr", "10", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, &(os_cmd_flags_s){ .combine_stdouterr = 1 }));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = 1 }));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
@@ -264,14 +263,14 @@ test$case(os_cmd_join_timeout)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("sleep", _), "2", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
         tassert_eq(1, os.cmd.is_alive(&c));
 
         int err_code = 0;
         tassert_er(Error.timeout, os.cmd.join(&c, 1, &err_code));
         tassert_eq(err_code, -1);
 
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         err_code = 777;
         tassert_er(Error.ok, os.cmd.join(&c, 3, &err_code));
@@ -287,7 +286,7 @@ test$case(os_cmd_huge_join)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stdout", "100000", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         int err_code = 1;
         tassert_er(Error.timeout, os.cmd.join(&c, 1, &err_code));
@@ -303,7 +302,7 @@ test$case(os_cmd_huge_join_stderr)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stderr", "100000", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         int err_code = 1;
         tassert_er(Error.timeout, os.cmd.join(&c, 1, &err_code));
@@ -319,7 +318,7 @@ test$case(os_cmd_stdin_communucation)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("echo_server", _), NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
         tassert(os.cmd.is_alive(&c));
 
         tassert_eq("welcome to echo server", os.cmd.read_line(&c, _));
@@ -341,7 +340,7 @@ test$case(os_cmd_read_all_small_wdelay)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines_delay", _), "stdout", "10", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
@@ -402,7 +401,7 @@ test$case(os_cmd_run_read_all)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_arg", _), "hello world", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
@@ -424,7 +423,7 @@ test$case(os_cmd_env_inheritance)
         arr$(char*) args = arr$new(args, _);
         e$ret(os.env.set("TEST_CEX_ENV", "cool!"));
         arr$pushm(args, test_app("write_env", _), "TEST_CEX_ENV", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, NULL, NULL));
+        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
