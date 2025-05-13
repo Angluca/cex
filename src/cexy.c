@@ -2250,13 +2250,16 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
         char* cc_args[] = { cexy$cc_args };
         char* cc_include[] = { cexy$cc_include };
         char* ld_args[] = { cexy$ld_args };
+        char* pkgconf_libargs[] = { cexy$pkgconf_libs };
         arr$pusha(args, cc_args);
         arr$pusha(args, cc_include);
+        if (arr$len(pkgconf_libargs)) {
+            e$ret(cexy$pkgconf(_, &args, "--cflags", cexy$pkgconf_libs));
+        }
         arr$push(args, (char*)app_src);
         arr$pusha(args, ld_args);
-        char* pkgconf_libargs[] = { cexy$pkgconf_libs };
         if (arr$len(pkgconf_libargs)) {
-            e$ret(cexy$pkgconf(_, &args, "--cflags", "--libs", cexy$pkgconf_libs));
+            e$ret(cexy$pkgconf(_, &args, "--libs", cexy$pkgconf_libs));
         }
         arr$pushm(args, "-o", app_exec);
 
