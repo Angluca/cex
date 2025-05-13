@@ -106,6 +106,41 @@ check_optimized(int e)
     return EOK;
 }
 
+test$case(test_except_true)
+{
+    int ret = 8;
+    e$except_true(ret = sys_func(0))
+    {
+        tassert(false && "unexpected");
+    }
+    tassert_eq(ret, 0);
+
+    u32 nit = 0;
+    e$except_true(ret = sys_func(1))
+    {
+        nit++;
+    }
+    tassert_eq(ret, 1);
+    tassert_eq(nit, 1);
+
+    // Any non zero value works
+    e$except_true(ret = sys_func(100))
+    {
+        nit++;
+    }
+    tassert_eq(ret, 100);
+    tassert_eq(nit, 2);
+
+    e$except_true(ret = sys_func(-1))
+    {
+        nit++;
+    }
+    tassert_eq(ret, -1);
+    tassert_eq(nit, 3);
+
+    return EOK;
+}
+
 test$case(test_e_dollar_macro)
 {
     tassert_eq(EOK, check_with_dollar(true));

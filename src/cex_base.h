@@ -409,6 +409,9 @@ __attribute__((noinline)) void __cex__panic(void);
 #define e$except_null(_expression)                                                                 \
     if (unlikely(((_expression) == NULL) && (log$error("`%s` returned NULL\n", #_expression), 1)))
 
+#define e$except_true(_expression)                                                                 \
+    if (unlikely(((_expression)) && (log$error("`%s` returned non zero\n", #_expression), 1)))
+
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
