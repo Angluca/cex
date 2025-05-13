@@ -5,7 +5,7 @@
 
 test$setup_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     e$assert(!os.path.exists(TBUILDDIR) && "must not exist!");
     e$ret(os.fs.mkpath(TBUILDDIR));
     e$assert(os.path.exists(TBUILDDIR) && "must exist!");
@@ -13,7 +13,7 @@ test$setup_case()
 }
 test$teardown_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     return EOK;
 }
 
@@ -74,7 +74,6 @@ test$case(test_src_namespace_gen)
         tassert(str.find(hdr_content, "extern const struct __cex_namespace__src src"));
         tassert(str.find(hdr_content, "struct __cex_namespace__src {"));
         tassert(str.find(hdr_content, "arr$(char*)"));
-
     }
     return EOK;
 }

@@ -5,7 +5,7 @@
 
 test$setup_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     e$assert(!os.path.exists(TBUILDDIR) && "must not exist!");
     e$ret(os.fs.mkpath(TBUILDDIR));
     e$assert(os.path.exists(TBUILDDIR) && "must exist!");
@@ -13,7 +13,7 @@ test$setup_case()
 }
 test$teardown_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     return EOK;
 }
 
@@ -34,9 +34,7 @@ test$case(test_namespace_entities)
         cex_token_s t;
         while ((t = CexParser.next_entity(&lx, &items)).type) {
             cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
-            if (d == NULL) {
-                continue;
-            }
+            if (d == NULL) { continue; }
             log$debug(
                 "Decl: type: '%s' name: %S doc_len: %d body_len: %d ret: %s args: %s\n",
                 CexTkn_str[d->type],
@@ -48,15 +46,20 @@ test$case(test_namespace_entities)
             );
         }
 
-        log$debug("\nSource symbols: %s\n", $file".c");
+        log$debug("\nSource symbols: %s\n", $file ".c");
         lx = CexParser.create(code_c, 0, true);
-        while((t = CexParser.next_entity(&lx, &items)).type) {
+        while ((t = CexParser.next_entity(&lx, &items)).type) {
             cex_decl_s* d = CexParser.decl_parse(&lx, t, items, NULL, _);
-            if (d == NULL) {
-                continue;
-            }
-            log$debug("Decl: type: '%s' name: %S doc_len: %d body_len: %d ret: %s args: %s\n",
-            CexTkn_str[t.type], d->name, d->docs.len, d->body.len, d->ret_type, d->args);
+            if (d == NULL) { continue; }
+            log$debug(
+                "Decl: type: '%s' name: %S doc_len: %d body_len: %d ret: %s args: %s\n",
+                CexTkn_str[t.type],
+                d->name,
+                d->docs.len,
+                d->body.len,
+                d->ret_type,
+                d->args
+            );
         }
         // tassert(false);
     }

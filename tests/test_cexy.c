@@ -6,7 +6,7 @@
 
 test$setup_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if(os.fs.remove_tree(TBUILDDIR)){};
     e$assert(!os.path.exists(TBUILDDIR) && "must not exist!");
     e$ret(os.fs.mkpath(TBUILDDIR));
     e$assert(os.path.exists(TBUILDDIR) && "must exist!");
@@ -14,7 +14,7 @@ test$setup_case()
 }
 test$teardown_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if(os.fs.remove_tree(TBUILDDIR)){};
     return EOK;
 }
 

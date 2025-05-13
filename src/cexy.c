@@ -2450,7 +2450,9 @@ cexy__utils__git_lib_fetch(
         base_name = str.slice.sub(base_name, 0, -4);
 
         const char* repo_dir = str.fmt(_, "%s/%S/", out_build_dir, base_name);
-        e$ret(os.fs.remove_tree(repo_dir));
+        if (os.path.exists(repo_dir)) {
+            e$ret(os.fs.remove_tree(repo_dir));
+        }
 
         e$ret(os$cmd(
             "git",

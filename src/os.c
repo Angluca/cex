@@ -540,7 +540,7 @@ cex_os__fs__remove_tree(const char* path)
         return Error.argument;
     }
     if (!os.path.exists(path)) {
-        return EOK;
+        return Error.not_found;
     }
     e$except_silent(err, cex_os__fs__dir_walk(path, true, _os__fs__remove_tree_walker, NULL))
     {

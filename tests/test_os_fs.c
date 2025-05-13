@@ -3,13 +3,13 @@
 #define TBUILDDIR "tests/build/os_fs_test/"
 test$setup_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if(os.fs.remove_tree(TBUILDDIR)){};
     e$ret(os.fs.mkpath(TBUILDDIR));
     return EOK;
 }
 test$teardown_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if(os.fs.remove_tree(TBUILDDIR)){};
     return EOK;
 }
 
@@ -694,8 +694,9 @@ test$case(test_os_mkpath)
     // removing existing
     e$ret(os.fs.remove_tree(TBUILDDIR));
     tassert(!os.path.exists(TBUILDDIR));
-    // removing non-existing also OK
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+
+    // removing non-existing raised Error.not_found
+    tassert_er(Error.not_found, os.fs.remove_tree(TBUILDDIR));
 
     return EOK;
 }

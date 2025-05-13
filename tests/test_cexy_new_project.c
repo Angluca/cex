@@ -6,12 +6,12 @@
 
 test$setup_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     return EOK;
 }
 test$teardown_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     return EOK;
 }
 

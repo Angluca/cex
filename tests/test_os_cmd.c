@@ -4,13 +4,13 @@
 #define TBUILDDIR "tests/build/os_cmd_test/"
 test$setup_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     e$ret(os.fs.mkpath(TBUILDDIR));
     return EOK;
 }
 test$teardown_case()
 {
-    e$ret(os.fs.remove_tree(TBUILDDIR));
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     return EOK;
 }
 
@@ -79,7 +79,7 @@ test$case(os_cmd_create)
     os_cmd_c c = { 0 };
     mem$scope(tmem$, _)
     {
-        char* args[] = {test_app("write_lines", _), NULL};
+        char* args[] = { test_app("write_lines", _), NULL };
         tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), NULL));
 
         char* output = os.cmd.read_all(&c, _);
@@ -135,9 +135,7 @@ test$case(os_cmd_read_all_small)
 
         arr$(char*) lines = str.split_lines(output, _);
         tassert_eq(arr$len(lines), 10);
-        for (u32 i = 0; i < arr$len(lines); i++) {
-            tassert_eq(str.fmt(_, "%09d", i), lines[i]);
-        }
+        for (u32 i = 0; i < arr$len(lines); i++) { tassert_eq(str.fmt(_, "%09d", i), lines[i]); }
 
         // tassert_eq(strlen(output) / 10, arr$len(lines));
         if (os.platform.current() == OSPlatform__win) {
@@ -168,9 +166,7 @@ test$case(os_cmd_read_all_huge)
 
         arr$(char*) lines = str.split_lines(output, _);
         tassert_eq(arr$len(lines), 100000);
-        for (u32 i = 0; i < arr$len(lines); i++) {
-            tassert_eq(str.fmt(_, "%09d", i), lines[i]);
-        }
+        for (u32 i = 0; i < arr$len(lines); i++) { tassert_eq(str.fmt(_, "%09d", i), lines[i]); }
     }
     return EOK;
 }
@@ -227,7 +223,10 @@ test$case(os_cmd_read_all_combined_stderr)
     {
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stderr", "10", NULL);
-        tassert_er(EOK, os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = 1 }));
+        tassert_er(
+            EOK,
+            os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = 1 })
+        );
 
         char* output = os.cmd.read_all(&c, _);
         tassert(output != NULL);
@@ -237,9 +236,7 @@ test$case(os_cmd_read_all_combined_stderr)
 
         arr$(char*) lines = str.split_lines(output, _);
         tassert_eq(arr$len(lines), 10);
-        for (u32 i = 0; i < arr$len(lines); i++) {
-            tassert_eq(str.fmt(_, "%09d", i), lines[i]);
-        }
+        for (u32 i = 0; i < arr$len(lines); i++) { tassert_eq(str.fmt(_, "%09d", i), lines[i]); }
 
         if (os.platform.current() == OSPlatform__win) {
             tassert_eq(output[strlen(output) - 2], '\r');
@@ -351,9 +348,7 @@ test$case(os_cmd_read_all_small_wdelay)
 
         arr$(char*) lines = str.split_lines(output, _);
         tassert_eq(arr$len(lines), 10);
-        for (u32 i = 0; i < arr$len(lines); i++) {
-            tassert_eq(str.fmt(_, "%09d", i), lines[i]);
-        }
+        for (u32 i = 0; i < arr$len(lines); i++) { tassert_eq(str.fmt(_, "%09d", i), lines[i]); }
 
         if (os.platform.current() == OSPlatform__win) {
             tassert_eq(output[strlen(output) - 2], '\r');
