@@ -110,7 +110,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 13
 #define cex$version_patch 0
-#define cex$version_date "2025-05-12"
+#define cex$version_date "2025-05-13"
 
 
 
@@ -525,6 +525,9 @@ __attribute__((noinline)) void __cex__panic(void);
 
 #define e$except_null(_expression)                                                                 \
     if (unlikely(((_expression) == NULL) && (log$error("`%s` returned NULL\n", #_expression), 1)))
+
+#define e$except_true(_expression)                                                                 \
+    if (unlikely(((_expression)) && (log$error("`%s` returned non zero\n", #_expression), 1)))
 
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
@@ -12221,7 +12224,7 @@ cex_os__fs__remove_tree(const char* path)
         return Error.argument;
     }
     if (!os.path.exists(path)) {
-        return EOK;
+        return Error.not_found;
     }
     e$except_silent(err, cex_os__fs__dir_walk(path, true, _os__fs__remove_tree_walker, NULL))
     {
@@ -16274,7 +16277,9 @@ cexy__utils__git_lib_fetch(
         base_name = str.slice.sub(base_name, 0, -4);
 
         const char* repo_dir = str.fmt(_, "%s/%S/", out_build_dir, base_name);
-        e$ret(os.fs.remove_tree(repo_dir));
+        if (os.path.exists(repo_dir)) {
+            e$ret(os.fs.remove_tree(repo_dir));
+        }
 
         e$ret(os$cmd(
             "git",

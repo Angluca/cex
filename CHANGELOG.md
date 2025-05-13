@@ -5,7 +5,8 @@
 ### Changes / improvements
 - (breaking) `cexy.src_changed()` - refactored with array length argument
 - (breaking) `os.cmd.create()` - refactored arguments supporting pointer/length instead of arr$(char*)
-- Examples: new `Building Lua + Lua Module in CEX`
+- Examples: new `Building Lua + Lua Module in CEX` example
+- Examples: new `Building SQLite Program From Source` example
 
 ### Fixes
 

@@ -23,3 +23,16 @@ runs:
         ./cex build-lib
         ./cex test-lib
 
+    - name: Cex Example
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: example sqlite"
+        echo "---------------------------------------------------------------------"
+        cd examples/sqlite/
+        clang -g ./cex.c -o ./cex 
+        ./cex
+        ./build/hello_sqlite hello.db
+        ./build/sqlite3 build/hello.db "SELECT * FROM Messages;"
+

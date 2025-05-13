@@ -32,6 +32,8 @@ jobs:
           #sudo apt-get update
           sudo apt-get install ${{ matrix.compiler }}
           sudo apt-get install valgrind
+          sudo apt-get install curl
+          sudo apt-get install unzip
           sudo apt-get install libreadline-dev # only for lua_module!
           echo "Replacing: cc to ${{ matrix.compiler }}"
           sudo rm /usr/bin/cc
@@ -75,6 +77,8 @@ jobs:
           update: true
           install: >-
             git
+            curl
+            unzip
           pacboy: >-
             toolchain:p
 
@@ -129,6 +133,8 @@ jobs:
           echo "cc --version"
           cc --version
           brew install readline   # for lua_module compilation
+          brew install curl
+          brew install unzip
 
       - name: cex initial build
         run: |
