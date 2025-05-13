@@ -9,6 +9,7 @@
 - Examples: new `Building SQLite Program From Source` example
 - `e$except_true` added handler when OK state is 0, and other is error
 - (breaking) `os.fm.remove_tree()` - attempt for removing non existing path will lead to `Error.not_found`
+- `cexy app create` - refactored structure of new app (added argparse)
 
 ### Fixes
 

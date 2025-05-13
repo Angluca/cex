@@ -1506,9 +1506,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     {
 
         arr$(char*) sources = os.fs.find("./*.[hc]", true, arena);
-        if (os.fs.stat("./cex.h").is_symlink) {
-            arr$push(sources, "./cex.h");
-        }
+        if (os.fs.stat("./cex.h").is_symlink) { arr$push(sources, "./cex.h"); }
         arr$sort(sources, str.qscmp);
 
         const char* query_pattern = NULL;
@@ -2067,6 +2065,41 @@ cexy__app__create(const char* target)
 {
     mem$scope(tmem$, _)
     {
+        const char* app_src = os$path_join(_, cexy$src_dir, target, str.fmt(_, "%s.c", target));
+        if (os.path.exists(app_src)) {
+            return e$raise(Error.exists, "App file already exists: %s", app_src, target);
+        }
+        e$ret(os.fs.mkpath(app_src));
+
+        sbuf_c buf = sbuf.create(1024 * 10, _);
+        cg$init(&buf);
+        // clang-format off
+        $pn("#include \"cex.h\"");
+        $pn("");
+        $func("Exception\n%s(int argc, char** argv)\n", target)
+        {
+            $pn("bool my_flag = false;");
+            $scope("argparse_c args = ", target)
+            {
+                $pn(".description = \"New CEX App\",");
+                $pn("argparse$opt_list(");
+                $pn("    argparse$opt_help(),");
+                $pn("    argparse$opt(&my_flag, 'c', \"ctf\", .help = \"Capture the flag\"),");
+                $pn("),");
+            }
+            $pa(";\n", "");
+            $pn("if (argparse.parse(&args, argc, argv)) { return Error.argsparse; }");
+            $pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
+            $pn("io.printf(\"%s\\n\", (my_flag) ? \"Flag is captured\" : \"Pass --ctf to capture the flag\");");
+
+            $pn("return EOK;");
+        };
+        // clang-format on
+        e$ret(io.file.save(app_src, buf));
+    }
+
+    mem$scope(tmem$, _)
+    {
         const char* app_src = os$path_join(_, cexy$src_dir, target, "main.c");
         if (os.path.exists(app_src)) {
             return e$raise(Error.exists, "App file already exists: %s", app_src, target);
@@ -2075,15 +2108,19 @@ cexy__app__create(const char* target)
 
         sbuf_c buf = sbuf.create(1024 * 10, _);
         cg$init(&buf);
+        // clang-format off
+        $pn("// NOTE: main.c serves as unity build container + detaching allows unit testing of app's code");
         $pn("#define CEX_IMPLEMENTATION");
         $pn("#include \"cex.h\"");
-        $pn("// #include \"lib/mylib.c\"  /* NOTE: include .c to make unity build! */");
+        $pf("#include \"%s.c\"", target);
+        $pn("// TODO: add your app sources here (include .c)");
         $pn("");
-        $func("int main(int argc, char** argv)", "")
+        $func("int\nmain(int argc, char** argv)\n", "")
         {
-            $pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
+            $pf("if (%s(argc, argv) != EOK) { return 1; }", target);
             $pn("return 0;");
         }
+        // clang-format on
         e$ret(io.file.save(app_src, buf));
     }
     return EOK;
@@ -2160,7 +2197,7 @@ cexy__app__find_app_target_src(IAllocator allc, const char** target)
         log$trace("Probing %s\n", app_src);
         if (!os.path.exists(app_src)) {
             mem$free(allc, app_src);
-            return e$raise(Error.not_found, "App target source not found: %s", target);
+            return e$raise(Error.not_found, "App target source not found: %s", *target);
         }
     }
     *target = app_src;
@@ -2244,9 +2281,12 @@ cexy__utils__git_hash(IAllocator allc)
             return NULL;
         }
 
-        char* args[] = {"git", "rev-parse", "HEAD", NULL};
+        char* args[] = { "git", "rev-parse", "HEAD", NULL };
         os_cmd_c c = { 0 };
-        e$except (err, os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .no_window = true })) {
+        e$except (
+            err,
+            os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .no_window = true })
+        ) {
             return NULL;
         }
         char* output = os.cmd.read_all(&c, _);
@@ -2355,7 +2395,8 @@ cexy__utils__pkgconf(
         arr$pushm(args, cexy$pkgconf_cmd);
         arr$pusha(args, pkgconf_args, pkgconf_args_len);
         arr$push(args, NULL);
-        e$ret(os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true }));
+        e$ret(os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
+        );
 
         char* output = os.cmd.read_all(&c, _);
         e$except_silent (err, os.cmd.join(&c, 0, NULL)) {
@@ -2450,9 +2491,7 @@ cexy__utils__git_lib_fetch(
         base_name = str.slice.sub(base_name, 0, -4);
 
         const char* repo_dir = str.fmt(_, "%s/%S/", out_build_dir, base_name);
-        if (os.path.exists(repo_dir)) {
-            e$ret(os.fs.remove_tree(repo_dir));
-        }
+        if (os.path.exists(repo_dir)) { e$ret(os.fs.remove_tree(repo_dir)); }
 
         e$ret(os$cmd(
             "git",
