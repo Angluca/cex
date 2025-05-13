@@ -261,7 +261,7 @@ struct __cex_namespace__cexy {
     struct {
         Exception       (*clean)(const char* target);
         Exception       (*create)(const char* target);
-        Exception       (*find_app_target_src)(IAllocator allc, const char** target);
+        Exception       (*find_app_target_src)(IAllocator allc, const char* target, const char** out_result);
         Exception       (*run)(const char* target, bool is_debug, int argc, char** argv);
     } app;
 

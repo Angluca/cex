@@ -3265,7 +3265,7 @@ struct __cex_namespace__cexy {
     struct {
         Exception       (*clean)(const char* target);
         Exception       (*create)(const char* target);
-        Exception       (*find_app_target_src)(IAllocator allc, const char** target);
+        Exception       (*find_app_target_src)(IAllocator allc, const char* target, const char** out_result);
         Exception       (*run)(const char* target, bool is_debug, int argc, char** argv);
     } app;
 
@@ -15958,8 +15958,8 @@ cexy__app__run(const char* target, bool is_debug, int argc, char** argv)
 {
     mem$scope(tmem$, _)
     {
-        const char* app_src = target;
-        e$ret(cexy.app.find_app_target_src(_, &app_src));
+        const char* app_src;
+        e$ret(cexy.app.find_app_target_src(_, target, &app_src));
         char* app_exe = cexy.target_make(app_src, cexy$build_dir, target, _);
         arr$(char*) args = arr$new(args, _);
         if (is_debug) { arr$pushm(args, cexy$debug_cmd); }
@@ -15976,8 +15976,8 @@ cexy__app__clean(const char* target)
 {
     mem$scope(tmem$, _)
     {
-        const char* app_src = target;
-        e$ret(cexy.app.find_app_target_src(_, &app_src));
+        const char* app_src;
+        e$ret(cexy.app.find_app_target_src(_, target, &app_src));
         char* app_exe = cexy.target_make(app_src, cexy$build_dir, target, _);
         if (os.path.exists(app_exe)) {
             log$info("Removing: %s\n", app_exe);
@@ -15988,46 +15988,49 @@ cexy__app__clean(const char* target)
 }
 
 Exception
-cexy__app__find_app_target_src(IAllocator allc, const char** target)
+cexy__app__find_app_target_src(IAllocator allc, const char* target, const char** out_result)
 {
+    uassert(out_result != NULL);
+    *out_result = NULL;
+
     if (target == NULL) {
         return e$raise(
             Error.argsparse,
             "Invalid target: '%s', expected all or tests/test_some_file.c",
-            *target
+            target
         );
     }
-    if (str.eq(*target, "all")) {
+    if (str.eq(target, "all")) {
         return e$raise(Error.argsparse, "all target is not supported for this command");
     }
 
-    if (_cexy__is_str_pattern(*target)) {
+    if (_cexy__is_str_pattern(target)) {
         return e$raise(
             Error.argsparse,
             "Invalid target: '%s', expected alphanumerical name, patterns are not allowed",
-            *target
+            target
         );
     }
-    if (!str.match(*target, "[a-zA-Z0-9_+]")) {
+    if (!str.match(target, "[a-zA-Z0-9_+]")) {
         return e$raise(
             Error.argsparse,
             "Invalid target: '%s', expected alphanumerical name",
-            *target
+            target
         );
     }
-    char* app_src = str.fmt(allc, "%s%c%s.c", cexy$src_dir, os$PATH_SEP, *target);
+    char* app_src = str.fmt(allc, "%s%c%s.c", cexy$src_dir, os$PATH_SEP, target);
     log$trace("Probing %s\n", app_src);
     if (!os.path.exists(app_src)) {
         mem$free(allc, app_src);
 
-        app_src = os$path_join(allc, cexy$src_dir, *target, "main.c");
+        app_src = os$path_join(allc, cexy$src_dir, target, "main.c");
         log$trace("Probing %s\n", app_src);
         if (!os.path.exists(app_src)) {
             mem$free(allc, app_src);
-            return e$raise(Error.not_found, "App target source not found: %s", *target);
+            return e$raise(Error.not_found, "App target source not found: %s", target);
         }
     }
-    *target = app_src;
+    *out_result = app_src;
     return EOK;
 }
 
@@ -16038,15 +16041,12 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
     argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "app [options] {run,build,create,clean,debug} APP_NAME [--app-options app args]",
-        // .description = _cexy$cmd_test_help,
-        // .epilog = _cexy$cmd_test_epilog,
         argparse$opt_list(argparse$opt_help(), ),
     };
 
     e$ret(argparse.parse(&cmd_args, argc, argv));
     const char* cmd = argparse.next(&cmd_args);
     const char* target = argparse.next(&cmd_args);
-    const char* target_root = target;
 
     if (!str.match(cmd, "(run|build|create|clean|debug)") || target == NULL) {
         argparse.usage(&cmd_args);
@@ -16064,10 +16064,11 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
 
     mem$scope(tmem$, _)
     {
-        e$ret(cexy.app.find_app_target_src(_, &target));
-        char* app_exec = cexy.target_make(target, cexy$build_dir, target_root, _);
+        const char* app_src;
+        e$ret(cexy.app.find_app_target_src(_, target, &app_src));
+        char* app_exec = cexy.target_make(app_src, cexy$build_dir, target, _);
         log$trace("App src: %s -> %s\n", target, app_exec);
-        if (!cexy.src_include_changed(app_exec, target, NULL)) { goto run; }
+        if (!cexy.src_include_changed(app_exec, app_src, NULL)) { goto run; }
         arr$(char*) args = arr$new(args, _);
         arr$pushm(args, cexy$cc, );
         // NOTE: reconstructing char*[] because some cexy$ variables might be empty
@@ -16076,7 +16077,7 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
         char* ld_args[] = { cexy$ld_args };
         arr$pusha(args, cc_args);
         arr$pusha(args, cc_include);
-        arr$push(args, (char*)target);
+        arr$push(args, (char*)app_src);
         arr$pusha(args, ld_args);
         char* pkgconf_libargs[] = { cexy$pkgconf_libs };
         if (arr$len(pkgconf_libargs)) {
@@ -16090,7 +16091,7 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
 
     run:
         if (str.match(cmd, "(run|debug)")) {
-            e$ret(cexy.app.run(target_root, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
+            e$ret(cexy.app.run(target, str.eq(cmd, "debug"), cmd_args.argc, cmd_args.argv));
         }
     }
 
