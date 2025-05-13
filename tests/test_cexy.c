@@ -211,6 +211,29 @@ test$case(test_src_changed_include)
     return EOK;
 }
 
+test$case(test_src_changed_include_not_in_include_path)
+{
+    mem$scope(tmem$, _)
+    {
+        (void)_;
+        char* tgt = TBUILDDIR "t1/my_tgt";
+        char* src = TBUILDDIR "t1/my_src.c";
+        char* src2 = TBUILDDIR "t1/my_src2.c";
+        e$ret(os.fs.mkdir(TBUILDDIR "t1/"));
+
+        e$ret(io.file.save(tgt, ""));
+        e$ret(io.file.save(src, "#include \"my_src2.c\""));
+        e$ret(io.file.save(src2, "// I am include"));
+        tassert_eq(0, cexy.src_include_changed(tgt, src, NULL));
+
+        os.sleep(1500);
+        tassert_eq(0, cexy.src_include_changed(tgt, src, NULL));
+        e$ret(io.file.save(src2, "// I am include again"));
+        tassert_eq(1, cexy.src_include_changed(tgt, src, NULL));
+    }
+    return EOK;
+}
+
 test$case(test_src_changed_include_skips_system)
 {
     char* tgt = TBUILDDIR "my_tgt";

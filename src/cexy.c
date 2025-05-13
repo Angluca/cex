@@ -182,6 +182,8 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
                 }
                 arr$push(incl_path, clean_path);
             }
+            // Adding relative to src_path directory as a search target
+            arr$push(incl_path, os.path.dirname(src_path, _));
         }
 
         char* code = io.file.load(src_path, _);
