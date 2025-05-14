@@ -11,5 +11,5 @@ struct __cex_namespace__mylib {
 
     // clang-format on
 };
-__attribute__((visibility("hidden"))) extern const struct __cex_namespace__mylib mylib;
+CEX_NAMESPACE struct __cex_namespace__mylib mylib;
 

@@ -32,5 +32,5 @@ struct __cex_namespace__Random {
 
     // clang-format on
 };
-__attribute__((visibility("hidden"))) extern const struct __cex_namespace__Random Random;
+CEX_NAMESPACE struct __cex_namespace__Random Random;
 

@@ -102,6 +102,13 @@ __cex__fprintf_dummy(void)
         (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
+#ifndef _WIN32
+#define CEX_NAMESPACE __attribute__((visibility("hidden"))) extern const
+#else
+#define CEX_NAMESPACE extern const
+#endif
+
+
 #ifndef CEX_LOG_LVL
 // LVL Value
 // 0 - mute all including assert messages, tracebacks, errors

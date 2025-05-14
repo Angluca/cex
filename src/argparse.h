@@ -138,7 +138,7 @@ typedef struct argparse_c
 #define argparse$pop(argc, argv) ((argc > 0) ? (--argc, (*argv)++) : NULL)
 #define argparse$cmd_list(...) .commands = (argparse_cmd_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
 
-__attribute__((visibility("hidden"))) extern const struct __cex_namespace__argparse argparse;
+CEX_NAMESPACE struct __cex_namespace__argparse argparse;
 
 /**
 * @brief Command line argument parsing module

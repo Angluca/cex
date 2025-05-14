@@ -14,6 +14,7 @@
 #    define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */
 #elif defined(CEX_RELEASE)
 #    define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
+#    define cexy$cex_self_args "-O2"
 #    define cexy$cc_args "-Wall", "-Wextra", "-Werror", "-g", "-O3"
 #elif defined(CEX_NDEBUG)
 #    define CEX_LOG_LVL 5 /* 0 (mute all) - 5 (log$trace) */

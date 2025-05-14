@@ -49,5 +49,5 @@ struct __cex_namespace__fsm {
 
     // clang-format on
 };
-__attribute__((visibility("hidden"))) extern const struct __cex_namespace__fsm fsm;
+CEX_NAMESPACE struct __cex_namespace__fsm fsm;
 

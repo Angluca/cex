@@ -925,7 +925,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 
                 e$ret(sbuf.appendf(
                     &cex_h_var_decl,
-                    "__attribute__((visibility(\"hidden\"))) extern const struct __cex_namespace__%S %S;\n",
+                    "CEX_NAMESPACE struct __cex_namespace__%S %S;\n",
                     ns_prefix,
                     ns_prefix
                 ));
