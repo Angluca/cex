@@ -318,6 +318,7 @@ int __cex_test_uassert_enabled = 1;
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
                     __cex__panic();                                                                \
+                    __builtin_unreachable ();                                                      \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -336,6 +337,7 @@ int __cex_test_uassert_enabled = 1;
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
                     __cex__panic();                                                                \
+                    __builtin_unreachable ();                                                      \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -355,6 +357,7 @@ __attribute__((noinline)) void __cex__panic(void);
             ##__VA_ARGS__                                                                          \
         );                                                                                         \
         __cex__panic();                                                                            \
+        __builtin_unreachable ();                                                                  \
     })
 
 #if defined(_WIN32) || defined(_WIN64)
