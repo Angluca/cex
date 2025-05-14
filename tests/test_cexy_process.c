@@ -71,7 +71,7 @@ test$case(test_src_namespace_gen)
         tassert(str.find(src_content, ".fn_Sub1 = src__subname__fn_Sub1,"));
         tassert(str.find(src_content, "const struct __cex_namespace__src src = "));
         tassert(str.find(src_content, "__aubName2__fnsub1(char"));
-        tassert(str.find(hdr_content, "extern const struct __cex_namespace__src src"));
+        tassert(str.find(hdr_content, "CEX_NAMESPACE struct __cex_namespace__src src"));
         tassert(str.find(hdr_content, "struct __cex_namespace__src {"));
         tassert(str.find(hdr_content, "arr$(char*)"));
     }
