@@ -186,7 +186,7 @@ cex_sbuf_shrink(sbuf_c* self, u32 new_length)
 }
 
 static u32
-cex_sbuf_len(const sbuf_c* self)
+cex_sbuf_len(sbuf_c* self)
 {
     uassert(self != NULL);
     if (*self == NULL) {
@@ -197,7 +197,7 @@ cex_sbuf_len(const sbuf_c* self)
 }
 
 static u32
-cex_sbuf_capacity(const sbuf_c* self)
+cex_sbuf_capacity(sbuf_c* self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
@@ -228,7 +228,7 @@ cex_sbuf_destroy(sbuf_c* self)
 }
 
 static char*
-_sbuf__sprintf_callback(const char* buf, void* user, u32 len)
+_sbuf__sprintf_callback(char* buf, void* user, u32 len)
 {
     struct _sbuf__sprintf_ctx* ctx = (struct _sbuf__sprintf_ctx*)user;
     sbuf_c sbuf = ((char*)ctx->head + sizeof(sbuf_head_s));
@@ -277,7 +277,7 @@ _sbuf__sprintf_callback(const char* buf, void* user, u32 len)
 }
 
 static Exception
-cex_sbuf_appendfva(sbuf_c* self, const char* format, va_list va)
+cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
 {
     if (unlikely(self == NULL)) {
         return Error.argument;
@@ -311,7 +311,7 @@ cex_sbuf_appendfva(sbuf_c* self, const char* format, va_list va)
 }
 
 static Exception
-cex_sbuf_appendf(sbuf_c* self, const char* format, ...)
+cex_sbuf_appendf(sbuf_c* self, char* format, ...)
 {
 
     va_list va;
@@ -322,7 +322,7 @@ cex_sbuf_appendf(sbuf_c* self, const char* format, ...)
 }
 
 static Exception
-cex_sbuf_append(sbuf_c* self, const char* s)
+cex_sbuf_append(sbuf_c* self, char* s)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);

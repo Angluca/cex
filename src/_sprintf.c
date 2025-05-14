@@ -1180,7 +1180,7 @@ done:
 //   wrapper functions
 
 static char*
-cexsp__clamp_callback(const char* buf, void* user, u32 len)
+cexsp__clamp_callback(char* buf, void* user, u32 len)
 {
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;
@@ -1254,7 +1254,7 @@ cexsp__snprintf(char* buf, int count, char const* fmt, ...)
 }
 
 static char*
-cexsp__fprintf_callback(const char* buf, void* user, u32 len)
+cexsp__fprintf_callback(char* buf, void* user, u32 len)
 {
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;

@@ -33,7 +33,7 @@ typedef struct os_fs_stat_s
 } os_fs_stat_s;
 _Static_assert(sizeof(os_fs_stat_s) <= sizeof(u64) * 2, "size?");
 
-typedef Exception os_fs_dir_walk_f(const char* path, os_fs_stat_s ftype, void* user_ctx);
+typedef Exception os_fs_dir_walk_f(char* path, os_fs_stat_s ftype, void* user_ctx);
 
 #define _CexOSPlatformList                                                                         \
     X(linux)                                                                                       \
@@ -96,7 +96,7 @@ __attribute__((unused)) static const char* OSArch_str[] = {
 #define _os$args_print(msg, args, args_len)                                                        \
     log$debug(msg "");                                                                             \
     for (u32 i = 0; i < args_len - 1; i++) {                                                       \
-        const char* a = args[i];                                                                   \
+        char* a = args[i];                                                                   \
         io.printf(" ");                                                                            \
         if (str.find(a, " ")) {                                                                    \
             io.printf("\'%s\'", a);                                                                \
@@ -121,7 +121,7 @@ __attribute__((unused)) static const char* OSArch_str[] = {
         uassert(_args_len < PTRDIFF_MAX && "negative length or overflow");                         \
         _os$args_print("CMD:", args, _args_len);                                                   \
         os_cmd_c _cmd = { 0 };                                                                     \
-        Exc result = os.cmd.run((const char**)args, _args_len, &_cmd);                             \
+        Exc result = os.cmd.run(args, _args_len, &_cmd);                             \
         if (result == EOK) {                                                                       \
             result = os.cmd.join(&_cmd, 0, NULL);                                                  \
         };                                                                                         \
@@ -131,14 +131,14 @@ __attribute__((unused)) static const char* OSArch_str[] = {
 
 #define os$cmd(args...)                                                                            \
     ({                                                                                             \
-        const char* _args[] = { args, NULL };                                                      \
+        char* _args[] = { args, NULL };                                                      \
         usize _args_len = arr$len(_args);                                                          \
         os$cmda(_args, _args_len);                                                                 \
     })
 
 #define os$path_join(allocator, path_parts...)                                                     \
     ({                                                                                             \
-        const char* _args[] = { path_parts };                                                      \
+        char* _args[] = { path_parts };                                                      \
         usize _args_len = arr$len(_args);                                                          \
         os.path.join(_args, _args_len, allocator);                                                 \
     })
@@ -162,46 +162,46 @@ struct __cex_namespace__os {
         Exception       (*kill)(os_cmd_c* self);
         char*           (*read_all)(os_cmd_c* self, IAllocator allc);
         char*           (*read_line)(os_cmd_c* self, IAllocator allc);
-        Exception       (*run)(const char** args, usize args_len, os_cmd_c* out_cmd);
+        Exception       (*run)(char** args, usize args_len, os_cmd_c* out_cmd);
         Exception       (*write_line)(os_cmd_c* self, char* line);
     } cmd;
 
     struct {
-        const char*     (*get)(const char* name, const char* deflt);
-        Exception       (*set)(const char* name, const char* value);
+        char*           (*get)(char* name, char* deflt);
+        Exception       (*set)(char* name, char* value);
     } env;
 
     struct {
-        Exception       (*chdir)(const char* path);
-        Exception       (*copy)(const char* src_path, const char* dst_path);
-        Exception       (*copy_tree)(const char* src_dir, const char* dst_dir);
-        Exception       (*dir_walk)(const char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx);
-        arr$(char*)     (*find)(const char* path, bool is_recursive, IAllocator allc);
+        Exception       (*chdir)(char* path);
+        Exception       (*copy)(char* src_path, char* dst_path);
+        Exception       (*copy_tree)(char* src_dir, char* dst_dir);
+        Exception       (*dir_walk)(char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx);
+        arr$(char*)     (*find)(char* path, bool is_recursive, IAllocator allc);
         char*           (*getcwd)(IAllocator allc);
-        Exception       (*mkdir)(const char* path);
-        Exception       (*mkpath)(const char* path);
-        Exception       (*remove)(const char* path);
-        Exception       (*remove_tree)(const char* path);
-        Exception       (*rename)(const char* old_path, const char* new_path);
-        os_fs_stat_s    (*stat)(const char* path);
+        Exception       (*mkdir)(char* path);
+        Exception       (*mkpath)(char* path);
+        Exception       (*remove)(char* path);
+        Exception       (*remove_tree)(char* path);
+        Exception       (*rename)(char* old_path, char* new_path);
+        os_fs_stat_s    (*stat)(char* path);
     } fs;
 
     struct {
-        char*           (*abs)(const char* path, IAllocator allc);
-        char*           (*basename)(const char* path, IAllocator allc);
-        char*           (*dirname)(const char* path, IAllocator allc);
-        bool            (*exists)(const char* file_path);
-        char*           (*join)(const char** parts, u32 parts_len, IAllocator allc);
-        str_s           (*split)(const char* path, bool return_dir);
+        char*           (*abs)(char* path, IAllocator allc);
+        char*           (*basename)(char* path, IAllocator allc);
+        char*           (*dirname)(char* path, IAllocator allc);
+        bool            (*exists)(char* file_path);
+        char*           (*join)(char** parts, u32 parts_len, IAllocator allc);
+        str_s           (*split)(char* path, bool return_dir);
     } path;
 
     struct {
-        OSArch_e        (*arch_from_str)(const char* name);
-        const char*     (*arch_to_str)(OSArch_e platform);
+        OSArch_e        (*arch_from_str)(char* name);
+        char*           (*arch_to_str)(OSArch_e platform);
         OSPlatform_e    (*current)(void);
-        const char*     (*current_str)(void);
-        OSPlatform_e    (*from_str)(const char* name);
-        const char*     (*to_str)(OSPlatform_e platform);
+        char*           (*current_str)(void);
+        OSPlatform_e    (*from_str)(char* name);
+        char*           (*to_str)(OSPlatform_e platform);
     } platform;
 
     // clang-format on

@@ -76,11 +76,11 @@ typedef struct _cex__codegen_s
          cex$tmpname(codegen_sentinel) = NULL)
 
 
-void _cex__codegen_print_line(_cex__codegen_s* cg, const char* format, ...);
-void _cex__codegen_print(_cex__codegen_s* cg, bool rep_new_line, const char* format, ...);
-_cex__codegen_s* _cex__codegen_print_scope_enter(_cex__codegen_s* cg, const char* format, ...);
+void _cex__codegen_print_line(_cex__codegen_s* cg, char* format, ...);
+void _cex__codegen_print(_cex__codegen_s* cg, bool rep_new_line, char* format, ...);
+_cex__codegen_s* _cex__codegen_print_scope_enter(_cex__codegen_s* cg, char* format, ...);
 void _cex__codegen_print_scope_exit(_cex__codegen_s** cgptr);
-_cex__codegen_s* _cex__codegen_print_case_enter(_cex__codegen_s* cg, const char* format, ...);
+_cex__codegen_s* _cex__codegen_print_case_enter(_cex__codegen_s* cg, char* format, ...);
 void _cex__codegen_print_case_exit(_cex__codegen_s** cgptr);
 void _cex__codegen_indent(_cex__codegen_s* cg);
 

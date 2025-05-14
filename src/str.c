@@ -3,13 +3,13 @@
 #include "all.c"
 
 static inline bool
-_cex_str__isvalid(const str_s* s)
+_cex_str__isvalid(str_s* s)
 {
     return s->buf != NULL;
 }
 
 static inline isize
-_cex_str__index(str_s* s, const char* c, u8 clen)
+_cex_str__index(str_s* s, char* c, u8 clen)
 {
     isize result = -1;
 
@@ -39,7 +39,7 @@ _cex_str__index(str_s* s, const char* c, u8 clen)
  * @return
  */
 static str_s
-cex_str_sstr(const char* ccharptr)
+cex_str_sstr(char* ccharptr)
 {
     if (unlikely(ccharptr == NULL)) {
         return (str_s){ 0 };
@@ -66,7 +66,7 @@ cex_str_sbuf(char* s, usize length)
 }
 
 static bool
-cex_str_eq(const char* a, const char* b)
+cex_str_eq(char* a, char* b)
 {
     if (unlikely(a == NULL || b == NULL)) {
         return a == b;
@@ -75,7 +75,7 @@ cex_str_eq(const char* a, const char* b)
 }
 
 bool
-cex_str_eqi(const char* a, const char* b)
+cex_str_eqi(char* a, char* b)
 {
     if (unlikely(a == NULL || b == NULL)) {
         return a == b;
@@ -123,14 +123,14 @@ cex_str__slice__sub(str_s s, isize start, isize end)
 }
 
 static str_s
-cex_str_sub(const char* s, isize start, isize end)
+cex_str_sub(char* s, isize start, isize end)
 {
     str_s slice = cex_str_sstr(s);
     return cex_str__slice__sub(slice, start, end);
 }
 
 static Exception
-cex_str_copy(char* dest, const char* src, usize destlen)
+cex_str_copy(char* dest, char* src, usize destlen)
 {
     uassert(dest != src && "buffers overlap");
     if (unlikely(dest == NULL || destlen == 0)) {
@@ -142,7 +142,7 @@ cex_str_copy(char* dest, const char* src, usize destlen)
     }
 
     char* d = dest;
-    const char* s = src;
+    char* s = src;
     size_t n = destlen;
 
     while (--n != 0) {
@@ -162,7 +162,7 @@ cex_str_copy(char* dest, const char* src, usize destlen)
 }
 
 char*
-cex_str_replace(const char* s, const char* old_sub, const char* new_sub, IAllocator allc)
+cex_str_replace(char* s, char* old_sub, char* new_sub, IAllocator allc)
 {
     if (s == NULL || old_sub == NULL || new_sub == NULL || old_sub[0] == '\0') {
         return NULL;
@@ -172,7 +172,7 @@ cex_str_replace(const char* s, const char* old_sub, const char* new_sub, IAlloca
     size_t new_sub_len = strlen(new_sub);
 
     size_t count = 0;
-    const char* pos = s;
+    char* pos = s;
     while ((pos = strstr(pos, old_sub)) != NULL) {
         count++;
         pos += old_sub_len;
@@ -185,9 +185,9 @@ cex_str_replace(const char* s, const char* old_sub, const char* new_sub, IAlloca
     new_str[0] = '\0';
 
     char* current_pos = new_str;
-    const char* start = s;
+    char* start = s;
     while (count--) {
-        const char* found = strstr(start, old_sub);
+        char* found = strstr(start, old_sub);
         size_t segment_len = found - start;
         memcpy(current_pos, start, segment_len);
         current_pos += segment_len;
@@ -221,7 +221,7 @@ cex_str__slice__copy(char* dest, str_s src, usize destlen)
 }
 
 static Exception
-cex_str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
+cex_str_vsprintf(char* dest, usize dest_len, char* format, va_list va)
 {
     if (unlikely(dest == NULL)) {
         return Error.argument;
@@ -244,7 +244,7 @@ cex_str_vsprintf(char* dest, usize dest_len, const char* format, va_list va)
 }
 
 static Exc
-cex_str_sprintf(char* dest, usize dest_len, const char* format, ...)
+cex_str_sprintf(char* dest, usize dest_len, char* format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -255,7 +255,7 @@ cex_str_sprintf(char* dest, usize dest_len, const char* format, ...)
 
 
 static usize
-cex_str_len(const char* s)
+cex_str_len(char* s)
 {
     if (s == NULL) {
         return 0;
@@ -264,7 +264,7 @@ cex_str_len(const char* s)
 }
 
 static char*
-cex_str_find(const char* haystack, const char* needle)
+cex_str_find(char* haystack, char* needle)
 {
     if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) {
         return NULL;
@@ -273,7 +273,7 @@ cex_str_find(const char* haystack, const char* needle)
 }
 
 char*
-cex_str_findr(const char* haystack, const char* needle)
+cex_str_findr(char* haystack, char* needle)
 {
     if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) {
         return NULL;
@@ -283,7 +283,7 @@ cex_str_findr(const char* haystack, const char* needle)
     if (unlikely(needle_len > haystack_len)) {
         return NULL;
     }
-    for (const char* ptr = haystack + haystack_len - needle_len; ptr >= haystack; ptr--) {
+    for (char* ptr = haystack + haystack_len - needle_len; ptr >= haystack; ptr--) {
         if (unlikely(strncmp(ptr, needle, needle_len) == 0)) {
             uassert(ptr >= haystack);
             uassert(ptr <= haystack + haystack_len);
@@ -334,7 +334,7 @@ cex_str__slice__ends_with(str_s s, str_s suffix)
 }
 
 static bool
-cex_str_starts_with(const char* s, const char* prefix)
+cex_str_starts_with(char* s, char* prefix)
 {
     if (s == NULL || prefix == NULL || prefix[0] == '\0') {
         return false;
@@ -347,7 +347,7 @@ cex_str_starts_with(const char* s, const char* prefix)
 }
 
 static bool
-cex_str_ends_with(const char* s, const char* suffix)
+cex_str_ends_with(char* s, char* suffix)
 {
     if (s == NULL || suffix == NULL || suffix[0] == '\0') {
         return false;
@@ -554,7 +554,7 @@ cex_str__slice__qscmpi(const void* a, const void* b)
 }
 
 static str_s
-cex_str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterator)
+cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
 {
     uassert(iterator != NULL && "null iterator");
     uassert(split_by != NULL && "null split_by");
@@ -633,7 +633,7 @@ cex_str__slice__iter_split(str_s s, const char* split_by, cex_iterator_s* iterat
 
 
 static Exception
-cex_str__to_signed_num(const char* self, usize len, i64* num, i64 num_min, i64 num_max)
+cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max)
 {
     _Static_assert(sizeof(i64) == 8, "unexpected u64 size");
     uassert(num_min < num_max);
@@ -647,7 +647,7 @@ cex_str__to_signed_num(const char* self, usize len, i64* num, i64 num_min, i64 n
         return Error.argument;
     }
 
-    const char* s = self;
+    char* s = self;
     if (len == 0) {
         len = strlen(self);
     }
@@ -722,7 +722,7 @@ cex_str__to_signed_num(const char* self, usize len, i64* num, i64 num_min, i64 n
 }
 
 static Exception
-cex_str__to_unsigned_num(const char* s, usize len, u64* num, u64 num_max)
+cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
 {
     _Static_assert(sizeof(u64) == 8, "unexpected u64 size");
     uassert(num_max > 0);
@@ -805,14 +805,14 @@ cex_str__to_unsigned_num(const char* s, usize len, u64* num, u64 num_max)
 }
 
 static Exception
-cex_str__to_double(const char* self, usize len, double* num, i32 exp_min, i32 exp_max)
+cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
 {
     _Static_assert(sizeof(double) == 8, "unexpected double precision");
     if (unlikely(self == NULL)) {
         return Error.argument;
     }
 
-    const char* s = self;
+    char* s = self;
     if (len == 0) {
         len = strlen(s);
     }
@@ -1083,69 +1083,69 @@ cex_str__convert__to_u64s(str_s s, u64* num)
 }
 
 static Exception
-cex_str__convert__to_f32(const char* s, f32* num)
+cex_str__convert__to_f32(char* s, f32* num)
 {
     return cex_str__convert__to_f32s(str.sstr(s), num);
 }
 
 static Exception
-cex_str__convert__to_f64(const char* s, f64* num)
+cex_str__convert__to_f64(char* s, f64* num)
 {
     return cex_str__convert__to_f64s(str.sstr(s), num);
 }
 
 static Exception
-cex_str__convert__to_i8(const char* s, i8* num)
+cex_str__convert__to_i8(char* s, i8* num)
 {
     return cex_str__convert__to_i8s(str.sstr(s), num);
 }
 
 static Exception
-cex_str__convert__to_i16(const char* s, i16* num)
+cex_str__convert__to_i16(char* s, i16* num)
 {
     return cex_str__convert__to_i16s(str.sstr(s), num);
 }
 
 static Exception
-cex_str__convert__to_i32(const char* s, i32* num)
+cex_str__convert__to_i32(char* s, i32* num)
 {
     return cex_str__convert__to_i32s(str.sstr(s), num);
 }
 
 
 static Exception
-cex_str__convert__to_i64(const char* s, i64* num)
+cex_str__convert__to_i64(char* s, i64* num)
 {
     return cex_str__convert__to_i64s(str.sstr(s), num);
 }
 
 static Exception
-cex_str__convert__to_u8(const char* s, u8* num)
+cex_str__convert__to_u8(char* s, u8* num)
 {
     return cex_str__convert__to_u8s(str.sstr(s), num);
 }
 
 static Exception
-cex_str__convert__to_u16(const char* s, u16* num)
+cex_str__convert__to_u16(char* s, u16* num)
 {
     return cex_str__convert__to_u16s(str.sstr(s), num);
 }
 
 static Exception
-cex_str__convert__to_u32(const char* s, u32* num)
+cex_str__convert__to_u32(char* s, u32* num)
 {
     return cex_str__convert__to_u32s(str.sstr(s), num);
 }
 
 static Exception
-cex_str__convert__to_u64(const char* s, u64* num)
+cex_str__convert__to_u64(char* s, u64* num)
 {
     return cex_str__convert__to_u64s(str.sstr(s), num);
 }
 
 
 static char*
-_cex_str__fmt_callback(const char* buf, void* user, u32 len)
+_cex_str__fmt_callback(char* buf, void* user, u32 len)
 {
     (void)buf;
     cexsp__context* ctx = user;
@@ -1197,7 +1197,7 @@ _cex_str__fmt_callback(const char* buf, void* user, u32 len)
 }
 
 static char*
-cex_str_fmt(IAllocator allc, const char* format, ...)
+cex_str_fmt(IAllocator allc, char* format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -1246,7 +1246,7 @@ cex_str__slice__clone(str_s s, IAllocator allc)
 }
 
 static char*
-cex_str_clone(const char* s, IAllocator allc)
+cex_str_clone(char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1263,7 +1263,7 @@ cex_str_clone(const char* s, IAllocator allc)
 }
 
 static char*
-cex_str_lower(const char* s, IAllocator allc)
+cex_str_lower(char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1282,7 +1282,7 @@ cex_str_lower(const char* s, IAllocator allc)
 }
 
 static char*
-cex_str_upper(const char* s, IAllocator allc)
+cex_str_upper(char* s, IAllocator allc)
 {
     if (s == NULL) {
         return NULL;
@@ -1300,7 +1300,7 @@ cex_str_upper(const char* s, IAllocator allc)
     return result;
 }
 
-static arr$(char*) cex_str_split(const char* s, const char* split_by, IAllocator allc)
+static arr$(char*) cex_str_split(char* s, char* split_by, IAllocator allc)
 {
     str_s src = cex_str_sstr(s);
     if (src.buf == NULL || split_by == NULL) {
@@ -1320,7 +1320,7 @@ static arr$(char*) cex_str_split(const char* s, const char* split_by, IAllocator
     return result;
 }
 
-static arr$(char*) cex_str_split_lines(const char* s, IAllocator allc)
+static arr$(char*) cex_str_split_lines(char* s, IAllocator allc)
 {
     uassert(allc != NULL);
     if (s == NULL) {
@@ -1331,8 +1331,8 @@ static arr$(char*) cex_str_split_lines(const char* s, IAllocator allc)
         return NULL;
     }
     char c;
-    const char* line_start = s;
-    const char* cur = s;
+    char* line_start = s;
+    char* cur = s;
     while ((c = *cur)) {
         switch (c) {
             case '\r':
@@ -1361,7 +1361,7 @@ static arr$(char*) cex_str_split_lines(const char* s, IAllocator allc)
 }
 
 static char*
-cex_str_join(const char** str_arr, usize str_arr_len, const char* join_by, IAllocator allc)
+cex_str_join(char** str_arr, usize str_arr_len, char* join_by, IAllocator allc)
 {
     if (str_arr == NULL || join_by == NULL) {
         return NULL;
@@ -1409,7 +1409,7 @@ cex_str_join(const char** str_arr, usize str_arr_len, const char* join_by, IAllo
 
 
 static bool
-_cex_str_match(const char* str, isize str_len, const char* pattern)
+_cex_str_match(char* str, isize str_len, char* pattern)
 {
     if (unlikely(str == NULL || str_len <= 0)) {
         return false;
@@ -1453,7 +1453,7 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
                 break;
 
             case '(': {
-                const char* strstart = str;
+                char* strstart = str;
                 isize str_len_start = str_len;
                 if (unlikely(*(pattern + 1) == ')')) {
                     uassert(false && "Empty '()' group");
@@ -1512,7 +1512,7 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
                 break;
             }
             case '[': {
-                const char* pstart = pattern;
+                char* pstart = pattern;
                 bool has_previous_match = false;
                 while (str_len > 0) {
                     bool negate = false;
@@ -1614,12 +1614,12 @@ _cex_str_match(const char* str, isize str_len, const char* pattern)
 }
 
 static bool
-cex_str__slice__match(str_s s, const char* pattern)
+cex_str__slice__match(str_s s, char* pattern)
 {
     return _cex_str_match(s.buf, s.len, pattern);
 }
 static bool
-cex_str_match(const char* s, const char* pattern)
+cex_str_match(char* s, char* pattern)
 {
     return _cex_str_match(s, str.len(s), pattern);
 }

@@ -8,7 +8,7 @@
 
 test$case(test_cstr)
 {
-    const char* cstr = "hello";
+    char* cstr = "hello";
 
 
     str_s s = str.sstr(cstr);
@@ -35,7 +35,7 @@ test$case(test_cstr)
 
 test$case(test_cstr_sdollar)
 {
-    const char* cstr = "hello";
+    char* cstr = "hello";
 
     sbuf_c sb = sbuf.create(10, mem$);
     tassert_eq(EOK, sbuf.append(&sb, "hello"));
@@ -78,7 +78,7 @@ test$case(test_cstr_sdollar)
 
 test$case(test_str_len)
 {
-    const char* cstr = "hello";
+    char* cstr = "hello";
     tassert_eq(5, str.len(cstr));
     tassert_eq(2, str.len("wa"));
     tassert_eq(0, str.len(""));
@@ -394,7 +394,7 @@ test$case(test_iter_split)
     u32 nit = 0;
 
     nit = 0;
-    const char* expected1[] = {
+    char* expected1[] = {
         "123456",
     };
     for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
@@ -408,7 +408,7 @@ test$case(test_iter_split)
 
     nit = 0;
     s = str.sstr("123,456");
-    const char* expected2[] = {
+    char* expected2[] = {
         "123",
         "456",
     };
@@ -423,7 +423,7 @@ test$case(test_iter_split)
 
     nit = 0;
     s = str.sstr("123,456,88,99");
-    const char* expected3[] = {
+    char* expected3[] = {
         "123",
         "456",
         "88",
@@ -439,7 +439,7 @@ test$case(test_iter_split)
     tassert_eq(nit, 4);
 
     nit = 0;
-    const char* expected4[] = {
+    char* expected4[] = {
         "123",
         "456",
         "88",
@@ -458,7 +458,7 @@ test$case(test_iter_split)
 
     nit = 0;
     s = str.sstr("123,456#88@99");
-    const char* expected5[] = {
+    char* expected5[] = {
         "123",
         "456",
         "88",
@@ -475,7 +475,7 @@ test$case(test_iter_split)
     tassert_eq(nit, 4);
 
     nit = 0;
-    const char* expected6[] = {
+    char* expected6[] = {
         "123",
         "456",
         "",
@@ -491,7 +491,7 @@ test$case(test_iter_split)
     tassert_eq(nit, 3);
 
     nit = 0;
-    const char* expected7[] = {
+    char* expected7[] = {
         "123",
         "",
         "",
@@ -517,7 +517,7 @@ test$case(test_iter_split)
     tassert_eq(nit, 0);
 
     nit = 0;
-    const char* expected8[] = {
+    char* expected8[] = {
         "",
         "123",
         "456",
@@ -1880,7 +1880,7 @@ test$case(test_tsplit)
 
         str_s s = str.sstr("123456");
         u32 nit = 0;
-        const char* expected1[] = {
+        char* expected1[] = {
             "123456",
         };
         res = str.split(s.buf, ",", _);
@@ -1897,7 +1897,7 @@ test$case(test_tsplit)
     {
         u32 nit = 0;
         var s = str.sstr("123,456");
-        const char* expected[] = {
+        char* expected[] = {
             "123",
             "456",
         };
@@ -1916,7 +1916,7 @@ test$case(test_tsplit)
     {
         u32 nit = 0;
         var s = str.sstr("123,456, 789");
-        const char* expected[] = {
+        char* expected[] = {
             "123",
             "456",
             " 789",
@@ -1936,7 +1936,7 @@ test$case(test_tsplit)
     {
         u32 nit = 0;
         var s = str.sstr("123,456, 789,");
-        const char* expected[] = {
+        char* expected[] = {
             "123",
             "456",
             " 789",
@@ -1960,7 +1960,7 @@ test$case(test_split_lines)
     mem$scope(tmem$, _)
     {
         var s = str.sstr("123\n456\r\n789\r");
-        const char* expected[] = {
+        char* expected[] = {
             "123",
             "456",
             "789",
@@ -1980,7 +1980,7 @@ test$case(test_split_lines)
     mem$scope(tmem$, _)
     {
         var s = str.sstr("ab c\n\nde fg\rkl\r\nfff\fvvv\v");
-        const char* expected[] = {
+        char* expected[] = {
             "ab c", "", "de fg", "kl", "fff", "vvv",
         };
         arr$(char*) res = str.split_lines(s.buf, _);
@@ -2026,7 +2026,7 @@ test$case(test_tjoin)
     mem$scope(tmem$, _)
     {
 
-        arr$(const char*) res = arr$new(res, _);
+        arr$(char*) res = arr$new(res, _);
         tassert(res != NULL);
         arr$pushm(res, "foo");
 

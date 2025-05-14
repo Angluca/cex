@@ -724,7 +724,7 @@ test$case(test_extra_ignore_keywords)
         log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__func_def);
 
-        const char* extra_ignore = "(foo|bar)";
+        char* extra_ignore = "(foo|bar)";
 
         cex_decl_s* d = CexParser.decl_parse(&lx, t, items, extra_ignore, _);
         tassert(d != NULL);

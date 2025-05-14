@@ -97,7 +97,7 @@ integers in binary: "%b" for 256 would print 100.
 
 #define CEXSP__ATTRIBUTE_FORMAT(fmt, va) __attribute__((format(printf, fmt, va)))
 
-typedef char* cexsp_callback_f(const char* buf, void* user, u32 len);
+typedef char* cexsp_callback_f(char* buf, void* user, u32 len);
 
 typedef struct cexsp__context
 {

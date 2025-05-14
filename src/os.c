@@ -39,7 +39,7 @@ struct dirent
 
 typedef struct DIR DIR;
 
-static DIR* opendir(const char* dirpath);
+static DIR* opendir(char* dirpath);
 static struct dirent* readdir(DIR* dirp);
 static int closedir(DIR* dirp);
 
@@ -51,7 +51,7 @@ struct DIR
 };
 
 DIR*
-opendir(const char* dirpath)
+opendir(char* dirpath)
 {
     char buffer[MAX_PATH + 10];
     snprintf(buffer, sizeof(buffer), "%s\\*", dirpath);
@@ -74,9 +74,7 @@ opendir(const char* dirpath)
     return dir;
 
 fail:
-    if (dir) {
-        free(dir);
-    }
+    if (dir) { free(dir); }
 
     return NULL;
 }
@@ -120,9 +118,7 @@ closedir(DIR* dirp)
         return -1;
     }
 
-    if (dirp->dirent) {
-        free(dirp->dirent);
-    }
+    if (dirp->dirent) { free(dirp->dirent); }
     free(dirp);
 
     return 0;
@@ -143,10 +139,8 @@ static f64
 cex_os_timer()
 {
 #ifdef _WIN32
-    static LARGE_INTEGER frequency = {0};
-    if (unlikely(frequency.QuadPart == 0)){
-        QueryPerformanceFrequency(&frequency);
-    }
+    static LARGE_INTEGER frequency = { 0 };
+    if (unlikely(frequency.QuadPart == 0)) { QueryPerformanceFrequency(&frequency); }
     LARGE_INTEGER start;
     QueryPerformanceCounter(&start);
     return (f64)(start.QuadPart) / (f64)frequency.QuadPart;
@@ -225,36 +219,24 @@ cex_os_get_last_error(void)
 }
 
 static Exception
-cex_os__fs__rename(const char* old_path, const char* new_path)
+cex_os__fs__rename(char* old_path, char* new_path)
 {
-    if (old_path == NULL || old_path[0] == '\0') {
-        return Error.argument;
-    }
-    if (new_path == NULL || new_path[0] == '\0') {
-        return Error.argument;
-    }
-    if (os.path.exists(new_path)) {
-        return Error.exists;
-    }
+    if (old_path == NULL || old_path[0] == '\0') { return Error.argument; }
+    if (new_path == NULL || new_path[0] == '\0') { return Error.argument; }
+    if (os.path.exists(new_path)) { return Error.exists; }
 #ifdef _WIN32
-    if (!MoveFileEx(old_path, new_path, MOVEFILE_REPLACE_EXISTING)) {
-        return os.get_last_error();
-    }
+    if (!MoveFileEx(old_path, new_path, MOVEFILE_REPLACE_EXISTING)) { return os.get_last_error(); }
     return EOK;
 #else
-    if (rename(old_path, new_path) < 0) {
-        return os.get_last_error();
-    }
+    if (rename(old_path, new_path) < 0) { return os.get_last_error(); }
     return EOK;
 #endif // _WIN32
 }
 
 static Exception
-cex_os__fs__mkdir(const char* path)
+cex_os__fs__mkdir(char* path)
 {
-    if (path == NULL || path[0] == '\0') {
-        return Error.argument;
-    }
+    if (path == NULL || path[0] == '\0') { return Error.argument; }
 #ifdef _WIN32
     int result = mkdir(path);
 #else
@@ -262,30 +244,23 @@ cex_os__fs__mkdir(const char* path)
 #endif
     if (result < 0) {
         uassert(errno != 0);
-        if (errno == EEXIST) {
-            return EOK;
-        }
+        if (errno == EEXIST) { return EOK; }
         return os.get_last_error();
     }
     return EOK;
 }
 
 static Exception
-cex_os__fs__mkpath(const char* path)
+cex_os__fs__mkpath(char* path)
 {
-    if (path == NULL || path[0] == '\0') {
-        return Error.argument;
-    }
+    if (path == NULL || path[0] == '\0') { return Error.argument; }
     str_s dir = os.path.split(path, true);
     char dir_path[PATH_MAX] = { 0 };
     e$ret(str.slice.copy(dir_path, dir, sizeof(dir_path)));
-    if (os.path.exists(dir_path)) {
-        return EOK;
-    }
+    if (os.path.exists(dir_path)) { return EOK; }
     usize dir_path_len = 0;
 
-    for$iter(str_s, it, str.slice.iter_split(dir, "\\/", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(dir, "\\/", &it.iterator)) {
         if (dir_path_len > 0) {
             uassert(dir_path_len < sizeof(dir_path) - 2);
             dir_path[dir_path_len] = os$PATH_SEP;
@@ -300,12 +275,10 @@ cex_os__fs__mkpath(const char* path)
 }
 
 static os_fs_stat_s
-cex_os__fs__stat(const char* path)
+cex_os__fs__stat(char* path)
 {
     os_fs_stat_s result = { .error = Error.argument };
-    if (path == NULL || path[0] == '\0') {
-        return result;
-    }
+    if (path == NULL || path[0] == '\0') { return result; }
 
 #ifdef _WIN32
     // NOTE: for mingw64 _stat() doesn't do well when path has trailing /
@@ -394,49 +367,37 @@ cex_os__fs__stat(const char* path)
 }
 
 static Exception
-cex_os__fs__remove(const char* path)
+cex_os__fs__remove(char* path)
 {
-    if (path == NULL || path[0] == '\0') {
-        return Error.argument;
-    }
+    if (path == NULL || path[0] == '\0') { return Error.argument; }
 
     os_fs_stat_s stat = os.fs.stat(path);
-    if (!stat.is_valid) {
-        return stat.error;
-    }
+    if (!stat.is_valid) { return stat.error; }
 #ifdef _WIN32
     if (stat.is_file || stat.is_symlink) {
-        if (!DeleteFileA(path)) {
-            return os.get_last_error();
-        }
+        if (!DeleteFileA(path)) { return os.get_last_error(); }
     } else if (stat.is_directory) {
-        if (!RemoveDirectoryA(path)) {
-            return os.get_last_error();
-        }
+        if (!RemoveDirectoryA(path)) { return os.get_last_error(); }
     } else {
         return "Unsupported path type";
     }
     return EOK;
 #else
-    if (remove(path) < 0) {
-        return os.get_last_error();
-    }
+    if (remove(path) < 0) { return os.get_last_error(); }
     return EOK;
 #endif
 }
 
 Exception
 cex_os__fs__dir_walk(
-    const char* path,
+    char* path,
     bool is_recursive,
     os_fs_dir_walk_f callback_fn,
     void* user_ctx
 )
 {
     (void)user_ctx;
-    if (path == NULL || path[0] == '\0') {
-        return Error.argument;
-    }
+    if (path == NULL || path[0] == '\0') { return Error.argument; }
     Exc result = Error.os;
     uassert(callback_fn != NULL && "you must provide callback_fn");
 
@@ -458,12 +419,8 @@ cex_os__fs__dir_walk(
     struct dirent* ep;
     while ((ep = readdir(dp)) != NULL) {
         errno = 0;
-        if (str.eq(ep->d_name, ".")) {
-            continue;
-        }
-        if (str.eq(ep->d_name, "..")) {
-            continue;
-        }
+        if (str.eq(ep->d_name, ".")) { continue; }
+        if (str.eq(ep->d_name, "..")) { continue; }
         memcpy(path_buf, path, path_len);
         u32 path_offset = 0;
         if (path_buf[path_len - 1] != '/' && path_buf[path_len - 1] != '\\') {
@@ -471,15 +428,14 @@ cex_os__fs__dir_walk(
             path_offset = 1;
         }
 
-        e$except_silent(
+        e$except_silent (
             err,
             str.copy(
                 path_buf + path_len + path_offset,
                 ep->d_name,
                 sizeof(path_buf) - path_len - 1 - path_offset
             )
-        )
-        {
+        ) {
             result = err;
             goto end;
         }
@@ -491,15 +447,16 @@ cex_os__fs__dir_walk(
         }
 
         if (is_recursive && ftype.is_directory && !ftype.is_symlink) {
-            e$except_silent(err, cex_os__fs__dir_walk(path_buf, is_recursive, callback_fn, user_ctx))
-            {
+            e$except_silent (
+                err,
+                cex_os__fs__dir_walk(path_buf, is_recursive, callback_fn, user_ctx)
+            ) {
                 result = err;
                 goto end;
             }
         }
         // After recursive call make a callback on a directory itself
-        e$except_silent(err, callback_fn(path_buf, ftype, user_ctx))
-        {
+        e$except_silent (err, callback_fn(path_buf, ftype, user_ctx)) {
             result = err;
             goto end;
         }
@@ -507,26 +464,23 @@ cex_os__fs__dir_walk(
 
     result = EOK;
 end:
-    if (dp != NULL) {
-        (void)closedir(dp);
-    }
+    if (dp != NULL) { (void)closedir(dp); }
     return result;
 }
 
 struct _os_fs_find_ctx_s
 {
-    const char* pattern;
+    char* pattern;
     arr$(char*) result;
     IAllocator allc;
 };
 
 static Exception
-_os__fs__remove_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
+_os__fs__remove_tree_walker(char* path, os_fs_stat_s ftype, void* user_ctx)
 {
     (void)user_ctx;
     (void)ftype;
-    e$except_silent(err, cex_os__fs__remove(path))
-    {
+    e$except_silent (err, cex_os__fs__remove(path)) {
         log$trace("Error removing: %s\n", path);
         return err;
     }
@@ -534,20 +488,14 @@ _os__fs__remove_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx
 }
 
 static Exception
-cex_os__fs__remove_tree(const char* path)
+cex_os__fs__remove_tree(char* path)
 {
-    if (path == NULL || path[0] == '\0') {
-        return Error.argument;
-    }
-    if (!os.path.exists(path)) {
-        return Error.not_found;
-    }
-    e$except_silent(err, cex_os__fs__dir_walk(path, true, _os__fs__remove_tree_walker, NULL))
-    {
+    if (path == NULL || path[0] == '\0') { return Error.argument; }
+    if (!os.path.exists(path)) { return Error.not_found; }
+    e$except_silent (err, cex_os__fs__dir_walk(path, true, _os__fs__remove_tree_walker, NULL)) {
         return err;
     }
-    e$except_silent(err, cex_os__fs__remove(path))
-    {
+    e$except_silent (err, cex_os__fs__remove(path)) {
         log$trace("Error removing: %s\n", path);
         return err;
     }
@@ -561,7 +509,7 @@ struct _os_fs_copy_tree_ctx_s
 };
 
 static Exception
-_os__fs__copy_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
+_os__fs__copy_tree_walker(char* path, os_fs_stat_s ftype, void* user_ctx)
 {
     struct _os_fs_copy_tree_ctx_s* ctx = user_ctx;
     mem$scope(tmem$, _)
@@ -583,25 +531,15 @@ _os__fs__copy_tree_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
 }
 
 static Exception
-cex_os__fs__copy_tree(const char* src_dir, const char* dst_dir)
+cex_os__fs__copy_tree(char* src_dir, char* dst_dir)
 {
-    if (src_dir == NULL || src_dir[0] == '\0') {
-        return Error.argument;
-    }
+    if (src_dir == NULL || src_dir[0] == '\0') { return Error.argument; }
     os_fs_stat_s s = os.fs.stat(src_dir);
-    if (!s.is_valid) {
-        return s.error;
-    }
-    if (!s.is_directory) {
-        return Error.argument;
-    }
+    if (!s.is_valid) { return s.error; }
+    if (!s.is_directory) { return Error.argument; }
 
-    if (dst_dir == NULL || dst_dir[0] == '\0') {
-        return Error.argument;
-    }
-    if (os.path.exists(dst_dir)) {
-        return Error.exists;
-    }
+    if (dst_dir == NULL || dst_dir[0] == '\0') { return Error.argument; }
+    if (os.path.exists(dst_dir)) { return Error.exists; }
 
     // TODO: add absolute path overlap check
 
@@ -609,8 +547,7 @@ cex_os__fs__copy_tree(const char* src_dir, const char* dst_dir)
         .src_dir = str.sstr(src_dir),
         .dest_dir = str.sstr(dst_dir),
     };
-    e$except_silent(err, cex_os__fs__dir_walk(src_dir, true, _os__fs__copy_tree_walker, &ctx))
-    {
+    e$except_silent (err, cex_os__fs__dir_walk(src_dir, true, _os__fs__copy_tree_walker, &ctx)) {
         return err;
     }
 
@@ -618,7 +555,7 @@ cex_os__fs__copy_tree(const char* src_dir, const char* dst_dir)
 }
 
 static Exception
-_os__fs__find_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
+_os__fs__find_walker(char* path, os_fs_stat_s ftype, void* user_ctx)
 {
     (void)ftype;
     struct _os_fs_find_ctx_s* ctx = (struct _os_fs_find_ctx_s*)user_ctx;
@@ -637,24 +574,18 @@ _os__fs__find_walker(const char* path, os_fs_stat_s ftype, void* user_ctx)
 
     // allocate new string because path is stack allocated buffer in os__fs__dir_walk()
     char* new_path = str.clone(path, ctx->allc);
-    if (new_path == NULL) {
-        return Error.memory;
-    }
+    if (new_path == NULL) { return Error.memory; }
 
     // Doing graceful memory check, otherwise arr$push will assert
-    if (!arr$grow_check(ctx->result, 1)) {
-        return Error.memory;
-    }
+    if (!arr$grow_check(ctx->result, 1)) { return Error.memory; }
     arr$push(ctx->result, new_path);
     return EOK;
 }
 
-static arr$(char*) cex_os__fs__find(const char* path, bool is_recursive, IAllocator allc)
+static arr$(char*) cex_os__fs__find(char* path, bool is_recursive, IAllocator allc)
 {
 
-    if (unlikely(allc == NULL)) {
-        return NULL;
-    }
+    if (unlikely(allc == NULL)) { return NULL; }
 
     str_s dir_part = os.path.split(path, true);
     if (dir_part.buf == NULL) {
@@ -690,29 +621,19 @@ static arr$(char*) cex_os__fs__find(const char* path, bool is_recursive, IAlloca
     }
     char* dir_name = (dir_part.len > 0) ? path_buf : ".";
     char* pattern = path_buf + dir_part.len + 1;
-    if (*pattern == '/' || *pattern == '\\') {
-        pattern++;
-    }
-    if (*pattern == '\0') {
-        pattern = "*";
-    }
+    if (*pattern == '/' || *pattern == '\\') { pattern++; }
+    if (*pattern == '\0') { pattern = "*"; }
 
     struct _os_fs_find_ctx_s ctx = { .result = arr$new(ctx.result, allc),
                                      .pattern = pattern,
                                      .allc = allc };
-    if (unlikely(ctx.result == NULL)) {
-        return NULL;
-    }
+    if (unlikely(ctx.result == NULL)) { return NULL; }
 
-    e$except_silent(err, cex_os__fs__dir_walk(dir_name, is_recursive, _os__fs__find_walker, &ctx))
-    {
-        for$each(it, ctx.result)
-        {
+    e$except_silent (err, cex_os__fs__dir_walk(dir_name, is_recursive, _os__fs__find_walker, &ctx)) {
+        for$each (it, ctx.result) {
             mem$free(allc, it); // each individual item was allocated too
         }
-        if (ctx.result != NULL) {
-            arr$free(ctx.result);
-        }
+        if (ctx.result != NULL) { arr$free(ctx.result); }
         ctx.result = NULL;
     }
     return ctx.result;
@@ -729,19 +650,15 @@ cex_os__fs__getcwd(IAllocator allc)
 #else
     result = getcwd(buf, PATH_MAX);
 #endif
-    if (result == NULL) {
-        mem$free(allc, buf);
-    }
+    if (result == NULL) { mem$free(allc, buf); }
 
     return result;
 }
 
 static Exception
-cex_os__fs__chdir(const char* path)
+cex_os__fs__chdir(char* path)
 {
-    if (path == NULL || path[0] == '\0') {
-        return Error.exists;
-    }
+    if (path == NULL || path[0] == '\0') { return Error.exists; }
 
     int result;
 #ifdef _WIN32
@@ -763,30 +680,24 @@ cex_os__fs__chdir(const char* path)
 
 
 static Exception
-cex_os__fs__copy(const char* src_path, const char* dst_path)
+cex_os__fs__copy(char* src_path, char* dst_path)
 {
     if (src_path == NULL || src_path[0] == '\0' || dst_path == NULL || dst_path[0] == '\0') {
         return Error.argument;
     }
     log$trace("copying %s -> %s\n", src_path, dst_path);
 
-    if (os.path.exists(dst_path)) {
-        return Error.exists;
-    }
+    if (os.path.exists(dst_path)) { return Error.exists; }
 
 #ifdef _WIN32
-    if (!CopyFile(src_path, dst_path, FALSE)) {
-        return os.get_last_error();
-    }
+    if (!CopyFile(src_path, dst_path, FALSE)) { return os.get_last_error(); }
     return EOK;
 #else
     int src_fd = -1;
     int dst_fd = -1;
     size_t buf_size = 32 * 1024;
     char* buf = mem$malloc(mem$, buf_size);
-    if (buf == NULL) {
-        return Error.memory;
-    }
+    if (buf == NULL) { return Error.memory; }
     Exc result = Error.runtime;
 
     if ((src_fd = open(src_path, O_RDONLY)) == -1) {
@@ -808,9 +719,7 @@ cex_os__fs__copy(const char* src_path, const char* dst_path)
 
     for (;;) {
         ssize_t n = read(src_fd, buf, buf_size);
-        if (n == 0) {
-            break;
-        }
+        if (n == 0) { break; }
         if (n < 0) {
             result = os.get_last_error();
             goto defer;
@@ -830,30 +739,24 @@ cex_os__fs__copy(const char* src_path, const char* dst_path)
 
 defer:
     mem$free(mem$, buf);
-    if (src_fd >= 0) {
-        close(src_fd);
-    }
-    if (dst_fd >= 0) {
-        close(dst_fd);
-    }
+    if (src_fd >= 0) { close(src_fd); }
+    if (dst_fd >= 0) { close(dst_fd); }
     return result;
 #endif
 }
 
-static const char*
-cex_os__env__get(const char* name, const char* deflt)
+static char*
+cex_os__env__get(char* name, char* deflt)
 {
-    const char* result = getenv(name);
+    char* result = getenv(name);
 
-    if (result == NULL) {
-        result = deflt;
-    }
+    if (result == NULL) { result = deflt; }
 
     return result;
 }
 
 static Exception
-cex_os__env__set(const char* name, const char* value)
+cex_os__env__set(char* name, char* value)
 {
 #ifdef _WIN32
     _putenv_s(name, value);
@@ -865,53 +768,43 @@ cex_os__env__set(const char* name, const char* value)
 }
 
 static bool
-cex_os__path__exists(const char* file_path)
+cex_os__path__exists(char* file_path)
 {
     var ftype = os.fs.stat(file_path);
     return ftype.is_valid;
 }
 
 static char*
-cex_os__path__abs(const char* path, IAllocator allc)
+cex_os__path__abs(char* path, IAllocator allc)
 {
     uassert(allc != NULL);
-    if (path == NULL || path[0] == '\0') {
-        return NULL;
-    }
+    if (path == NULL || path[0] == '\0') { return NULL; }
 
     char buffer[PATH_MAX];
 
 #ifdef _WIN32
     DWORD result = GetFullPathNameA(path, sizeof(buffer), buffer, NULL);
-    if (result == 0 || result > sizeof(buffer)-1) {
-        return NULL;
-    }
+    if (result == 0 || result > sizeof(buffer) - 1) { return NULL; }
 #else
-    if (realpath(path, buffer) == NULL) {
-        return NULL;
-    }
+    if (realpath(path, buffer) == NULL) { return NULL; }
 #endif
 
     return str.clone(buffer, allc);
 }
 
 static char*
-cex_os__path__join(const char** parts, u32 parts_len, IAllocator allc)
+cex_os__path__join(char** parts, u32 parts_len, IAllocator allc)
 {
     char sep[2] = { os$PATH_SEP, '\0' };
     return str.join(parts, parts_len, sep, allc);
 }
 
 static str_s
-cex_os__path__split(const char* path, bool return_dir)
+cex_os__path__split(char* path, bool return_dir)
 {
-    if (path == NULL) {
-        return (str_s){ 0 };
-    }
+    if (path == NULL) { return (str_s){ 0 }; }
     usize pathlen = strlen(path);
-    if (pathlen == 0) {
-        return str$s("");
-    }
+    if (pathlen == 0) { return str$s(""); }
 
     isize last_slash_idx = -1;
 
@@ -942,21 +835,17 @@ cex_os__path__split(const char* path, bool return_dir)
 }
 
 static char*
-cex_os__path__basename(const char* path, IAllocator allc)
+cex_os__path__basename(char* path, IAllocator allc)
 {
-    if (path == NULL || path[0] == '\0') {
-        return NULL;
-    }
+    if (path == NULL || path[0] == '\0') { return NULL; }
     str_s fname = cex_os__path__split(path, false);
     return str.slice.clone(fname, allc);
 }
 
 static char*
-cex_os__path__dirname(const char* path, IAllocator allc)
+cex_os__path__dirname(char* path, IAllocator allc)
 {
-    if (path == NULL || path[0] == '\0') {
-        return NULL;
-    }
+    if (path == NULL || path[0] == '\0') { return NULL; }
     str_s fname = cex_os__path__split(path, true);
     return str.slice.clone(fname, allc);
 }
@@ -965,12 +854,8 @@ static Exception
 cex_os__cmd__create(os_cmd_c* self, char** args, usize args_len, os_cmd_flags_s* flags)
 {
     uassert(self != NULL);
-    if (args == NULL || args_len == 0) {
-        return "`args` is empty or null";
-    }
-    if (args_len == 1 || args[args_len - 1] != NULL) {
-        return "`args` last item must be a NULL";
-    }
+    if (args == NULL || args_len == 0) { return "`args` is empty or null"; }
+    if (args_len == 1 || args[args_len - 1] != NULL) { return "`args` last item must be a NULL"; }
     for (u32 i = 0; i < args_len - 1; i++) {
         if (args[i] == NULL) {
             return "one of `args` items is NULL, which may indicate string operation failure";
@@ -983,23 +868,13 @@ cex_os__cmd__create(os_cmd_c* self, char** args, usize args_len, os_cmd_flags_s*
     };
 
     int sub_flags = 0;
-    if (!self->_flags.no_inherit_env) {
-        sub_flags |= subprocess_option_inherit_environment;
-    }
-    if (self->_flags.no_window) {
-        sub_flags |= subprocess_option_no_window;
-    }
-    if (!self->_flags.no_search_path) {
-        sub_flags |= subprocess_option_search_user_path;
-    }
-    if (self->_flags.combine_stdouterr) {
-        sub_flags |= subprocess_option_combined_stdout_stderr;
-    }
+    if (!self->_flags.no_inherit_env) { sub_flags |= subprocess_option_inherit_environment; }
+    if (self->_flags.no_window) { sub_flags |= subprocess_option_no_window; }
+    if (!self->_flags.no_search_path) { sub_flags |= subprocess_option_search_user_path; }
+    if (self->_flags.combine_stdouterr) { sub_flags |= subprocess_option_combined_stdout_stderr; }
 
     int result = subprocess_create((const char* const*)args, sub_flags, &self->_subpr);
-    if (result != 0) {
-        return os.get_last_error();
-    }
+    if (result != 0) { return os.get_last_error(); }
 
     return EOK;
 }
@@ -1014,9 +889,7 @@ static Exception
 cex_os__cmd__kill(os_cmd_c* self)
 {
     if (subprocess_alive(&self->_subpr)) {
-        if (subprocess_terminate(&self->_subpr) != 0) {
-            return Error.os;
-        }
+        if (subprocess_terminate(&self->_subpr) != 0) { return Error.os; }
     }
     return EOK;
 }
@@ -1068,9 +941,7 @@ cex_os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
     result = Error.ok;
 
 end:
-    if (out_ret_code) {
-        *out_ret_code = ret_code;
-    }
+    if (out_ret_code) { *out_ret_code = ret_code; }
     subprocess_destroy(&self->_subpr);
     memset(self, 0, sizeof(os_cmd_c));
     return result;
@@ -1101,9 +972,7 @@ cex_os__cmd__read_all(os_cmd_c* self, IAllocator allc)
     uassert(allc != NULL);
     if (self->_subpr.stdout_file) {
         str_s out = { 0 };
-        if (io.fread_all(self->_subpr.stdout_file, &out, allc)) {
-            return NULL;
-        }
+        if (io.fread_all(self->_subpr.stdout_file, &out, allc)) { return NULL; }
         return out.buf;
     }
     return NULL;
@@ -1116,9 +985,7 @@ cex_os__cmd__read_line(os_cmd_c* self, IAllocator allc)
     uassert(allc != NULL);
     if (self->_subpr.stdout_file) {
         str_s out = { 0 };
-        if (io.fread_line(self->_subpr.stdout_file, &out, allc)) {
-            return NULL;
-        }
+        if (io.fread_line(self->_subpr.stdout_file, &out, allc)) { return NULL; }
         return out.buf;
     }
     return NULL;
@@ -1128,18 +995,11 @@ static Exception
 cex_os__cmd__write_line(os_cmd_c* self, char* line)
 {
     uassert(self != NULL);
-    if (line == NULL) {
-        return Error.argument;
-    }
+    if (line == NULL) { return Error.argument; }
 
-    if (self->_subpr.stdin_file == NULL) {
-        return Error.not_found;
-    }
+    if (self->_subpr.stdin_file == NULL) { return Error.not_found; }
 
-    e$except_silent(err, io.file.writeln(self->_subpr.stdin_file, line))
-    {
-        return err;
-    }
+    e$except_silent (err, io.file.writeln(self->_subpr.stdin_file, line)) { return err; }
     fflush(self->_subpr.stdin_file);
 
     return EOK;
@@ -1148,52 +1008,39 @@ cex_os__cmd__write_line(os_cmd_c* self, char* line)
 static bool
 cex_os__cmd__exists(char* cmd_exe)
 {
-    if (cmd_exe == NULL || cmd_exe[0] == '\0') {
-        return false;
-    }
+    if (cmd_exe == NULL || cmd_exe[0] == '\0') { return false; }
     mem$scope(tmem$, _)
     {
 #ifdef _WIN32
-        const char* extensions[] = { ".exe", ".cmd", ".bat" };
+        char* extensions[] = { ".exe", ".cmd", ".bat" };
         bool has_ext = str.find(os.path.basename(cmd_exe, _), ".") != NULL;
 
         if (str.find(cmd_exe, "/") != NULL || str.find(cmd_exe, "\\") != NULL) {
             if (has_ext) {
                 return os.path.exists(cmd_exe);
             } else {
-                for$each(ext, extensions)
-                {
+                for$each (ext, extensions) {
                     char* exe = str.fmt(_, "%s%s", cmd_exe, ext);
                     os_fs_stat_s stat = os.fs.stat(exe);
-                    if (stat.is_valid && stat.is_file) {
-                        return true;
-                    }
+                    if (stat.is_valid && stat.is_file) { return true; }
                 }
                 return false;
             }
         }
 
         str_s path_env = str.sstr(os.env.get("PATH", NULL));
-        if (path_env.buf == NULL) {
-            return false;
-        }
+        if (path_env.buf == NULL) { return false; }
 
-        for$iter(str_s, it, str.slice.iter_split(path_env, ";", &it.iterator))
-        {
+        for$iter (str_s, it, str.slice.iter_split(path_env, ";", &it.iterator)) {
             if (has_ext) {
                 char* exe = str.fmt(_, "%S/%s", it.val, cmd_exe);
                 os_fs_stat_s stat = os.fs.stat(exe);
-                if (stat.is_valid && stat.is_file) {
-                    return true;
-                }
+                if (stat.is_valid && stat.is_file) { return true; }
             } else {
-                for$each(ext, extensions)
-                {
+                for$each (ext, extensions) {
                     char* exe = str.fmt(_, "%S/%s%s", it.val, cmd_exe, ext);
                     os_fs_stat_s stat = os.fs.stat(exe);
-                    if (stat.is_valid && stat.is_file) {
-                        return true;
-                    }
+                    if (stat.is_valid && stat.is_file) { return true; }
                 }
             }
         }
@@ -1207,17 +1054,12 @@ cex_os__cmd__exists(char* cmd_exe)
         }
 
         str_s path_env = str.sstr(os.env.get("PATH", NULL));
-        if (path_env.buf == NULL) {
-            return false;
-        }
+        if (path_env.buf == NULL) { return false; }
 
-        for$iter(str_s, it, str.slice.iter_split(path_env, ":", &it.iterator))
-        {
+        for$iter (str_s, it, str.slice.iter_split(path_env, ":", &it.iterator)) {
             char* exe = str.fmt(_, "%S/%s", it.val, cmd_exe);
             os_fs_stat_s stat = os.fs.stat(exe);
-            if (stat.is_valid && stat.is_file && access(exe, X_OK) == 0) {
-                return true;
-            }
+            if (stat.is_valid && stat.is_file && access(exe, X_OK) == 0) { return true; }
         }
 #endif
     }
@@ -1225,7 +1067,7 @@ cex_os__cmd__exists(char* cmd_exe)
 }
 
 static Exception
-cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
+cex_os__cmd__run(char** args, usize args_len, os_cmd_c* out_cmd)
 {
     uassert(out_cmd != NULL);
     memset(out_cmd, 0, sizeof(os_cmd_c));
@@ -1266,14 +1108,12 @@ cex_os__cmd__run(const char** args, usize args_len, os_cmd_c* out_cmd)
         for (u32 i = 0; i < args_len - 1; i++) {
             if (str.find(args[i], " ") || str.find(args[i], "\"")) {
                 char* escaped_arg = str.replace(args[i], "\"", "\\\"", _);
-                e$except_silent(err, sbuf.appendf(&cmd, "\"%s\" ", escaped_arg))
-                {
+                e$except_silent (err, sbuf.appendf(&cmd, "\"%s\" ", escaped_arg)) {
                     result = err;
                     goto end;
                 }
             } else {
-                e$except_silent(err, sbuf.appendf(&cmd, "%s ", args[i]))
-                {
+                e$except_silent (err, sbuf.appendf(&cmd, "%s ", args[i])) {
                     result = err;
                     goto end;
                 }
@@ -1308,9 +1148,7 @@ end:
     return result;
 #else
     pid_t cpid = fork();
-    if (cpid < 0) {
-        return e$raise(Error.os, "Could not fork child process: %s", strerror(errno));
-    }
+    if (cpid < 0) { return e$raise(Error.os, "Could not fork child process: %s", strerror(errno)); }
 
     if (cpid == 0) {
         if (execvp(args[0], (char* const*)args) < 0) {
@@ -1358,58 +1196,46 @@ cex_os__platform__current(void)
 #endif
 }
 
-static const char*
+static char*
 cex_os__platform__current_str(void)
 {
     return os.platform.to_str(os.platform.current());
 }
 
 static OSPlatform_e
-cex_os__platform__from_str(const char* name)
+cex_os__platform__from_str(char* name)
 {
-    if (name == NULL || name[0] == '\0') {
-        return OSPlatform__unknown;
-    }
+    if (name == NULL || name[0] == '\0') { return OSPlatform__unknown; }
     for (u32 i = 1; i < OSPlatform__count; i++) {
-        if (str.eq(OSPlatform_str[i], name)) {
-            return (OSPlatform_e)i;
-        }
+        if (str.eq((char*)OSPlatform_str[i], name)) { return (OSPlatform_e)i; }
     }
     return OSPlatform__unknown;
     ;
 }
 
-static const char*
+static char*
 cex_os__platform__to_str(OSPlatform_e platform)
 {
-    if (unlikely(platform <= OSPlatform__unknown || platform >= OSPlatform__count)) {
-        return NULL;
-    }
-    return OSPlatform_str[platform];
+    if (unlikely(platform <= OSPlatform__unknown || platform >= OSPlatform__count)) { return NULL; }
+    return (char*)OSPlatform_str[platform];
 }
 
 static OSArch_e
-cex_os__platform__arch_from_str(const char* name)
+cex_os__platform__arch_from_str(char* name)
 {
-    if (name == NULL || name[0] == '\0') {
-        return OSArch__unknown;
-    }
+    if (name == NULL || name[0] == '\0') { return OSArch__unknown; }
     for (u32 i = 1; i < OSArch__count; i++) {
-        if (str.eq(OSArch_str[i], name)) {
-            return (OSArch_e)i;
-        }
+        if (str.eq((char*)OSArch_str[i], name)) { return (OSArch_e)i; }
     }
     return OSArch__unknown;
     ;
 }
 
-static const char*
+static char*
 cex_os__platform__arch_to_str(OSArch_e platform)
 {
-    if (unlikely(platform <= OSArch__unknown || platform >= OSArch__count)) {
-        return NULL;
-    }
-    return OSArch_str[platform];
+    if (unlikely(platform <= OSArch__unknown || platform >= OSArch__count)) { return NULL; }
+    return (char*)OSArch_str[platform];
 }
 
 const struct __cex_namespace__os os = {

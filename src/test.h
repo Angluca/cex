@@ -8,7 +8,7 @@ typedef Exception (*_cex_test_case_f)(void);
 struct _cex_test_case_s
 {
     _cex_test_case_f test_fn;
-    const char* test_name;
+    char* test_name;
     u32 test_line;
 };
 
@@ -21,7 +21,7 @@ struct _cex_test_context_s
     int tests_run;         // number of tests run
     int tests_failed;      // number of tests failed
     bool quiet_mode;       // quiet mode (for run all)
-    const char* case_name; // current running case name
+    char* case_name; // current running case name
     _cex_test_case_f setup_case_fn;
     _cex_test_case_f teardown_case_fn;
     _cex_test_case_f setup_suite_fn;
@@ -29,7 +29,7 @@ struct _cex_test_context_s
     bool has_ansi;
     bool no_stdout_capture;
     bool breakpoint;
-    const char* const suite_file;
+    char* suite_file;
     char* case_filter;
     char str_buf[CEX_TEST_AMSG_MAX_LEN];
 };

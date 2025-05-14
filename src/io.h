@@ -10,22 +10,22 @@ struct __cex_namespace__io {
     void            (*fclose)(FILE** file);
     Exception       (*fflush)(FILE* file);
     int             (*fileno)(FILE* file);
-    Exception       (*fopen)(FILE** file, const char* filename, const char* mode);
-    Exc             (*fprintf)(FILE* stream, const char* format,...);
+    Exception       (*fopen)(FILE** file, char* filename, char* mode);
+    Exc             (*fprintf)(FILE* stream, char* format,...);
     Exception       (*fread)(FILE* file, void* obj_buffer, usize obj_el_size, usize* obj_count);
     Exception       (*fread_all)(FILE* file, str_s* s, IAllocator allc);
     Exception       (*fread_line)(FILE* file, str_s* s, IAllocator allc);
     Exception       (*fseek)(FILE* file, long offset, int whence);
     Exception       (*ftell)(FILE* file, usize* size);
-    Exception       (*fwrite)(FILE* file, const void* obj_buffer, usize obj_el_size, usize obj_count);
+    Exception       (*fwrite)(FILE* file, void* obj_buffer, usize obj_el_size, usize obj_count);
     bool            (*isatty)(FILE* file);
-    int             (*printf)(const char* format,...);
+    int             (*printf)(char* format,...);
     void            (*rewind)(FILE* file);
 
     struct {
-        char*           (*load)(const char* path, IAllocator allc);
+        char*           (*load)(char* path, IAllocator allc);
         char*           (*readln)(FILE* file, IAllocator allc);
-        Exception       (*save)(const char* path, const char* contents);
+        Exception       (*save)(char* path, char* contents);
         usize           (*size)(FILE* file);
         Exception       (*writeln)(FILE* file, char* line);
     } file;

@@ -28,7 +28,7 @@ _cex__codegen_indent(_cex__codegen_s* cg)
     } while (0)
 
 void
-_cex__codegen_print(_cex__codegen_s* cg, bool rep_new_line, const char* format, ...)
+_cex__codegen_print(_cex__codegen_s* cg, bool rep_new_line, char* format, ...)
 {
     if (unlikely(cg->error != EOK)) {
         return;
@@ -43,7 +43,7 @@ _cex__codegen_print(_cex__codegen_s* cg, bool rep_new_line, const char* format, 
 }
 
 void
-_cex__codegen_print_line(_cex__codegen_s* cg, const char* format, ...)
+_cex__codegen_print_line(_cex__codegen_s* cg, char* format, ...)
 {
     if (unlikely(cg->error != EOK)) {
         return;
@@ -55,7 +55,7 @@ _cex__codegen_print_line(_cex__codegen_s* cg, const char* format, ...)
 }
 
 _cex__codegen_s*
-_cex__codegen_print_scope_enter(_cex__codegen_s* cg, const char* format, ...)
+_cex__codegen_print_scope_enter(_cex__codegen_s* cg, char* format, ...)
 {
     usize slen = sbuf.len(cg->buf);
     if (slen && cg->buf[0][slen - 1] == '\n') {
@@ -82,7 +82,7 @@ _cex__codegen_print_scope_exit(_cex__codegen_s** cgptr)
 
 
 _cex__codegen_s*
-_cex__codegen_print_case_enter(_cex__codegen_s* cg, const char* format, ...)
+_cex__codegen_print_case_enter(_cex__codegen_s* cg, char* format, ...)
 {
     _cex__codegen_indent(cg);
     cg$printva(cg);

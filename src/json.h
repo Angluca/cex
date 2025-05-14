@@ -121,9 +121,9 @@ typedef struct json_buf_c
     _cex_json__buf__print_key(_json$buf_var, (key), format, __VA_ARGS__)
 
 void _cex_json__buf__clear(json_buf_c* jb);
-void _cex_json__buf__print(json_buf_c* jb, const char* format, ...);
-void _cex_json__buf__print_item(json_buf_c* jb, const char* format, ...);
-void _cex_json__buf__print_key(json_buf_c* jb, const char* key, const char* format, ...);
+void _cex_json__buf__print(json_buf_c* jb, char* format, ...);
+void _cex_json__buf__print_item(json_buf_c* jb, char* format, ...);
+void _cex_json__buf__print_key(json_buf_c* jb, char* key, char* format, ...);
 json_buf_c* _cex__jsonbuf_print_scope_enter(json_buf_c* jb, JsonType_e scope_type);
 void _cex__jsonbuf_print_scope_exit(json_buf_c** jbptr);
 

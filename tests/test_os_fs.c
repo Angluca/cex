@@ -14,7 +14,7 @@ test$teardown_case()
 }
 
 Exception
-test_dir_walk(const char* path, os_fs_stat_s ftype, void* user_ctx)
+test_dir_walk(char* path, os_fs_stat_s ftype, void* user_ctx)
 {
     u32* cnt = (u32*)user_ctx;
     uassert(cnt != NULL);
@@ -30,7 +30,7 @@ test_dir_walk(const char* path, os_fs_stat_s ftype, void* user_ctx)
 }
 
 static char*
-p(const char* path, IAllocator allc)
+p(char* path, IAllocator allc)
 {
     uassert(path);
     uassert(allc);
@@ -590,7 +590,7 @@ test$case(test_os_path_join)
 {
     mem$scope(tmem$, ta)
     {
-        arr$(const char*) parts = arr$new(parts, ta);
+        arr$(char*) parts = arr$new(parts, ta);
         arr$pushm(parts, "cexstr", str.fmt(ta, "%s_%d.txt", "foo", 10));
         char* p = os.path.join(parts, arr$len(parts), ta);
         if (os.platform.current() == OSPlatform__win) {

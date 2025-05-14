@@ -7,9 +7,9 @@ test$case(test_cex_argparse_init_short)
     bool test = 0;
     int int_num = 0;
     float flt_num = 0.f;
-    const char* path = NULL;
+    char* path = NULL;
 
-    const char* usage = "basic [options] [[--] args]\n"
+    char* usage = "basic [options] [[--] args]\n"
                         "basic [options]\n";
 
     argparse_c argparse = {
@@ -51,7 +51,7 @@ test$case(test_cex_argparse_init_long)
     bool test = 0;
     int int_num = 0;
     float flt_num = 0.f;
-    const char* path = NULL;
+    char* path = NULL;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),
@@ -63,7 +63,7 @@ test$case(test_cex_argparse_init_long)
         argparse$opt(&flt_num, 's', "float", .help = "selected float", 0),
     };
 
-    const char* usage = "basic [options] [[--] args]\n"
+    char* usage = "basic [options] [[--] args]\n"
                         "basic [options]\n";
 
     argparse_c args = {
@@ -858,7 +858,7 @@ test$case(test_cex_argparse_int_short_arg__argc_remainder)
 
 test$case(test_cex_argparse_str_short_arg__argc_remainder)
 {
-    const char* force = NULL;
+    char* force = NULL;
 
     argparse_opt_s options[] = {
         argparse$opt_help(),

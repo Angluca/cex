@@ -440,14 +440,14 @@ _cex_json__buf__clear(json_buf_c* jb)
 }
 
 void
-_cex_json__buf__print(json_buf_c* jb, const char* format, ...)
+_cex_json__buf__print(json_buf_c* jb, char* format, ...)
 {
     _cex__jsonbuf_indent(jb);
     $printva();
 }
 
 void
-_cex_json__buf__print_item(json_buf_c* jb, const char* format, ...)
+_cex_json__buf__print_item(json_buf_c* jb, char* format, ...)
 {
     uassertf(
         jb->scope_depth > 0 && jb->scope_stack[jb->scope_depth - 1] == '[',
@@ -459,7 +459,7 @@ _cex_json__buf__print_item(json_buf_c* jb, const char* format, ...)
 }
 
 void
-_cex_json__buf__print_key(json_buf_c* jb, const char* key, const char* format, ...)
+_cex_json__buf__print_key(json_buf_c* jb, char* key, char* format, ...)
 {
     uassertf(
         jb->scope_depth > 0 && jb->scope_stack[jb->scope_depth - 1] == '{',

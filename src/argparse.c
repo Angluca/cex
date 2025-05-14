@@ -3,15 +3,15 @@
 #include "cex_base.h"
 #include <math.h>
 
-static const char*
-_cex_argparse__prefix_skip(const char* str, const char* prefix)
+static char*
+_cex_argparse__prefix_skip(char* str, char* prefix)
 {
     usize len = strlen(prefix);
     return strncmp(str, prefix, len) ? NULL : str + len;
 }
 
 static Exception
-_cex_argparse__error(argparse_c* self, const argparse_opt_s* opt, const char* reason, bool is_long)
+_cex_argparse__error(argparse_c* self, argparse_opt_s* opt, char* reason, bool is_long)
 {
     (void)self;
     if (is_long) {
@@ -171,8 +171,8 @@ cex_argparse_usage(argparse_c* self)
                     io.printf("%c", *(bool*)opt->value ? 'Y' : 'N');
                     break;
                 case CexArgParseType__string:
-                    if (*(const char**)opt->value != NULL){
-                        io.printf("'%s'", *(const char**)opt->value);
+                    if (*(char**)opt->value != NULL){
+                        io.printf("'%s'", *(char**)opt->value);
                     } else {
                         io.printf("''");
                     }
@@ -226,7 +226,7 @@ cex_argparse_usage(argparse_c* self)
     }
 }
 __attribute__((no_sanitize("undefined"))) static inline Exception
-_cex_argparse__convert(const char* s, argparse_opt_s* opt){
+_cex_argparse__convert(char* s, argparse_opt_s* opt){
     // NOTE: this hits UBSAN because we casting convert function of
     // (char*, void*) into str.convert.to_u32(char*, u32*)
     // however we do explicit type checking and tagging so it should be good!
@@ -247,12 +247,12 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
             break;
         case CexArgParseType__string:
             if (self->_ctx.optvalue) {
-                *(const char**)opt->value = self->_ctx.optvalue;
+                *(char**)opt->value = self->_ctx.optvalue;
                 self->_ctx.optvalue = NULL;
             } else if (self->argc > 1) {
                 self->argc--;
                 self->_ctx.cpidx++;
-                *(const char**)opt->value = *++self->argv;
+                *(char**)opt->value = *++self->argv;
             } else {
                 return _cex_argparse__error(self, opt, "requires a value", is_long);
             }
@@ -417,7 +417,7 @@ static Exception
 _cex_argparse__long_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
-        const char* rest;
+        char* rest;
         if (!options->long_name) {
             continue;
         }
@@ -481,7 +481,7 @@ _cex_argparse__parse_commands(argparse_c* self)
     }
 
     argparse_cmd_s* cmd = NULL;
-    const char* cmd_arg = (self->argc > 0) ? self->argv[0] : NULL;
+    char* cmd_arg = (self->argc > 0) ? self->argv[0] : NULL;
 
     if (str.eq(cmd_arg, "-h") || str.eq(cmd_arg, "--help")) {
         cex_argparse_usage(self);
@@ -535,7 +535,7 @@ _cex_argparse__parse_options(argparse_c* self)
     }
 
     for (; self->argc; self->argc--, self->argv++) {
-        const char* arg = self->argv[0];
+        char* arg = self->argv[0];
         if (arg[0] != '-' || !arg[1]) {
             self->_ctx.has_argument = true;
 
@@ -629,7 +629,7 @@ cex_argparse_parse(argparse_c* self, int argc, char** argv)
     return Error.ok;
 }
 
-static const char*
+static char*
 cex_argparse_next(argparse_c* self)
 {
     uassert(self != NULL);
@@ -679,7 +679,7 @@ cex_argparse_run_command(argparse_c* self, void* user_ctx)
     uassert(self->_ctx.current_command != NULL && "not parsed/parse error?");
     if (self->argc == 0) {
         // seems default command (with no args)
-        const char* dummy_args[] = { self->_ctx.current_command->name };
+        char* dummy_args[] = { self->_ctx.current_command->name };
         return self->_ctx.current_command->func(1, (char**)dummy_args, user_ctx);
     } else {
         return self->_ctx.current_command->func(self->argc, (char**)self->argv, user_ctx);

@@ -47,7 +47,7 @@ typedef ptrdiff_t isize;
  */
 
 /// Generic CEX error is a char*, where NULL means success(no error)
-typedef const char* Exc;
+typedef char* Exc;
 
 /// Equivalent of Error.ok, execution success
 #define EOK (Exc) NULL

@@ -11,7 +11,7 @@
 #endif
 
 Exception
-cex_io_fopen(FILE** file, const char* filename, const char* mode)
+cex_io_fopen(FILE** file, char* filename, char* mode)
 {
     if (file == NULL) {
         uassert(file != NULL);
@@ -146,7 +146,7 @@ cex_io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* ob
     if (obj_el_size == 0) { return Error.argument; }
     if (obj_count == NULL || *obj_count == 0) { return Error.argument; }
 
-    const usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, file);
+    usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, file);
 
     if (ret_count != *obj_count) {
         if (ferror(file)) {
@@ -355,7 +355,7 @@ fail:
 }
 
 Exc
-cex_io_fprintf(FILE* stream, const char* format, ...)
+cex_io_fprintf(FILE* stream, char* format, ...)
 {
     uassert(stream != NULL);
 
@@ -372,7 +372,7 @@ cex_io_fprintf(FILE* stream, const char* format, ...)
 }
 
 int
-cex_io_printf(const char* format, ...)
+cex_io_printf(char* format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -382,7 +382,7 @@ cex_io_printf(const char* format, ...)
 }
 
 Exception
-cex_io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, usize obj_count)
+cex_io_fwrite(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize obj_count)
 {
     if (file == NULL) {
         uassert(file != NULL);
@@ -393,7 +393,7 @@ cex_io_fwrite(FILE* file, const void* restrict obj_buffer, usize obj_el_size, us
     if (obj_el_size == 0) { return Error.argument; }
     if (obj_count == 0) { return Error.argument; }
 
-    const usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, file);
+    usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, file);
 
     if (ret_count != obj_count) {
         return Error.io;
@@ -433,7 +433,7 @@ cex_io_fclose(FILE** file)
 
 
 Exception
-cex_io__file__save(const char* path, const char* contents)
+cex_io__file__save(char* path, char* contents)
 {
     if (path == NULL) { return Error.argument; }
 
@@ -455,7 +455,7 @@ cex_io__file__save(const char* path, const char* contents)
 }
 
 char*
-cex_io__file__load(const char* path, IAllocator allc)
+cex_io__file__load(char* path, IAllocator allc)
 {
     errno = 0;
     uassert(allc != NULL);

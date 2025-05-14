@@ -5,7 +5,7 @@
 #    include <time.h>
 
 static void
-cexy_build_self(int argc, char** argv, const char* cex_source)
+cexy_build_self(int argc, char** argv, char* cex_source)
 {
     mem$scope(tmem$, _)
     {
@@ -39,7 +39,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
             if (os.fs.remove(old_name)) {}
             e$except (err, os.fs.rename(bin_path, old_name)) { goto fail_recovery; }
         }
-        arr$(const char*) args = arr$new(args, _, .capacity = 64);
+        arr$(char*) args = arr$new(args, _, .capacity = 64);
         sbuf_c dargs_sbuf = sbuf.create(256, _);
         arr$pushm(args, cexy$cex_self_cc, "-D_CEX_SELF_BUILD", "-g");
         e$goto(sbuf.append(&dargs_sbuf, "-D_CEX_SELF_DARGS=\""), err);
@@ -115,7 +115,7 @@ cexy_build_self(int argc, char** argv, const char* cex_source)
 }
 
 static bool
-cexy_src_include_changed(const char* target_path, const char* src_path, arr$(char*) alt_include_path)
+cexy_src_include_changed(char* target_path, char* src_path, arr$(char*) alt_include_path)
 {
     if (unlikely(target_path == NULL)) {
         log$error("target_path is NULL\n");
@@ -161,16 +161,16 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
 
     mem$scope(tmem$, _)
     {
-        arr$(const char*) incl_path = arr$new(incl_path, _);
+        arr$(char*) incl_path = arr$new(incl_path, _);
         if (arr$len(alt_include_path) > 0) {
             for$each (p, alt_include_path) {
                 arr$push(incl_path, p);
                 if (!os.path.exists(p)) { log$warn("alt_include_path not exists: %s\n", p); }
             }
         } else {
-            const char* def_incl_path[] = { cexy$cc_include };
+            char* def_incl_path[] = { cexy$cc_include };
             for$each (p, def_incl_path) {
-                const char* clean_path = p;
+                char* clean_path = p;
                 if (str.starts_with(p, "-I")) {
                     clean_path = p + 2;
                 } else if (str.starts_with(p, "-iquote=")) {
@@ -242,7 +242,7 @@ cexy_src_include_changed(const char* target_path, const char* src_path, arr$(cha
 }
 
 static bool
-cexy_src_changed(const char* target_path, char** src_array, usize src_array_len)
+cexy_src_changed(char* target_path, char** src_array, usize src_array_len)
 {
     if (unlikely(src_array == NULL || src_array_len == 0)) {
         if (src_array == NULL) {
@@ -293,9 +293,9 @@ cexy_src_changed(const char* target_path, char** src_array, usize src_array_len)
 
 static char*
 cexy_target_make(
-    const char* src_path,
-    const char* build_dir,
-    const char* name_or_extension,
+    char* src_path,
+    char* build_dir,
+    char* name_or_extension,
     IAllocator allocator
 )
 {
@@ -349,7 +349,7 @@ cexy_target_make(
 }
 
 Exception
-cexy__test__create(const char* target, bool include_sample)
+cexy__test__create(char* target, bool include_sample)
 {
     if (os.path.exists(target)) {
         return e$raise(Error.exists, "Test file already exists: %s", target);
@@ -397,7 +397,7 @@ cexy__test__create(const char* target, bool include_sample)
 }
 
 Exception
-cexy__test__clean(const char* target)
+cexy__test__clean(char* target)
 {
 
     if (str.eq(target, "all")) {
@@ -419,7 +419,7 @@ cexy__test__clean(const char* target)
 }
 
 Exception
-cexy__test__make_target_pattern(const char** target)
+cexy__test__make_target_pattern(char** target)
 {
     if (target == NULL) {
         return e$raise(
@@ -441,7 +441,7 @@ cexy__test__make_target_pattern(const char** target)
 }
 
 Exception
-cexy__test__run(const char* target, bool is_debug, int argc, char** argv)
+cexy__test__run(char* target, bool is_debug, int argc, char** argv)
 {
     Exc result = EOK;
     u32 n_tests = 0;
@@ -648,7 +648,7 @@ _cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out
 
 static Exception
 _cexy__process_update_code(
-    const char* code_file,
+    char* code_file,
     bool only_update,
     sbuf_c cex_h_struct,
     sbuf_c cex_h_var_decl,
@@ -765,7 +765,7 @@ _cexy__fn_match(str_s fn_name, str_s ns_prefix)
 }
 
 static str_s
-_cexy__fn_dotted(str_s fn_name, const char* expected_ns, IAllocator alloc)
+_cexy__fn_dotted(str_s fn_name, char* expected_ns, IAllocator alloc)
 {
     str_s clean_name = fn_name;
     if (str.slice.starts_with(clean_name, str$s("cex_"))) {
@@ -804,7 +804,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     (void)user_ctx;
 
     // clang-format off
-    const char* process_help = ""
+    char* process_help = ""
     "process command intended for building CEXy interfaces from your source code\n\n"
     "For example: you can create foo_fun1(), foo_fun2(), foo__bar__fun3(), foo__bar__fun4()\n"
     "   these functions will be processed and wrapped to a `foo` namespace, so you can     \n"
@@ -824,7 +824,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
     ;
     // clang-format on
 
-    const char* ignore_kw = cexy$process_ignore_kw;
+    char* ignore_kw = cexy$process_ignore_kw;
     argparse_c cmd_args = {
         .program_name = "./cex",
         .usage = "process [options] all|path/some_file.c",
@@ -842,7 +842,7 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
         ),
     };
     e$ret(argparse.parse(&cmd_args, argc, argv));
-    const char* target = argparse.next(&cmd_args);
+    char* target = argparse.next(&cmd_args);
 
     if (target == NULL) {
         argparse.usage(&cmd_args);
@@ -966,7 +966,7 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
     f64 tstart = os.timer();
 
     // clang-format off
-    const char* stats_help = ""
+    char* stats_help = ""
     "Parses full project code and calculates lines of code and code quality metrics"
     ;
     // clang-format on
@@ -999,7 +999,7 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
         hm$(char*, bool) src_files = hm$new(src_files, _, .capacity = 1024);
         hm$(char*, bool) excl_files = hm$new(excl_files, _, .capacity = 128);
 
-        const char* target = argparse.next(&cmd_args);
+        char* target = argparse.next(&cmd_args);
         if (target == NULL) { target = "*.[ch]"; }
 
         do {
@@ -1133,7 +1133,7 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
 }
 
 static bool
-_cexy__is_str_pattern(const char* s)
+_cexy__is_str_pattern(char* s)
 {
     if (s == NULL) { return false; }
     char pat[] = { '*', '?', '(', '[' };
@@ -1462,8 +1462,8 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     (void)user_ctx;
 
     // clang-format off
-    const char* process_help = "Symbol / documentation search tool for C projects";
-    const char* epilog_help = 
+    char* process_help = "Symbol / documentation search tool for C projects";
+    char* epilog_help = 
         "\nQuery examples: \n"
         "cex help                     - list all namespaces in project directory\n"
         "cex help foo                 - find any symbol containing 'foo' (case sensitive)\n"
@@ -1477,7 +1477,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         "cex help --source str.find   - display function source if exactly matched\n"
         "cex help --example str.find  - display random function use in codebase if exactly matched\n"
     ;
-    const char* filter = "./*.[hc]";
+    char* filter = "./*.[hc]";
     bool show_source = false;
     bool show_example = false;
 
@@ -1501,7 +1501,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         ),
     };
     if (argparse.parse(&cmd_args, argc, argv)) { return Error.argsparse; }
-    const char* query = argparse.next(&cmd_args);
+    char* query = argparse.next(&cmd_args);
     str_s query_s = str.sstr(query);
 
     mem$arena(1024 * 100, arena)
@@ -1511,7 +1511,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         if (os.fs.stat("./cex.h").is_symlink) { arr$push(sources, "./cex.h"); }
         arr$sort(sources, str.qscmp);
 
-        const char* query_pattern = NULL;
+        char* query_pattern = NULL;
         bool is_namespace_filter = false;
         if (str.match(query, "[a-zA-Z0-9+].")) {
             query_pattern = str.fmt(arena, "%S[._$]*", str.sub(query, 0, -1));
@@ -1635,7 +1635,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                 io.printf(" %-30S %s:%d\n", it.key, it.value->file, it.value->line + 1);
             } else {
                 str_s name = it.key;
-                const char* cex_ns = hm$get(cex_ns_map, (char*)it.value->file);
+                char* cex_ns = hm$get(cex_ns_map, (char*)it.value->file);
                 if (cex_ns && it.value->type == CexTkn__func_def) {
                     name = _cexy__fn_dotted(name, cex_ns, arena);
                     if (!name.buf) {
@@ -1672,8 +1672,8 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     (void)user_ctx;
 
     // clang-format off
-    const char* process_help = "Check project and system environment";
-    const char* epilog_help = 
+    char* process_help = "Check project and system environment";
+    char* epilog_help = 
         "\nProject setup examples: \n"
     ;
 
@@ -1745,7 +1745,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
                 if (err == EOK) {
                     io.printf(
                         "* pkg-config (libs test)    %s\n",
-                        str.join((const char**)args, arr$len(args), " ", _)
+                        str.join(args, arr$len(args), " ", _)
                     );
                 } else {
                     io.printf("* pkg-config (libs test)    %s[%s]\n", "ERROR", err);
@@ -1779,8 +1779,8 @@ cexy__cmd__libfetch(int argc, char** argv, void* user_ctx)
     (void)user_ctx;
 
     // clang-format off
-    const char* process_help = "Fetching 3rd party libraries via git (by default it uses cex git repo as source)";
-    const char* epilog_help = 
+    char* process_help = "Fetching 3rd party libraries via git (by default it uses cex git repo as source)";
+    char* epilog_help = 
         "\nCommand examples: \n"
         "cex libfetch lib/test/fff.h                            - fetch signle header lib from CEX repo\n"
         "cex libfetch -U cex.h                                  - update cex.h to most recent version\n"
@@ -1791,9 +1791,9 @@ cexy__cmd__libfetch(int argc, char** argv, void* user_ctx)
     ;
     // clang-format on
 
-    const char* git_url = "https://github.com/alexveden/cex.git";
-    const char* git_label = "HEAD";
-    const char* out_dir = "./";
+    char* git_url = "https://github.com/alexveden/cex.git";
+    char* git_label = "HEAD";
+    char* out_dir = "./";
     bool update_existing = false;
     bool preserve_dirs = true;
 
@@ -1834,7 +1834,7 @@ cexy__cmd__libfetch(int argc, char** argv, void* user_ctx)
         out_dir,
         update_existing,
         preserve_dirs,
-        (const char**)cmd_args.argv,
+        (char**)cmd_args.argv,
         cmd_args.argc
     ));
 
@@ -1854,8 +1854,8 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
     };
 
     e$ret(argparse.parse(&cmd_args, argc, argv));
-    const char* cmd = argparse.next(&cmd_args);
-    const char* target = argparse.next(&cmd_args);
+    char* cmd = argparse.next(&cmd_args);
+    char* target = argparse.next(&cmd_args);
 
     if (!str.match(cmd, "(run|build|create|clean|debug)") || target == NULL) {
         argparse.usage(&cmd_args);
@@ -1917,7 +1917,7 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
 }
 
 static Exception
-cexy__utils__make_new_project(const char* proj_dir)
+cexy__utils__make_new_project(char* proj_dir)
 {
     log$info("Creating new boilerplate CEX project in '%s'\n", proj_dir);
     mem$scope(tmem$, _)
@@ -2019,7 +2019,7 @@ cexy__utils__make_new_project(const char* proj_dir)
         var old_dir = os.fs.getcwd(_);
 
         e$ret(os.fs.chdir(proj_dir));
-        const char* bin_path = "cex" cexy$build_ext_exe;
+        char* bin_path = "cex" cexy$build_ext_exe;
         char* old_name = str.fmt(_, "%s.old", bin_path);
         if (os.path.exists(bin_path)) {
             if (os.path.exists(old_name)) { e$ret(os.fs.remove(old_name)); }
@@ -2050,7 +2050,7 @@ cexy__cmd__new(int argc, char** argv, void* user_ctx)
     };
 
     e$ret(argparse.parse(&cmd_args, argc, argv));
-    const char* proj_dir = argparse.next(&cmd_args);
+    char* proj_dir = argparse.next(&cmd_args);
 
     if (proj_dir == NULL) {
         argparse.usage(&cmd_args);
@@ -2063,11 +2063,11 @@ cexy__cmd__new(int argc, char** argv, void* user_ctx)
 }
 
 Exception
-cexy__app__create(const char* target)
+cexy__app__create(char* target)
 {
     mem$scope(tmem$, _)
     {
-        const char* app_src = os$path_join(_, cexy$src_dir, target, str.fmt(_, "%s.c", target));
+        char* app_src = os$path_join(_, cexy$src_dir, target, str.fmt(_, "%s.c", target));
         if (os.path.exists(app_src)) {
             return e$raise(Error.exists, "App file already exists: %s", app_src, target);
         }
@@ -2102,7 +2102,7 @@ cexy__app__create(const char* target)
 
     mem$scope(tmem$, _)
     {
-        const char* app_src = os$path_join(_, cexy$src_dir, target, "main.c");
+        char* app_src = os$path_join(_, cexy$src_dir, target, "main.c");
         if (os.path.exists(app_src)) {
             return e$raise(Error.exists, "App file already exists: %s", app_src, target);
         }
@@ -2129,11 +2129,11 @@ cexy__app__create(const char* target)
 }
 
 Exception
-cexy__app__run(const char* target, bool is_debug, int argc, char** argv)
+cexy__app__run(char* target, bool is_debug, int argc, char** argv)
 {
     mem$scope(tmem$, _)
     {
-        const char* app_src;
+        char* app_src;
         e$ret(cexy.app.find_app_target_src(_, target, &app_src));
         char* app_exe = cexy.target_make(app_src, cexy$build_dir, target, _);
         arr$(char*) args = arr$new(args, _);
@@ -2147,11 +2147,11 @@ cexy__app__run(const char* target, bool is_debug, int argc, char** argv)
 }
 
 Exception
-cexy__app__clean(const char* target)
+cexy__app__clean(char* target)
 {
     mem$scope(tmem$, _)
     {
-        const char* app_src;
+        char* app_src;
         e$ret(cexy.app.find_app_target_src(_, target, &app_src));
         char* app_exe = cexy.target_make(app_src, cexy$build_dir, target, _);
         if (os.path.exists(app_exe)) {
@@ -2163,7 +2163,7 @@ cexy__app__clean(const char* target)
 }
 
 Exception
-cexy__app__find_app_target_src(IAllocator allc, const char* target, const char** out_result)
+cexy__app__find_app_target_src(IAllocator allc, char* target, char** out_result)
 {
     uassert(out_result != NULL);
     *out_result = NULL;
@@ -2220,8 +2220,8 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
     };
 
     e$ret(argparse.parse(&cmd_args, argc, argv));
-    const char* cmd = argparse.next(&cmd_args);
-    const char* target = argparse.next(&cmd_args);
+    char* cmd = argparse.next(&cmd_args);
+    char* target = argparse.next(&cmd_args);
 
     if (!str.match(cmd, "(run|build|create|clean|debug)") || target == NULL) {
         argparse.usage(&cmd_args);
@@ -2239,7 +2239,7 @@ cexy__cmd__simple_app(int argc, char** argv, void* user_ctx)
 
     mem$scope(tmem$, _)
     {
-        const char* app_src;
+        char* app_src;
         e$ret(cexy.app.find_app_target_src(_, target, &app_src));
         char* app_exec = cexy.target_make(app_src, cexy$build_dir, target, _);
         log$trace("App src: %s -> %s\n", target, app_exec);
@@ -2455,12 +2455,12 @@ cexy__utils__make_compile_flags(
 
 static Exception
 cexy__utils__git_lib_fetch(
-    const char* git_url,
-    const char* git_label,
-    const char* out_dir,
+    char* git_url,
+    char* git_label,
+    char* out_dir,
     bool update_existing,
     bool preserve_dirs,
-    const char** repo_paths,
+    char** repo_paths,
     usize repo_paths_len
 )
 {
@@ -2472,14 +2472,14 @@ cexy__utils__git_lib_fetch(
     }
     if (git_label == NULL || git_label[0] == '\0') { git_label = "HEAD"; }
     log$info("Checking libs from: %s @ %s\n", git_url, git_label);
-    const char* out_build_dir = cexy$build_dir "/cexy_git/";
+    char* out_build_dir = cexy$build_dir "/cexy_git/";
     e$ret(os.fs.mkpath(out_build_dir));
 
     mem$scope(tmem$, _)
     {
         bool needs_update = false;
         for$each (it, repo_paths, repo_paths_len) {
-            const char* out_file = (preserve_dirs)
+            char* out_file = (preserve_dirs)
                                      ? str.fmt(_, "%s/%s", out_dir, it)
                                      : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
 
@@ -2496,7 +2496,7 @@ cexy__utils__git_lib_fetch(
         e$assert(str.slice.ends_with(base_name, str$s(".git")));
         base_name = str.slice.sub(base_name, 0, -4);
 
-        const char* repo_dir = str.fmt(_, "%s/%S/", out_build_dir, base_name);
+        char* repo_dir = str.fmt(_, "%s/%S/", out_build_dir, base_name);
         if (os.path.exists(repo_dir)) { e$ret(os.fs.remove_tree(repo_dir)); }
 
         e$ret(os$cmd(
@@ -2512,7 +2512,7 @@ cexy__utils__git_lib_fetch(
         ));
 
 
-        arr$(const char*)
+        arr$(char*)
             git_checkout_args = arr$new(git_checkout_args, _, .capacity = repo_paths_len + 10);
         arr$pushm(git_checkout_args, "git", "-C", repo_dir, "checkout", git_label, "--");
         arr$pusha(git_checkout_args, repo_paths, repo_paths_len);
@@ -2520,9 +2520,9 @@ cexy__utils__git_lib_fetch(
         e$ret(os$cmda(git_checkout_args));
 
         for$each (it, repo_paths, repo_paths_len) {
-            const char* in_path = str.fmt(_, "%s/%s", repo_dir, it);
+            char* in_path = str.fmt(_, "%s/%s", repo_dir, it);
 
-            const char* out_path = (preserve_dirs)
+            char* out_path = (preserve_dirs)
                                      ? str.fmt(_, "%s/%s", out_dir, it)
                                      : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
             var in_stat = os.fs.stat(in_path);

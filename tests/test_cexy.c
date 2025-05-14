@@ -258,7 +258,7 @@ test$case(test_lib_fetch_check_args)
     mem$scope(tmem$, _)
     {
         (void)_;
-        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
         tassert_er(
             Error.argument,
             cexy.utils.git_lib_fetch("", "HEAD", TBUILDDIR, false, true, paths, arr$len(paths))
@@ -268,7 +268,7 @@ test$case(test_lib_fetch_check_args)
             cexy.utils.git_lib_fetch(NULL, "HEAD", TBUILDDIR, false, true, paths, arr$len(paths))
         );
 
-        arr$(const char*) paths2 = arr$new(paths2, _);
+        arr$(char*) paths2 = arr$new(paths2, _);
         arr$pushm(paths2, "a", "b", "c");
         tassert_er(
             Error.argument,
@@ -291,7 +291,7 @@ test$case(test_git_lib_fetch)
     mem$scope(tmem$, _)
     {
         (void)_;
-        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
         tassert(!os.path.exists(TBUILDDIR "/out/"));
         tassert_er(
             Error.ok,
@@ -325,7 +325,7 @@ test$case(test_git_lib_fetch_no_preserve_dirs)
     mem$scope(tmem$, _)
     {
         (void)_;
-        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
         tassert(!os.path.exists(TBUILDDIR "/out/"));
 
         tassert_er(
@@ -355,7 +355,7 @@ test$case(test_git_lib_fetch_no_rewrite)
     mem$scope(tmem$, _)
     {
         (void)_;
-        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
         tassert(!os.path.exists(TBUILDDIR "/out/"));
 
         tassert_er(
@@ -451,7 +451,7 @@ test$case(test_git_lib_fetch_update)
     mem$scope(tmem$, _)
     {
         (void)_;
-        const char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
+        char* paths[] = { "cex.h", "lib/random", "lib/test/fff.h" };
         tassert(!os.path.exists(TBUILDDIR "/out/"));
 
         tassert_er(

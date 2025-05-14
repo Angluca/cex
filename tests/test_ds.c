@@ -1116,7 +1116,7 @@ test$case(test_mem_scope_lifetime_test)
 
 test$case(test_hashmap_string_copy)
 {
-    hm$(const char*, int) smap = hm$new(smap, mem$, .copy_keys = true);
+    hm$(char*, int) smap = hm$new(smap, mem$, .copy_keys = true);
 
     char key2[10] = "foo";
 
@@ -1160,7 +1160,7 @@ test$case(test_hashmap_string_copy_custom_struct)
 
 test$case(test_hashmap_string_copy_del_cleanup)
 {
-    hm$(const char*, int) smap = hm$new(smap, mem$, .copy_keys = true);
+    hm$(char*, int) smap = hm$new(smap, mem$, .copy_keys = true);
 
     char key2[10] = "foo";
 
@@ -1185,7 +1185,7 @@ test$case(test_hashmap_string_copy_del_cleanup)
 
 test$case(test_hashmap_string_copy_clear_cleanup)
 {
-    hm$(const char*, int) smap = hm$new(smap, mem$, .copy_keys = true);
+    hm$(char*, int) smap = hm$new(smap, mem$, .copy_keys = true);
 
     char key2[10] = "foo";
 
@@ -1210,7 +1210,7 @@ test$case(test_hashmap_string_copy_clear_cleanup)
 
 test$case(test_hashmap_string_copy_arena)
 {
-    hm$(const char*, int) smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
+    hm$(char*, int) smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
 
     char key2[10] = "foo";
 
@@ -1230,7 +1230,7 @@ test$case(test_hashmap_string_copy_arena)
 
 test$case(test_hashmap_string_copy_clear_cleanup_arena)
 {
-    hm$(const char*, int) smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
+    hm$(char*, int) smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
     var h = _cexds__header(smap);
     AllocatorArena_c* arena = (AllocatorArena_c*)h->_hash_table->key_arena;
     tassert_eq(arena->used, 0);

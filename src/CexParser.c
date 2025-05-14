@@ -1,4 +1,5 @@
 #include "CexParser.h"
+#include <ctype.h>
 
 const char* CexTkn_str[] = {
 #define X(name) cex$stringize(name),
@@ -6,12 +7,13 @@ const char* CexTkn_str[] = {
 #undef X
 };
 
-// NOTE: lx$ are the temporary macro (will be #undef at the end of this file)
+// NOTE: lx$ are the temporary macros (will be #undef at the end of this file)
 #define lx$next(lx)                                                                                \
     ({                                                                                             \
         if (*lx->cur == '\n') { lx->line++; }                                                      \
         *(lx->cur++);                                                                              \
     })
+
 #define lx$rewind(lx)                                                                              \
     ({                                                                                             \
         if (lx->cur > lx->content) {                                                               \
@@ -19,7 +21,9 @@ const char* CexTkn_str[] = {
             if (*lx->cur == '\n') { lx->line--; }                                                  \
         }                                                                                          \
     })
+
 #define lx$peek(lx) (lx->cur < lx->content_end) ? *lx->cur : '\0'
+
 #define lx$skip_space(lx, c)                                                                       \
     while (c && isspace((c))) {                                                                    \
         lx$next(lx);                                                                               \
@@ -511,7 +515,7 @@ CexParser_decl_parse(
     CexParser_c* lx,
     cex_token_s decl_token,
     arr$(cex_token_s) children,
-    const char* ignore_keywords_pattern,
+    char* ignore_keywords_pattern,
     IAllocator alloc
 )
 {
@@ -536,7 +540,7 @@ CexParser_decl_parse(
     // CexParser line is at the end of token, find, the beginning
     result->line = lx->line;
 
-    const char* ignore_pattern =
+    char* ignore_pattern =
         "(__attribute__|static|inline|__asm__|extern|volatile|restrict|register|__declspec|noreturn|_Noreturn)";
 
 

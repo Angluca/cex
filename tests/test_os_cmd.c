@@ -366,7 +366,7 @@ test$case(os_cmd_run)
     os_cmd_c c = { 0 };
     mem$scope(tmem$, _)
     {
-        arr$(const char*) args = arr$new(args, _);
+        arr$(char*) args = arr$new(args, _);
         arr$pushm(args, test_app("write_lines", _), "stdout", "10", NULL);
         tassert_er(EOK, os.cmd.run(args, arr$len(args), &c));
 #if defined(_WIN32)

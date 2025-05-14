@@ -158,7 +158,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
 }
 
 static Exc __attribute__((noinline))
-_check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
+_check_eq_str(char* a, char* b, int line, enum _cex_test_eq_op_e op)
 {
     bool passed = false;
     char* ops = "";
@@ -192,12 +192,12 @@ _check_eq_str(const char* a, const char* b, int line, enum _cex_test_eq_op_e op)
 }
 
 static Exc __attribute__((noinline))
-_check_eq_err(const char* a, const char* b, int line)
+_check_eq_err(char* a, char* b, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!str.eq(a, b)) {
-        const char* ea = (a == EOK) ? "Error.ok" : a;
-        const char* eb = (b == EOK) ? "Error.ok" : b;
+        char* ea = (a == EOK) ? "Error.ok" : a;
+        char* eb = (b == EOK) ? "Error.ok" : b;
         str.sprintf(
             _cex_test__mainfn_state.str_buf,
             CEX_TEST_AMSG_MAX_LEN - 1,
@@ -214,7 +214,7 @@ _check_eq_err(const char* a, const char* b, int line)
 
 
 static Exc __attribute__((noinline))
-_check_eq_ptr(const void* a, const void* b, int line)
+_check_eq_ptr(void* a, void* b, int line)
 {
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (a != b) {

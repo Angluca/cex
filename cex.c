@@ -117,7 +117,7 @@ cex_bundle(void)
     {
         arr$(char*) src = os.fs.find("src/*.[hc]", false, _);
         if (!cexy.src_changed("cex.h", src, arr$len(src))) { return; }
-        const char* bundle[] = {
+        char* bundle[] = {
             "src/cex_base.h", "src/mem.h",          "src/AllocatorHeap.h", "src/AllocatorArena.h",
             "src/ds.h",       "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
             "src/io.h",       "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
