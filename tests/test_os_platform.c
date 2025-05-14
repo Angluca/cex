@@ -17,7 +17,7 @@ test$case(os_platform_to_str)
     tassert_eq("android", os.platform.to_str(OSPlatform__android));
     tassert_eq("win", os.platform.to_str(OSPlatform__win));
     tassert_eq("macos", os.platform.to_str(OSPlatform__macos));
-    tassert_eq("linux", OSPlatform_str[OSPlatform__linux]);
+    tassert_eq("linux", (char*)OSPlatform_str[OSPlatform__linux]);
     tassert_eq("linux", os.platform.to_str(OSPlatform__linux));
     tassert_eq("wasm", os.platform.to_str(OSPlatform__wasm));
 

@@ -1,8 +1,6 @@
 #include "src/all.c"
 #include "src/json.c"
 
-#define $raw(...) cex$stringize(__VA_ARGS__)
-
 // test$setup_case() {return EOK;}
 // test$teardown_case() {return EOK;}
 // test$setup_suite() {return EOK;}
@@ -821,7 +819,7 @@ test$case(json_buf_simple_obj)
             json$kstr("foo2", "%d", 1);
             json$kval("foo3", "%d", 4);
         }
-        tassert_eq($raw({ "foo2" : "1", "foo3" : 4 }), json.buf.get(&jb));
+        tassert_eq("{\"foo2\": \"1\", \"foo3\": 4}", json.buf.get(&jb));
         tassert_er(EOK, jb.error);
     }
     return EOK;
@@ -847,7 +845,7 @@ test$case(json_buf_simple_nested_obj)
             }
         }
         tassert_eq(
-            $raw({ "foo2" : "1", "foo3" : { "bar" : 3 }, "foo3" : [ 8, "9" ] }),
+            "{\"foo2\": \"1\", \"foo3\": {\"bar\": 3},\"foo3\": [8, \"9\"]}",
             json.buf.get(&jb)
         );
         tassert_er(EOK, jb.error);
@@ -871,7 +869,7 @@ test$case(json_buf_simple_root_array)
                 json$kval("baz", "%s", "3");
             }
         }
-        tassert_eq($raw([ 8, "9", { "bar" : 3, "baz" : 3 } ]), json.buf.get(&jb));
+        tassert_eq("[8, \"9\", {\"bar\": 3, \"baz\": 3}]", json.buf.get(&jb));
         tassert_er(EOK, jb.error);
     }
     return EOK;
@@ -887,7 +885,7 @@ test$case(json_buf_simple_fmt_arbitrary)
         {
             json$fmt("%s: %s", "foo", "bar");
         }
-        tassert_eq($raw({ foo : bar }), json.buf.get(&jb));
+        tassert_eq("{foo: bar}", json.buf.get(&jb));
         tassert_er(EOK, jb.error);
     }
     return EOK;

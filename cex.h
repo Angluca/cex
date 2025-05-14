@@ -3662,12 +3662,12 @@ __attribute__((visibility("hidden"))) extern const struct __cex_namespace__json 
 
 #define _cex_main_boilerplate \
 "#if __has_include(\"cex_config.h\")\n"\
-"    // Custom config file\n"\
-"    #include \"cex_config.h\"\n"\
+"// Custom config file\n"\
+"#    include \"cex_config.h\"\n"\
 "#else\n"\
-"    // Overriding config values\n"\
-"    #define cexy$cc_include \"-I.\", \"-I./lib\"\n"\
-"    #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */\n"\
+"// Overriding config values\n"\
+"#    define cexy$cc_include \"-I.\", \"-I./lib\"\n"\
+"#    define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */\n"\
 "#endif\n"\
 "\n"\
 "#define CEX_IMPLEMENTATION\n"\
@@ -3692,13 +3692,9 @@ __attribute__((visibility("hidden"))) extern const struct __cex_namespace__json 
 "            { .name = \"build-lib\", .func = cmd_build_lib, .help = \"Custom build command\" },\n"\
 "        ),\n"\
 "    };\n"\
-"    if (argparse.parse(&args, argc, argv)) {\n"\
-"        return 1;\n"\
-"    }\n"\
+"    if (argparse.parse(&args, argc, argv)) { return 1; }\n"\
 "    void* my_user_ctx = NULL; // passed as `user_ctx` to command\n"\
-"    if (argparse.run_command(&args, my_user_ctx)) {\n"\
-"        return 1;\n"\
-"    }\n"\
+"    if (argparse.run_command(&args, my_user_ctx)) { return 1; }\n"\
 "    return 0;\n"\
 "}\n"\
 "\n"\
@@ -3776,8 +3772,9 @@ _cex_allocator_arena_cleanup(IAllocator* allc)
 }
 
 // NOTE: destructor(101) - 101 lowest priority for destructors
-__attribute__((destructor(101))) 
-void _cex_global_allocators_destructor() {
+__attribute__((destructor(101))) void
+_cex_global_allocators_destructor()
+{
     AllocatorArena_c* allc = (AllocatorArena_c*)tmem$;
     allocator_arena_page_s* page = allc->last_page;
     while (page) {
@@ -3785,7 +3782,6 @@ void _cex_global_allocators_destructor() {
         mem$free(mem$, page);
         page = tpage;
     }
-
 }
 
 
@@ -3912,9 +3908,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
     (void)a;
 
     u64 hdr = _cex_allocator_heap__hdr_make(size, alignment);
-    if (hdr == 0) {
-        return NULL;
-    }
+    if (hdr == 0) { return NULL; }
 
     usize full_size = _cex_allocator_heap__hdr_get_size(hdr);
     alignment = _cex_allocator_heap__hdr_get_alignment(hdr);
@@ -3938,9 +3932,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
 #ifdef CEX_TEST
         a->stats.n_allocs++;
         // intentionally set malloc to 0xf7 pattern to mark uninitialized data
-        if (fill_val != 0) {
-            memset(result, 0xf7, size);
-        }
+        if (fill_val != 0) { memset(result, 0xf7, size); }
 #endif
         usize ptr_offset = result - raw_result;
         uassert(ptr_offset >= sizeof(u64) * 2);
@@ -4016,9 +4008,7 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     }
 
     u64 new_hdr = _cex_allocator_heap__hdr_make(size, alignment);
-    if (unlikely(new_hdr == 0)) {
-        goto fail;
-    }
+    if (unlikely(new_hdr == 0)) { goto fail; }
 
     u8* raw_result = NULL;
     u8* result = NULL;
@@ -4027,16 +4017,12 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     if (alignment <= _Alignof(max_align_t)) {
         uassert(new_full_size > size);
         raw_result = realloc(p - old_offset, new_full_size);
-        if (unlikely(raw_result == NULL)) {
-            goto fail;
-        }
+        if (unlikely(raw_result == NULL)) { goto fail; }
         result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
     } else {
         // fallback to malloc + memcpy because realloc doesn't guarantee alignment
         raw_result = malloc(new_full_size);
-        if (unlikely(raw_result == NULL)) {
-            goto fail;
-        }
+        if (unlikely(raw_result == NULL)) { goto fail; }
         result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
         memcpy(result, ptr, size > old_size ? old_size : size);
         free(ptr - old_offset);
@@ -4275,9 +4261,7 @@ _cex_allocator_arena__request_page_size(
 )
 {
     usize req_size = new_rec.size + new_rec.ptr_alignment + new_rec.ptr_padding;
-    if (out_is_allocated) {
-        *out_is_allocated = false;
-    }
+    if (out_is_allocated) { *out_is_allocated = false; }
 
     if (self->last_page == NULL ||
         // self->last_page->capacity < req_size + mem$aligned_round(self->last_page->cursor, 8)) {
@@ -4306,9 +4290,7 @@ _cex_allocator_arena__request_page_size(
         self->last_page = page;
         self->stats.pages_created++;
 
-        if (out_is_allocated) {
-            *out_is_allocated = true;
-        }
+        if (out_is_allocated) { *out_is_allocated = true; }
     }
 
     return self->last_page;
@@ -4322,14 +4304,10 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(self->scope_depth > 0 && "arena allocation must be performed in mem$scope() block!");
 
     allocator_arena_rec_s rec = _cex_alloc_estimate_alloc_size(size, alignment);
-    if (rec.size == 0) {
-        return NULL;
-    }
+    if (rec.size == 0) { return NULL; }
 
     allocator_arena_page_s* page = _cex_allocator_arena__request_page_size(self, rec, NULL);
-    if (page == NULL) {
-        return NULL;
-    }
+    if (page == NULL) { return NULL; }
     uassert(page->capacity - page->cursor >= rec.size + rec.ptr_padding + rec.ptr_alignment);
     uassert(page->cursor % 8 == 0);
     uassert(rec.ptr_padding <= 8);
@@ -4389,9 +4367,7 @@ _cex_allocator_arena__calloc(IAllocator allc, usize nmemb, usize size, usize ali
     }
     usize alloc_size = nmemb * size;
     void* result = _cex_allocator_arena__malloc(allc, alloc_size, alignment);
-    if (result != NULL) {
-        memset(result, 0, alloc_size);
-    }
+    if (result != NULL) { memset(result, 0, alloc_size); }
 
     return result;
 }
@@ -4403,9 +4379,7 @@ _cex_allocator_arena__free(IAllocator allc, void* ptr)
     // NOTE: this intentionally does nothing, all memory releasing in scope_exit()
     _cex_allocator_arena__validate(allc);
 
-    if (ptr == NULL) {
-        return NULL;
-    }
+    if (ptr == NULL) { return NULL; }
 
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     (void)self;
@@ -4446,9 +4420,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
     );
 
     if (unlikely(size <= rec->size)) {
-        if (size == rec->size) {
-            return old_ptr;
-        }
+        if (size == rec->size) { return old_ptr; }
         // we can't change size/padding of this allocation, because this will break iterating
         // ptr_padding is only u8 size, we cant store size, change, so we currently poison new size
         mem$asan_poison((char*)old_ptr + size, rec->size - size);
@@ -4457,18 +4429,14 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
 
     if (unlikely(self->last_page && self->last_page->last_alloc == old_ptr)) {
         allocator_arena_rec_s nrec = _cex_alloc_estimate_alloc_size(size, alignment);
-        if (nrec.size == 0) {
-            goto fail;
-        }
+        if (nrec.size == 0) { goto fail; }
         bool is_created = false;
         allocator_arena_page_s* page = _cex_allocator_arena__request_page_size(
             self,
             nrec,
             &is_created
         );
-        if (page == NULL) {
-            goto fail;
-        }
+        if (page == NULL) { goto fail; }
         if (!is_created) {
             // If new page was created, fall back to malloc/copy/free method
             //   but currently we have spare capacity for growth
@@ -4484,7 +4452,10 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
             rec->size = size;
             rec->ptr_padding = nrec.ptr_padding;
 
-            uassert((char*)rec + rec->size + rec->ptr_padding + rec->ptr_offset == &page->data[page->cursor]);
+            uassert(
+                (char*)rec + rec->size + rec->ptr_padding + rec->ptr_offset ==
+                &page->data[page->cursor]
+            );
             uassert(page->cursor % 8 == 0);
             uassert(self->used % 8 == 0);
             mem$asan_poison((char*)old_ptr + size, rec->ptr_padding);
@@ -4494,9 +4465,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
     }
 
     void* new_ptr = _cex_allocator_arena__malloc(allc, size, alignment);
-    if (new_ptr == NULL) {
-        goto fail;
-    }
+    if (new_ptr == NULL) { goto fail; }
     memcpy(new_ptr, old_ptr, rec->size);
     _cex_allocator_arena__free(allc, old_ptr);
     return new_ptr;
@@ -4824,9 +4793,7 @@ _cexds__arrgrowf(
     (void)sizeof(temp);
 
     // compute the minimum capacity needed
-    if (min_len > min_cap) {
-        min_cap = min_len;
-    }
+    if (min_len > min_cap) { min_cap = min_len; }
 
     // increase needed capacity to guarantee O(1) amortized
     if (min_cap < 2 * arr$cap(arr)) {
@@ -4837,9 +4804,7 @@ _cexds__arrgrowf(
     uassert(min_cap < PTRDIFF_MAX && "negative or overflow after processing");
     uassert(addlen > 0 || min_cap > 0);
 
-    if (min_cap <= arr$cap(arr)) {
-        return arr;
-    }
+    if (min_cap <= arr$cap(arr)) { return arr; }
 
     // General types with alignment <= usize use generic realloc (less mem overhead + realloc faster)
     el_align = (el_align <= alignof(_cexds__array_header)) ? alignof(_cexds__array_header) : 64;
@@ -4999,12 +4964,8 @@ _cexds__hmclear_func(struct _cexds__hash_index* t, _cexds__hash_index* old_table
     usize i, j;
     for (i = 0; i < t->slot_count >> _CEXDS_BUCKET_SHIFT; ++i) {
         _cexds__hash_bucket* b = &t->storage[i];
-        for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) {
-            b->hash[j] = _CEXDS_HASH_EMPTY;
-        }
-        for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) {
-            b->index[j] = _CEXDS_INDEX_EMPTY;
-        }
+        for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) { b->hash[j] = _CEXDS_HASH_EMPTY; }
+        for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) { b->index[j] = _CEXDS_INDEX_EMPTY; }
     }
 }
 
@@ -5039,9 +5000,7 @@ _cexds__make_hash_index(
     t->tombstone_count_threshold = (slot_count >> 3) + (slot_count >> 4);
     t->used_count_shrink_threshold = slot_count >> 2;
 
-    if (slot_count <= _CEXDS_BUCKET_LENGTH) {
-        t->used_count_shrink_threshold = 0;
-    }
+    if (slot_count <= _CEXDS_BUCKET_LENGTH) { t->used_count_shrink_threshold = 0; }
     // to avoid infinite loop, we need to guarantee that at least one slot is empty and will
     // terminate probes
     uassert(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
@@ -5186,9 +5145,7 @@ _cexds__siphash_bytes(const void* p, usize len, usize seed)
 #endif
 
         v3 ^= data;
-        for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) {
-            _CEXDS_SIPROUND();
-        }
+        for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) { _CEXDS_SIPROUND(); }
         v0 ^= data;
     }
     data = len << (_CEXDS_usize_BITS - 8);
@@ -5211,14 +5168,10 @@ _cexds__siphash_bytes(const void* p, usize len, usize seed)
             break;
     }
     v3 ^= data;
-    for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) {
-        _CEXDS_SIPROUND();
-    }
+    for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) { _CEXDS_SIPROUND(); }
     v0 ^= data;
     v2 ^= 0xff;
-    for (j = 0; j < _CEXDS_SIPHASH_D_ROUNDS; ++j) {
-        _CEXDS_SIPROUND();
-    }
+    for (j = 0; j < _CEXDS_SIPHASH_D_ROUNDS; ++j) { _CEXDS_SIPROUND(); }
 
 #ifdef _CEXDS_SIPHASH_2_4
     return v0 ^ v1 ^ v2 ^ v3;
@@ -5319,9 +5272,7 @@ _cexds__is_key_equal(
         case _CexDsKeyType__cexstr: {
             str_s* _k = (str_s*)key;
             str_s* _hm = (str_s*)hm_key;
-            if (_k->len != _hm->len) {
-                return false;
-            }
+            if (_k->len != _hm->len) { return false; }
             return 0 == memcmp(_k->buf, _hm->buf, _k->len);
         }
     }
@@ -5383,16 +5334,12 @@ _cexds__hmfree_keys_func(void* a, usize elemsize, usize keyoffset)
 void
 _cexds__hmfree_func(void* a, usize elemsize, usize keyoffset)
 {
-    if (a == NULL) {
-        return;
-    }
+    if (a == NULL) { return; }
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
 
     _cexds__array_header* h = _cexds__header(a);
     _cexds__hmfree_keys_func(a, elemsize, keyoffset);
-    if (h->_hash_table->key_arena) {
-        AllocatorArena.destroy(h->_hash_table->key_arena);
-    }
+    if (h->_hash_table->key_arena) { AllocatorArena.destroy(h->_hash_table->key_arena); }
     h->allocator->free(h->allocator, h->_hash_table);
     h->allocator->free(h->allocator, _cexds__base(h));
 }
@@ -5600,9 +5547,7 @@ _cexds__hmput_key(
 
         // stored hash values are forbidden from being 0, so we can detect empty slots to early out
         // quickly
-        if (hash < 2) {
-            hash += 2;
-        }
+        if (hash < 2) { hash += 2; }
 
         pos = _cexds__probe_position(hash, table->slot_count, table->slot_count_log2);
 
@@ -5728,14 +5673,10 @@ _cexds__hmdel_key(void* a, usize elemsize, void* key, usize keysize, usize keyof
 
     _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->_hash_table;
     uassert(_cexds__header(a)->allocator != NULL);
-    if (table == NULL) {
-        return false;
-    }
+    if (table == NULL) { return false; }
 
     ptrdiff_t slot = _cexds__hm_find_slot(a, elemsize, key, keysize, keyoffset);
-    if (slot < 0) {
-        return false;
-    }
+    if (slot < 0) { return false; }
 
     _cexds__hash_bucket* b = &table->storage[slot >> _CEXDS_BUCKET_SHIFT];
     int i = slot & _CEXDS_BUCKET_MASK;
@@ -5929,15 +5870,12 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
         int len = (int)(bf - buf);                                                                 \
         if ((len + (bytes)) >= CEX_SPRINTF_MIN) {                                                  \
             tlen += len;                                                                           \
-            if (0 == (bf = buf = callback(buf, user, len)))                                        \
-                goto done;                                                                         \
+            if (0 == (bf = buf = callback(buf, user, len))) goto done;                             \
         }                                                                                          \
     }
 #define cexsp__chk_cb_buf(bytes)                                                                   \
     {                                                                                              \
-        if (callback) {                                                                            \
-            cexsp__chk_cb_bufL(bytes);                                                             \
-        }                                                                                          \
+        if (callback) { cexsp__chk_cb_bufL(bytes); }                                               \
     }
 #define cexsp__flush_cb()                                                                          \
     {                                                                                              \
@@ -5947,18 +5885,13 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
     cl = v;                                                                                        \
     if (callback) {                                                                                \
         int lg = CEX_SPRINTF_MIN - (int)(bf - buf);                                                \
-        if (cl > lg)                                                                               \
-            cl = lg;                                                                               \
+        if (cl > lg) cl = lg;                                                                      \
     }
 
         // fast copy everything up to the next % (or end of string)
         for (;;) {
-            if (f[0] == '%') {
-                goto scandd;
-            }
-            if (f[0] == 0) {
-                goto endfmt;
-            }
+            if (f[0] == '%') { goto scandd; }
+            if (f[0] == 0) { goto endfmt; }
             cexsp__chk_cb_buf(1);
             *bf++ = f[0];
             ++f;
@@ -6070,9 +6003,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 // %ld/%lld - is always 64 bits
                 fl |= CEXSP__INTMAX;
                 ++f;
-                if (f[0] == 'l') {
-                    ++f;
-                }
+                if (f[0] == 'l') { ++f; }
                 break;
             // are we 64-bit on intmax? (c99)
             case 'j':
@@ -6133,9 +6064,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     }
                 }
 #if defined(CEX_TEST) && defined(_WIN32)
-                if (IsBadReadPtr(s, 1)) {
-                    s = (char*)"(%s-bad)";
-                }
+                if (IsBadReadPtr(s, 1)) { s = (char*)"(%s-bad)"; }
 #endif
                 // get the length, limited to desired precision
                 // always limit to ~0u chars since our counts are 32b
@@ -6220,9 +6149,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     pr = 6; // default is 6
                 }
                 // read the double into a string
-                if (cexsp__real_to_parts((i64*)&n64, &dp, fv)) {
-                    fl |= CEXSP__NEGATIVE;
-                }
+                if (cexsp__real_to_parts((i64*)&n64, &dp, fv)) { fl |= CEXSP__NEGATIVE; }
 
                 s = num + 64;
 
@@ -6234,9 +6161,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     n64 |= (((u64)1) << 52);
                 }
                 n64 <<= (64 - 56);
-                if (pr < 15) {
-                    n64 += ((((u64)8) << 56) >> (pr * 4));
-                }
+                if (pr < 15) { n64 += ((((u64)8) << 56) >> (pr * 4)); }
                 // add leading chars
 
                 lead[1 + lead[0]] = '0';
@@ -6244,19 +6169,13 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 lead[0] += 2;
                 *s++ = h[(n64 >> 60) & 15];
                 n64 <<= 4;
-                if (pr) {
-                    *s++ = cexsp__period;
-                }
+                if (pr) { *s++ = cexsp__period; }
                 sn = s;
 
                 // print the bits
                 n = pr;
-                if (n > 13) {
-                    n = 13;
-                }
-                if (pr > (i32)n) {
-                    tz = pr - n;
-                }
+                if (n > 13) { n = 13; }
+                if (pr > (i32)n) { tz = pr - n; }
                 pr = 0;
                 while (n--) {
                     *s++ = h[(n64 >> 60) & 15];
@@ -6275,9 +6194,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 tail[0] = (char)n;
                 for (;;) {
                     tail[n] = '0' + dp % 10;
-                    if (n <= 3) {
-                        break;
-                    }
+                    if (n <= 3) { break; }
                     --n;
                     dp /= 10;
                 }
@@ -6304,9 +6221,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
 
                 // clamp the precision and delete extra zeros after clamp
                 n = pr;
-                if (l > (u32)pr) {
-                    l = pr;
-                }
+                if (l > (u32)pr) { l = pr; }
                 while ((l > 1) && (pr) && (sn[l - 1] == '0')) {
                     --pr;
                     --l;
@@ -6353,17 +6268,11 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 // handle leading chars
                 *s++ = sn[0];
 
-                if (pr) {
-                    *s++ = cexsp__period;
-                }
+                if (pr) { *s++ = cexsp__period; }
 
                 // handle after decimal
-                if ((l - 1) > (u32)pr) {
-                    l = pr + 1;
-                }
-                for (n = 1; n < l; n++) {
-                    *s++ = sn[n];
-                }
+                if ((l - 1) > (u32)pr) { l = pr + 1; }
+                for (n = 1; n < l; n++) { *s++ = sn[n]; }
                 // trailing zeros
                 tz = pr - (l - 1);
                 pr = 0;
@@ -6380,9 +6289,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 tail[0] = (char)n;
                 for (;;) {
                     tail[n] = '0' + dp % 10;
-                    if (n <= 3) {
-                        break;
-                    }
+                    if (n <= 3) { break; }
                     --n;
                     dp /= 10;
                 }
@@ -6396,13 +6303,9 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 if (fl & CEXSP__METRIC_SUFFIX) {
                     double divisor;
                     divisor = 1000.0f;
-                    if (fl & CEXSP__METRIC_1024) {
-                        divisor = 1024.0;
-                    }
+                    if (fl & CEXSP__METRIC_1024) { divisor = 1024.0; }
                     while (fl < 0x4000000) {
-                        if ((fv < divisor) && (fv > -divisor)) {
-                            break;
-                        }
+                        if ((fv < divisor) && (fv > -divisor)) { break; }
                         fv /= divisor;
                         fl += 0x1000000;
                     }
@@ -6411,9 +6314,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     pr = 6; // default is 6
                 }
                 // read the double into a string
-                if (cexsp__real_to_str(&sn, &l, num, &dp, fv, pr)) {
-                    fl |= CEXSP__NEGATIVE;
-                }
+                if (cexsp__real_to_str(&sn, &l, num, &dp, fv, pr)) { fl |= CEXSP__NEGATIVE; }
             dofloatfromg:
                 tail[0] = 0;
                 cexsp__lead_sign(fl, lead);
@@ -6430,18 +6331,12 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     i32 i;
                     // handle 0.000*000xxxx
                     *s++ = '0';
-                    if (pr) {
-                        *s++ = cexsp__period;
-                    }
+                    if (pr) { *s++ = cexsp__period; }
                     n = -dp;
-                    if ((i32)n > pr) {
-                        n = pr;
-                    }
+                    if ((i32)n > pr) { n = pr; }
                     i = n;
                     while (i) {
-                        if ((((usize)s) & 3) == 0) {
-                            break;
-                        }
+                        if ((((usize)s) & 3) == 0) { break; }
                         *s++ = '0';
                         --i;
                     }
@@ -6454,9 +6349,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                         *s++ = '0';
                         --i;
                     }
-                    if ((i32)(l + n) > pr) {
-                        l = pr - n;
-                    }
+                    if ((i32)(l + n) > pr) { l = pr - n; }
                     i = l;
                     while (i) {
                         *s++ = *sn++;
@@ -6476,18 +6369,14 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                             } else {
                                 *s++ = sn[n];
                                 ++n;
-                                if (n >= l) {
-                                    break;
-                                }
+                                if (n >= l) { break; }
                             }
                         }
                         if (n < (u32)dp) {
                             n = dp - n;
                             if ((fl & CEXSP__TRIPLET_COMMA) == 0) {
                                 while (n) {
-                                    if ((((usize)s) & 3) == 0) {
-                                        break;
-                                    }
+                                    if ((((usize)s) & 3) == 0) { break; }
                                     *s++ = '0';
                                     --n;
                                 }
@@ -6522,18 +6411,12 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                             } else {
                                 *s++ = sn[n];
                                 ++n;
-                                if (n >= (u32)dp) {
-                                    break;
-                                }
+                                if (n >= (u32)dp) { break; }
                             }
                         }
                         cs = (int)(s - (num + 64)) + (3 << 24); // cs is how many tens
-                        if (pr) {
-                            *s++ = cexsp__period;
-                        }
-                        if ((l - dp) > (u32)pr) {
-                            l = pr + dp;
-                        }
+                        if (pr) { *s++ = cexsp__period; }
+                        if ((l - dp) > (u32)pr) { l = pr + dp; }
                         while (n < l) {
                             *s++ = sn[n];
                             ++n;
@@ -6547,9 +6430,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 if (fl & CEXSP__METRIC_SUFFIX) {
                     char idx;
                     idx = 1;
-                    if (fl & CEXSP__METRIC_NOSPACE) {
-                        idx = 0;
-                    }
+                    if (fl & CEXSP__METRIC_NOSPACE) { idx = 0; }
                     tail[0] = idx;
                     tail[1] = ' ';
                     {
@@ -6640,9 +6521,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 for (;;) {
                     *--s = h[n64 & ((1 << (l >> 8)) - 1)];
                     n64 >>= (l >> 8);
-                    if (!((n64) || ((i32)((num + CEXSP__NUMSZ) - s) < pr))) {
-                        break;
-                    }
+                    if (!((n64) || ((i32)((num + CEXSP__NUMSZ) - s) < pr))) { break; }
                     if (fl & CEXSP__TRIPLET_COMMA) {
                         ++l;
                         if ((l & 15) == ((l >> 4) & 15)) {
@@ -6723,9 +6602,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                         }
                     }
                     if (n64 == 0) {
-                        if ((s[0] == '0') && (s != (num + CEXSP__NUMSZ))) {
-                            ++s;
-                        }
+                        if ((s[0] == '0') && (s != (num + CEXSP__NUMSZ))) { ++s; }
                         break;
                     }
                     while (s != o) {
@@ -6749,19 +6626,13 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     l = 1;
                 }
                 cs = l + (3 << 24);
-                if (pr < 0) {
-                    pr = 0;
-                }
+                if (pr < 0) { pr = 0; }
 
             scopy:
                 // get fw=leading/trailing space, pr=leading zeros
-                if (pr < (i32)l) {
-                    pr = l;
-                }
+                if (pr < (i32)l) { pr = l; }
                 n = pr + lead[0] + tail[0] + tz;
-                if (fw < (i32)n) {
-                    fw = n;
-                }
+                if (fw < (i32)n) { fw = n; }
                 fw -= n;
                 pr -= l;
 
@@ -6787,9 +6658,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                             cexsp__cb_buf_clamp(i, fw);
                             fw -= i;
                             while (i) {
-                                if ((((usize)bf) & 3) == 0) {
-                                    break;
-                                }
+                                if ((((usize)bf) & 3) == 0) { break; }
                                 *bf++ = ' ';
                                 --i;
                             }
@@ -6827,9 +6696,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                         pr -= i;
                         if ((fl & CEXSP__TRIPLET_COMMA) == 0) {
                             while (i) {
-                                if ((((usize)bf) & 3) == 0) {
-                                    break;
-                                }
+                                if ((((usize)bf) & 3) == 0) { break; }
                                 *bf++ = '0';
                                 --i;
                             }
@@ -6891,9 +6758,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     cexsp__cb_buf_clamp(i, tz);
                     tz -= i;
                     while (i) {
-                        if ((((usize)bf) & 3) == 0) {
-                            break;
-                        }
+                        if ((((usize)bf) & 3) == 0) { break; }
                         *bf++ = '0';
                         --i;
                     }
@@ -6930,9 +6795,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                             cexsp__cb_buf_clamp(i, fw);
                             fw -= i;
                             while (i) {
-                                if ((((usize)bf) & 3) == 0) {
-                                    break;
-                                }
+                                if ((((usize)bf) & 3) == 0) { break; }
                                 *bf++ = ' ';
                                 --i;
                             }
@@ -6941,9 +6804,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                                 bf += 4;
                                 i -= 4;
                             }
-                            while (i--) {
-                                *bf++ = ' ';
-                            }
+                            while (i--) { *bf++ = ' '; }
                             cexsp__chk_cb_buf(1);
                         }
                     }
@@ -7001,9 +6862,7 @@ cexsp__clamp_callback(char* buf, void* user, u32 len)
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;
 
-    if (len > c->capacity) {
-        len = c->capacity;
-    }
+    if (len > c->capacity) { len = c->capacity; }
 
     if (len) {
         if (buf != c->buf) {
@@ -7020,9 +6879,7 @@ cexsp__clamp_callback(char* buf, void* user, u32 len)
         c->capacity -= len;
     }
 
-    if (c->capacity <= 0) {
-        return c->tmp;
-    }
+    if (c->capacity <= 0) { return c->tmp; }
     return (c->capacity >= CEX_SPRINTF_MIN) ? c->buf : c->tmp; // go direct into buffer if you can
 }
 
@@ -7075,9 +6932,7 @@ cexsp__fprintf_callback(char* buf, void* user, u32 len)
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;
     if (len) {
-        if (fwrite(buf, sizeof(char), len, c->file) != (size_t)len) {
-            c->has_error = 1;
-        }
+        if (fwrite(buf, sizeof(char), len, c->file) != (size_t)len) { c->has_error = 1; }
     }
     return c->tmp;
 }
@@ -7113,8 +6968,7 @@ cexsp__fprintf(FILE* stream, const char* format, ...)
 #    define CEXSP__COPYFP(dest, src)                                                               \
         {                                                                                          \
             int cn;                                                                                \
-            for (cn = 0; cn < 8; cn++)                                                             \
-                ((char*)&dest)[cn] = ((char*)&src)[cn];                                            \
+            for (cn = 0; cn < 8; cn++) ((char*)&dest)[cn] = ((char*)&src)[cn];                     \
         }
 
 // get float info
@@ -7275,13 +7129,9 @@ cexsp__raise_to_power10(double* ohi, double* olo, double d, i32 power) // power 
         double p2h, p2l;
 
         e = power;
-        if (power < 0) {
-            e = -e;
-        }
+        if (power < 0) { e = -e; }
         et = (e * 0x2c9) >> 14; /* %23 */
-        if (et > 13) {
-            et = 13;
-        }
+        if (et > 13) { et = 13; }
         eb = e - (et * 23);
 
         ph = d;
@@ -7303,9 +7153,7 @@ cexsp__raise_to_power10(double* ohi, double* olo, double d, i32 power) // power 
         } else {
             if (eb) {
                 e = eb;
-                if (eb > 22) {
-                    eb = 22;
-                }
+                if (eb > 22) { eb = 22; }
                 e -= eb;
                 cexsp__ddmulthi(ph, pl, d, cexsp__bot[eb]);
                 if (e) {
@@ -7354,9 +7202,7 @@ cexsp__real_to_str(
     CEXSP__COPYFP(bits, d);
     expo = (i32)((bits >> 52) & 2047);
     ng = (i32)((u64)bits >> 63);
-    if (ng) {
-        d = -d;
-    }
+    if (ng) { d = -d; }
 
     if (expo == 2047) // is nan or inf?
     {
@@ -7403,9 +7249,7 @@ cexsp__real_to_str(
         cexsp__ddtoS64(bits, ph, pl);
 
         // check if we undershot
-        if (((u64)bits) >= cexsp__tento19th) {
-            ++tens;
-        }
+        if (((u64)bits) >= cexsp__tento19th) { ++tens; }
     }
 
     // now do the rounding in integer land
@@ -7413,27 +7257,19 @@ cexsp__real_to_str(
                                              : (tens + frac_digits);
     if ((frac_digits < 24)) {
         u32 dg = 1;
-        if ((u64)bits >= cexsp__powten[9]) {
-            dg = 10;
-        }
+        if ((u64)bits >= cexsp__powten[9]) { dg = 10; }
         while ((u64)bits >= cexsp__powten[dg]) {
             ++dg;
-            if (dg == 20) {
-                goto noround;
-            }
+            if (dg == 20) { goto noround; }
         }
         if (frac_digits < dg) {
             u64 r;
             // add 0.5 at the right position and round
             e = dg - frac_digits;
-            if ((u32)e >= 24) {
-                goto noround;
-            }
+            if ((u32)e >= 24) { goto noround; }
             r = cexsp__powten[e];
             bits = bits + (r / 2);
-            if ((u64)bits >= cexsp__powten[dg]) {
-                ++tens;
-            }
+            if ((u64)bits >= cexsp__powten[dg]) { ++tens; }
             bits /= r;
         }
     noround:;
@@ -7443,18 +7279,12 @@ cexsp__real_to_str(
     if (bits) {
         u32 n;
         for (;;) {
-            if (bits <= 0xffffffff) {
-                break;
-            }
-            if (bits % 1000) {
-                goto donez;
-            }
+            if (bits <= 0xffffffff) { break; }
+            if (bits % 1000) { goto donez; }
             bits /= 1000;
         }
         n = (u32)bits;
-        while ((n % 1000) == 0) {
-            n /= 1000;
-        }
+        while ((n % 1000) == 0) { n /= 1000; }
         bits = n;
     donez:;
     }
@@ -7525,14 +7355,10 @@ _cex_str__index(str_s* s, char* c, u8 clen)
 {
     isize result = -1;
 
-    if (!_cex_str__isvalid(s)) {
-        return -1;
-    }
+    if (!_cex_str__isvalid(s)) { return -1; }
 
     u8 split_by_idx[UINT8_MAX] = { 0 };
-    for (u8 i = 0; i < clen; i++) {
-        split_by_idx[(u8)c[i]] = 1;
-    }
+    for (u8 i = 0; i < clen; i++) { split_by_idx[(u8)c[i]] = 1; }
 
     for (usize i = 0; i < s->len; i++) {
         if (split_by_idx[(u8)s->buf[i]]) {
@@ -7553,9 +7379,7 @@ _cex_str__index(str_s* s, char* c, u8 clen)
 static str_s
 cex_str_sstr(char* ccharptr)
 {
-    if (unlikely(ccharptr == NULL)) {
-        return (str_s){ 0 };
-    }
+    if (unlikely(ccharptr == NULL)) { return (str_s){ 0 }; }
 
     return (str_s){
         .buf = (char*)ccharptr,
@@ -7567,9 +7391,7 @@ cex_str_sstr(char* ccharptr)
 static str_s
 cex_str_sbuf(char* s, usize length)
 {
-    if (unlikely(s == NULL)) {
-        return (str_s){ 0 };
-    }
+    if (unlikely(s == NULL)) { return (str_s){ 0 }; }
 
     return (str_s){
         .buf = s,
@@ -7580,22 +7402,16 @@ cex_str_sbuf(char* s, usize length)
 static bool
 cex_str_eq(char* a, char* b)
 {
-    if (unlikely(a == NULL || b == NULL)) {
-        return a == b;
-    }
+    if (unlikely(a == NULL || b == NULL)) { return a == b; }
     return strcmp(a, b) == 0;
 }
 
 bool
 cex_str_eqi(char* a, char* b)
 {
-    if (unlikely(a == NULL || b == NULL)) {
-        return a == b;
-    }
+    if (unlikely(a == NULL || b == NULL)) { return a == b; }
     while (*a && *b) {
-        if (tolower((u8)*a) != tolower((u8)*b)) {
-            return false;
-        }
+        if (tolower((u8)*a) != tolower((u8)*b)) { return false; }
         a++;
         b++;
     }
@@ -7605,18 +7421,14 @@ cex_str_eqi(char* a, char* b)
 static bool
 cex_str__slice__eq(str_s a, str_s b)
 {
-    if (a.len != b.len) {
-        return false;
-    }
+    if (a.len != b.len) { return false; }
     return str.slice.qscmp(&a, &b) == 0;
 }
 
 static bool
 cex_str__slice__eqi(str_s a, str_s b)
 {
-    if (a.len != b.len) {
-        return false;
-    }
+    if (a.len != b.len) { return false; }
     return str.slice.qscmpi(&a, &b) == 0;
 }
 
@@ -7624,9 +7436,7 @@ static str_s
 cex_str__slice__sub(str_s s, isize start, isize end)
 {
     slice$define(*s.buf) slice = { 0 };
-    if (s.buf != NULL) {
-        _arr$slice_get(slice, s.buf, s.len, start, end);
-    }
+    if (s.buf != NULL) { _arr$slice_get(slice, s.buf, s.len, start, end); }
 
     return (str_s){
         .buf = slice.arr,
@@ -7645,30 +7455,22 @@ static Exception
 cex_str_copy(char* dest, char* src, usize destlen)
 {
     uassert(dest != src && "buffers overlap");
-    if (unlikely(dest == NULL || destlen == 0)) {
-        return Error.argument;
-    }
+    if (unlikely(dest == NULL || destlen == 0)) { return Error.argument; }
     dest[0] = '\0'; // If we fail next, it still writes empty string
-    if (unlikely(src == NULL)) {
-        return Error.argument;
-    }
+    if (unlikely(src == NULL)) { return Error.argument; }
 
     char* d = dest;
     char* s = src;
     size_t n = destlen;
 
     while (--n != 0) {
-        if (unlikely((*d = *s) == '\0')) {
-            break;
-        }
+        if (unlikely((*d = *s) == '\0')) { break; }
         d++;
         s++;
     }
     *d = '\0'; // always terminate
 
-    if (unlikely(*s != '\0')) {
-        return Error.overflow;
-    }
+    if (unlikely(*s != '\0')) { return Error.overflow; }
 
     return Error.ok;
 }
@@ -7676,9 +7478,7 @@ cex_str_copy(char* dest, char* src, usize destlen)
 char*
 cex_str_replace(char* s, char* old_sub, char* new_sub, IAllocator allc)
 {
-    if (s == NULL || old_sub == NULL || new_sub == NULL || old_sub[0] == '\0') {
-        return NULL;
-    }
+    if (s == NULL || old_sub == NULL || new_sub == NULL || old_sub[0] == '\0') { return NULL; }
     size_t str_len = strlen(s);
     size_t old_sub_len = strlen(old_sub);
     size_t new_sub_len = strlen(new_sub);
@@ -7716,16 +7516,10 @@ static Exception
 cex_str__slice__copy(char* dest, str_s src, usize destlen)
 {
     uassert(dest != src.buf && "buffers overlap");
-    if (unlikely(dest == NULL || destlen == 0)) {
-        return Error.argument;
-    }
+    if (unlikely(dest == NULL || destlen == 0)) { return Error.argument; }
     dest[0] = '\0';
-    if (unlikely(src.buf == NULL)) {
-        return Error.argument;
-    }
-    if (src.len >= destlen) {
-        return Error.overflow;
-    }
+    if (unlikely(src.buf == NULL)) { return Error.argument; }
+    if (src.len >= destlen) { return Error.overflow; }
     memcpy(dest, src.buf, src.len);
     dest[src.len] = '\0';
     dest[destlen - 1] = '\0';
@@ -7735,12 +7529,8 @@ cex_str__slice__copy(char* dest, str_s src, usize destlen)
 static Exception
 cex_str_vsprintf(char* dest, usize dest_len, char* format, va_list va)
 {
-    if (unlikely(dest == NULL)) {
-        return Error.argument;
-    }
-    if (unlikely(dest_len == 0)) {
-        return Error.argument;
-    }
+    if (unlikely(dest == NULL)) { return Error.argument; }
+    if (unlikely(dest_len == 0)) { return Error.argument; }
     uassert(format != NULL);
 
     dest[dest_len - 1] = '\0'; // always null term at capacity
@@ -7769,32 +7559,24 @@ cex_str_sprintf(char* dest, usize dest_len, char* format, ...)
 static usize
 cex_str_len(char* s)
 {
-    if (s == NULL) {
-        return 0;
-    }
+    if (s == NULL) { return 0; }
     return strlen(s);
 }
 
 static char*
 cex_str_find(char* haystack, char* needle)
 {
-    if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) {
-        return NULL;
-    }
+    if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) { return NULL; }
     return strstr(haystack, needle);
 }
 
 char*
 cex_str_findr(char* haystack, char* needle)
 {
-    if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) {
-        return NULL;
-    }
+    if (unlikely(haystack == NULL || needle == NULL || needle[0] == '\0')) { return NULL; }
     usize haystack_len = strlen(haystack);
     usize needle_len = strlen(needle);
-    if (unlikely(needle_len > haystack_len)) {
-        return NULL;
-    }
+    if (unlikely(needle_len > haystack_len)) { return NULL; }
     for (char* ptr = haystack + haystack_len - needle_len; ptr >= haystack; ptr--) {
         if (unlikely(strncmp(ptr, needle, needle_len) == 0)) {
             uassert(ptr >= haystack);
@@ -7808,21 +7590,15 @@ cex_str_findr(char* haystack, char* needle)
 static isize
 cex_str__slice__index_of(str_s s, str_s needle)
 {
-    if (unlikely(!s.buf || !needle.buf || needle.len == 0 || needle.len > s.len)) {
-        return -1;
-    }
+    if (unlikely(!s.buf || !needle.buf || needle.len == 0 || needle.len > s.len)) { return -1; }
     if (unlikely(needle.len == 1)) {
         char n = needle.buf[0];
         for (usize i = 0; i < s.len; i++) {
-            if (s.buf[i] == n) {
-                return i;
-            }
+            if (s.buf[i] == n) { return i; }
         }
     } else {
         for (usize i = 0; i <= s.len - needle.len; i++) {
-            if (memcmp(&s.buf[i], needle.buf, needle.len) == 0) {
-                return i;
-            }
+            if (memcmp(&s.buf[i], needle.buf, needle.len) == 0) { return i; }
         }
     }
     return -1;
@@ -7831,39 +7607,29 @@ cex_str__slice__index_of(str_s s, str_s needle)
 static bool
 cex_str__slice__starts_with(str_s s, str_s prefix)
 {
-    if (unlikely(!s.buf || !prefix.buf || prefix.len == 0 || prefix.len > s.len)) {
-        return false;
-    }
+    if (unlikely(!s.buf || !prefix.buf || prefix.len == 0 || prefix.len > s.len)) { return false; }
     return memcmp(s.buf, prefix.buf, prefix.len) == 0;
 }
 static bool
 cex_str__slice__ends_with(str_s s, str_s suffix)
 {
-    if (unlikely(!s.buf || !suffix.buf || suffix.len == 0 || suffix.len > s.len)) {
-        return false;
-    }
+    if (unlikely(!s.buf || !suffix.buf || suffix.len == 0 || suffix.len > s.len)) { return false; }
     return s.len >= suffix.len && !memcmp(s.buf + s.len - suffix.len, suffix.buf, suffix.len);
 }
 
 static bool
 cex_str_starts_with(char* s, char* prefix)
 {
-    if (s == NULL || prefix == NULL || prefix[0] == '\0') {
-        return false;
-    }
+    if (s == NULL || prefix == NULL || prefix[0] == '\0') { return false; }
 
-    while (*prefix && *s == *prefix) {
-        ++s, ++prefix;
-    }
+    while (*prefix && *s == *prefix) { ++s, ++prefix; }
     return *prefix == 0;
 }
 
 static bool
 cex_str_ends_with(char* s, char* suffix)
 {
-    if (s == NULL || suffix == NULL || suffix[0] == '\0') {
-        return false;
-    }
+    if (s == NULL || suffix == NULL || suffix[0] == '\0') { return false; }
     size_t slen = strlen(s);
     size_t sufflen = strlen(suffix);
 
@@ -7873,9 +7639,7 @@ cex_str_ends_with(char* s, char* suffix)
 static str_s
 cex_str__slice__remove_prefix(str_s s, str_s prefix)
 {
-    if (!cex_str__slice__starts_with(s, prefix)) {
-        return s;
-    }
+    if (!cex_str__slice__starts_with(s, prefix)) { return s; }
 
     return (str_s){
         .buf = s.buf + prefix.len,
@@ -7886,9 +7650,7 @@ cex_str__slice__remove_prefix(str_s s, str_s prefix)
 static str_s
 cex_str__slice__remove_suffix(str_s s, str_s suffix)
 {
-    if (!cex_str__slice__ends_with(s, suffix)) {
-        return s;
-    }
+    if (!cex_str__slice__ends_with(s, suffix)) { return s; }
     return (str_s){
         .buf = s.buf,
         .len = s.len - suffix.len,
@@ -8048,9 +7810,7 @@ cex_str__slice__qscmpi(const void* a, const void* b)
     char* o = other.buf;
     for (usize i = 0; i < min_len; i++) {
         cmp = tolower(*s) - tolower(*o);
-        if (cmp != 0) {
-            return cmp;
-        }
+        if (cmp != 0) { return cmp; }
         s++;
         o++;
     }
@@ -8097,9 +7857,7 @@ cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
         }
 
         isize idx = _cex_str__index(&s, split_by, ctx->split_by_len);
-        if (idx < 0) {
-            idx = s.len;
-        }
+        if (idx < 0) { idx = s.len; }
         ctx->cursor = idx;
         ctx->str_len = s.len; // this prevents s being changed in a loop
         iterator->idx.i = 0;
@@ -8155,18 +7913,13 @@ cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max
     uassert(num_min == 0 || num_min < -64);
     uassert(num_min >= INT64_MIN + 1 && "try num_min+1, negation overflow");
 
-    if (unlikely(self == NULL)) {
-        return Error.argument;
-    }
+    if (unlikely(self == NULL)) { return Error.argument; }
 
     char* s = self;
-    if (len == 0) {
-        len = strlen(self);
-    }
+    if (len == 0) { len = strlen(self); }
     usize i = 0;
 
-    for (; s[i] == ' ' && i < len; i++) {
-    }
+    for (; s[i] == ' ' && i < len; i++) {}
 
     u64 neg = 1;
     if (s[i] == '-') {
@@ -8177,9 +7930,7 @@ cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max
     }
     i32 base = 10;
 
-    if (unlikely(i >= len)) {
-        return Error.argument;
-    }
+    if (unlikely(i >= len)) { return Error.argument; }
 
     if ((len - i) >= 2 && s[i] == '0' && (s[i + 1] == 'x' || s[i + 1] == 'X')) {
         i += 2;
@@ -8209,9 +7960,7 @@ cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max
             break;
         }
 
-        if (unlikely(c >= base)) {
-            return Error.argument;
-        }
+        if (unlikely(c >= base)) { return Error.argument; }
 
         if (unlikely(acc > cutoff || (acc == cutoff && c > cutlim))) {
             return Error.overflow;
@@ -8223,9 +7972,7 @@ cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max
 
     // Allow trailing spaces, but no other character allowed
     for (; i < len; i++) {
-        if (s[i] != ' ') {
-            return Error.argument;
-        }
+        if (s[i] != ' ') { return Error.argument; }
     }
 
     *num = (i64)acc * neg;
@@ -8240,17 +7987,12 @@ cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
     uassert(num_max > 0);
     uassert(num_max > 64);
 
-    if (unlikely(s == NULL)) {
-        return Error.argument;
-    }
+    if (unlikely(s == NULL)) { return Error.argument; }
 
-    if (len == 0) {
-        len = strlen(s);
-    }
+    if (len == 0) { len = strlen(s); }
     usize i = 0;
 
-    for (; s[i] == ' ' && i < len; i++) {
-    }
+    for (; s[i] == ' ' && i < len; i++) {}
 
     if (s[i] == '-') {
         return Error.argument;
@@ -8259,9 +8001,7 @@ cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
     }
     i32 base = 10;
 
-    if (unlikely(i >= len)) {
-        return Error.argument;
-    }
+    if (unlikely(i >= len)) { return Error.argument; }
 
     if ((len - i) >= 2 && s[i] == '0' && (s[i + 1] == 'x' || s[i + 1] == 'X')) {
         i += 2;
@@ -8292,9 +8032,7 @@ cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
             break;
         }
 
-        if (unlikely(c >= base)) {
-            return Error.argument;
-        }
+        if (unlikely(c >= base)) { return Error.argument; }
 
         if (unlikely(acc > cutoff || (acc == cutoff && c > cutlim))) {
             return Error.overflow;
@@ -8306,9 +8044,7 @@ cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
 
     // Allow trailing spaces, but no other character allowed
     for (; i < len; i++) {
-        if (s[i] != ' ') {
-            return Error.argument;
-        }
+        if (s[i] != ' ') { return Error.argument; }
     }
 
     *num = (i64)acc;
@@ -8320,19 +8056,14 @@ static Exception
 cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
 {
     _Static_assert(sizeof(double) == 8, "unexpected double precision");
-    if (unlikely(self == NULL)) {
-        return Error.argument;
-    }
+    if (unlikely(self == NULL)) { return Error.argument; }
 
     char* s = self;
-    if (len == 0) {
-        len = strlen(s);
-    }
+    if (len == 0) { len = strlen(s); }
     usize i = 0;
     double number = 0.0;
 
-    for (; s[i] == ' ' && i < len; i++) {
-    }
+    for (; s[i] == ' ' && i < len; i++) {}
 
     double sign = 1;
     if (s[i] == '-') {
@@ -8342,14 +8073,10 @@ cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
         i++;
     }
 
-    if (unlikely(i >= len)) {
-        return Error.argument;
-    }
+    if (unlikely(i >= len)) { return Error.argument; }
 
     if (unlikely(s[i] == 'n' || s[i] == 'i' || s[i] == 'N' || s[i] == 'I')) {
-        if (unlikely(len - i < 3)) {
-            return Error.argument;
-        }
+        if (unlikely(len - i < 3)) { return Error.argument; }
         if (s[i] == 'n' || s[i] == 'N') {
             if ((s[i + 1] == 'a' || s[i + 1] == 'A') && (s[i + 2] == 'n' || s[i + 2] == 'N')) {
                 number = NAN;
@@ -8377,9 +8104,7 @@ cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
 
         // Allow trailing spaces, but no other character allowed
         for (; i < len; i++) {
-            if (s[i] != ' ') {
-                return Error.argument;
-            }
+            if (s[i] != ' ') { return Error.argument; }
         }
 
         *num = number;
@@ -8452,20 +8177,14 @@ cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
         exponent += n * sign;
     }
 
-    if (num_digits == 0) {
-        return Error.argument;
-    }
+    if (num_digits == 0) { return Error.argument; }
 
-    if (exponent < exp_min || exponent > exp_max) {
-        return Error.overflow;
-    }
+    if (exponent < exp_min || exponent > exp_max) { return Error.overflow; }
 
     // Scale the result
     double p10 = 10.;
     i32 n = exponent;
-    if (n < 0) {
-        n = -n;
-    }
+    if (n < 0) { n = -n; }
     while (n) {
         if (n & 1) {
             if (exponent < 0) {
@@ -8478,15 +8197,11 @@ cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
         p10 *= p10;
     }
 
-    if (number == HUGE_VAL) {
-        return Error.overflow;
-    }
+    if (number == HUGE_VAL) { return Error.overflow; }
 
     // Allow trailing spaces, but no other character allowed
     for (; i < len; i++) {
-        if (s[i] != ' ') {
-            return Error.argument;
-        }
+        if (s[i] != ' ') { return Error.argument; }
     }
 
     *num = number;
@@ -8661,9 +8376,7 @@ _cex_str__fmt_callback(char* buf, void* user, u32 len)
 {
     (void)buf;
     cexsp__context* ctx = user;
-    if (unlikely(ctx->has_error)) {
-        return NULL;
-    }
+    if (unlikely(ctx->has_error)) { return NULL; }
 
     if (unlikely(
             len >= CEX_SPRINTF_MIN && (ctx->buf == NULL || ctx->length + len >= ctx->capacity)
@@ -8733,9 +8446,7 @@ cex_str_fmt(IAllocator allc, char* format, ...)
     } else {
         uassert(ctx.length <= arr$len(ctx.tmp) - 1);
         ctx.buf = mem$malloc(allc, ctx.length + 1);
-        if (ctx.buf == NULL) {
-            return NULL;
-        }
+        if (ctx.buf == NULL) { return NULL; }
         memcpy(ctx.buf, ctx.tmp, ctx.length);
         ctx.buf[ctx.length] = '\0';
     }
@@ -8746,9 +8457,7 @@ cex_str_fmt(IAllocator allc, char* format, ...)
 static char*
 cex_str__slice__clone(str_s s, IAllocator allc)
 {
-    if (s.buf == NULL) {
-        return NULL;
-    }
+    if (s.buf == NULL) { return NULL; }
     char* result = mem$malloc(allc, s.len + 1);
     if (result) {
         memcpy(result, s.buf, s.len);
@@ -8760,9 +8469,7 @@ cex_str__slice__clone(str_s s, IAllocator allc)
 static char*
 cex_str_clone(char* s, IAllocator allc)
 {
-    if (s == NULL) {
-        return NULL;
-    }
+    if (s == NULL) { return NULL; }
     usize slen = strlen(s);
     uassert(slen < PTRDIFF_MAX);
 
@@ -8777,17 +8484,13 @@ cex_str_clone(char* s, IAllocator allc)
 static char*
 cex_str_lower(char* s, IAllocator allc)
 {
-    if (s == NULL) {
-        return NULL;
-    }
+    if (s == NULL) { return NULL; }
     usize slen = strlen(s);
     uassert(slen < PTRDIFF_MAX);
 
     char* result = mem$malloc(allc, slen + 1);
     if (result) {
-        for (usize i = 0; i < slen; i++) {
-            result[i] = tolower(s[i]);
-        }
+        for (usize i = 0; i < slen; i++) { result[i] = tolower(s[i]); }
         result[slen] = '\0';
     }
     return result;
@@ -8796,17 +8499,13 @@ cex_str_lower(char* s, IAllocator allc)
 static char*
 cex_str_upper(char* s, IAllocator allc)
 {
-    if (s == NULL) {
-        return NULL;
-    }
+    if (s == NULL) { return NULL; }
     usize slen = strlen(s);
     uassert(slen < PTRDIFF_MAX);
 
     char* result = mem$malloc(allc, slen + 1);
     if (result) {
-        for (usize i = 0; i < slen; i++) {
-            result[i] = toupper(s[i]);
-        }
+        for (usize i = 0; i < slen; i++) { result[i] = toupper(s[i]); }
         result[slen] = '\0';
     }
     return result;
@@ -8815,16 +8514,11 @@ cex_str_upper(char* s, IAllocator allc)
 static arr$(char*) cex_str_split(char* s, char* split_by, IAllocator allc)
 {
     str_s src = cex_str_sstr(s);
-    if (src.buf == NULL || split_by == NULL) {
-        return NULL;
-    }
+    if (src.buf == NULL || split_by == NULL) { return NULL; }
     arr$(char*) result = arr$new(result, allc);
-    if (result == NULL) {
-        return NULL;
-    }
+    if (result == NULL) { return NULL; }
 
-    for$iter(str_s, it, cex_str__slice__iter_split(src, split_by, &it.iterator))
-    {
+    for$iter (str_s, it, cex_str__slice__iter_split(src, split_by, &it.iterator)) {
         char* tok = cex_str__slice__clone(it.val, allc);
         arr$push(result, tok);
     }
@@ -8835,30 +8529,22 @@ static arr$(char*) cex_str_split(char* s, char* split_by, IAllocator allc)
 static arr$(char*) cex_str_split_lines(char* s, IAllocator allc)
 {
     uassert(allc != NULL);
-    if (s == NULL) {
-        return NULL;
-    }
+    if (s == NULL) { return NULL; }
     arr$(char*) result = arr$new(result, allc);
-    if (result == NULL) {
-        return NULL;
-    }
+    if (result == NULL) { return NULL; }
     char c;
     char* line_start = s;
     char* cur = s;
     while ((c = *cur)) {
         switch (c) {
             case '\r':
-                if (cur[1] == '\n') {
-                    goto default_next;
-                }
+                if (cur[1] == '\n') { goto default_next; }
                 fallthrough();
             case '\n':
             case '\v':
             case '\f': {
                 str_s line = { .buf = (char*)line_start, .len = cur - line_start };
-                if (line.len > 0 && line.buf[line.len - 1] == '\r') {
-                    line.len--;
-                }
+                if (line.len > 0 && line.buf[line.len - 1] == '\r') { line.len--; }
                 char* tok = cex_str__slice__clone(line, allc);
                 arr$push(result, tok);
                 line_start = cur + 1;
@@ -8875,23 +8561,16 @@ static arr$(char*) cex_str_split_lines(char* s, IAllocator allc)
 static char*
 cex_str_join(char** str_arr, usize str_arr_len, char* join_by, IAllocator allc)
 {
-    if (str_arr == NULL || join_by == NULL) {
-        return NULL;
-    }
+    if (str_arr == NULL || join_by == NULL) { return NULL; }
 
     usize jlen = strlen(join_by);
-    if (jlen == 0) {
-        return NULL;
-    }
+    if (jlen == 0) { return NULL; }
 
     char* result = NULL;
     usize cursor = 0;
-    for$each(s, str_arr, str_arr_len)
-    {
+    for$each (s, str_arr, str_arr_len) {
         if (s == NULL) {
-            if (result != NULL) {
-                mem$free(allc, result);
-            }
+            if (result != NULL) { mem$free(allc, result); }
             return NULL;
         }
         usize slen = strlen(s);
@@ -8912,9 +8591,7 @@ cex_str_join(char** str_arr, usize str_arr_len, char* join_by, IAllocator allc)
         memcpy(&result[cursor], s, slen);
         cursor += slen;
     }
-    if (result) {
-        result[cursor] = '\0';
-    }
+    if (result) { result[cursor] = '\0'; }
 
     return result;
 }
@@ -8923,21 +8600,15 @@ cex_str_join(char** str_arr, usize str_arr_len, char* join_by, IAllocator allc)
 static bool
 _cex_str_match(char* str, isize str_len, char* pattern)
 {
-    if (unlikely(str == NULL || str_len <= 0)) {
-        return false;
-    }
+    if (unlikely(str == NULL || str_len <= 0)) { return false; }
     uassert(pattern && "null pattern");
 
     while (*pattern != '\0') {
         switch (*pattern) {
             case '*':
-                while (*pattern == '*') {
-                    pattern++;
-                }
+                while (*pattern == '*') { pattern++; }
 
-                if (!*pattern) {
-                    return true;
-                }
+                if (!*pattern) { return true; }
 
                 if (*pattern != '?' && *pattern != '[' && *pattern != '(' && *pattern != '\\') {
                     while (str_len > 0 && *pattern != *str) {
@@ -8947,9 +8618,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                 }
 
                 while (str_len > 0) {
-                    if (_cex_str_match(str, str_len, pattern)) {
-                        return true;
-                    }
+                    if (_cex_str_match(str, str_len, pattern)) { return true; }
                     str++;
                     str_len--;
                 }
@@ -8999,13 +8668,9 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                         str_len--;
                     }
                     if (*pattern == '|') {
-                        if (!matched) {
-                            continue;
-                        }
+                        if (!matched) { continue; }
                         // we have found the match, just skip to the end of group
-                        while (*pattern != ')' && *pattern != '\0') {
-                            pattern++;
-                        }
+                        while (*pattern != ')' && *pattern != '\0') { pattern++; }
                     }
 
                     if (unlikely(*pattern != ')')) {
@@ -9048,17 +8713,13 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                                 *pattern,
                                 *(pattern + 2)
                             );
-                            if (*str >= *pattern && *str <= *(pattern + 2)) {
-                                matched = true;
-                            }
+                            if (*str >= *pattern && *str <= *(pattern + 2)) { matched = true; }
                             pattern += 3;
                         } else if (*pattern == '\\') {
                             // Escape sequence
                             pattern++;
                             if (*pattern != '\0') {
-                                if (*pattern == *str) {
-                                    matched = true;
-                                }
+                                if (*pattern == *str) { matched = true; }
                                 pattern++;
                             }
                         } else {
@@ -9066,9 +8727,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                                 // repeating group [a-z+]@, match all cases until @
                                 repeating = true;
                             } else {
-                                if (*pattern == *str) {
-                                    matched = true;
-                                }
+                                if (*pattern == *str) { matched = true; }
                             }
                             pattern++;
                         }
@@ -9107,15 +8766,11 @@ _cex_str_match(char* str, isize str_len, char* pattern)
             case '\\':
                 // Escape next character
                 pattern++;
-                if (*pattern == '\0') {
-                    return false;
-                }
+                if (*pattern == '\0') { return false; }
                 fallthrough();
 
             default:
-                if (*pattern != *str) {
-                    return false;
-                }
+                if (*pattern != *str) { return false; }
                 str++;
                 str_len--;
                 pattern++;
@@ -9142,9 +8797,7 @@ cex_str_qscmp(const void* a, const void* b)
     const char* _a = *(const char**)a;
     const char* _b = *(const char**)b;
 
-    if (_a == NULL || _b == NULL) {
-        return (_a < _b) - (_a > _b);
-    }
+    if (_a == NULL || _b == NULL) { return (_a < _b) - (_a > _b); }
     return strcmp(_a, _b);
 }
 
@@ -9154,15 +8807,11 @@ cex_str_qscmpi(const void* a, const void* b)
     const char* _a = *(const char**)a;
     const char* _b = *(const char**)b;
 
-    if (_a == NULL || _b == NULL) {
-        return (_a < _b) - (_a > _b);
-    }
+    if (_a == NULL || _b == NULL) { return (_a < _b) - (_a > _b); }
 
     while (*_a && *_b) {
         int diff = tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
-        if (diff != 0) {
-            return diff;
-        }
+        if (diff != 0) { return diff; }
         _a++;
         _b++;
     }
@@ -9286,9 +8935,7 @@ _sbuf__alloc_capacity(usize capacity)
     } else {
         // Round up to closest pow*2 int
         u64 p = 4;
-        while (p < capacity) {
-            p *= 2;
-        }
+        while (p < capacity) { p *= 2; }
         return p;
     }
 }
@@ -9323,14 +8970,10 @@ cex_sbuf_create(u32 capacity, IAllocator allocator)
         return NULL;
     }
 
-    if (capacity < 512) {
-        capacity = _sbuf__alloc_capacity(capacity);
-    }
+    if (capacity < 512) { capacity = _sbuf__alloc_capacity(capacity); }
 
     char* buf = mem$malloc(allocator, capacity);
-    if (unlikely(buf == NULL)) {
-        return NULL;
-    }
+    if (unlikely(buf == NULL)) { return NULL; }
 
     sbuf_head_s* head = (sbuf_head_s*)buf;
     *head = (sbuf_head_s){
@@ -9437,9 +9080,7 @@ static u32
 cex_sbuf_len(sbuf_c* self)
 {
     uassert(self != NULL);
-    if (*self == NULL) {
-        return 0;
-    }
+    if (*self == NULL) { return 0; }
     sbuf_head_s* head = _sbuf__head(*self);
     return head->length;
 }
@@ -9482,9 +9123,7 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
     sbuf_c sbuf = ((char*)ctx->head + sizeof(sbuf_head_s));
 
     uassert(ctx->head->header.magic == 0xf00e && "not a sbuf_head_s / bad pointer");
-    if (unlikely(ctx->err != EOK)) {
-        return NULL;
-    }
+    if (unlikely(ctx->err != EOK)) { return NULL; }
     uassert((buf != ctx->buf) || (sbuf + ctx->length + len <= sbuf + ctx->count && "out of bounds"));
 
     if (unlikely(ctx->length + len > ctx->count)) {
@@ -9496,8 +9135,7 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
         }
 
         // sbuf likely changed after realloc
-        e$except_silent(err, _sbuf__grow_buffer(&sbuf, ctx->length + len + 1))
-        {
+        e$except_silent (err, _sbuf__grow_buffer(&sbuf, ctx->length + len + 1)) {
             ctx->err = err;
             return NULL;
         }
@@ -9508,9 +9146,7 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
         ctx->buf = sbuf + ctx->head->length;
         ctx->count = ctx->head->capacity;
         uassert(ctx->count >= ctx->length);
-        if (!buf_is_tmp) {
-            buf = ctx->buf;
-        }
+        if (!buf_is_tmp) { buf = ctx->buf; }
     }
 
     ctx->length += len;
@@ -9527,9 +9163,7 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
 static Exception
 cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
 {
-    if (unlikely(self == NULL)) {
-        return Error.argument;
-    }
+    if (unlikely(self == NULL)) { return Error.argument; }
     sbuf_head_s* head = _sbuf__head(*self);
 
     struct _sbuf__sprintf_ctx ctx = {
@@ -9575,9 +9209,7 @@ cex_sbuf_append(sbuf_c* self, char* s)
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
 
-    if (unlikely(s == NULL)) {
-        return Error.argument;
-    }
+    if (unlikely(s == NULL)) { return Error.argument; }
 
     u32 length = head->length;
     u32 capacity = head->capacity;
@@ -9587,10 +9219,7 @@ cex_sbuf_append(sbuf_c* self, char* s)
 
     // Try resize
     if (length + slen > capacity - 1) {
-        e$except_silent(err, _sbuf__grow_buffer(self, length + slen))
-        {
-            return err;
-        }
+        e$except_silent (err, _sbuf__grow_buffer(self, length + slen)) { return err; }
     }
     memcpy((*self + length), s, slen);
     length += slen;
@@ -9608,27 +9237,15 @@ cex_sbuf_append(sbuf_c* self, char* s)
 static bool
 cex_sbuf_isvalid(sbuf_c* self)
 {
-    if (self == NULL) {
-        return false;
-    }
-    if (*self == NULL) {
-        return false;
-    }
+    if (self == NULL) { return false; }
+    if (*self == NULL) { return false; }
 
     sbuf_head_s* head = (sbuf_head_s*)((char*)(*self) - sizeof(sbuf_head_s));
 
-    if (head->header.magic != 0xf00e) {
-        return false;
-    }
-    if (head->capacity == 0) {
-        return false;
-    }
-    if (head->length > head->capacity) {
-        return false;
-    }
-    if (head->header.nullterm != 0) {
-        return false;
-    }
+    if (head->header.magic != 0xf00e) { return false; }
+    if (head->capacity == 0) { return false; }
+    if (head->length > head->capacity) { return false; }
+    if (head->header.nullterm != 0) { return false; }
 
     return true;
 }
@@ -10228,11 +9845,8 @@ cex_argparse_usage(argparse_c* self)
     io.printf("Usage:\n");
     if (self->usage) {
 
-        for$iter(str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator))
-        {
-            if (it.val.len == 0) {
-                break;
-            }
+        for$iter (str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator)) {
+            if (it.val.len == 0) { break; }
 
             char* fn = strrchr(self->program_name, '/');
             if (fn != NULL) {
@@ -10241,9 +9855,7 @@ cex_argparse_usage(argparse_c* self)
                 io.printf("%s ", self->program_name);
             }
 
-            if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) {
-                ;
-            }
+            if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) { ; }
 
             fputc('\n', stdout);
         }
@@ -10267,9 +9879,7 @@ cex_argparse_usage(argparse_c* self)
     }
 
     // print description
-    if (self->description) {
-        io.printf("%s\n", self->description);
-    }
+    if (self->description) { io.printf("%s\n", self->description); }
 
     fputc('\n', stdout);
 
@@ -10280,15 +9890,11 @@ cex_argparse_usage(argparse_c* self)
     for$eachp(opt, self->options, self->options_len)
     {
         len = 0;
-        if (opt->short_name) {
-            len += 2;
-        }
+        if (opt->short_name) { len += 2; }
         if (opt->short_name && opt->long_name) {
             len += 2; // separator ", "
         }
-        if (opt->long_name) {
-            len += strlen(opt->long_name) + 2;
-        }
+        if (opt->long_name) { len += strlen(opt->long_name) + 2; }
         switch (opt->type) {
             case CexArgParseType__boolean:
                 break;
@@ -10311,9 +9917,7 @@ cex_argparse_usage(argparse_c* self)
                 break;
         }
         len = (len + 3) - ((len + 3) & 3);
-        if (usage_opts_width < len) {
-            usage_opts_width = len;
-        }
+        if (usage_opts_width < len) { usage_opts_width = len; }
     }
     usage_opts_width += 4; // 4 spaces prefix
 
@@ -10328,15 +9932,9 @@ cex_argparse_usage(argparse_c* self)
             continue;
         }
         pos = io.printf("    ");
-        if (opt->short_name) {
-            pos += io.printf("-%c", opt->short_name);
-        }
-        if (opt->long_name && opt->short_name) {
-            pos += io.printf(", ");
-        }
-        if (opt->long_name) {
-            pos += io.printf("--%s", opt->long_name);
-        }
+        if (opt->short_name) { pos += io.printf("-%c", opt->short_name); }
+        if (opt->long_name && opt->short_name) { pos += io.printf(", "); }
+        if (opt->long_name) { pos += io.printf("--%s", opt->long_name); }
 
         if (pos <= usage_opts_width) {
             pad = usage_opts_width - pos;
@@ -10348,15 +9946,11 @@ cex_argparse_usage(argparse_c* self)
             io.printf("%*s%s", (int)pad + 2, "", opt->help);
         } else {
             u32 i = 0;
-            for$iter(str_s, it, str.slice.iter_split(str.sstr(opt->help), "\n", &it.iterator)) {
+            for$iter (str_s, it, str.slice.iter_split(str.sstr(opt->help), "\n", &it.iterator)) {
                 str_s clean = str.slice.strip(it.val);
-                if (clean.len == 0) {
-                    continue;
-                }
-                if (i > 0) {
-                    io.printf("\n");
-                }
-                io.printf("%*s%S", (i==0) ? pad+2 : usage_opts_width + 2, "", clean);
+                if (clean.len == 0) { continue; }
+                if (i > 0) { io.printf("\n"); }
+                io.printf("%*s%S", (i == 0) ? pad + 2 : usage_opts_width + 2, "", clean);
                 i++;
             }
         }
@@ -10368,7 +9962,7 @@ cex_argparse_usage(argparse_c* self)
                     io.printf("%c", *(bool*)opt->value ? 'Y' : 'N');
                     break;
                 case CexArgParseType__string:
-                    if (*(char**)opt->value != NULL){
+                    if (*(char**)opt->value != NULL) {
                         io.printf("'%s'", *(char**)opt->value);
                     } else {
                         io.printf("''");
@@ -10418,12 +10012,11 @@ cex_argparse_usage(argparse_c* self)
     }
 
     // print epilog
-    if (self->epilog) {
-        io.printf("%s\n", self->epilog);
-    }
+    if (self->epilog) { io.printf("%s\n", self->epilog); }
 }
 __attribute__((no_sanitize("undefined"))) static inline Exception
-_cex_argparse__convert(char* s, argparse_opt_s* opt){
+_cex_argparse__convert(char* s, argparse_opt_s* opt)
+{
     // NOTE: this hits UBSAN because we casting convert function of
     // (char*, void*) into str.convert.to_u32(char*, u32*)
     // however we do explicit type checking and tagging so it should be good!
@@ -10433,9 +10026,7 @@ _cex_argparse__convert(char* s, argparse_opt_s* opt){
 static Exception
 _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
 {
-    if (!opt->value) {
-        goto skipped;
-    }
+    if (!opt->value) { goto skipped; }
 
     switch (opt->type) {
         case CexArgParseType__boolean:
@@ -10470,8 +10061,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                     return _cex_argparse__error(self, opt, "requires a value", is_long);
                 }
                 uassert(opt->convert != NULL);
-                e$except_silent(err,_cex_argparse__convert(self->_ctx.optvalue, opt) )
-                {
+                e$except_silent (err, _cex_argparse__convert(self->_ctx.optvalue, opt)) {
                     return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
                 self->_ctx.optvalue = NULL;
@@ -10479,8 +10069,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                 self->argc--;
                 self->_ctx.cpidx++;
                 self->argv++;
-                e$except_silent(err, _cex_argparse__convert(*self->argv, opt))
-                {
+                e$except_silent (err, _cex_argparse__convert(*self->argv, opt)) {
                     return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
             } else {
@@ -10615,23 +10204,15 @@ _cex_argparse__long_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         char* rest;
-        if (!options->long_name) {
-            continue;
-        }
+        if (!options->long_name) { continue; }
         rest = _cex_argparse__prefix_skip(self->argv[0] + 2, options->long_name);
         if (!rest) {
-            if (options->type != CexArgParseType__boolean) {
-                continue;
-            }
+            if (options->type != CexArgParseType__boolean) { continue; }
             rest = _cex_argparse__prefix_skip(self->argv[0] + 2 + 3, options->long_name);
-            if (!rest) {
-                continue;
-            }
+            if (!rest) { continue; }
         }
         if (*rest) {
-            if (*rest != '=') {
-                continue;
-            }
+            if (*rest != '=') { continue; }
             self->_ctx.optvalue = rest + 1;
         }
         return _cex_argparse__getvalue(self, options, true);
@@ -10669,9 +10250,7 @@ _cex_argparse__parse_commands(argparse_c* self)
     if (self->commands_len == 0) {
         argparse_cmd_s* _cmd = self->commands;
         while (_cmd != NULL) {
-            if (_cmd->name == NULL) {
-                break;
-            }
+            if (_cmd->name == NULL) { break; }
             self->commands_len++;
             _cmd++;
         }
@@ -10718,18 +10297,13 @@ _cex_argparse__parse_options(argparse_c* self)
     if (self->options_len == 0) {
         argparse_opt_s* _opt = self->options;
         while (_opt != NULL) {
-            if (_opt->type == CexArgParseType__na) {
-                break;
-            }
+            if (_opt->type == CexArgParseType__na) { break; }
             self->options_len++;
             _opt++;
         }
     }
     int initial_argc = self->argc + 1;
-    e$except_silent(err, _cex_argparse__options_check(self, true))
-    {
-        return err;
-    }
+    e$except_silent (err, _cex_argparse__options_check(self, true)) { return err; }
 
     for (; self->argc; self->argc--, self->argv++) {
         char* arg = self->argv[0];
@@ -10752,13 +10326,11 @@ _cex_argparse__parse_options(argparse_c* self)
 
             self->_ctx.optvalue = arg + 1;
             self->_ctx.cpidx++;
-            e$except_silent(err, _cex_argparse__short_opt(self, self->options))
-            {
+            e$except_silent (err, _cex_argparse__short_opt(self, self->options)) {
                 return _cex_argparse__report_error(self, err);
             }
             while (self->_ctx.optvalue) {
-                e$except_silent(err, _cex_argparse__short_opt(self, self->options))
-                {
+                e$except_silent (err, _cex_argparse__short_opt(self, self->options)) {
                     return _cex_argparse__report_error(self, err);
                 }
             }
@@ -10776,18 +10348,14 @@ _cex_argparse__parse_options(argparse_c* self)
             // Breaking when first argument appears (more flexible support of subcommands)
             break;
         }
-        e$except_silent(err, _cex_argparse__long_opt(self, self->options))
-        {
+        e$except_silent (err, _cex_argparse__long_opt(self, self->options)) {
             return _cex_argparse__report_error(self, err);
         }
         self->_ctx.cpidx++;
         continue;
     }
 
-    e$except_silent(err, _cex_argparse__options_check(self, false))
-    {
-        return err;
-    }
+    e$except_silent (err, _cex_argparse__options_check(self, false)) { return err; }
 
     self->argv = self->_ctx.out + self->_ctx.cpidx + 1; // excludes 1st argv[0], program_name
     self->argc = initial_argc - self->_ctx.cpidx - 1;
@@ -10807,9 +10375,7 @@ cex_argparse_parse(argparse_c* self, int argc, char** argv)
     uassert(argv != NULL);
     uassert(argv[0] != NULL);
 
-    if (self->program_name == NULL) {
-        self->program_name = argv[0];
-    }
+    if (self->program_name == NULL) { self->program_name = argv[0]; }
 
     // reset if we have several runs
     memset(&self->_ctx, 0, sizeof(self->_ctx));
@@ -10845,12 +10411,8 @@ cex_argparse_next(argparse_c* self)
                 if (eq) {
                     static char part_arg[128]; // temp buffer sustained after scope exit
                     self->_ctx.cpidx = eq - result;
-                    if ((usize)self->_ctx.cpidx + 1 >= sizeof(part_arg)) {
-                        return NULL;
-                    }
-                    if (str.copy(part_arg, result, sizeof(part_arg))) {
-                        return NULL;
-                    }
+                    if ((usize)self->_ctx.cpidx + 1 >= sizeof(part_arg)) { return NULL; }
+                    if (str.copy(part_arg, result, sizeof(part_arg))) { return NULL; }
                     part_arg[self->_ctx.cpidx] = '\0';
                     return part_arg;
                 }
@@ -12072,12 +11634,7 @@ cex_os__fs__remove(char* path)
 }
 
 Exception
-cex_os__fs__dir_walk(
-    char* path,
-    bool is_recursive,
-    os_fs_dir_walk_f callback_fn,
-    void* user_ctx
-)
+cex_os__fs__dir_walk(char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
 {
     (void)user_ctx;
     if (path == NULL || path[0] == '\0') { return Error.argument; }
@@ -12991,7 +12548,7 @@ const struct __cex_namespace__os os = {
 *                          src/test.c
 */
 #ifdef CEX_TEST
-#include <math.h>
+#    include <math.h>
 
 enum _cex_test_eq_op_e
 {
@@ -13252,8 +12809,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
                 a,
                 ops,
                 b
-            )) {
-        }
+            )) {}
         return _cex_test__mainfn_state.str_buf;
     }
     return EOK;
@@ -13290,9 +12846,7 @@ cex_test_unmute(Exc test_result)
             fflush(stderr);
             fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
             int c;
-            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') {
-                putc(c, stderr);
-            }
+            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') { putc(c, stderr); }
             fprintf(stderr, "\n============== <<<<<< TEST OUTPUT =============\n");
         }
     }
@@ -13312,11 +12866,8 @@ cex_test_main_fn(int argc, char** argv)
         return 1;
     }
     u32 max_name = 0;
-    for$each(t, ctx->test_cases)
-    {
-        if (max_name < strlen(t.test_name) + 2) {
-            max_name = strlen(t.test_name) + 2;
-        }
+    for$each (t, ctx->test_cases) {
+        if (max_name < strlen(t.test_name) + 2) { max_name = strlen(t.test_name) + 2; }
     }
     max_name = (max_name < 70) ? 70 : max_name;
 
@@ -13342,10 +12893,7 @@ cex_test_main_fn(int argc, char** argv)
         .description = "Test runner program",
     };
 
-    e$except_silent(err, argparse.parse(&args, argc, argv))
-    {
-        return 1;
-    }
+    e$except_silent (err, argparse.parse(&args, argc, argv)) { return 1; }
 
     if (!ctx->no_stdout_capture) {
         ctx->out_stream = tmpfile();
@@ -13384,31 +12932,22 @@ cex_test_main_fn(int argc, char** argv)
         }
     }
 
-    if (ctx->quiet_mode) {
-        fprintf(stderr, "%s ", ctx->suite_file);
-    }
+    if (ctx->quiet_mode) { fprintf(stderr, "%s ", ctx->suite_file); }
 
-    for$each(t, ctx->test_cases)
-    {
+    for$each (t, ctx->test_cases) {
         ctx->case_name = t.test_name;
         ctx->tests_run++;
-        if (ctx->case_filter && !str.find(t.test_name, ctx->case_filter)) {
-            continue;
-        }
+        if (ctx->case_filter && !str.find(t.test_name, ctx->case_filter)) { continue; }
 
         if (!ctx->quiet_mode) {
             fprintf(stderr, "%s", t.test_name);
-            for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
-                putc('.', stderr);
-            }
-            if (ctx->no_stdout_capture) {
-                putc('\n', stderr);
-            }
+            for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) { putc('.', stderr); }
+            if (ctx->no_stdout_capture) { putc('\n', stderr); }
         }
 
-#ifndef NDEBUG
+#    ifndef NDEBUG
         uassert_enable(); // unconditionally enable previously disabled asserts
-#endif
+#    endif
         Exc err = EOK;
         AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
         alloc_heap->stats.n_allocs = 0;
@@ -13468,9 +13007,7 @@ cex_test_main_fn(int argc, char** argv)
         if (err == EOK && alloc_heap->stats.n_allocs != alloc_heap->stats.n_free) {
             if (!ctx->quiet_mode) {
                 fprintf(stderr, "%s", t.test_name);
-                for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
-                    putc('.', stderr);
-                }
+                for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) { putc('.', stderr); }
             } else {
                 putc('\n', stderr);
             }
@@ -13492,8 +13029,7 @@ cex_test_main_fn(int argc, char** argv)
     }
 
     if (ctx->teardown_suite_fn) {
-        e$except(err, ctx->teardown_suite_fn())
-        {
+        e$except (err, ctx->teardown_suite_fn()) {
             fprintf(
                 stderr,
                 "[%s] test$teardown_suite() failed with %s (suite %s stopped)\n",
@@ -13542,39 +13078,29 @@ cex_test_main_fn(int argc, char** argv)
 void
 _cex__codegen_indent(_cex__codegen_s* cg)
 {
-    if (unlikely(cg->error != EOK)) {
-        return;
-    }
+    if (unlikely(cg->error != EOK)) { return; }
     for (u32 i = 0; i < cg->indent; i++) {
         Exc err = sbuf.append(cg->buf, " ");
-        if (unlikely(err != EOK && cg->error != EOK)) {
-            cg->error = err;
-        }
+        if (unlikely(err != EOK && cg->error != EOK)) { cg->error = err; }
     }
 }
 
-#define cg$printva(cg) /* temp macro! */                                                           \
-    do {                                                                                           \
-        va_list va;                                                                                \
-        va_start(va, format);                                                                      \
-        Exc err = sbuf.appendfva(cg->buf, format, va);                                             \
-        if (unlikely(err != EOK && cg->error != EOK)) {                                            \
-            cg->error = err;                                                                       \
-        }                                                                                          \
-        va_end(va);                                                                                \
-    } while (0)
+#    define cg$printva(cg) /* temp macro! */                                                       \
+        do {                                                                                       \
+            va_list va;                                                                            \
+            va_start(va, format);                                                                  \
+            Exc err = sbuf.appendfva(cg->buf, format, va);                                         \
+            if (unlikely(err != EOK && cg->error != EOK)) { cg->error = err; }                     \
+            va_end(va);                                                                            \
+        } while (0)
 
 void
 _cex__codegen_print(_cex__codegen_s* cg, bool rep_new_line, char* format, ...)
 {
-    if (unlikely(cg->error != EOK)) {
-        return;
-    }
+    if (unlikely(cg->error != EOK)) { return; }
     if (rep_new_line) {
         usize slen = sbuf.len(cg->buf);
-        if (slen && cg->buf[0][slen - 1] == '\n') {
-            sbuf.shrink(cg->buf, slen - 1);
-        }
+        if (slen && cg->buf[0][slen - 1] == '\n') { sbuf.shrink(cg->buf, slen - 1); }
     }
     cg$printva(cg);
 }
@@ -13582,12 +13108,8 @@ _cex__codegen_print(_cex__codegen_s* cg, bool rep_new_line, char* format, ...)
 void
 _cex__codegen_print_line(_cex__codegen_s* cg, char* format, ...)
 {
-    if (unlikely(cg->error != EOK)) {
-        return;
-    }
-    if (format[0] != '\n'){
-        _cex__codegen_indent(cg);
-    }
+    if (unlikely(cg->error != EOK)) { return; }
+    if (format[0] != '\n') { _cex__codegen_indent(cg); }
     cg$printva(cg);
 }
 
@@ -13595,9 +13117,7 @@ _cex__codegen_s*
 _cex__codegen_print_scope_enter(_cex__codegen_s* cg, char* format, ...)
 {
     usize slen = sbuf.len(cg->buf);
-    if (slen && cg->buf[0][slen - 1] == '\n') {
-        _cex__codegen_indent(cg);
-    }
+    if (slen && cg->buf[0][slen - 1] == '\n') { _cex__codegen_indent(cg); }
     cg$printva(cg);
     _cex__codegen_print(cg, false, "%c\n", '{');
     cg->indent += 4;
@@ -13610,9 +13130,7 @@ _cex__codegen_print_scope_exit(_cex__codegen_s** cgptr)
     uassert(*cgptr != NULL);
     _cex__codegen_s* cg = *cgptr;
 
-    if (cg->indent >= 4) {
-        cg->indent -= 4;
-    }
+    if (cg->indent >= 4) { cg->indent -= 4; }
     _cex__codegen_indent(cg);
     _cex__codegen_print(cg, false, "%c\n", '}');
 }
@@ -13634,16 +13152,14 @@ _cex__codegen_print_case_exit(_cex__codegen_s** cgptr)
     uassert(*cgptr != NULL);
     _cex__codegen_s* cg = *cgptr;
 
-    if (cg->indent >= 4) {
-        cg->indent -= 4;
-    }
+    if (cg->indent >= 4) { cg->indent -= 4; }
     _cex__codegen_indent(cg);
     _cex__codegen_print_line(cg, "break;\n", '}');
     _cex__codegen_indent(cg);
     _cex__codegen_print(cg, false, "%c\n", '}');
 }
 
-#undef cg$printva
+#    undef cg$printva
 #endif // #ifdef CEX_BUILD
 
 
@@ -13944,12 +13460,7 @@ cexy_src_changed(char* target_path, char** src_array, usize src_array_len)
 }
 
 static char*
-cexy_target_make(
-    char* src_path,
-    char* build_dir,
-    char* name_or_extension,
-    IAllocator allocator
-)
+cexy_target_make(char* src_path, char* build_dir, char* name_or_extension, IAllocator allocator)
 {
     uassert(allocator != NULL);
 
@@ -14405,8 +13916,8 @@ _cexy__fn_match(str_s fn_name, str_s ns_prefix)
         if (str.slice.match(fn_name, fn_sub_pattern) ||
             str.slice.match(fn_name, fn_sub_pattern_cex)) {
             return true;
-        } else if ((str.slice.match(fn_name, fn_private) || str.slice.match(fn_name, fn_private_cex)
-                   ) ||
+        } else if ((str.slice.match(fn_name, fn_private) ||
+                    str.slice.match(fn_name, fn_private_cex)) ||
                    (!str.slice.match(fn_name, fn_pattern_cex) &&
                     !str.slice.match(fn_name, fn_pattern))) {
             return false;
@@ -16053,7 +15564,8 @@ cexy__utils__pkgconf(
         arr$pushm(args, cexy$pkgconf_cmd);
         arr$pusha(args, pkgconf_args, pkgconf_args_len);
         arr$push(args, NULL);
-        e$ret(os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
+        e$ret(
+            os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
         );
 
         char* output = os.cmd.read_all(&c, _);
@@ -16132,8 +15644,8 @@ cexy__utils__git_lib_fetch(
         bool needs_update = false;
         for$each (it, repo_paths, repo_paths_len) {
             char* out_file = (preserve_dirs)
-                                     ? str.fmt(_, "%s/%s", out_dir, it)
-                                     : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
+                               ? str.fmt(_, "%s/%s", out_dir, it)
+                               : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
 
             log$info("Lib file: %s -> %s\n", it, out_file);
             if (!os.path.exists(out_file)) { needs_update = true; }
@@ -16175,8 +15687,8 @@ cexy__utils__git_lib_fetch(
             char* in_path = str.fmt(_, "%s/%s", repo_dir, it);
 
             char* out_path = (preserve_dirs)
-                                     ? str.fmt(_, "%s/%s", out_dir, it)
-                                     : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
+                               ? str.fmt(_, "%s/%s", out_dir, it)
+                               : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
             var in_stat = os.fs.stat(in_path);
             if (!in_stat.is_valid) {
                 return e$raise(in_stat.error, "Invalid stat for path: %s", in_path);
@@ -17724,16 +17236,17 @@ const struct __cex_namespace__json json = {
 *                          src/cex_maker.c
 */
 #if defined(CEX_NEW)
-#if __has_include("cex.c")
-    #error "cex.c already exists, CEX project seems initialized, try run `gcc[clang] ./cex.c -o cex`"
-#endif
+#    if __has_include("cex.c")
+#        error                                                                                     \
+            "cex.c already exists, CEX project seems initialized, try run `gcc[clang] ./cex.c -o cex`"
+#    endif
 
-int main(int argc, char** argv) {
+int
+main(int argc, char** argv)
+{
     (void)argc;
     (void)argv;
-    e$except(err, cexy.utils.make_new_project(".")) {
-        return 1;
-    }
+    e$except (err, cexy.utils.make_new_project(".")) { return 1; }
     io.printf("\n\nMOCCA - Make Old C Cexy Again!\n");
     io.printf("Cex project has been initialized!\n");
     io.printf("See the 'cex.c' building script for more info.\n");
