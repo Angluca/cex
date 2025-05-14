@@ -356,7 +356,7 @@ test$case(stb_sprintf_strings)
             // We in production test on big endian arch (%s-Bad) stuff likely to segfault!
             return EOK;
         }
-        char *valgrind_env = getenv("CEX_VALGRIND");
+        char* valgrind_env = getenv("CEX_VALGRIND");
         if (valgrind_env && valgrind_env[0] == '1') {
             // Running under VALGRIND, causes errors, this is expected, just skip
             return EOK;

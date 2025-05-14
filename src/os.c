@@ -389,12 +389,7 @@ cex_os__fs__remove(char* path)
 }
 
 Exception
-cex_os__fs__dir_walk(
-    char* path,
-    bool is_recursive,
-    os_fs_dir_walk_f callback_fn,
-    void* user_ctx
-)
+cex_os__fs__dir_walk(char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
 {
     (void)user_ctx;
     if (path == NULL || path[0] == '\0') { return Error.argument; }

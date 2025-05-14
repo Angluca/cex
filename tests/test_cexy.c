@@ -6,7 +6,7 @@
 
 test$setup_case()
 {
-    if(os.fs.remove_tree(TBUILDDIR)){};
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     e$assert(!os.path.exists(TBUILDDIR) && "must not exist!");
     e$ret(os.fs.mkpath(TBUILDDIR));
     e$assert(os.path.exists(TBUILDDIR) && "must exist!");
@@ -14,7 +14,7 @@ test$setup_case()
 }
 test$teardown_case()
 {
-    if(os.fs.remove_tree(TBUILDDIR)){};
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     return EOK;
 }
 
@@ -103,7 +103,7 @@ test$case(test_needs_build)
         char* tgt = TBUILDDIR " my_tgt";
         arr$(char*) src = arr$new(src, _);
 
-        char* src_file = TBUILDDIR "my_tgt.c"; 
+        char* src_file = TBUILDDIR "my_tgt.c";
         arr$pushm(src, src_file);
 
         e$ret(io.file.save(src[0], "// hello"));
@@ -378,8 +378,7 @@ test$case(test_git_lib_fetch_no_rewrite)
         tassert(os.path.exists(TBUILDDIR "/out/random/Random.h"));
 
         u32 nfiles = 0;
-        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
-        {
+        for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
             var stat = os.fs.stat(it);
             tassert(stat.is_valid);
@@ -405,8 +404,7 @@ test$case(test_git_lib_fetch_no_rewrite)
         );
 
         nfiles = 0;
-        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
-        {
+        for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
             var stat = os.fs.stat(it);
             tassert(stat.is_valid);
@@ -429,8 +427,7 @@ test$case(test_git_lib_fetch_no_rewrite)
             )
         );
         nfiles = 0;
-        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
-        {
+        for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
             var stat = os.fs.stat(it);
             tassert(stat.is_valid);
@@ -474,8 +471,7 @@ test$case(test_git_lib_fetch_update)
         tassert(os.path.exists(TBUILDDIR "/out/random/Random.h"));
 
         u32 nfiles = 0;
-        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
-        {
+        for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
             var stat = os.fs.stat(it);
             tassert(stat.is_valid);
@@ -503,8 +499,7 @@ test$case(test_git_lib_fetch_update)
         );
 
         nfiles = 0;
-        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
-        {
+        for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
             var stat = os.fs.stat(it);
             tassert(stat.is_valid);
@@ -527,8 +522,7 @@ test$case(test_git_lib_fetch_update)
 
         nfiles = 0;
         tassert(os.path.exists(TBUILDDIR "/out/random/MyFile.h"));
-        for$each(it, os.fs.find(TBUILDDIR "/out/*.*", true, _))
-        {
+        for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
             var stat = os.fs.stat(it);
             tassert(stat.is_valid);

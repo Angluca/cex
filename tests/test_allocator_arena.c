@@ -189,17 +189,14 @@ test$case(test_allocator_arena_malloc_pointer_alignment)
             tassert(p != NULL);
             tassert(mem$aligned_pointer(p, 8) == p);
 
-            for$each(alignment, align)
-            {
+            for$each (alignment, align) {
                 tassert(page == allc->last_page && "this test case expected to use one page");
                 tassert(alignment >= 8);
                 tassert(alignment <= 64);
                 tassert(mem$is_power_of2(alignment));
                 usize alloc_size = alignment * (i % 4 + 1);
                 char* ptr_algn = arena->calloc(arena, 1, alloc_size, alignment);
-                for (u32 j = 0; j < alloc_size; j++) {
-                    tassert(ptr_algn[j] == 0);
-                }
+                for (u32 j = 0; j < alloc_size; j++) { tassert(ptr_algn[j] == 0); }
                 memset(ptr_algn, 0xAA, alloc_size);
                 tassert(ptr_algn != NULL);
                 // ensure returned pointers are aligned
@@ -259,8 +256,7 @@ test$case(test_allocator_arena_scope_sanitization)
                 tassert(p != NULL);
                 tassert(mem$aligned_pointer(p, 8) == p);
 
-                for$each(alignment, align)
-                {
+                for$each (alignment, align) {
                     tassert(alignment >= 8);
                     tassert(alignment <= 64);
                     tassert(mem$is_power_of2(alignment));
@@ -484,9 +480,7 @@ test$case(test_allocator_arena_malloc_mem_pattern)
     {
         u8* p = mem$malloc(_, 100);
         tassert(p != NULL);
-        for (u32 i = 0; i < 100; i++) {
-            tassert(p[i] == 0xf7);
-        }
+        for (u32 i = 0; i < 100; i++) { tassert(p[i] == 0xf7); }
     }
 
     AllocatorArena_destroy(arena);
@@ -551,9 +545,7 @@ test$case(test_allocator_arena_realloc_last_pointer)
                 tassert_eq(p[i - 1], i - 1);
                 p[i] = i;
             }
-            for (u32 i = 0; i < 200; i++) {
-                tassert_eq(p[i], i);
-            }
+            for (u32 i = 0; i < 200; i++) { tassert_eq(p[i], i); }
         }
         AllocatorArena_sanitize(arena);
     }
@@ -654,12 +646,8 @@ test$case(test_mem_arena_nested_cleanup_assert)
         }
 
         tassert(p2 != NULL);
-        for$each(c, p2, 10040) {
-            tassert(c == 0xbb);
-        }
-        for$each(c, p, 100) {
-            tassert(c == 0xaa);
-        }
+        for$each (c, p2, 10040) { tassert(c == 0xbb); }
+        for$each (c, p, 100) { tassert(c == 0xaa); }
     }
     return EOK;
 }

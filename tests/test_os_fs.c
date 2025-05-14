@@ -3,13 +3,13 @@
 #define TBUILDDIR "tests/build/os_fs_test/"
 test$setup_case()
 {
-    if(os.fs.remove_tree(TBUILDDIR)){};
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     e$ret(os.fs.mkpath(TBUILDDIR));
     return EOK;
 }
 test$teardown_case()
 {
-    if(os.fs.remove_tree(TBUILDDIR)){};
+    if (os.fs.remove_tree(TBUILDDIR)) {};
     return EOK;
 }
 
@@ -37,12 +37,9 @@ p(char* path, IAllocator allc)
 
     sbuf_c buf = sbuf.create(4096, allc);
 
-    for$iter(str_s, it, str.slice.iter_split(str.sstr(path), "/\\", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(str.sstr(path), "/\\", &it.iterator)) {
         if (it.idx.i == 0) {
-            if (sbuf.appendf(&buf, "%S", it.val)) {
-                uassert(false && "appendf failed");
-            }
+            if (sbuf.appendf(&buf, "%S", it.val)) { uassert(false && "appendf failed"); }
         } else {
             if (sbuf.appendf(&buf, "%c%S", os$PATH_SEP, it.val)) {
                 uassert(false && "appendf failed");
@@ -100,8 +97,7 @@ test$case(test_os_find)
         }
 
         u32 nit = 0;
-        for$each(it, files)
-        {
+        for$each (it, files) {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
             nit++;
@@ -126,8 +122,7 @@ test$case(test_os_find_inside_foreach)
         }
 
         u32 nit = 0;
-        for$each(it, os.fs.find(p("tests/data/dir1/", _), false, _))
-        {
+        for$each (it, os.fs.find(p("tests/data/dir1/", _), false, _)) {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
             nit++;
@@ -147,8 +142,7 @@ test$case(test_os_find_exact)
         hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
 
         u32 nit = 0;
-        for$each(it, os.fs.find(p("tests/data/dir1/file1.csv", _), false, _))
-        {
+        for$each (it, os.fs.find(p("tests/data/dir1/file1.csv", _), false, _)) {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
             nit++;
@@ -168,8 +162,7 @@ test$case(test_os_find_exact_recursive)
         hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
 
         u32 nit = 0;
-        for$each(it, os.fs.find(p("tests/data/dir1/file1.csv", _), true, _))
-        {
+        for$each (it, os.fs.find(p("tests/data/dir1/file1.csv", _), true, _)) {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
             nit++;
@@ -186,8 +179,7 @@ test$case(test_os_find_bad_pattern)
     mem$scope(tmem$, _)
     {
         u32 nit = 0;
-        for$each(it, os.fs.find("lakjdalksjdlkjzxcoiasdznxcas", true, _))
-        {
+        for$each (it, os.fs.find("lakjdalksjdlkjzxcoiasdznxcas", true, _)) {
             log$debug("WTF Found: %s\n", it);
             nit++;
         }
@@ -225,8 +217,7 @@ test$case(test_os_find_pattern)
         hm$set(exp_files, p("tests/data/dir1/file3.txt", _), true);
 
         u32 nit = 0;
-        for$each(it, files)
-        {
+        for$each (it, files) {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
             nit++;
@@ -251,8 +242,7 @@ test$case(test_os_find_pattern_glob)
         hm$set(exp_files, p("tests/data/dir1/file3.txt", _), true);
 
         u32 nit = 0;
-        for$each(it, files)
-        {
+        for$each (it, files) {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
             nit++;
@@ -299,8 +289,7 @@ test$case(test_os_find_recursive)
         }
 
         u32 nit = 0;
-        for$each(it, files)
-        {
+        for$each (it, files) {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
             nit++;
@@ -324,8 +313,7 @@ test$case(test_os_find_direct_match)
         hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
 
         u32 nit = 0;
-        for$each(it, files)
-        {
+        for$each (it, files) {
             log$debug("found file: %s\n", it);
             tassert(NULL != hm$getp(exp_files, it));
             nit++;
@@ -439,11 +427,8 @@ test$case(test_os_mkdir)
     tassert_er(Error.argument, os.fs.mkdir(NULL));
     tassert_er(Error.argument, os.fs.mkdir(""));
 
-    e$except_silent(err, os.fs.remove(TBUILDDIR "mytestdir"))
-    {
-        if (err != Error.not_found) {
-            tassert_er(Error.not_found, err);
-        }
+    e$except_silent (err, os.fs.remove(TBUILDDIR "mytestdir")) {
+        if (err != Error.not_found) { tassert_er(Error.not_found, err); }
     }
 
     var ftype = os.fs.stat(TBUILDDIR "mytestdir");
@@ -501,8 +486,7 @@ test$case(test_os_fs_stat)
 
 test$case(test_os_rename_dir)
 {
-    if (os.fs.remove(TBUILDDIR "mytestdir")) {
-    }
+    if (os.fs.remove(TBUILDDIR "mytestdir")) {}
 
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestdir"));
     tassert_er(Error.ok, os.fs.mkdir(TBUILDDIR "mytestdir"));
@@ -534,12 +518,9 @@ test$case(test_os_rename_dir)
 
 test$case(test_os_rename_file)
 {
-    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {
-    }
-    if (os.fs.remove(TBUILDDIR "mytestfile.txt2")) {
-    }
-    if (os.fs.remove(TBUILDDIR "mytestfile.txt3")) {
-    }
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {}
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt2")) {}
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt3")) {}
 
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_er(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt", "foo"));
@@ -573,8 +554,7 @@ test$case(test_os_rename_file)
 
 test$case(test_os_remove_file)
 {
-    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {
-    }
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {}
 
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_er(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt", "foo"));
@@ -703,10 +683,8 @@ test$case(test_os_mkpath)
 
 test$case(test_os_copy_file)
 {
-    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {
-    }
-    if (os.fs.remove(TBUILDDIR "mytestfile.txt2")) {
-    }
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt")) {}
+    if (os.fs.remove(TBUILDDIR "mytestfile.txt2")) {}
 
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_er(Error.ok, io.file.save(TBUILDDIR "mytestfile.txt", "foo"));
@@ -829,9 +807,9 @@ test$case(test_os_path_abs)
         tassert(os.path.exists(abs_cwd));
 
         if (os.platform.current() == OSPlatform__win) {
-            tassert(str.find(abs_cwd, "\\")); 
+            tassert(str.find(abs_cwd, "\\"));
             tassert(str.find(abs_cwd, ":\\")); // drive letter
-            tassert(!str.find(abs_cwd, "/")); // path converted to backslashes
+            tassert(!str.find(abs_cwd, "/"));  // path converted to backslashes
         } else {
             tassert(str.find(abs_cwd, "/"));
             tassert(!str.find(abs_cwd, "\\"));

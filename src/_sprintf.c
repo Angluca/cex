@@ -113,15 +113,12 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
         int len = (int)(bf - buf);                                                                 \
         if ((len + (bytes)) >= CEX_SPRINTF_MIN) {                                                  \
             tlen += len;                                                                           \
-            if (0 == (bf = buf = callback(buf, user, len)))                                        \
-                goto done;                                                                         \
+            if (0 == (bf = buf = callback(buf, user, len))) goto done;                             \
         }                                                                                          \
     }
 #define cexsp__chk_cb_buf(bytes)                                                                   \
     {                                                                                              \
-        if (callback) {                                                                            \
-            cexsp__chk_cb_bufL(bytes);                                                             \
-        }                                                                                          \
+        if (callback) { cexsp__chk_cb_bufL(bytes); }                                               \
     }
 #define cexsp__flush_cb()                                                                          \
     {                                                                                              \
@@ -131,18 +128,13 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
     cl = v;                                                                                        \
     if (callback) {                                                                                \
         int lg = CEX_SPRINTF_MIN - (int)(bf - buf);                                                \
-        if (cl > lg)                                                                               \
-            cl = lg;                                                                               \
+        if (cl > lg) cl = lg;                                                                      \
     }
 
         // fast copy everything up to the next % (or end of string)
         for (;;) {
-            if (f[0] == '%') {
-                goto scandd;
-            }
-            if (f[0] == 0) {
-                goto endfmt;
-            }
+            if (f[0] == '%') { goto scandd; }
+            if (f[0] == 0) { goto endfmt; }
             cexsp__chk_cb_buf(1);
             *bf++ = f[0];
             ++f;
@@ -254,9 +246,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 // %ld/%lld - is always 64 bits
                 fl |= CEXSP__INTMAX;
                 ++f;
-                if (f[0] == 'l') {
-                    ++f;
-                }
+                if (f[0] == 'l') { ++f; }
                 break;
             // are we 64-bit on intmax? (c99)
             case 'j':
@@ -317,9 +307,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     }
                 }
 #if defined(CEX_TEST) && defined(_WIN32)
-                if (IsBadReadPtr(s, 1)) {
-                    s = (char*)"(%s-bad)";
-                }
+                if (IsBadReadPtr(s, 1)) { s = (char*)"(%s-bad)"; }
 #endif
                 // get the length, limited to desired precision
                 // always limit to ~0u chars since our counts are 32b
@@ -404,9 +392,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     pr = 6; // default is 6
                 }
                 // read the double into a string
-                if (cexsp__real_to_parts((i64*)&n64, &dp, fv)) {
-                    fl |= CEXSP__NEGATIVE;
-                }
+                if (cexsp__real_to_parts((i64*)&n64, &dp, fv)) { fl |= CEXSP__NEGATIVE; }
 
                 s = num + 64;
 
@@ -418,9 +404,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     n64 |= (((u64)1) << 52);
                 }
                 n64 <<= (64 - 56);
-                if (pr < 15) {
-                    n64 += ((((u64)8) << 56) >> (pr * 4));
-                }
+                if (pr < 15) { n64 += ((((u64)8) << 56) >> (pr * 4)); }
                 // add leading chars
 
                 lead[1 + lead[0]] = '0';
@@ -428,19 +412,13 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 lead[0] += 2;
                 *s++ = h[(n64 >> 60) & 15];
                 n64 <<= 4;
-                if (pr) {
-                    *s++ = cexsp__period;
-                }
+                if (pr) { *s++ = cexsp__period; }
                 sn = s;
 
                 // print the bits
                 n = pr;
-                if (n > 13) {
-                    n = 13;
-                }
-                if (pr > (i32)n) {
-                    tz = pr - n;
-                }
+                if (n > 13) { n = 13; }
+                if (pr > (i32)n) { tz = pr - n; }
                 pr = 0;
                 while (n--) {
                     *s++ = h[(n64 >> 60) & 15];
@@ -459,9 +437,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 tail[0] = (char)n;
                 for (;;) {
                     tail[n] = '0' + dp % 10;
-                    if (n <= 3) {
-                        break;
-                    }
+                    if (n <= 3) { break; }
                     --n;
                     dp /= 10;
                 }
@@ -488,9 +464,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
 
                 // clamp the precision and delete extra zeros after clamp
                 n = pr;
-                if (l > (u32)pr) {
-                    l = pr;
-                }
+                if (l > (u32)pr) { l = pr; }
                 while ((l > 1) && (pr) && (sn[l - 1] == '0')) {
                     --pr;
                     --l;
@@ -537,17 +511,11 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 // handle leading chars
                 *s++ = sn[0];
 
-                if (pr) {
-                    *s++ = cexsp__period;
-                }
+                if (pr) { *s++ = cexsp__period; }
 
                 // handle after decimal
-                if ((l - 1) > (u32)pr) {
-                    l = pr + 1;
-                }
-                for (n = 1; n < l; n++) {
-                    *s++ = sn[n];
-                }
+                if ((l - 1) > (u32)pr) { l = pr + 1; }
+                for (n = 1; n < l; n++) { *s++ = sn[n]; }
                 // trailing zeros
                 tz = pr - (l - 1);
                 pr = 0;
@@ -564,9 +532,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 tail[0] = (char)n;
                 for (;;) {
                     tail[n] = '0' + dp % 10;
-                    if (n <= 3) {
-                        break;
-                    }
+                    if (n <= 3) { break; }
                     --n;
                     dp /= 10;
                 }
@@ -580,13 +546,9 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 if (fl & CEXSP__METRIC_SUFFIX) {
                     double divisor;
                     divisor = 1000.0f;
-                    if (fl & CEXSP__METRIC_1024) {
-                        divisor = 1024.0;
-                    }
+                    if (fl & CEXSP__METRIC_1024) { divisor = 1024.0; }
                     while (fl < 0x4000000) {
-                        if ((fv < divisor) && (fv > -divisor)) {
-                            break;
-                        }
+                        if ((fv < divisor) && (fv > -divisor)) { break; }
                         fv /= divisor;
                         fl += 0x1000000;
                     }
@@ -595,9 +557,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     pr = 6; // default is 6
                 }
                 // read the double into a string
-                if (cexsp__real_to_str(&sn, &l, num, &dp, fv, pr)) {
-                    fl |= CEXSP__NEGATIVE;
-                }
+                if (cexsp__real_to_str(&sn, &l, num, &dp, fv, pr)) { fl |= CEXSP__NEGATIVE; }
             dofloatfromg:
                 tail[0] = 0;
                 cexsp__lead_sign(fl, lead);
@@ -614,18 +574,12 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     i32 i;
                     // handle 0.000*000xxxx
                     *s++ = '0';
-                    if (pr) {
-                        *s++ = cexsp__period;
-                    }
+                    if (pr) { *s++ = cexsp__period; }
                     n = -dp;
-                    if ((i32)n > pr) {
-                        n = pr;
-                    }
+                    if ((i32)n > pr) { n = pr; }
                     i = n;
                     while (i) {
-                        if ((((usize)s) & 3) == 0) {
-                            break;
-                        }
+                        if ((((usize)s) & 3) == 0) { break; }
                         *s++ = '0';
                         --i;
                     }
@@ -638,9 +592,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                         *s++ = '0';
                         --i;
                     }
-                    if ((i32)(l + n) > pr) {
-                        l = pr - n;
-                    }
+                    if ((i32)(l + n) > pr) { l = pr - n; }
                     i = l;
                     while (i) {
                         *s++ = *sn++;
@@ -660,18 +612,14 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                             } else {
                                 *s++ = sn[n];
                                 ++n;
-                                if (n >= l) {
-                                    break;
-                                }
+                                if (n >= l) { break; }
                             }
                         }
                         if (n < (u32)dp) {
                             n = dp - n;
                             if ((fl & CEXSP__TRIPLET_COMMA) == 0) {
                                 while (n) {
-                                    if ((((usize)s) & 3) == 0) {
-                                        break;
-                                    }
+                                    if ((((usize)s) & 3) == 0) { break; }
                                     *s++ = '0';
                                     --n;
                                 }
@@ -706,18 +654,12 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                             } else {
                                 *s++ = sn[n];
                                 ++n;
-                                if (n >= (u32)dp) {
-                                    break;
-                                }
+                                if (n >= (u32)dp) { break; }
                             }
                         }
                         cs = (int)(s - (num + 64)) + (3 << 24); // cs is how many tens
-                        if (pr) {
-                            *s++ = cexsp__period;
-                        }
-                        if ((l - dp) > (u32)pr) {
-                            l = pr + dp;
-                        }
+                        if (pr) { *s++ = cexsp__period; }
+                        if ((l - dp) > (u32)pr) { l = pr + dp; }
                         while (n < l) {
                             *s++ = sn[n];
                             ++n;
@@ -731,9 +673,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 if (fl & CEXSP__METRIC_SUFFIX) {
                     char idx;
                     idx = 1;
-                    if (fl & CEXSP__METRIC_NOSPACE) {
-                        idx = 0;
-                    }
+                    if (fl & CEXSP__METRIC_NOSPACE) { idx = 0; }
                     tail[0] = idx;
                     tail[1] = ' ';
                     {
@@ -824,9 +764,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 for (;;) {
                     *--s = h[n64 & ((1 << (l >> 8)) - 1)];
                     n64 >>= (l >> 8);
-                    if (!((n64) || ((i32)((num + CEXSP__NUMSZ) - s) < pr))) {
-                        break;
-                    }
+                    if (!((n64) || ((i32)((num + CEXSP__NUMSZ) - s) < pr))) { break; }
                     if (fl & CEXSP__TRIPLET_COMMA) {
                         ++l;
                         if ((l & 15) == ((l >> 4) & 15)) {
@@ -907,9 +845,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                         }
                     }
                     if (n64 == 0) {
-                        if ((s[0] == '0') && (s != (num + CEXSP__NUMSZ))) {
-                            ++s;
-                        }
+                        if ((s[0] == '0') && (s != (num + CEXSP__NUMSZ))) { ++s; }
                         break;
                     }
                     while (s != o) {
@@ -933,19 +869,13 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     l = 1;
                 }
                 cs = l + (3 << 24);
-                if (pr < 0) {
-                    pr = 0;
-                }
+                if (pr < 0) { pr = 0; }
 
             scopy:
                 // get fw=leading/trailing space, pr=leading zeros
-                if (pr < (i32)l) {
-                    pr = l;
-                }
+                if (pr < (i32)l) { pr = l; }
                 n = pr + lead[0] + tail[0] + tz;
-                if (fw < (i32)n) {
-                    fw = n;
-                }
+                if (fw < (i32)n) { fw = n; }
                 fw -= n;
                 pr -= l;
 
@@ -971,9 +901,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                             cexsp__cb_buf_clamp(i, fw);
                             fw -= i;
                             while (i) {
-                                if ((((usize)bf) & 3) == 0) {
-                                    break;
-                                }
+                                if ((((usize)bf) & 3) == 0) { break; }
                                 *bf++ = ' ';
                                 --i;
                             }
@@ -1011,9 +939,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                         pr -= i;
                         if ((fl & CEXSP__TRIPLET_COMMA) == 0) {
                             while (i) {
-                                if ((((usize)bf) & 3) == 0) {
-                                    break;
-                                }
+                                if ((((usize)bf) & 3) == 0) { break; }
                                 *bf++ = '0';
                                 --i;
                             }
@@ -1075,9 +1001,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     cexsp__cb_buf_clamp(i, tz);
                     tz -= i;
                     while (i) {
-                        if ((((usize)bf) & 3) == 0) {
-                            break;
-                        }
+                        if ((((usize)bf) & 3) == 0) { break; }
                         *bf++ = '0';
                         --i;
                     }
@@ -1114,9 +1038,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                             cexsp__cb_buf_clamp(i, fw);
                             fw -= i;
                             while (i) {
-                                if ((((usize)bf) & 3) == 0) {
-                                    break;
-                                }
+                                if ((((usize)bf) & 3) == 0) { break; }
                                 *bf++ = ' ';
                                 --i;
                             }
@@ -1125,9 +1047,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                                 bf += 4;
                                 i -= 4;
                             }
-                            while (i--) {
-                                *bf++ = ' ';
-                            }
+                            while (i--) { *bf++ = ' '; }
                             cexsp__chk_cb_buf(1);
                         }
                     }
@@ -1185,9 +1105,7 @@ cexsp__clamp_callback(char* buf, void* user, u32 len)
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;
 
-    if (len > c->capacity) {
-        len = c->capacity;
-    }
+    if (len > c->capacity) { len = c->capacity; }
 
     if (len) {
         if (buf != c->buf) {
@@ -1204,9 +1122,7 @@ cexsp__clamp_callback(char* buf, void* user, u32 len)
         c->capacity -= len;
     }
 
-    if (c->capacity <= 0) {
-        return c->tmp;
-    }
+    if (c->capacity <= 0) { return c->tmp; }
     return (c->capacity >= CEX_SPRINTF_MIN) ? c->buf : c->tmp; // go direct into buffer if you can
 }
 
@@ -1259,9 +1175,7 @@ cexsp__fprintf_callback(char* buf, void* user, u32 len)
     cexsp__context* c = (cexsp__context*)user;
     c->length += len;
     if (len) {
-        if (fwrite(buf, sizeof(char), len, c->file) != (size_t)len) {
-            c->has_error = 1;
-        }
+        if (fwrite(buf, sizeof(char), len, c->file) != (size_t)len) { c->has_error = 1; }
     }
     return c->tmp;
 }
@@ -1297,8 +1211,7 @@ cexsp__fprintf(FILE* stream, const char* format, ...)
 #    define CEXSP__COPYFP(dest, src)                                                               \
         {                                                                                          \
             int cn;                                                                                \
-            for (cn = 0; cn < 8; cn++)                                                             \
-                ((char*)&dest)[cn] = ((char*)&src)[cn];                                            \
+            for (cn = 0; cn < 8; cn++) ((char*)&dest)[cn] = ((char*)&src)[cn];                     \
         }
 
 // get float info
@@ -1459,13 +1372,9 @@ cexsp__raise_to_power10(double* ohi, double* olo, double d, i32 power) // power 
         double p2h, p2l;
 
         e = power;
-        if (power < 0) {
-            e = -e;
-        }
+        if (power < 0) { e = -e; }
         et = (e * 0x2c9) >> 14; /* %23 */
-        if (et > 13) {
-            et = 13;
-        }
+        if (et > 13) { et = 13; }
         eb = e - (et * 23);
 
         ph = d;
@@ -1487,9 +1396,7 @@ cexsp__raise_to_power10(double* ohi, double* olo, double d, i32 power) // power 
         } else {
             if (eb) {
                 e = eb;
-                if (eb > 22) {
-                    eb = 22;
-                }
+                if (eb > 22) { eb = 22; }
                 e -= eb;
                 cexsp__ddmulthi(ph, pl, d, cexsp__bot[eb]);
                 if (e) {
@@ -1538,9 +1445,7 @@ cexsp__real_to_str(
     CEXSP__COPYFP(bits, d);
     expo = (i32)((bits >> 52) & 2047);
     ng = (i32)((u64)bits >> 63);
-    if (ng) {
-        d = -d;
-    }
+    if (ng) { d = -d; }
 
     if (expo == 2047) // is nan or inf?
     {
@@ -1587,9 +1492,7 @@ cexsp__real_to_str(
         cexsp__ddtoS64(bits, ph, pl);
 
         // check if we undershot
-        if (((u64)bits) >= cexsp__tento19th) {
-            ++tens;
-        }
+        if (((u64)bits) >= cexsp__tento19th) { ++tens; }
     }
 
     // now do the rounding in integer land
@@ -1597,27 +1500,19 @@ cexsp__real_to_str(
                                              : (tens + frac_digits);
     if ((frac_digits < 24)) {
         u32 dg = 1;
-        if ((u64)bits >= cexsp__powten[9]) {
-            dg = 10;
-        }
+        if ((u64)bits >= cexsp__powten[9]) { dg = 10; }
         while ((u64)bits >= cexsp__powten[dg]) {
             ++dg;
-            if (dg == 20) {
-                goto noround;
-            }
+            if (dg == 20) { goto noround; }
         }
         if (frac_digits < dg) {
             u64 r;
             // add 0.5 at the right position and round
             e = dg - frac_digits;
-            if ((u32)e >= 24) {
-                goto noround;
-            }
+            if ((u32)e >= 24) { goto noround; }
             r = cexsp__powten[e];
             bits = bits + (r / 2);
-            if ((u64)bits >= cexsp__powten[dg]) {
-                ++tens;
-            }
+            if ((u64)bits >= cexsp__powten[dg]) { ++tens; }
             bits /= r;
         }
     noround:;
@@ -1627,18 +1522,12 @@ cexsp__real_to_str(
     if (bits) {
         u32 n;
         for (;;) {
-            if (bits <= 0xffffffff) {
-                break;
-            }
-            if (bits % 1000) {
-                goto donez;
-            }
+            if (bits <= 0xffffffff) { break; }
+            if (bits % 1000) { goto donez; }
             bits /= 1000;
         }
         n = (u32)bits;
-        while ((n % 1000) == 0) {
-            n /= 1000;
-        }
+        while ((n % 1000) == 0) { n /= 1000; }
         bits = n;
     donez:;
     }

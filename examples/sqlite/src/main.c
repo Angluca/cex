@@ -17,8 +17,7 @@ sqlite_hello_world(const char* db_name)
     // NOTE: e$except_true() produces handy error tracebacks like this:
     //[ERROR]   ( main.c:16 sqlite_hello_world() ) `sqlite3_open(db_path, &db)` returned non zero
     //    Cannot open database [build/bar.db]: unable to open database file
-    e$except_true(sqlite3_open(db_path, &db))
-    {
+    e$except_true (sqlite3_open(db_path, &db)) {
         io.printf("\tCannot open database [%s]: %s\n", db_path, sqlite3_errmsg(db));
         goto end;
     }
@@ -26,15 +25,13 @@ sqlite_hello_world(const char* db_name)
     const char* create_table_sql = "CREATE TABLE IF NOT EXISTS Messages ("
                                    "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                                    "content TEXT NOT NULL);";
-    e$except_true(sqlite3_exec(db, create_table_sql, 0, 0, &err_msg))
-    {
+    e$except_true (sqlite3_exec(db, create_table_sql, 0, 0, &err_msg)) {
         io.printf("\tSQL error: %s\n", err_msg);
         goto end;
     }
 
     const char* insert_sql = "INSERT INTO Messages (content) VALUES ('Hello, from CEX!');";
-    e$except_true(sqlite3_exec(db, insert_sql, 0, 0, &err_msg))
-    {
+    e$except_true (sqlite3_exec(db, insert_sql, 0, 0, &err_msg)) {
         io.printf("\tSQL error: %s\n", err_msg);
         goto end;
     }

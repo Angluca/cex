@@ -1,14 +1,15 @@
 #if defined(CEX_NEW)
-#if __has_include("cex.c")
-    #error "cex.c already exists, CEX project seems initialized, try run `gcc[clang] ./cex.c -o cex`"
-#endif
+#    if __has_include("cex.c")
+#        error                                                                                     \
+            "cex.c already exists, CEX project seems initialized, try run `gcc[clang] ./cex.c -o cex`"
+#    endif
 
-int main(int argc, char** argv) {
+int
+main(int argc, char** argv)
+{
     (void)argc;
     (void)argv;
-    e$except(err, cexy.utils.make_new_project(".")) {
-        return 1;
-    }
+    e$except (err, cexy.utils.make_new_project(".")) { return 1; }
     io.printf("\n\nMOCCA - Make Old C Cexy Again!\n");
     io.printf("Cex project has been initialized!\n");
     io.printf("See the 'cex.c' building script for more info.\n");

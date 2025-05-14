@@ -21,10 +21,7 @@ sprintf_to_cap(sbuf_c* s)
     char c = 'A';
     for (usize i = sbuf.len(s); i < sbuf.capacity(s); i++) {
         c = 'A' + i;
-        e$except_silent(err, sbuf.appendf(s, "%c", c))
-        {
-            return err;
-        }
+        e$except_silent (err, sbuf.appendf(s, "%c", c)) { return err; }
     }
 
     return EOK;
@@ -72,10 +69,7 @@ test$case(test_sbuf_static)
     tassert_eq(s, "");
 
     // All nullified + for$each works!
-    for$each(it, s, sbuf.capacity(&s))
-    {
-        tassert_eq(it, 0);
-    }
+    for$each (it, s, sbuf.capacity(&s)) { tassert_eq(it, 0); }
 
     // can be also virtually destroyed
     s = sbuf.destroy(&s);

@@ -1,7 +1,9 @@
 #include "mylib.h"
 #include "cex.h"
 
-f64 mylib_add(f64 a, f64 b){
+f64
+mylib_add(f64 a, f64 b)
+{
     return a + b;
 }
 

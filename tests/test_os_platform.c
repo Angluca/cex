@@ -58,22 +58,22 @@ test$case(os_arch_to_str)
 
 test$case(os_arch_from_str)
 {
-    tassert_eq(os.platform.arch_from_str(""),  OSArch__unknown);
-    tassert_eq(os.platform.arch_from_str(NULL),  OSArch__unknown);
-    tassert_eq(os.platform.arch_from_str("alsdjaldsj"),  OSArch__unknown);
-    tassert_eq(os.platform.arch_from_str("wasm64"),  OSArch__wasm64);
+    tassert_eq(os.platform.arch_from_str(""), OSArch__unknown);
+    tassert_eq(os.platform.arch_from_str(NULL), OSArch__unknown);
+    tassert_eq(os.platform.arch_from_str("alsdjaldsj"), OSArch__unknown);
+    tassert_eq(os.platform.arch_from_str("wasm64"), OSArch__wasm64);
 
     return EOK;
 }
 
 test$case(os_platform_current)
 {
-    tassert_ne(os.platform.current(),  OSArch__unknown);
-    tassert_ne(os.platform.current_str(),  NULL);
+    tassert_ne(os.platform.current(), OSArch__unknown);
+    tassert_ne(os.platform.current_str(), NULL);
     tassert_eq(os.platform.current_str(), os.platform.to_str(os.platform.current()));
-    #ifdef _WIN32
-    tassert_eq(os.platform.current(),  OSPlatform__win);
-    #endif
+#ifdef _WIN32
+    tassert_eq(os.platform.current(), OSPlatform__win);
+#endif
 
     return EOK;
 }

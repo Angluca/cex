@@ -227,7 +227,7 @@ cmd_build_lua_lib(int argc, char** argv, void* user_ctx)
         // Linker options
         if (os.platform.current() == OSPlatform__win) {
             // NOTE: on windows it's mandatory to have static symbols to have .dll linkage
-            arr$pushm(args, "-L"LUA_DIR, "-llua");
+            arr$pushm(args, "-L" LUA_DIR, "-llua");
         } else if (os.platform.current() == OSPlatform__macos) {
         }
 

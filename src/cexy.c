@@ -292,12 +292,7 @@ cexy_src_changed(char* target_path, char** src_array, usize src_array_len)
 }
 
 static char*
-cexy_target_make(
-    char* src_path,
-    char* build_dir,
-    char* name_or_extension,
-    IAllocator allocator
-)
+cexy_target_make(char* src_path, char* build_dir, char* name_or_extension, IAllocator allocator)
 {
     uassert(allocator != NULL);
 
@@ -753,8 +748,8 @@ _cexy__fn_match(str_s fn_name, str_s ns_prefix)
         if (str.slice.match(fn_name, fn_sub_pattern) ||
             str.slice.match(fn_name, fn_sub_pattern_cex)) {
             return true;
-        } else if ((str.slice.match(fn_name, fn_private) || str.slice.match(fn_name, fn_private_cex)
-                   ) ||
+        } else if ((str.slice.match(fn_name, fn_private) ||
+                    str.slice.match(fn_name, fn_private_cex)) ||
                    (!str.slice.match(fn_name, fn_pattern_cex) &&
                     !str.slice.match(fn_name, fn_pattern))) {
             return false;
@@ -2401,7 +2396,8 @@ cexy__utils__pkgconf(
         arr$pushm(args, cexy$pkgconf_cmd);
         arr$pusha(args, pkgconf_args, pkgconf_args_len);
         arr$push(args, NULL);
-        e$ret(os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
+        e$ret(
+            os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
         );
 
         char* output = os.cmd.read_all(&c, _);
@@ -2480,8 +2476,8 @@ cexy__utils__git_lib_fetch(
         bool needs_update = false;
         for$each (it, repo_paths, repo_paths_len) {
             char* out_file = (preserve_dirs)
-                                     ? str.fmt(_, "%s/%s", out_dir, it)
-                                     : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
+                               ? str.fmt(_, "%s/%s", out_dir, it)
+                               : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
 
             log$info("Lib file: %s -> %s\n", it, out_file);
             if (!os.path.exists(out_file)) { needs_update = true; }
@@ -2523,8 +2519,8 @@ cexy__utils__git_lib_fetch(
             char* in_path = str.fmt(_, "%s/%s", repo_dir, it);
 
             char* out_path = (preserve_dirs)
-                                     ? str.fmt(_, "%s/%s", out_dir, it)
-                                     : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
+                               ? str.fmt(_, "%s/%s", out_dir, it)
+                               : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
             var in_stat = os.fs.stat(in_path);
             if (!in_stat.is_valid) {
                 return e$raise(in_stat.error, "Invalid stat for path: %s", in_path);

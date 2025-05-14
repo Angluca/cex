@@ -92,9 +92,7 @@ _cexds__arrgrowf(
     (void)sizeof(temp);
 
     // compute the minimum capacity needed
-    if (min_len > min_cap) {
-        min_cap = min_len;
-    }
+    if (min_len > min_cap) { min_cap = min_len; }
 
     // increase needed capacity to guarantee O(1) amortized
     if (min_cap < 2 * arr$cap(arr)) {
@@ -105,9 +103,7 @@ _cexds__arrgrowf(
     uassert(min_cap < PTRDIFF_MAX && "negative or overflow after processing");
     uassert(addlen > 0 || min_cap > 0);
 
-    if (min_cap <= arr$cap(arr)) {
-        return arr;
-    }
+    if (min_cap <= arr$cap(arr)) { return arr; }
 
     // General types with alignment <= usize use generic realloc (less mem overhead + realloc faster)
     el_align = (el_align <= alignof(_cexds__array_header)) ? alignof(_cexds__array_header) : 64;
@@ -267,12 +263,8 @@ _cexds__hmclear_func(struct _cexds__hash_index* t, _cexds__hash_index* old_table
     usize i, j;
     for (i = 0; i < t->slot_count >> _CEXDS_BUCKET_SHIFT; ++i) {
         _cexds__hash_bucket* b = &t->storage[i];
-        for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) {
-            b->hash[j] = _CEXDS_HASH_EMPTY;
-        }
-        for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) {
-            b->index[j] = _CEXDS_INDEX_EMPTY;
-        }
+        for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) { b->hash[j] = _CEXDS_HASH_EMPTY; }
+        for (j = 0; j < _CEXDS_BUCKET_LENGTH; ++j) { b->index[j] = _CEXDS_INDEX_EMPTY; }
     }
 }
 
@@ -307,9 +299,7 @@ _cexds__make_hash_index(
     t->tombstone_count_threshold = (slot_count >> 3) + (slot_count >> 4);
     t->used_count_shrink_threshold = slot_count >> 2;
 
-    if (slot_count <= _CEXDS_BUCKET_LENGTH) {
-        t->used_count_shrink_threshold = 0;
-    }
+    if (slot_count <= _CEXDS_BUCKET_LENGTH) { t->used_count_shrink_threshold = 0; }
     // to avoid infinite loop, we need to guarantee that at least one slot is empty and will
     // terminate probes
     uassert(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
@@ -454,9 +444,7 @@ _cexds__siphash_bytes(const void* p, usize len, usize seed)
 #endif
 
         v3 ^= data;
-        for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) {
-            _CEXDS_SIPROUND();
-        }
+        for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) { _CEXDS_SIPROUND(); }
         v0 ^= data;
     }
     data = len << (_CEXDS_usize_BITS - 8);
@@ -479,14 +467,10 @@ _cexds__siphash_bytes(const void* p, usize len, usize seed)
             break;
     }
     v3 ^= data;
-    for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) {
-        _CEXDS_SIPROUND();
-    }
+    for (j = 0; j < _CEXDS_SIPHASH_C_ROUNDS; ++j) { _CEXDS_SIPROUND(); }
     v0 ^= data;
     v2 ^= 0xff;
-    for (j = 0; j < _CEXDS_SIPHASH_D_ROUNDS; ++j) {
-        _CEXDS_SIPROUND();
-    }
+    for (j = 0; j < _CEXDS_SIPHASH_D_ROUNDS; ++j) { _CEXDS_SIPROUND(); }
 
 #ifdef _CEXDS_SIPHASH_2_4
     return v0 ^ v1 ^ v2 ^ v3;
@@ -587,9 +571,7 @@ _cexds__is_key_equal(
         case _CexDsKeyType__cexstr: {
             str_s* _k = (str_s*)key;
             str_s* _hm = (str_s*)hm_key;
-            if (_k->len != _hm->len) {
-                return false;
-            }
+            if (_k->len != _hm->len) { return false; }
             return 0 == memcmp(_k->buf, _hm->buf, _k->len);
         }
     }
@@ -651,16 +633,12 @@ _cexds__hmfree_keys_func(void* a, usize elemsize, usize keyoffset)
 void
 _cexds__hmfree_func(void* a, usize elemsize, usize keyoffset)
 {
-    if (a == NULL) {
-        return;
-    }
+    if (a == NULL) { return; }
     _cexds__arr_integrity(a, _CEXDS_HM_MAGIC);
 
     _cexds__array_header* h = _cexds__header(a);
     _cexds__hmfree_keys_func(a, elemsize, keyoffset);
-    if (h->_hash_table->key_arena) {
-        AllocatorArena.destroy(h->_hash_table->key_arena);
-    }
+    if (h->_hash_table->key_arena) { AllocatorArena.destroy(h->_hash_table->key_arena); }
     h->allocator->free(h->allocator, h->_hash_table);
     h->allocator->free(h->allocator, _cexds__base(h));
 }
@@ -868,9 +846,7 @@ _cexds__hmput_key(
 
         // stored hash values are forbidden from being 0, so we can detect empty slots to early out
         // quickly
-        if (hash < 2) {
-            hash += 2;
-        }
+        if (hash < 2) { hash += 2; }
 
         pos = _cexds__probe_position(hash, table->slot_count, table->slot_count_log2);
 
@@ -996,14 +972,10 @@ _cexds__hmdel_key(void* a, usize elemsize, void* key, usize keysize, usize keyof
 
     _cexds__hash_index* table = (_cexds__hash_index*)_cexds__header(a)->_hash_table;
     uassert(_cexds__header(a)->allocator != NULL);
-    if (table == NULL) {
-        return false;
-    }
+    if (table == NULL) { return false; }
 
     ptrdiff_t slot = _cexds__hm_find_slot(a, elemsize, key, keysize, keyoffset);
-    if (slot < 0) {
-        return false;
-    }
+    if (slot < 0) { return false; }
 
     _cexds__hash_bucket* b = &table->storage[slot >> _CEXDS_BUCKET_SHIFT];
     int i = slot & _CEXDS_BUCKET_MASK;

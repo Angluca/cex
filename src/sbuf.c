@@ -1,6 +1,6 @@
 #pragma once
-#include "all.h"
 #include "_sprintf.h"
+#include "all.h"
 #include <stdarg.h>
 
 struct _sbuf__sprintf_ctx
@@ -38,9 +38,7 @@ _sbuf__alloc_capacity(usize capacity)
     } else {
         // Round up to closest pow*2 int
         u64 p = 4;
-        while (p < capacity) {
-            p *= 2;
-        }
+        while (p < capacity) { p *= 2; }
         return p;
     }
 }
@@ -75,14 +73,10 @@ cex_sbuf_create(u32 capacity, IAllocator allocator)
         return NULL;
     }
 
-    if (capacity < 512) {
-        capacity = _sbuf__alloc_capacity(capacity);
-    }
+    if (capacity < 512) { capacity = _sbuf__alloc_capacity(capacity); }
 
     char* buf = mem$malloc(allocator, capacity);
-    if (unlikely(buf == NULL)) {
-        return NULL;
-    }
+    if (unlikely(buf == NULL)) { return NULL; }
 
     sbuf_head_s* head = (sbuf_head_s*)buf;
     *head = (sbuf_head_s){
@@ -189,9 +183,7 @@ static u32
 cex_sbuf_len(sbuf_c* self)
 {
     uassert(self != NULL);
-    if (*self == NULL) {
-        return 0;
-    }
+    if (*self == NULL) { return 0; }
     sbuf_head_s* head = _sbuf__head(*self);
     return head->length;
 }
@@ -234,9 +226,7 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
     sbuf_c sbuf = ((char*)ctx->head + sizeof(sbuf_head_s));
 
     uassert(ctx->head->header.magic == 0xf00e && "not a sbuf_head_s / bad pointer");
-    if (unlikely(ctx->err != EOK)) {
-        return NULL;
-    }
+    if (unlikely(ctx->err != EOK)) { return NULL; }
     uassert((buf != ctx->buf) || (sbuf + ctx->length + len <= sbuf + ctx->count && "out of bounds"));
 
     if (unlikely(ctx->length + len > ctx->count)) {
@@ -248,8 +238,7 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
         }
 
         // sbuf likely changed after realloc
-        e$except_silent(err, _sbuf__grow_buffer(&sbuf, ctx->length + len + 1))
-        {
+        e$except_silent (err, _sbuf__grow_buffer(&sbuf, ctx->length + len + 1)) {
             ctx->err = err;
             return NULL;
         }
@@ -260,9 +249,7 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
         ctx->buf = sbuf + ctx->head->length;
         ctx->count = ctx->head->capacity;
         uassert(ctx->count >= ctx->length);
-        if (!buf_is_tmp) {
-            buf = ctx->buf;
-        }
+        if (!buf_is_tmp) { buf = ctx->buf; }
     }
 
     ctx->length += len;
@@ -279,9 +266,7 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
 static Exception
 cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
 {
-    if (unlikely(self == NULL)) {
-        return Error.argument;
-    }
+    if (unlikely(self == NULL)) { return Error.argument; }
     sbuf_head_s* head = _sbuf__head(*self);
 
     struct _sbuf__sprintf_ctx ctx = {
@@ -327,9 +312,7 @@ cex_sbuf_append(sbuf_c* self, char* s)
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
 
-    if (unlikely(s == NULL)) {
-        return Error.argument;
-    }
+    if (unlikely(s == NULL)) { return Error.argument; }
 
     u32 length = head->length;
     u32 capacity = head->capacity;
@@ -339,10 +322,7 @@ cex_sbuf_append(sbuf_c* self, char* s)
 
     // Try resize
     if (length + slen > capacity - 1) {
-        e$except_silent(err, _sbuf__grow_buffer(self, length + slen))
-        {
-            return err;
-        }
+        e$except_silent (err, _sbuf__grow_buffer(self, length + slen)) { return err; }
     }
     memcpy((*self + length), s, slen);
     length += slen;
@@ -360,27 +340,15 @@ cex_sbuf_append(sbuf_c* self, char* s)
 static bool
 cex_sbuf_isvalid(sbuf_c* self)
 {
-    if (self == NULL) {
-        return false;
-    }
-    if (*self == NULL) {
-        return false;
-    }
+    if (self == NULL) { return false; }
+    if (*self == NULL) { return false; }
 
     sbuf_head_s* head = (sbuf_head_s*)((char*)(*self) - sizeof(sbuf_head_s));
 
-    if (head->header.magic != 0xf00e) {
-        return false;
-    }
-    if (head->capacity == 0) {
-        return false;
-    }
-    if (head->length > head->capacity) {
-        return false;
-    }
-    if (head->header.nullterm != 0) {
-        return false;
-    }
+    if (head->header.magic != 0xf00e) { return false; }
+    if (head->capacity == 0) { return false; }
+    if (head->length > head->capacity) { return false; }
+    if (head->header.nullterm != 0) { return false; }
 
     return true;
 }

@@ -136,9 +136,7 @@ _cex_allocator_arena__request_page_size(
 )
 {
     usize req_size = new_rec.size + new_rec.ptr_alignment + new_rec.ptr_padding;
-    if (out_is_allocated) {
-        *out_is_allocated = false;
-    }
+    if (out_is_allocated) { *out_is_allocated = false; }
 
     if (self->last_page == NULL ||
         // self->last_page->capacity < req_size + mem$aligned_round(self->last_page->cursor, 8)) {
@@ -167,9 +165,7 @@ _cex_allocator_arena__request_page_size(
         self->last_page = page;
         self->stats.pages_created++;
 
-        if (out_is_allocated) {
-            *out_is_allocated = true;
-        }
+        if (out_is_allocated) { *out_is_allocated = true; }
     }
 
     return self->last_page;
@@ -183,14 +179,10 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
     uassert(self->scope_depth > 0 && "arena allocation must be performed in mem$scope() block!");
 
     allocator_arena_rec_s rec = _cex_alloc_estimate_alloc_size(size, alignment);
-    if (rec.size == 0) {
-        return NULL;
-    }
+    if (rec.size == 0) { return NULL; }
 
     allocator_arena_page_s* page = _cex_allocator_arena__request_page_size(self, rec, NULL);
-    if (page == NULL) {
-        return NULL;
-    }
+    if (page == NULL) { return NULL; }
     uassert(page->capacity - page->cursor >= rec.size + rec.ptr_padding + rec.ptr_alignment);
     uassert(page->cursor % 8 == 0);
     uassert(rec.ptr_padding <= 8);
@@ -250,9 +242,7 @@ _cex_allocator_arena__calloc(IAllocator allc, usize nmemb, usize size, usize ali
     }
     usize alloc_size = nmemb * size;
     void* result = _cex_allocator_arena__malloc(allc, alloc_size, alignment);
-    if (result != NULL) {
-        memset(result, 0, alloc_size);
-    }
+    if (result != NULL) { memset(result, 0, alloc_size); }
 
     return result;
 }
@@ -264,9 +254,7 @@ _cex_allocator_arena__free(IAllocator allc, void* ptr)
     // NOTE: this intentionally does nothing, all memory releasing in scope_exit()
     _cex_allocator_arena__validate(allc);
 
-    if (ptr == NULL) {
-        return NULL;
-    }
+    if (ptr == NULL) { return NULL; }
 
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     (void)self;
@@ -307,9 +295,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
     );
 
     if (unlikely(size <= rec->size)) {
-        if (size == rec->size) {
-            return old_ptr;
-        }
+        if (size == rec->size) { return old_ptr; }
         // we can't change size/padding of this allocation, because this will break iterating
         // ptr_padding is only u8 size, we cant store size, change, so we currently poison new size
         mem$asan_poison((char*)old_ptr + size, rec->size - size);
@@ -318,18 +304,14 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
 
     if (unlikely(self->last_page && self->last_page->last_alloc == old_ptr)) {
         allocator_arena_rec_s nrec = _cex_alloc_estimate_alloc_size(size, alignment);
-        if (nrec.size == 0) {
-            goto fail;
-        }
+        if (nrec.size == 0) { goto fail; }
         bool is_created = false;
         allocator_arena_page_s* page = _cex_allocator_arena__request_page_size(
             self,
             nrec,
             &is_created
         );
-        if (page == NULL) {
-            goto fail;
-        }
+        if (page == NULL) { goto fail; }
         if (!is_created) {
             // If new page was created, fall back to malloc/copy/free method
             //   but currently we have spare capacity for growth
@@ -345,7 +327,10 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
             rec->size = size;
             rec->ptr_padding = nrec.ptr_padding;
 
-            uassert((char*)rec + rec->size + rec->ptr_padding + rec->ptr_offset == &page->data[page->cursor]);
+            uassert(
+                (char*)rec + rec->size + rec->ptr_padding + rec->ptr_offset ==
+                &page->data[page->cursor]
+            );
             uassert(page->cursor % 8 == 0);
             uassert(self->used % 8 == 0);
             mem$asan_poison((char*)old_ptr + size, rec->ptr_padding);
@@ -355,9 +340,7 @@ _cex_allocator_arena__realloc(IAllocator allc, void* old_ptr, usize size, usize 
     }
 
     void* new_ptr = _cex_allocator_arena__malloc(allc, size, alignment);
-    if (new_ptr == NULL) {
-        goto fail;
-    }
+    if (new_ptr == NULL) { goto fail; }
     memcpy(new_ptr, old_ptr, rec->size);
     _cex_allocator_arena__free(allc, old_ptr);
     return new_ptr;

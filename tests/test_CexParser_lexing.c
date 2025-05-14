@@ -112,8 +112,7 @@ test$case(test_token_numbers)
         { "+0.12}", "+", CexTkn__plus },
         { "0.12(", "0.12(", CexTkn__number }, // WARNING: invalid syntax!
     };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);
@@ -145,8 +144,7 @@ test$case(test_token_string)
         { " \"hello \nworld\" ", NULL, CexTkn__error },
         { " \"hello \f world\" ", NULL, CexTkn__error },
     };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);
@@ -177,8 +175,7 @@ test$case(test_token_comment)
         { " /** hello */ foo", "/** hello */", CexTkn__comment_multi },
         { " /* hello */\n foo", "/* hello */", CexTkn__comment_multi },
     };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);
@@ -232,8 +229,7 @@ test$case(test_token_preproc)
           "define my$foo(baz, bar) bar\\another",
           CexTkn__preproc },
     };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);
@@ -259,8 +255,7 @@ test$case(test_token_brace_parens_brackets)
         { "[[", "[", CexTkn__lbracket }, { "]", "]", CexTkn__rbracket },
         { "((", "(", CexTkn__lparen },   { ")", ")", CexTkn__rparen },
     };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);
@@ -300,8 +295,7 @@ test$case(test_token_paren_block)
         { "{ foo ]", NULL, CexTkn__error },
         { "( foo }", NULL, CexTkn__error },
     };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, true);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);
@@ -327,8 +321,7 @@ test$case(test_token_paren_block_overflow_test)
     char buf[2048] = { 0 };
     char* pairs[] = { "[]", "{}", "()" };
 
-    for$each(p, pairs)
-    {
+    for$each (p, pairs) {
         memset(buf, 0, sizeof(buf));
         for$eachp(cp, buf)
         {
@@ -359,8 +352,7 @@ test$case(test_token_misc)
                              { "=", "=", CexTkn__eq },
 
                              { "=*", "=", CexTkn__eq } };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);
@@ -386,8 +378,7 @@ test$case(test_token_secondary_token)
         { "main*", "*", CexTkn__star },     { "main(", "(", CexTkn__lparen },
         { "main[", "[", CexTkn__lbracket },
     };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);
@@ -427,8 +418,7 @@ test$case(test_token_code)
     CexParser_c lx = CexParser_create(code, 0, true);
     cex_token_s t;
     u32 nit = 0;
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         t = CexParser_next_token(&lx);
         io.printf("step: %d t.type: %d t.value: '%S'\n", nit, t.type, t.value);
         tassert(t.type);
@@ -527,8 +517,7 @@ test$case(test_token_idents)
         { "FOO2", "FOO2", CexTkn__ident },         { "2FOO", "2FOO", CexTkn__number },
         { "FOO2(", "FOO2", CexTkn__ident },
     };
-    for$each(it, tokens)
-    {
+    for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
         tassert(*lx.cur);
         cex_token_s t = CexParser_next_token(&lx);

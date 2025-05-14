@@ -10,7 +10,7 @@ test$case(test_cex_argparse_init_short)
     char* path = NULL;
 
     char* usage = "basic [options] [[--] args]\n"
-                        "basic [options]\n";
+                  "basic [options]\n";
 
     argparse_c argparse = {
         .options =
@@ -64,7 +64,7 @@ test$case(test_cex_argparse_init_long)
     };
 
     char* usage = "basic [options] [[--] args]\n"
-                        "basic [options]\n";
+                  "basic [options]\n";
 
     argparse_c args = {
         .options = options,
@@ -1230,11 +1230,9 @@ test$case(test_cex_argparse_usage_default_options)
                 argparse$opt(&_f32_big, '7', "_f32_big", "_f32_big"),
                 { 0 }, // array opt term
             },
-   };
-
-    char* argv[] = {
-        "program_name", "-h"
     };
+
+    char* argv[] = { "program_name", "-h" };
     int argc = arr$len(argv);
 
     tassert_eq(Error.argsparse, cex_argparse_parse(&argparse, argc, argv));

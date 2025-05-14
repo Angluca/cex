@@ -2,10 +2,8 @@
 
 test$teardown_suite()
 {
-    if (os.fs.remove("tests/data/text_file_write.txt")) {
-    }
-    if (os.fs.remove("tests/data/text_file_fprintf.txt")) {
-    }
+    if (os.fs.remove("tests/data/text_file_write.txt")) {}
+    if (os.fs.remove("tests/data/text_file_fprintf.txt")) {}
     return EOK;
 }
 
@@ -108,12 +106,8 @@ test$case(test_file_size)
     tassert_eq(50, io.file.size(file));
     tassert_eq(0, io.file.size(NULL));
     tassert_eq(0, io.file.size(stdin));
-    if (io.isatty(stderr)) {
-        tassert_eq(0, io.file.size(stderr));
-    }
-    if (io.isatty(stdout)) {
-        tassert_eq(0, io.file.size(stdout));
-    }
+    if (io.isatty(stderr)) { tassert_eq(0, io.file.size(stderr)); }
+    if (io.isatty(stdout)) { tassert_eq(0, io.file.size(stdout)); }
     io.fclose(&file);
 
     return EOK;

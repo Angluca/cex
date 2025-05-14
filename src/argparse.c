@@ -31,11 +31,8 @@ cex_argparse_usage(argparse_c* self)
     io.printf("Usage:\n");
     if (self->usage) {
 
-        for$iter(str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator))
-        {
-            if (it.val.len == 0) {
-                break;
-            }
+        for$iter (str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator)) {
+            if (it.val.len == 0) { break; }
 
             char* fn = strrchr(self->program_name, '/');
             if (fn != NULL) {
@@ -44,9 +41,7 @@ cex_argparse_usage(argparse_c* self)
                 io.printf("%s ", self->program_name);
             }
 
-            if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) {
-                ;
-            }
+            if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) { ; }
 
             fputc('\n', stdout);
         }
@@ -70,9 +65,7 @@ cex_argparse_usage(argparse_c* self)
     }
 
     // print description
-    if (self->description) {
-        io.printf("%s\n", self->description);
-    }
+    if (self->description) { io.printf("%s\n", self->description); }
 
     fputc('\n', stdout);
 
@@ -83,15 +76,11 @@ cex_argparse_usage(argparse_c* self)
     for$eachp(opt, self->options, self->options_len)
     {
         len = 0;
-        if (opt->short_name) {
-            len += 2;
-        }
+        if (opt->short_name) { len += 2; }
         if (opt->short_name && opt->long_name) {
             len += 2; // separator ", "
         }
-        if (opt->long_name) {
-            len += strlen(opt->long_name) + 2;
-        }
+        if (opt->long_name) { len += strlen(opt->long_name) + 2; }
         switch (opt->type) {
             case CexArgParseType__boolean:
                 break;
@@ -114,9 +103,7 @@ cex_argparse_usage(argparse_c* self)
                 break;
         }
         len = (len + 3) - ((len + 3) & 3);
-        if (usage_opts_width < len) {
-            usage_opts_width = len;
-        }
+        if (usage_opts_width < len) { usage_opts_width = len; }
     }
     usage_opts_width += 4; // 4 spaces prefix
 
@@ -131,15 +118,9 @@ cex_argparse_usage(argparse_c* self)
             continue;
         }
         pos = io.printf("    ");
-        if (opt->short_name) {
-            pos += io.printf("-%c", opt->short_name);
-        }
-        if (opt->long_name && opt->short_name) {
-            pos += io.printf(", ");
-        }
-        if (opt->long_name) {
-            pos += io.printf("--%s", opt->long_name);
-        }
+        if (opt->short_name) { pos += io.printf("-%c", opt->short_name); }
+        if (opt->long_name && opt->short_name) { pos += io.printf(", "); }
+        if (opt->long_name) { pos += io.printf("--%s", opt->long_name); }
 
         if (pos <= usage_opts_width) {
             pad = usage_opts_width - pos;
@@ -151,15 +132,11 @@ cex_argparse_usage(argparse_c* self)
             io.printf("%*s%s", (int)pad + 2, "", opt->help);
         } else {
             u32 i = 0;
-            for$iter(str_s, it, str.slice.iter_split(str.sstr(opt->help), "\n", &it.iterator)) {
+            for$iter (str_s, it, str.slice.iter_split(str.sstr(opt->help), "\n", &it.iterator)) {
                 str_s clean = str.slice.strip(it.val);
-                if (clean.len == 0) {
-                    continue;
-                }
-                if (i > 0) {
-                    io.printf("\n");
-                }
-                io.printf("%*s%S", (i==0) ? pad+2 : usage_opts_width + 2, "", clean);
+                if (clean.len == 0) { continue; }
+                if (i > 0) { io.printf("\n"); }
+                io.printf("%*s%S", (i == 0) ? pad + 2 : usage_opts_width + 2, "", clean);
                 i++;
             }
         }
@@ -171,7 +148,7 @@ cex_argparse_usage(argparse_c* self)
                     io.printf("%c", *(bool*)opt->value ? 'Y' : 'N');
                     break;
                 case CexArgParseType__string:
-                    if (*(char**)opt->value != NULL){
+                    if (*(char**)opt->value != NULL) {
                         io.printf("'%s'", *(char**)opt->value);
                     } else {
                         io.printf("''");
@@ -221,12 +198,11 @@ cex_argparse_usage(argparse_c* self)
     }
 
     // print epilog
-    if (self->epilog) {
-        io.printf("%s\n", self->epilog);
-    }
+    if (self->epilog) { io.printf("%s\n", self->epilog); }
 }
 __attribute__((no_sanitize("undefined"))) static inline Exception
-_cex_argparse__convert(char* s, argparse_opt_s* opt){
+_cex_argparse__convert(char* s, argparse_opt_s* opt)
+{
     // NOTE: this hits UBSAN because we casting convert function of
     // (char*, void*) into str.convert.to_u32(char*, u32*)
     // however we do explicit type checking and tagging so it should be good!
@@ -236,9 +212,7 @@ _cex_argparse__convert(char* s, argparse_opt_s* opt){
 static Exception
 _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
 {
-    if (!opt->value) {
-        goto skipped;
-    }
+    if (!opt->value) { goto skipped; }
 
     switch (opt->type) {
         case CexArgParseType__boolean:
@@ -273,8 +247,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                     return _cex_argparse__error(self, opt, "requires a value", is_long);
                 }
                 uassert(opt->convert != NULL);
-                e$except_silent(err,_cex_argparse__convert(self->_ctx.optvalue, opt) )
-                {
+                e$except_silent (err, _cex_argparse__convert(self->_ctx.optvalue, opt)) {
                     return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
                 self->_ctx.optvalue = NULL;
@@ -282,8 +255,7 @@ _cex_argparse__getvalue(argparse_c* self, argparse_opt_s* opt, bool is_long)
                 self->argc--;
                 self->_ctx.cpidx++;
                 self->argv++;
-                e$except_silent(err, _cex_argparse__convert(*self->argv, opt))
-                {
+                e$except_silent (err, _cex_argparse__convert(*self->argv, opt)) {
                     return _cex_argparse__error(self, opt, "argument parsing error", is_long);
                 }
             } else {
@@ -418,23 +390,15 @@ _cex_argparse__long_opt(argparse_c* self, argparse_opt_s* options)
 {
     for (u32 i = 0; i < self->options_len; i++, options++) {
         char* rest;
-        if (!options->long_name) {
-            continue;
-        }
+        if (!options->long_name) { continue; }
         rest = _cex_argparse__prefix_skip(self->argv[0] + 2, options->long_name);
         if (!rest) {
-            if (options->type != CexArgParseType__boolean) {
-                continue;
-            }
+            if (options->type != CexArgParseType__boolean) { continue; }
             rest = _cex_argparse__prefix_skip(self->argv[0] + 2 + 3, options->long_name);
-            if (!rest) {
-                continue;
-            }
+            if (!rest) { continue; }
         }
         if (*rest) {
-            if (*rest != '=') {
-                continue;
-            }
+            if (*rest != '=') { continue; }
             self->_ctx.optvalue = rest + 1;
         }
         return _cex_argparse__getvalue(self, options, true);
@@ -472,9 +436,7 @@ _cex_argparse__parse_commands(argparse_c* self)
     if (self->commands_len == 0) {
         argparse_cmd_s* _cmd = self->commands;
         while (_cmd != NULL) {
-            if (_cmd->name == NULL) {
-                break;
-            }
+            if (_cmd->name == NULL) { break; }
             self->commands_len++;
             _cmd++;
         }
@@ -521,18 +483,13 @@ _cex_argparse__parse_options(argparse_c* self)
     if (self->options_len == 0) {
         argparse_opt_s* _opt = self->options;
         while (_opt != NULL) {
-            if (_opt->type == CexArgParseType__na) {
-                break;
-            }
+            if (_opt->type == CexArgParseType__na) { break; }
             self->options_len++;
             _opt++;
         }
     }
     int initial_argc = self->argc + 1;
-    e$except_silent(err, _cex_argparse__options_check(self, true))
-    {
-        return err;
-    }
+    e$except_silent (err, _cex_argparse__options_check(self, true)) { return err; }
 
     for (; self->argc; self->argc--, self->argv++) {
         char* arg = self->argv[0];
@@ -555,13 +512,11 @@ _cex_argparse__parse_options(argparse_c* self)
 
             self->_ctx.optvalue = arg + 1;
             self->_ctx.cpidx++;
-            e$except_silent(err, _cex_argparse__short_opt(self, self->options))
-            {
+            e$except_silent (err, _cex_argparse__short_opt(self, self->options)) {
                 return _cex_argparse__report_error(self, err);
             }
             while (self->_ctx.optvalue) {
-                e$except_silent(err, _cex_argparse__short_opt(self, self->options))
-                {
+                e$except_silent (err, _cex_argparse__short_opt(self, self->options)) {
                     return _cex_argparse__report_error(self, err);
                 }
             }
@@ -579,18 +534,14 @@ _cex_argparse__parse_options(argparse_c* self)
             // Breaking when first argument appears (more flexible support of subcommands)
             break;
         }
-        e$except_silent(err, _cex_argparse__long_opt(self, self->options))
-        {
+        e$except_silent (err, _cex_argparse__long_opt(self, self->options)) {
             return _cex_argparse__report_error(self, err);
         }
         self->_ctx.cpidx++;
         continue;
     }
 
-    e$except_silent(err, _cex_argparse__options_check(self, false))
-    {
-        return err;
-    }
+    e$except_silent (err, _cex_argparse__options_check(self, false)) { return err; }
 
     self->argv = self->_ctx.out + self->_ctx.cpidx + 1; // excludes 1st argv[0], program_name
     self->argc = initial_argc - self->_ctx.cpidx - 1;
@@ -610,9 +561,7 @@ cex_argparse_parse(argparse_c* self, int argc, char** argv)
     uassert(argv != NULL);
     uassert(argv[0] != NULL);
 
-    if (self->program_name == NULL) {
-        self->program_name = argv[0];
-    }
+    if (self->program_name == NULL) { self->program_name = argv[0]; }
 
     // reset if we have several runs
     memset(&self->_ctx, 0, sizeof(self->_ctx));
@@ -648,12 +597,8 @@ cex_argparse_next(argparse_c* self)
                 if (eq) {
                     static char part_arg[128]; // temp buffer sustained after scope exit
                     self->_ctx.cpidx = eq - result;
-                    if ((usize)self->_ctx.cpidx + 1 >= sizeof(part_arg)) {
-                        return NULL;
-                    }
-                    if (str.copy(part_arg, result, sizeof(part_arg))) {
-                        return NULL;
-                    }
+                    if ((usize)self->_ctx.cpidx + 1 >= sizeof(part_arg)) { return NULL; }
+                    if (str.copy(part_arg, result, sizeof(part_arg))) { return NULL; }
                     part_arg[self->_ctx.cpidx] = '\0';
                     return part_arg;
                 }

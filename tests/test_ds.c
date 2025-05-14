@@ -41,13 +41,9 @@ test$case(test_array)
     add_to_str(&array2);
     tassert_eq(arr$len(array2), 7);
 
-    for (usize i = 0; i < arr$len(array); ++i) {
-        io.printf("%d \n", array[i]);
-    }
+    for (usize i = 0; i < arr$len(array); ++i) { io.printf("%d \n", array[i]); }
 
-    for (usize i = 0; i < arr$len(array2); ++i) {
-        io.printf("%s \n", array2[i]);
-    }
+    for (usize i = 0; i < arr$len(array2); ++i) { io.printf("%s \n", array2[i]); }
     arr$free(array);
     arr$free(array2);
 
@@ -60,9 +56,7 @@ test$case(test_array_char_ptr)
     arr$push(array, "foo");
     arr$push(array, "bar");
     arr$push(array, "baz");
-    for (usize i = 0; i < arr$len(array); ++i) {
-        io.printf("%s \n", array[i]);
-    }
+    for (usize i = 0; i < arr$len(array); ++i) { io.printf("%s \n", array[i]); }
     arr$free(array);
 
     return EOK;
@@ -123,9 +117,7 @@ test$case(test_orig_arr)
     for (i = 0; i < 20000; i += 50) {
         arr$(int) arr = arr$new(arr, mem$);
 
-        for (j = 0; j < i; ++j) {
-            arr$push(arr, j);
-        }
+        for (j = 0; j < i; ++j) { arr$push(arr, j); }
         arr$free(arr);
         tassert(arr == NULL);
     }
@@ -160,9 +152,7 @@ test$case(test_orig_arr)
         arr$ins(arr, i, 5);
         tassert(arr[i] == 5);
         tassert_eq(arr$len(arr), 5);
-        if (i < 4) {
-            tassert_eq(arr[4], 4);
-        }
+        if (i < 4) { tassert_eq(arr[4], 4); }
         arr$free(arr);
         tassert(arr == NULL);
     }
@@ -179,9 +169,7 @@ test$case(test_orig_hashmap)
     tassert(intmap != NULL);
 
     tassert(hm$get(intmap, i) == 0);
-    for (i = 0; i < testsize; i += 2) {
-        hm$set(intmap, i, i * 5);
-    }
+    for (i = 0; i < testsize; i += 2) { hm$set(intmap, i, i * 5); }
     for (i = 0; i < testsize; i += 1) {
         if (i & 1) {
             tassert(hm$get(intmap, i, -2) == -2);
@@ -189,9 +177,7 @@ test$case(test_orig_hashmap)
             tassert(hm$get(intmap, i) == i * 5);
         }
     }
-    for (i = 0; i < testsize; i += 2) {
-        hm$set(intmap, i, i * 3);
-    }
+    for (i = 0; i < testsize; i += 2) { hm$set(intmap, i, i * 3); }
     for (i = 0; i < testsize; i += 1) {
         if (i & 1) {
             tassert(hm$get(intmap, i, -2) == -2);
@@ -212,17 +198,13 @@ test$case(test_orig_hashmap)
     for (i = 0; i < testsize; i += 1) {
         (void)hm$del(intmap, i); // delete the rest of the entries
     }
-    for (i = 0; i < testsize; i += 1) {
-        tassert(hm$get(intmap, i) == 0);
-    }
+    for (i = 0; i < testsize; i += 1) { tassert(hm$get(intmap, i) == 0); }
     hm$free(intmap);
     tassert(intmap == NULL);
 
     intmap = hm$new(intmap, mem$);
 
-    for (i = 0; i < testsize; i += 2) {
-        hm$set(intmap, i, i * 3);
-    }
+    for (i = 0; i < testsize; i += 2) { hm$set(intmap, i, i * 3); }
     hm$free(intmap);
 
     intmap = hm$new(intmap, mem$);
@@ -292,14 +274,12 @@ test$case(test_for_arr)
 {
     char buf[] = { 'a', 'b', 'c' };
     char buf_zero[] = {};
-    for$each(v, buf_zero)
-    {
+    for$each (v, buf_zero) {
         (void)v;
         tassert(false && "must not happen!");
     }
     arr$(char*) array = arr$new(array, mem$);
-    for$each(v, array)
-    {
+    for$each (v, array) {
         (void)v;
         tassert(false && "must not happen!");
     }
@@ -310,10 +290,7 @@ test$case(test_for_arr)
     tassert_eq(3, arr$len(buf));
     tassert_eq(3, arr$len(array));
 
-    for$each(v, array)
-    {
-        io.printf("v: %s\n", v);
-    }
+    for$each (v, array) { io.printf("v: %s\n", v); }
 
     typeof(buf[0])* pbuf = &buf[0];
     typeof(array[0])* pbuf2 = &array[0];
@@ -321,10 +298,7 @@ test$case(test_for_arr)
     tassert_eq(pbuf[0], 'a');
     tassert_eq(pbuf2[0], "foo");
 
-    for$each(c, buf)
-    {
-        io.printf("c: %c\n", c);
-    }
+    for$each (c, buf) { io.printf("c: %c\n", c); }
 
     u32 n = 0;
     for$eachp(v, array)
@@ -366,8 +340,7 @@ test$case(test_for_arr)
 test$case(test_for_each_null)
 {
     arr$(char*) array = NULL;
-    for$each(v, array)
-    {
+    for$each (v, array) {
         (void)v;
         tassert(false && "must not happen!");
     }
@@ -398,8 +371,7 @@ test$case(test_for_arr_custom_size)
 {
 
     arr$(char*) array = arr$new(array, mem$);
-    for$each(v, array)
-    {
+    for$each (v, array) {
         (void)v;
         tassert(false && "must not happen!");
     }
@@ -409,8 +381,7 @@ test$case(test_for_arr_custom_size)
 
     u32 n = 0;
     tassert_eq(3, arr$len(array));
-    for$each(v, array, arr$len(array) - 1)
-    {
+    for$each (v, array, arr$len(array) - 1) {
         io.printf("v: %s\n", v);
         n++;
     }
@@ -419,8 +390,7 @@ test$case(test_for_arr_custom_size)
     char buf[] = { 'a', 'b', 'c' };
     n = 0;
     tassert_eq(3, arr$len(buf));
-    for$each(c, buf, 2)
-    {
+    for$each (c, buf, 2) {
         io.printf("c: %c\n", c);
         n++;
     }
@@ -434,8 +404,7 @@ test$case(test_for_arr_for_struct)
 {
     arr$(my_struct) array = arr$new(array, mem$);
     tassert_eq(arr$cap(array), 16);
-    for$each(v, array)
-    {
+    for$each (v, array) {
         (void)v;
         tassert(false && "must not happen!");
     }
@@ -446,8 +415,7 @@ test$case(test_for_arr_for_struct)
 
     u32 n = 0;
     // v - is a copy of the array element
-    for$each(v, array)
-    {
+    for$each (v, array) {
         io.printf("v: %s\n", v.my_string);
         n++;
         v.key = 77;
@@ -524,10 +492,7 @@ test$case(test_arr_pushm)
     }
     tassert_eq(1000, arr$len(arr));
 
-    for$each(v, arr)
-    {
-        tassert(v < 10);
-    }
+    for$each (v, arr) { tassert(v < 10); }
 
     arr$free(arr);
     arr$free(arr2);
@@ -595,9 +560,7 @@ test$case(test_smallest_alignment)
     tassert(arr$new(arr, mem$) != NULL);
     tassert(mem$aligned_pointer(arr, alignof(size_t)) == arr);
 
-    for (u32 i = 0; i < 1000; i++) {
-        arr$push(arr, i % 10);
-    }
+    for (u32 i = 0; i < 1000; i++) { arr$push(arr, i % 10); }
     tassert_eq(arr$len(arr), 1000);
 
     for (u32 i = 0; i < 1000; i++) {
@@ -689,8 +652,7 @@ test$case(test_hashmap_basic_struct)
     tassert_eq(hm$getp(intmap, 3)[0].foo, 3);
 
     u32 n = 0;
-    for$each(v, intmap)
-    {
+    for$each (v, intmap) {
         tassert_eq(intmap[n].key, v.key);
         // hasmap also supports bounds checked arr$at
         tassert_eq(arr$at(intmap, n).value.foo, v.value.foo);
@@ -1005,8 +967,7 @@ test$case(test_hashmap_basic_iteration)
     tassert_eq(arr$len(intmap), 3);
 
     u32 nit = 1;
-    for$each(it, intmap)
-    {
+    for$each (it, intmap) {
         tassert_eq(it.key, nit);
         tassert_eq(it.value, nit * 10);
         nit++;
@@ -1044,14 +1005,10 @@ test$case(test_orig_del_add_clear)
     tassert(intmap != NULL);
 
     tassert(hm$get(intmap, i) == 0);
-    for (i = 0; i < testsize; i += 2) {
-        hm$set(intmap, i, i * 5);
-    }
+    for (i = 0; i < testsize; i += 2) { hm$set(intmap, i, i * 5); }
     hm$clear(intmap);
 
-    for (i = 0; i < testsize; i += 2) {
-        hm$set(intmap, i, i * 3);
-    }
+    for (i = 0; i < testsize; i += 2) { hm$set(intmap, i, i * 3); }
     for (i = 0; i < testsize; i += 1) {
         if (i & 1) {
             tassert(hm$get(intmap, i, -2) == -2);
@@ -1064,9 +1021,7 @@ test$case(test_orig_del_add_clear)
     }
     hm$clear(intmap);
 
-    for (i = 0; i < testsize; i += 2) {
-        hm$set(intmap, i, i * 3);
-    }
+    for (i = 0; i < testsize; i += 2) { hm$set(intmap, i, i * 3); }
     for (i = 0; i < testsize; i += 1) {
         if (i & 1) {
             tassert(hm$get(intmap, i, -2) == -2);
@@ -1088,9 +1043,7 @@ test$case(test_mem_scope_lifetime_test)
         void* old_arr = arr;
         tassert(old_arr != NULL);
         tassert_eq(arr$cap(arr), 16);
-        for (u32 i = 0; i < 16; i++) {
-            arr$push(arr, i);
-        }
+        for (u32 i = 0; i < 16; i++) { arr$push(arr, i); }
         tassert_eq(arr$len(arr), 16);
         tassert_eq(arr$cap(arr), 16);
         mem$scope(tmem$, ta)

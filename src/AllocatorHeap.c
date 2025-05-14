@@ -118,9 +118,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
     (void)a;
 
     u64 hdr = _cex_allocator_heap__hdr_make(size, alignment);
-    if (hdr == 0) {
-        return NULL;
-    }
+    if (hdr == 0) { return NULL; }
 
     usize full_size = _cex_allocator_heap__hdr_get_size(hdr);
     alignment = _cex_allocator_heap__hdr_get_alignment(hdr);
@@ -144,9 +142,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
 #ifdef CEX_TEST
         a->stats.n_allocs++;
         // intentionally set malloc to 0xf7 pattern to mark uninitialized data
-        if (fill_val != 0) {
-            memset(result, 0xf7, size);
-        }
+        if (fill_val != 0) { memset(result, 0xf7, size); }
 #endif
         usize ptr_offset = result - raw_result;
         uassert(ptr_offset >= sizeof(u64) * 2);
@@ -222,9 +218,7 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     }
 
     u64 new_hdr = _cex_allocator_heap__hdr_make(size, alignment);
-    if (unlikely(new_hdr == 0)) {
-        goto fail;
-    }
+    if (unlikely(new_hdr == 0)) { goto fail; }
 
     u8* raw_result = NULL;
     u8* result = NULL;
@@ -233,16 +227,12 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
     if (alignment <= _Alignof(max_align_t)) {
         uassert(new_full_size > size);
         raw_result = realloc(p - old_offset, new_full_size);
-        if (unlikely(raw_result == NULL)) {
-            goto fail;
-        }
+        if (unlikely(raw_result == NULL)) { goto fail; }
         result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
     } else {
         // fallback to malloc + memcpy because realloc doesn't guarantee alignment
         raw_result = malloc(new_full_size);
-        if (unlikely(raw_result == NULL)) {
-            goto fail;
-        }
+        if (unlikely(raw_result == NULL)) { goto fail; }
         result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
         memcpy(result, ptr, size > old_size ? old_size : size);
         free(ptr - old_offset);

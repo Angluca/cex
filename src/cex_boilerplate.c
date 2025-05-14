@@ -1,10 +1,10 @@
 #if __has_include("cex_config.h")
-    // Custom config file
-    #include "cex_config.h"
+// Custom config file
+#    include "cex_config.h"
 #else
-    // Overriding config values
-    #define cexy$cc_include "-I.", "-I./lib"
-    #define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
+// Overriding config values
+#    define cexy$cc_include "-I.", "-I./lib"
+#    define CEX_LOG_LVL 4 /* 0 (mute all) - 5 (log$trace) */
 #endif
 
 #define CEX_IMPLEMENTATION
@@ -29,13 +29,9 @@ main(int argc, char** argv)
             { .name = "build-lib", .func = cmd_build_lib, .help = "Custom build command" },
         ),
     };
-    if (argparse.parse(&args, argc, argv)) {
-        return 1;
-    }
+    if (argparse.parse(&args, argc, argv)) { return 1; }
     void* my_user_ctx = NULL; // passed as `user_ctx` to command
-    if (argparse.run_command(&args, my_user_ctx)) {
-        return 1;
-    }
+    if (argparse.run_command(&args, my_user_ctx)) { return 1; }
     return 0;
 }
 

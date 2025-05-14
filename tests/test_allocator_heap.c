@@ -73,10 +73,7 @@ test$case(test_allocator_heap_default_alignment)
         tassert(a != NULL);
         tassert(mem$aligned_pointer(a, 8) == a);
         // filled with 'poisoned' pattern
-        for$each(v, a, len)
-        {
-            tassert(v == 0xf7);
-        }
+        for$each (v, a, len) { tassert(v == 0xf7); }
         mem$free(mem$, a);
     }
     tassert_eq(allc->stats.n_allocs, 999);
@@ -126,9 +123,7 @@ test$case(test_allocator_heap_malloc_random_align)
         usize al = align_arr[i % arr$len(align_arr)];
         usize size = (rand() % 15 + 1) * al;
 
-        if (al <= 1) {
-            size = rand() % 1000 + 1;
-        }
+        if (al <= 1) { size = rand() % 1000 + 1; }
 
         u8* a = mem$->malloc(mem$, size, al);
         tassert(a != NULL);
@@ -139,10 +134,7 @@ test$case(test_allocator_heap_malloc_random_align)
             tassert((usize)a % al == 0 && "expected aligned to al");
         }
 
-        for$each(v, a, size)
-        {
-            tassert(v == 0xf7);
-        }
+        for$each (v, a, size) { tassert(v == 0xf7); }
 
         memset(a, 'Z', size);
 
@@ -163,9 +155,7 @@ test$case(test_allocator_heap_calloc_random_align)
         usize al = align_arr[i % arr$len(align_arr)];
         usize size = (rand() % 15 + 1) * al;
 
-        if (al <= 1) {
-            size = rand() % 1000 + 1;
-        }
+        if (al <= 1) { size = rand() % 1000 + 1; }
 
         usize nmemb = i % 5 + 1;
 
@@ -180,10 +170,7 @@ test$case(test_allocator_heap_calloc_random_align)
             tassert((usize)a % al == 0 && "expected aligned to al");
         }
 
-        for$each(v, a, size * nmemb)
-        {
-            tassert(v == 0);
-        }
+        for$each (v, a, size * nmemb) { tassert(v == 0); }
 
         memset(a, 'Z', size * nmemb);
 
@@ -211,10 +198,7 @@ test$case(test_allocator_heap_realloc)
         tassert(b != NULL);
         tassert(mem$aligned_pointer(a, 8) == a);
         // filled with 'poisoned' pattern
-        for$each(v, a, len)
-        {
-            tassert(v == 0xf7);
-        }
+        for$each (v, a, len) { tassert(v == 0xf7); }
 
         u8* old_a = a;
         a = mem$realloc(mem$, a, len * 2);
@@ -268,9 +252,7 @@ test$case(test_allocator_heap_realloc_random_align)
         usize al = align_arr[i % arr$len(align_arr)];
         usize size = (rand() % 15 + 2) * al;
 
-        if (al <= 1) {
-            size = rand() % 1000 + 11;
-        }
+        if (al <= 1) { size = rand() % 1000 + 11; }
 
         u8* a = mem$->malloc(mem$, size, al);
         u8* b = mem$->malloc(mem$, 1028, 0);
@@ -278,10 +260,7 @@ test$case(test_allocator_heap_realloc_random_align)
         tassert(b != NULL);
 
         memset(a, 'Z', size);
-        for$each(v, a, size)
-        {
-            tassert(v == 'Z');
-        }
+        for$each (v, a, size) { tassert(v == 'Z'); }
         a[0] = 0xCD;
         a[size - 1] = 0xAB;
 
@@ -306,22 +285,12 @@ test$case(test_allocator_heap_realloc_random_align)
         tassert(a != NULL);
         tassert(a[0] == 0xCD);
         if (new_size > size) {
-            for$each(v, a + 1, size - 2)
-            {
-                tassert(v == 'Z');
-            }
+            for$each (v, a + 1, size - 2) { tassert(v == 'Z'); }
             tassert(a[size - 1] == 0xAB);
-            for (u32 j = size; j < new_size; j++) {
-                tassert_eq(a[j], 0xf7);
-            }
+            for (u32 j = size; j < new_size; j++) { tassert_eq(a[j], 0xf7); }
         } else {
-            for$each(v, a + 1, new_size - 2)
-            {
-                tassert(v == 'Z');
-            }
-            if (new_size == size) {
-                tassert(a[size - 1] == 0xAB);
-            }
+            for$each (v, a + 1, new_size - 2) { tassert(v == 'Z'); }
+            if (new_size == size) { tassert(a[size - 1] == 0xAB); }
         }
 
         u64 hdr = *(u64*)(a - sizeof(u64) * 2);

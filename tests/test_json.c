@@ -789,7 +789,8 @@ test$case(json_buf_proto)
             {
                 json$str("%s", "foo");
                 json$val("%d", 39);
-                json$arr() {
+                json$arr()
+                {
                     json$val("%d", 19);
                     json$val("%d", 45);
                 }
@@ -820,7 +821,7 @@ test$case(json_buf_simple_obj)
             json$kstr("foo2", "%d", 1);
             json$kval("foo3", "%d", 4);
         }
-        tassert_eq($raw({"foo2": "1", "foo3": 4}), json.buf.get(&jb));
+        tassert_eq($raw({ "foo2" : "1", "foo3" : 4 }), json.buf.get(&jb));
         tassert_er(EOK, jb.error);
     }
     return EOK;
@@ -835,15 +836,20 @@ test$case(json_buf_simple_nested_obj)
         json$buf(&jb, JsonType__obj)
         {
             json$kstr("foo2", "%d", 1);
-            json$kobj("foo3") {
+            json$kobj("foo3")
+            {
                 json$kval("bar", "%s", "3");
             }
-            json$karr("foo3") {
+            json$karr("foo3")
+            {
                 json$val("%d", 8);
                 json$str("%d", 9);
             }
         }
-        tassert_eq($raw({"foo2": "1", "foo3": {"bar": 3},"foo3": [8, "9"]}), json.buf.get(&jb));
+        tassert_eq(
+            $raw({ "foo2" : "1", "foo3" : { "bar" : 3 }, "foo3" : [ 8, "9" ] }),
+            json.buf.get(&jb)
+        );
         tassert_er(EOK, jb.error);
     }
     return EOK;
@@ -859,12 +865,13 @@ test$case(json_buf_simple_root_array)
         {
             json$val("%d", 8);
             json$str("%d", 9);
-            json$obj() {
+            json$obj()
+            {
                 json$kval("bar", "%s", "3");
                 json$kval("baz", "%s", "3");
             }
         }
-        tassert_eq($raw( [8, "9", {"bar": 3, "baz": 3}]), json.buf.get(&jb));
+        tassert_eq($raw([ 8, "9", { "bar" : 3, "baz" : 3 } ]), json.buf.get(&jb));
         tassert_er(EOK, jb.error);
     }
     return EOK;
@@ -880,7 +887,7 @@ test$case(json_buf_simple_fmt_arbitrary)
         {
             json$fmt("%s: %s", "foo", "bar");
         }
-        tassert_eq($raw({foo: bar}), json.buf.get(&jb));
+        tassert_eq($raw({ foo : bar }), json.buf.get(&jb));
         tassert_er(EOK, jb.error);
     }
     return EOK;

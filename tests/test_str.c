@@ -397,8 +397,7 @@ test$case(test_iter_split)
     char* expected1[] = {
         "123456",
     };
-    for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, ",", &it.iterator)) {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
         tassert_eq(str.slice.eq(it.val, str.sstr(expected1[nit])), 1);
@@ -412,8 +411,7 @@ test$case(test_iter_split)
         "123",
         "456",
     };
-    for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, ",", &it.iterator)) {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
         tassert_eq(str.slice.eq(it.val, str.sstr(expected2[nit])), 1);
@@ -429,8 +427,7 @@ test$case(test_iter_split)
         "88",
         "99",
     };
-    for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, ",", &it.iterator)) {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
         tassert_eq(str.slice.eq(it.val, str.sstr(expected3[nit])), 1);
@@ -446,8 +443,7 @@ test$case(test_iter_split)
         "",
     };
     s = str.sstr("123,456,88,");
-    for$iter(str_s, it, str.slice.iter_split(s, ",", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, ",", &it.iterator)) {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
         tassert_eq(str.slice.eq(it.val, str.sstr(expected4[nit])), 1);
@@ -464,8 +460,7 @@ test$case(test_iter_split)
         "88",
         "99",
     };
-    for$iter(str_s, it, str.slice.iter_split(s, ",@#", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, ",@#", &it.iterator)) {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
         tassert_eq(str.slice.eq(it.val, str.sstr(expected5[nit])), 1);
@@ -481,8 +476,7 @@ test$case(test_iter_split)
         "",
     };
     s = str.sstr("123\n456\n");
-    for$iter(str_s, it, str.slice.iter_split(s, "\n", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, "\n", &it.iterator)) {
         tassert(it.val.buf);
         // tassert_eq(Error.ok, str.copy(*it.val, buf, arr$len(buf)));
         tassert_eq(str.slice.eq(it.val, str.sstr(expected6[nit])), 1);
@@ -492,15 +486,10 @@ test$case(test_iter_split)
 
     nit = 0;
     char* expected7[] = {
-        "123",
-        "",
-        "",
-        "456",
-        "",
+        "123", "", "", "456", "",
     };
     s = str.sstr("123\n\n\n456\n");
-    for$iter(str_s, it, str.slice.iter_split(s, "\n", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, "\n", &it.iterator)) {
         tassert(it.val.buf);
         tassert_eq(it.val, str.sstr(expected7[nit]));
         nit++;
@@ -510,8 +499,7 @@ test$case(test_iter_split)
 
     s = str.sstr("");
     nit = 0;
-    for$iter(str_s, it, str.slice.iter_split(s, "\n", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, "\n", &it.iterator)) {
         tassert(false && "should not happen");
     }
     tassert_eq(nit, 0);
@@ -524,8 +512,7 @@ test$case(test_iter_split)
         "",
     };
     s = str.sstr("\n123\n456\n");
-    for$iter(str_s, it, str.slice.iter_split(s, "\n", &it.iterator))
-    {
+    for$iter (str_s, it, str.slice.iter_split(s, "\n", &it.iterator)) {
         tassert(it.val.buf);
         tassert_eq(it.val, str.sstr(expected8[nit]));
         nit++;
@@ -820,27 +807,27 @@ test$case(str_to__signed_num)
 
     num = 0;
     s = "1";
-    tassert_er(EOK, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
+    tassert_er(EOK, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 1);
 
     num = 0;
     s = " ";
-    tassert_er(Error.argument, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = " -";
-    tassert_er(Error.argument, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = " +";
-    tassert_er(Error.argument, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
     s = "+";
-    tassert_er(Error.argument, cex_str__to_signed_num(s,0, &num, INT8_MIN, INT8_MAX));
+    tassert_er(Error.argument, cex_str__to_signed_num(s, 0, &num, INT8_MIN, INT8_MAX));
     tassert_eq(num, 0);
 
     num = 0;
@@ -1886,8 +1873,7 @@ test$case(test_tsplit)
         res = str.split(s.buf, ",", _);
         tassert_eq(arr$len(res), 1);
 
-        for$each(v, res)
-        {
+        for$each (v, res) {
             tassert_eq(strcmp(v, expected1[nit]), 0);
             nit++;
         }
@@ -1905,8 +1891,7 @@ test$case(test_tsplit)
         tassert(res != NULL);
         tassert_eq(arr$len(res), 2);
 
-        for$each(v, res)
-        {
+        for$each (v, res) {
             tassert_eq(strcmp(v, expected[nit]), 0);
             nit++;
         }
@@ -1925,8 +1910,7 @@ test$case(test_tsplit)
         tassert(res != NULL);
         tassert_eq(arr$len(res), 3);
 
-        for$each(v, res)
-        {
+        for$each (v, res) {
             tassert_eq(v, expected[nit]);
             nit++;
         }
@@ -1946,8 +1930,7 @@ test$case(test_tsplit)
         tassert(res != NULL);
         tassert_eq(arr$len(res), 4);
 
-        for$each(v, res)
-        {
+        for$each (v, res) {
             tassert_eq(v, expected[nit]);
             nit++;
         }
@@ -1970,8 +1953,7 @@ test$case(test_split_lines)
         tassert_eq(arr$len(res), 3);
 
         u32 nit = 0;
-        for$each(v, res)
-        {
+        for$each (v, res) {
             tassert_eq(v, expected[nit]);
             nit++;
         }
@@ -1989,8 +1971,7 @@ test$case(test_split_lines)
         tassert_eq(arr$len(res), arr$len(expected));
 
         u32 nit = 0;
-        for$each(v, res)
-        {
+        for$each (v, res) {
             tassert_eq(v, expected[nit]);
             nit++;
         }
@@ -2268,13 +2249,13 @@ test$case(test_slice_index_of)
 {
 
     str_s s = str$s("1234");
-    tassert_eq(-1, str.slice.index_of(s, (str_s){0}));
-    tassert_eq(-1, str.slice.index_of(s, (str_s){0, "sd"}));
-    tassert_eq(-1, str.slice.index_of(s, (str_s){0, "sd"}));
+    tassert_eq(-1, str.slice.index_of(s, (str_s){ 0 }));
+    tassert_eq(-1, str.slice.index_of(s, (str_s){ 0, "sd" }));
+    tassert_eq(-1, str.slice.index_of(s, (str_s){ 0, "sd" }));
 
-    tassert_eq(-1, str.slice.index_of((str_s){0}, str$s("foo")));
-    tassert_eq(-1, str.slice.index_of((str_s){0, "sd"}, str$s("foo")));
-    tassert_eq(-1, str.slice.index_of((str_s){0, "sd"}, str$s("foo")));
+    tassert_eq(-1, str.slice.index_of((str_s){ 0 }, str$s("foo")));
+    tassert_eq(-1, str.slice.index_of((str_s){ 0, "sd" }, str$s("foo")));
+    tassert_eq(-1, str.slice.index_of((str_s){ 0, "sd" }, str$s("foo")));
     tassert_eq(-1, str.slice.index_of(str$s("fo"), str$s("foo")));
 
     tassert_eq(-1, str.slice.index_of(s, str$s("")));
@@ -2282,7 +2263,7 @@ test$case(test_slice_index_of)
     tassert_eq(2, str.slice.index_of(s, str$s("3")));
     tassert_eq(3, str.slice.index_of(s, str$s("4")));
     tassert_eq(-1, str.slice.index_of(s, str$s("5")));
-    
+
 
     tassert_eq(-1, str.slice.index_of(s, str$s("12345")));
     tassert_eq(1, str.slice.index_of(s, str$s("234")));
@@ -2293,50 +2274,56 @@ test$case(test_slice_index_of)
 }
 test$case(test_cmp_str)
 {
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
         arr$pushm(items, "2", "1", "", "5");
-        char* expected[] = {"", "1", "2", "5"};
+        char* expected[] = { "", "1", "2", "5" };
         arr$sort(items, str.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
         arr$pushm(items, "2", NULL, "", "5");
-        char* expected[] = {"", "2", "5", NULL};
+        char* expected[] = { "", "2", "5", NULL };
         arr$sort(items, str.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
         arr$pushm(items, "2", "1", "", "");
-        char* expected[] = {"", "", "1", "2"};
+        char* expected[] = { "", "", "1", "2" };
         arr$sort(items, str.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
         arr$pushm(items, "2", NULL, "", NULL, "foo");
-        char* expected[] = {"", "2", "foo", NULL, NULL};
+        char* expected[] = { "", "2", "foo", NULL, NULL };
         arr$sort(items, str.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
-        arr$pushm(items, "A", "1", "a", "Z", "z",);
-        char* expected[] = {"1", "A", "Z", "a", "z"};
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
+        arr$pushm(items, "A", "1", "a", "Z", "z", );
+        char* expected[] = { "1", "A", "Z", "a", "z" };
         arr$sort(items, str.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
         arr$pushm(items, "aaaAA", "aaaA", "aaaAAc");
-        char* expected[] = {"aaaA", "aaaAA", "aaaAAc"};
+        char* expected[] = { "aaaA", "aaaAA", "aaaAAc" };
         arr$sort(items, str.qscmp);
         tassert_eq_arr(items, expected);
     }
@@ -2346,33 +2333,37 @@ test$case(test_cmp_str)
 
 test$case(test_cmp_str_ignore_case)
 {
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
         arr$pushm(items, "2", "1", "", "5");
-        char* expected[] = {"", "1", "2", "5"};
+        char* expected[] = { "", "1", "2", "5" };
         arr$sort(items, str.qscmpi);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
         arr$pushm(items, "2", NULL, "", "5");
-        char* expected[] = {"", "2", "5", NULL};
+        char* expected[] = { "", "2", "5", NULL };
         arr$sort(items, str.qscmpi);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
         arr$pushm(items, "2", NULL, "", NULL, "foo");
-        char* expected[] = {"", "2", "foo", NULL, NULL};
+        char* expected[] = { "", "2", "foo", NULL, NULL };
         arr$sort(items, str.qscmpi);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(char*) items = arr$new(items, _); 
-        arr$pushm(items, "A", "1", "a", "Z", "z",);
+    mem$scope(tmem$, _)
+    {
+        arr$(char*) items = arr$new(items, _);
+        arr$pushm(items, "A", "1", "a", "Z", "z", );
         // char* expected[] = {"1", "A", "a", "Z", "z"};
         arr$sort(items, str.qscmpi);
         tassert_eq(items[0], "1");
@@ -2386,49 +2377,55 @@ test$case(test_cmp_str_ignore_case)
 
 test$case(test_cmp_slice)
 {
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
         arr$pushm(items, str$s("2"), str$s("1"), str$s(""), str$s("5"));
-        str_s expected[] = {str$s(""), str$s("1"), str$s("2"), str$s("5")};
+        str_s expected[] = { str$s(""), str$s("1"), str$s("2"), str$s("5") };
         arr$sort(items, str.slice.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
-        arr$pushm(items, {0}, str$s("1"), str$s(""), str$s("5"));
-        str_s expected[] = {str$s(""), str$s("1"), str$s("5"), {0}};
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
+        arr$pushm(items, { 0 }, str$s("1"), str$s(""), str$s("5"));
+        str_s expected[] = { str$s(""), str$s("1"), str$s("5"), { 0 } };
         arr$sort(items, str.slice.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
-        arr$pushm(items, {0}, str$s("1"), {0}, str$s("5"));
-        str_s expected[] = {str$s("1"), str$s("5"), {0}, {0}};
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
+        arr$pushm(items, { 0 }, str$s("1"), { 0 }, str$s("5"));
+        str_s expected[] = { str$s("1"), str$s("5"), { 0 }, { 0 } };
         arr$sort(items, str.slice.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
         arr$pushm(items, str$s("A"), str$s("1"), str$s("z"), str$s("a"), str$s("Z"));
-        str_s expected[] = {str$s("1"), str$s("A"), str$s("Z"), str$s("a"), str$s("z")};
+        str_s expected[] = { str$s("1"), str$s("A"), str$s("Z"), str$s("a"), str$s("z") };
         arr$sort(items, str.slice.qscmp);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
         arr$pushm(items, str$s("aaaAA"), str$s("aaaA"), str$s("aaaAAc"));
-        str_s expected[] = {str$s("aaaA"), str$s("aaaAA"), str$s("aaaAAc")};
+        str_s expected[] = { str$s("aaaA"), str$s("aaaAA"), str$s("aaaAAc") };
         arr$sort(items, str.slice.qscmp);
         tassert_eq_arr(items, expected);
     }
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
         arr$pushm(items, str$s(""), str$s("1"), str$s("z"), str$s(""), str$s(""));
-        str_s expected[] = {str$s(""), str$s(""), str$s(""), str$s("1"), str$s("z")};
+        str_s expected[] = { str$s(""), str$s(""), str$s(""), str$s("1"), str$s("z") };
         arr$sort(items, str.slice.qscmp);
         tassert_eq_arr(items, expected);
     }
@@ -2437,32 +2434,36 @@ test$case(test_cmp_slice)
 
 test$case(test_cmp_slice_ignore_case)
 {
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
         arr$pushm(items, str$s("2"), str$s("1"), str$s(""), str$s("5"));
-        str_s expected[] = {str$s(""), str$s("1"), str$s("2"), str$s("5")};
+        str_s expected[] = { str$s(""), str$s("1"), str$s("2"), str$s("5") };
         arr$sort(items, str.slice.qscmpi);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
-        arr$pushm(items, {0}, str$s("1"), str$s(""), str$s("5"));
-        str_s expected[] = {str$s(""), str$s("1"), str$s("5"), {0}};
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
+        arr$pushm(items, { 0 }, str$s("1"), str$s(""), str$s("5"));
+        str_s expected[] = { str$s(""), str$s("1"), str$s("5"), { 0 } };
         arr$sort(items, str.slice.qscmpi);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
-        arr$pushm(items, {0}, str$s("1"), {0}, str$s("5"));
-        str_s expected[] = {str$s("1"), str$s("5"), {0}, {0}};
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
+        arr$pushm(items, { 0 }, str$s("1"), { 0 }, str$s("5"));
+        str_s expected[] = { str$s("1"), str$s("5"), { 0 }, { 0 } };
         arr$sort(items, str.slice.qscmpi);
         tassert_eq_arr(items, expected);
     }
 
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
         arr$pushm(items, str$s("A"), str$s("1"), str$s("z"), str$s("a"), str$s("Z"));
         // str_s expected[] = {str$s("1"), str$s("A"), str$s("a"), str$s("z"), str$s("Z")};
         arr$sort(items, str.slice.qscmpi);
@@ -2474,17 +2475,19 @@ test$case(test_cmp_slice_ignore_case)
         tassert(str.slice.eqi(items[4], str$s("z")));
     }
 
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
         arr$pushm(items, str$s("aaaAA"), str$s("aaaA"), str$s("aaaAAc"));
-        str_s expected[] = {str$s("aaaA"), str$s("aaaAA"), str$s("aaaAAc")};
+        str_s expected[] = { str$s("aaaA"), str$s("aaaAA"), str$s("aaaAAc") };
         arr$sort(items, str.slice.qscmpi);
         tassert_eq_arr(items, expected);
     }
-    mem$scope(tmem$, _) {
-        arr$(str_s) items = arr$new(items, _); 
+    mem$scope(tmem$, _)
+    {
+        arr$(str_s) items = arr$new(items, _);
         arr$pushm(items, str$s(""), str$s("1"), str$s("z"), str$s(""), str$s(""));
-        str_s expected[] = {str$s(""), str$s(""), str$s(""), str$s("1"), str$s("z")};
+        str_s expected[] = { str$s(""), str$s(""), str$s(""), str$s("1"), str$s("z") };
         arr$sort(items, str.slice.qscmpi);
         tassert_eq_arr(items, expected);
     }
@@ -2493,7 +2496,7 @@ test$case(test_cmp_slice_ignore_case)
 
 test$case(test_str_convert_macro_u8)
 {
-    char b[] = {"200"};
+    char b[] = { "200" };
     u8 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2506,7 +2509,7 @@ test$case(test_str_convert_macro_u8)
 
 test$case(test_str_convert_macro_i8)
 {
-    char b[] = {"-20"};
+    char b[] = { "-20" };
     i8 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2519,7 +2522,7 @@ test$case(test_str_convert_macro_i8)
 
 test$case(test_str_convert_macro_u16)
 {
-    char b[] = {"200"};
+    char b[] = { "200" };
     u16 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2532,7 +2535,7 @@ test$case(test_str_convert_macro_u16)
 
 test$case(test_str_convert_macro_i16)
 {
-    char b[] = {"-20"};
+    char b[] = { "-20" };
     i16 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2546,7 +2549,7 @@ test$case(test_str_convert_macro_i16)
 
 test$case(test_str_convert_macro_u32)
 {
-    char b[] = {"200"};
+    char b[] = { "200" };
     u32 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2559,7 +2562,7 @@ test$case(test_str_convert_macro_u32)
 
 test$case(test_str_convert_macro_i32)
 {
-    char b[] = {"-20"};
+    char b[] = { "-20" };
     i32 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2573,7 +2576,7 @@ test$case(test_str_convert_macro_i32)
 
 test$case(test_str_convert_macro_u64)
 {
-    char b[] = {"200"};
+    char b[] = { "200" };
     u64 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2586,7 +2589,7 @@ test$case(test_str_convert_macro_u64)
 
 test$case(test_str_convert_macro_i64)
 {
-    char b[] = {"-20"};
+    char b[] = { "-20" };
     i64 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2599,7 +2602,7 @@ test$case(test_str_convert_macro_i64)
 
 test$case(test_str_convert_macro_f32)
 {
-    char b[] = {"200"};
+    char b[] = { "200" };
     f32 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);
@@ -2612,7 +2615,7 @@ test$case(test_str_convert_macro_f32)
 
 test$case(test_str_convert_macro_f64)
 {
-    char b[] = {"-20"};
+    char b[] = { "-20" };
     i64 num = 0;
     tassert_er(EOK, str$convert("8", &num));
     tassert_eq(num, 8);

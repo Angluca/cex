@@ -1,6 +1,6 @@
 #include "all.h"
 #ifdef CEX_TEST
-#include <math.h>
+#    include <math.h>
 
 enum _cex_test_eq_op_e
 {
@@ -261,8 +261,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
                 a,
                 ops,
                 b
-            )) {
-        }
+            )) {}
         return _cex_test__mainfn_state.str_buf;
     }
     return EOK;
@@ -299,9 +298,7 @@ cex_test_unmute(Exc test_result)
             fflush(stderr);
             fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
             int c;
-            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') {
-                putc(c, stderr);
-            }
+            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') { putc(c, stderr); }
             fprintf(stderr, "\n============== <<<<<< TEST OUTPUT =============\n");
         }
     }
@@ -321,11 +318,8 @@ cex_test_main_fn(int argc, char** argv)
         return 1;
     }
     u32 max_name = 0;
-    for$each(t, ctx->test_cases)
-    {
-        if (max_name < strlen(t.test_name) + 2) {
-            max_name = strlen(t.test_name) + 2;
-        }
+    for$each (t, ctx->test_cases) {
+        if (max_name < strlen(t.test_name) + 2) { max_name = strlen(t.test_name) + 2; }
     }
     max_name = (max_name < 70) ? 70 : max_name;
 
@@ -351,10 +345,7 @@ cex_test_main_fn(int argc, char** argv)
         .description = "Test runner program",
     };
 
-    e$except_silent(err, argparse.parse(&args, argc, argv))
-    {
-        return 1;
-    }
+    e$except_silent (err, argparse.parse(&args, argc, argv)) { return 1; }
 
     if (!ctx->no_stdout_capture) {
         ctx->out_stream = tmpfile();
@@ -393,31 +384,22 @@ cex_test_main_fn(int argc, char** argv)
         }
     }
 
-    if (ctx->quiet_mode) {
-        fprintf(stderr, "%s ", ctx->suite_file);
-    }
+    if (ctx->quiet_mode) { fprintf(stderr, "%s ", ctx->suite_file); }
 
-    for$each(t, ctx->test_cases)
-    {
+    for$each (t, ctx->test_cases) {
         ctx->case_name = t.test_name;
         ctx->tests_run++;
-        if (ctx->case_filter && !str.find(t.test_name, ctx->case_filter)) {
-            continue;
-        }
+        if (ctx->case_filter && !str.find(t.test_name, ctx->case_filter)) { continue; }
 
         if (!ctx->quiet_mode) {
             fprintf(stderr, "%s", t.test_name);
-            for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
-                putc('.', stderr);
-            }
-            if (ctx->no_stdout_capture) {
-                putc('\n', stderr);
-            }
+            for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) { putc('.', stderr); }
+            if (ctx->no_stdout_capture) { putc('\n', stderr); }
         }
 
-#ifndef NDEBUG
+#    ifndef NDEBUG
         uassert_enable(); // unconditionally enable previously disabled asserts
-#endif
+#    endif
         Exc err = EOK;
         AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
         alloc_heap->stats.n_allocs = 0;
@@ -477,9 +459,7 @@ cex_test_main_fn(int argc, char** argv)
         if (err == EOK && alloc_heap->stats.n_allocs != alloc_heap->stats.n_free) {
             if (!ctx->quiet_mode) {
                 fprintf(stderr, "%s", t.test_name);
-                for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) {
-                    putc('.', stderr);
-                }
+                for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) { putc('.', stderr); }
             } else {
                 putc('\n', stderr);
             }
@@ -501,8 +481,7 @@ cex_test_main_fn(int argc, char** argv)
     }
 
     if (ctx->teardown_suite_fn) {
-        e$except(err, ctx->teardown_suite_fn())
-        {
+        e$except (err, ctx->teardown_suite_fn()) {
             fprintf(
                 stderr,
                 "[%s] test$teardown_suite() failed with %s (suite %s stopped)\n",

@@ -3,12 +3,8 @@
 test$NOOPT Exception
 foo(int condition)
 {
-    if (condition == 0) {
-        return e$raise(Error.io, "condition == 0");
-    }
-    if (condition == 2) {
-        return Error.memory;
-    }
+    if (condition == 0) { return e$raise(Error.io, "condition == 0"); }
+    if (condition == 2) { return Error.memory; }
 
     return EOK;
 }
@@ -16,18 +12,14 @@ foo(int condition)
 test$NOOPT int
 sys_func(int condition)
 {
-    if (condition == -1) {
-        errno = 999;
-    }
+    if (condition == -1) { errno = 999; }
     return condition;
 }
 
 test$NOOPT void*
 void_ptr_func(int condition)
 {
-    if (condition == -1) {
-        return NULL;
-    }
+    if (condition == -1) { return NULL; }
     return &errno;
 }
 
@@ -40,8 +32,7 @@ test$case(test_sysfunc)
     errno = 777;
     u32 nit = 0;
     tassert_eq(-1, sys_func(-1));
-    e$except_errno(ret = sys_func(-1))
-    {
+    e$except_errno (ret = sys_func(-1)) {
         log$error("Except: ret=%d errno=%d\n", ret, errno);
         tassert_eq(_tmp_errno, 999);
         tassert_eq(errno, 999);
@@ -52,8 +43,7 @@ test$case(test_sysfunc)
 
     errno = 777;
     nit = 0;
-    e$except_errno(ret = sys_func(100))
-    {
+    e$except_errno (ret = sys_func(100)) {
         tassert(false && "not expected");
         nit++;
     }
@@ -65,9 +55,7 @@ test$case(test_sysfunc)
 Exception
 check(int condition)
 {
-    if (condition == -1) {
-        return Error.memory;
-    }
+    if (condition == -1) { return Error.memory; }
     return EOK;
 }
 
@@ -94,10 +82,7 @@ check_optimized(int e)
 
     errno = 777;
     u32 nit = 0;
-    e$except_errno(ret = sys_func(-1))
-    {
-        return Error.io;
-    }
+    e$except_errno (ret = sys_func(-1)) { return Error.io; }
     (void)nit;
     (void)e;
 
@@ -109,32 +94,20 @@ check_optimized(int e)
 test$case(test_except_true)
 {
     int ret = 8;
-    e$except_true(ret = sys_func(0))
-    {
-        tassert(false && "unexpected");
-    }
+    e$except_true (ret = sys_func(0)) { tassert(false && "unexpected"); }
     tassert_eq(ret, 0);
 
     u32 nit = 0;
-    e$except_true(ret = sys_func(1))
-    {
-        nit++;
-    }
+    e$except_true (ret = sys_func(1)) { nit++; }
     tassert_eq(ret, 1);
     tassert_eq(nit, 1);
 
     // Any non zero value works
-    e$except_true(ret = sys_func(100))
-    {
-        nit++;
-    }
+    e$except_true (ret = sys_func(100)) { nit++; }
     tassert_eq(ret, 100);
     tassert_eq(nit, 2);
 
-    e$except_true(ret = sys_func(-1))
-    {
-        nit++;
-    }
+    e$except_true (ret = sys_func(-1)) { nit++; }
     tassert_eq(ret, -1);
     tassert_eq(nit, 3);
 
@@ -173,22 +146,13 @@ fail:
 test$case(test_null_ptr)
 {
     void* res = NULL;
-    e$except_null(res = void_ptr_func(1))
-    {
-        tassert(false && "not expected");
-    }
+    e$except_null (res = void_ptr_func(1)) { tassert(false && "not expected"); }
     tassert(res != NULL);
 
-    e$except_null(res = void_ptr_func(-1))
-    {
-        tassert(res == NULL);
-    }
+    e$except_null (res = void_ptr_func(-1)) { tassert(res == NULL); }
     tassert(res == NULL);
 
-    e$except_null(void_ptr_func(-1))
-    {
-        tassert(res == NULL);
-    }
+    e$except_null (void_ptr_func(-1)) { tassert(res == NULL); }
 
     return EOK;
 }
@@ -198,18 +162,14 @@ test$case(test_nested_excepts)
 
     tassert_eq(Error.io, foo(0));
 
-    e$except_silent(err, foo(0))
-    {
+    e$except_silent (err, foo(0)) {
         tassert_er(err, Error.io);
 
-        e$except_silent(err, foo(2))
-        {
-            tassert_er(err, Error.memory);
-        }
+        e$except_silent (err, foo(2)) { tassert_er(err, Error.memory); }
 
         // err, back after nested handling!
         tassert_er(err, Error.io);
-    return EOK;
+        return EOK;
     }
 
     tassert(false && "unreachable");
@@ -769,25 +729,24 @@ test$case(test_arrays_and_slices)
             it->len
         );
 
-        for(usize i = 0; i < s4.len; i++){
-            tassert_eq(s4.arr[i], it->slice[i]);
-        }
-        if (s4.len == 0){
-            tassert(s4.arr == NULL && "must be NULL when empty");
-        }
+        for (usize i = 0; i < s4.len; i++) { tassert_eq(s4.arr[i], it->slice[i]); }
+        if (s4.len == 0) { tassert(s4.arr == NULL && "must be NULL when empty"); }
     }
 
     return EOK;
 }
 
-test$case(test_foreachp_zero_offset_to_null_ub) {
+test$case(test_foreachp_zero_offset_to_null_ub)
+{
     int* arr = NULL;
 
-    for$eachp(it, arr) {
+    for$eachp(it, arr)
+    {
         tassert(false && "never!");
     }
 
-    for$eachp(it, arr, 0) {
+    for$eachp(it, arr, 0)
+    {
         tassert(false && "never!");
     }
     return EOK;

@@ -1,12 +1,13 @@
 #include "src/all.c"
 #include <math.h>
 
-//test$setup_case() {return EOK;}
-//test$teardown_case() {return EOK;}
-//test$setup_suite() {return EOK;}
-//test$teardown_suite() {return EOK;}
+// test$setup_case() {return EOK;}
+// test$teardown_case() {return EOK;}
+// test$setup_suite() {return EOK;}
+// test$teardown_suite() {return EOK;}
 
-test$case(test_timer){
+test$case(test_timer)
+{
     f64 t = os.timer();
     tassert(t > 0);
     tassert(!isnan(t));

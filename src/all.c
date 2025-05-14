@@ -23,5 +23,3 @@
 #include "test.c"
 #endif // CEX_HEADER_H
 // clang-format on
-
-
