@@ -82,17 +82,17 @@ integers in binary: "%b" for 256 would print 100.
 
 // #define CEX_SPRINTF_NOFLOAT // disables floating point code (2x less in size)
 #ifndef CEX_SPRINTF_MIN
-#define CEX_SPRINTF_MIN 512 // size of stack based buffer for small strings
+#    define CEX_SPRINTF_MIN 512 // size of stack based buffer for small strings
 #endif
 
 // #define CEXSP_STATIC   // makes all functions static
 
 #ifdef CEXSP_STATIC
-#define CEXSP__PUBLICDEC static
-#define CEXSP__PUBLICDEF static
+#    define CEXSP__PUBLICDEC static
+#    define CEXSP__PUBLICDEF static
 #else
-#define CEXSP__PUBLICDEC extern
-#define CEXSP__PUBLICDEF
+#    define CEXSP__PUBLICDEC extern
+#    define CEXSP__PUBLICDEF
 #endif
 
 #define CEXSP__ATTRIBUTE_FORMAT(fmt, va) __attribute__((format(printf, fmt, va)))

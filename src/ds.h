@@ -71,13 +71,19 @@ struct _cexds__arr_new_kwargs_s
 {
     usize capacity;
 };
-#define arr$new(a, allocator, kwargs...)                                                            \
-    ({                                                                                              \
-        _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");                \
-        uassert(allocator != NULL);                                                                 \
-        struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                       \
-        (a) = (typeof(*a                                                                            \
-        )*)_cexds__arrgrowf(NULL, sizeof(*a), _kwargs.capacity, 0, alignof(typeof(*a)), allocator); \
+#define arr$new(a, allocator, kwargs...)                                                           \
+    ({                                                                                             \
+        _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
+        uassert(allocator != NULL);                                                                \
+        struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                      \
+        (a) = (typeof(*a)*)_cexds__arrgrowf(                                                       \
+            NULL,                                                                                  \
+            sizeof(*a),                                                                            \
+            _kwargs.capacity,                                                                      \
+            0,                                                                                     \
+            alignof(typeof(*a)),                                                                   \
+            allocator                                                                              \
+        );                                                                                         \
     })
 
 #define arr$free(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__arrfreef((a)), (a) = NULL)
@@ -143,7 +149,7 @@ struct _cexds__arr_new_kwargs_s
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
-        uassertf(array != NULL, "arr$pusha: array is NULL");                                                                    \
+        uassertf(array != NULL, "arr$pusha: array is NULL");                                       \
         usize _arr_len_va[] = { array_len };                                                       \
         (void)_arr_len_va;                                                                         \
         usize arr_len = (sizeof(_arr_len_va) > 0) ? _arr_len_va[0] : arr$len(array);               \
@@ -153,9 +159,7 @@ struct _cexds__arr_new_kwargs_s
             abort();                                                                               \
         }                                                                                          \
         /* NOLINTEND */                                                                            \
-        for (usize i = 0; i < arr_len; i++) {                                                      \
-            (a)[_cexds__header(a)->length++] = ((array)[i]);                                       \
-        }                                                                                          \
+        for (usize i = 0; i < arr_len; i++) { (a)[_cexds__header(a)->length++] = ((array)[i]); }   \
     })
 
 #define arr$sort(a, qsort_cmp)                                                                     \
@@ -188,27 +192,36 @@ struct _cexds__arr_new_kwargs_s
 
 
 #if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 12)
-#define arr$len(arr)                                                                               \
-    ({                                                                                             \
-        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0])) /* check if array or ptr */   \
-            ? _cexds__arr_len(arr)                                   /* some pointer or arr$ */    \
-            : (sizeof(arr) / sizeof((arr)[0])                        /* static array[] */          \
-              );                                                                                   \
-    })
+#    define arr$len(arr)                                                                           \
+        ({                                                                                         \
+            __builtin_types_compatible_p(                                                          \
+                typeof(arr),                                                                       \
+                typeof(&(arr)[0])                                                                  \
+            )                          /* check if array or ptr */                                 \
+                ? _cexds__arr_len(arr) /* some pointer or arr$ */                                  \
+                : (                                                                                \
+                      sizeof(arr) / sizeof((arr)[0]) /* static array[] */                          \
+                  );                                                                               \
+        })
 #else
-#define arr$len(arr)                                                                               \
-    ({                                                                                             \
-        _Pragma("GCC diagnostic push");                                                            \
-        /* NOTE: temporary disable syntax error to support both static array length and arr$(T) */ \
-        _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\"");                                \
-        /* NOLINTBEGIN */                                                                          \
-        __builtin_types_compatible_p(typeof(arr), typeof(&(arr)[0])) /* check if array or ptr */   \
-            ? _cexds__arr_len(arr)                                   /* some pointer or arr$ */    \
-            : (sizeof(arr) / sizeof((arr)[0])                        /* static array[] */          \
-              );                                                                                   \
-        /* NOLINTEND */                                                                            \
-        _Pragma("GCC diagnostic pop");                                                             \
-    })
+#    define arr$len(arr)                                                                           \
+        ({                                                                                         \
+            _Pragma("GCC diagnostic push");                                                        \
+            /* NOTE: temporary disable syntax error to support both static array length and        \
+             * arr$(T) */                                                                          \
+            _Pragma("GCC diagnostic ignored \"-Wsizeof-pointer-div\"");                            \
+            /* NOLINTBEGIN */                                                                      \
+            __builtin_types_compatible_p(                                                          \
+                typeof(arr),                                                                       \
+                typeof(&(arr)[0])                                                                  \
+            )                          /* check if array or ptr */                                 \
+                ? _cexds__arr_len(arr) /* some pointer or arr$ */                                  \
+                : (                                                                                \
+                      sizeof(arr) / sizeof((arr)[0]) /* static array[] */                          \
+                  );                                                                               \
+            /* NOLINTEND */                                                                        \
+            _Pragma("GCC diagnostic pop");                                                         \
+        })
 #endif
 
 static inline void*
@@ -278,13 +291,13 @@ struct _cexds__hm_new_kwargs_s
             str_s *: _CexDsKeyType__cexstr,                                                        \
             char(**): _CexDsKeyType__charptr,                                                      \
             const char(**): _CexDsKeyType__charptr,                                                \
-            char(*)[]: _CexDsKeyType__charbuf,                                                     \
-            const char(*)[]: _CexDsKeyType__charbuf,                                               \
+            char (*)[]: _CexDsKeyType__charbuf,                                                    \
+            const char (*)[]: _CexDsKeyType__charbuf,                                              \
             default: _CexDsKeyType__generic                                                        \
         );                                                                                         \
         struct _cexds__hm_new_kwargs_s _kwargs = { kwargs };                                       \
-        (t) = (typeof(*t                                                                           \
-        )*)_cexds__hminit(sizeof(*t), (allocator), _key_type, alignof(typeof(*t)), &_kwargs);      \
+        (t) = (typeof(*t)*)                                                                        \
+            _cexds__hminit(sizeof(*t), (allocator), _key_type, alignof(typeof(*t)), &_kwargs);     \
     })
 
 
@@ -300,8 +313,7 @@ struct _cexds__hm_new_kwargs_s
             NULL,                           /* no full element set */                              \
             &result                         /* NULL on memory error */                             \
         );                                                                                         \
-        if (result)                                                                                \
-            result->value = (v);                                                                   \
+        if (result) result->value = (v);                                                           \
         result;                                                                                    \
     })
 
@@ -398,9 +410,7 @@ struct _cexds__hm_new_kwargs_s
 
 #define hm$len(t)                                                                                  \
     ({                                                                                             \
-        if (t != NULL) {                                                                           \
-            _cexds__arr_integrity(t, _CEXDS_HM_MAGIC);                                             \
-        }                                                                                          \
+        if (t != NULL) { _cexds__arr_integrity(t, _CEXDS_HM_MAGIC); }                              \
         (t) ? _cexds__header((t))->length : 0;                                                     \
     })
 

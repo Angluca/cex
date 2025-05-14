@@ -233,17 +233,13 @@ __cex__fprintf_dummy(void)
 #    define __cex__traceback(uerr, fail_func) __cex__fprintf_dummy()
 #    define e$assert(A)                                                                            \
         ({                                                                                         \
-            if (unlikely(!((A)))) {                                                                \
-                return Error.assert;                                                               \
-            }                                                                                      \
+            if (unlikely(!((A)))) { return Error.assert; }                                         \
         })
 
 
 #    define e$assertf(A, format, ...)                                                              \
         ({                                                                                         \
-            if (unlikely(!((A)))) {                                                                \
-                return Error.assert;                                                               \
-            }                                                                                      \
+            if (unlikely(!((A)))) { return Error.assert; }                                         \
         })
 #endif // #if CEX_LOG_LVL > 0
 
@@ -318,7 +314,7 @@ int __cex_test_uassert_enabled = 1;
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
                     __cex__panic();                                                                \
-                    __builtin_unreachable ();                                                      \
+                    __builtin_unreachable();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -337,7 +333,7 @@ int __cex_test_uassert_enabled = 1;
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
                     __cex__panic();                                                                \
-                    __builtin_unreachable ();                                                      \
+                    __builtin_unreachable();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -357,7 +353,7 @@ __attribute__((noinline)) void __cex__panic(void);
             ##__VA_ARGS__                                                                          \
         );                                                                                         \
         __cex__panic();                                                                            \
-        __builtin_unreachable ();                                                                  \
+        __builtin_unreachable();                                                                   \
     })
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -389,7 +385,7 @@ __attribute__((noinline)) void __cex__panic(void);
          _var_name = EOK)
 
 #if defined(CEX_TEST) || defined(CEX_BUILD)
-#    define e$except_silent(_var_name, _func) e$except(_var_name, _func)
+#    define e$except_silent(_var_name, _func) e$except (_var_name, _func)
 #else
 #    define e$except_silent(_var_name, _func)                                                      \
         for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
@@ -453,12 +449,10 @@ struct _cex_arr_slice
     {                                                                                              \
         struct _cex_arr_slice _slice = { __VA_ARGS__, .__placeholder = 0 };                        \
         isize _len = array_len;                                                                    \
-        if (unlikely(_slice.start < 0))                                                            \
-            _slice.start += _len;                                                                  \
+        if (unlikely(_slice.start < 0)) _slice.start += _len;                                      \
         if (_slice.end == 0) /* _end=0 equivalent of python's arr[_star:] */                       \
             _slice.end = _len;                                                                     \
-        else if (unlikely(_slice.end < 0))                                                         \
-            _slice.end += _len;                                                                    \
+        else if (unlikely(_slice.end < 0)) _slice.end += _len;                                     \
         _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
         _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
         /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */                                                                                                \
