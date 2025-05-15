@@ -15742,7 +15742,7 @@ cexy__utils__make_compile_flags(
             arr$pusha(args, cc_include);
             char* pkgconf_libargs[] = { cexy$pkgconf_libs };
             if (arr$len(pkgconf_libargs)) {
-                e$ret(cexy$pkgconf(_, &args, "--cflags", cexy$pkgconf_libs));
+                e$except (err, cexy$pkgconf(_, &args, "--cflags", cexy$pkgconf_libs)) {}
             }
         }
         if (cc_flags_or_null != NULL) { arr$pusha(args, cc_flags_or_null); }
