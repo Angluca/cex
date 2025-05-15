@@ -14,15 +14,31 @@ runs:
       run: |
         echo ""
         echo "---------------------------------------------------------------------"
-        echo "           STEP: libs deps"
+        echo "           STEP: libs system + vcpkg system"
         echo "---------------------------------------------------------------------"
-        cd examples/libs_deps/
+        cd examples/libs_sys/
         cc -g ./cex.c -o ./cex 
         ./cex config
         ./cex app run cex_downloader
         ./cex build-unzip
         ./cex app run cex_unzip
         ./cex help sqlite3.
+        cd ./build
+        ls -la
+
+    - name: Cex Example
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: libs vcpkg"
+        echo "---------------------------------------------------------------------"
+        cd examples/libs_vcpkg/
+        cc -g ./cex.c -o ./cex 
+        ./cex vcpkg-install
+        ./cex config
+        ./cex app run cex_downloader
+        ./cex app run cex_unzip
         cd ./build
         ls -la
 
