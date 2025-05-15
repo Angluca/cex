@@ -3,7 +3,7 @@
 #include "lib/sqlite3.h" // This will be dowloaded automatically at first ./cex run
 
 Exception
-sqlite_hello_world(const char* db_name)
+sqlite_hello_world(char* db_name)
 {
     Exc result = Error.runtime;
     char* err_msg = NULL;
@@ -52,7 +52,7 @@ main(int argc, char** argv)
 {
     argparse_c arg = { 0 };
     e$except (err, argparse.parse(&arg, argc, argv)) { return 1; }
-    const char* db_name = argparse.next(&arg);
+    char* db_name = argparse.next(&arg);
     if (db_name == NULL) {
         io.printf("Usage: %s db_name\n", arg.program_name);
         return 1;
