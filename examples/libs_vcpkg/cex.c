@@ -52,7 +52,7 @@ main(int argc, char** argv)
     return 0;
 }
 
-/// Custom build command for building cex_unzip app (does low level building itself without cexy)
+/// Automatically sets vcpkg repo (only for this project) and installs dependencies
 Exception
 cmd_vcpkg_install(int argc, char** argv, void* user_ctx)
 {
@@ -84,9 +84,10 @@ cmd_vcpkg_install(int argc, char** argv, void* user_ctx)
             if (!os.path.exists("vcpkg")) { e$ret(os$cmd("bootstrap-vcpkg.sh")); }
         }
         e$ret(os$cmd(
-            "vcpkg",
+            "./vcpkg",
             "install",
             str.fmt(_, "--triplet=%s", cexy$vcpkg_triplet),
+            // NOTE: names of libs for vcpkg and pkgconf_libs can be different
             "curl",
             "libzip"
         ));
