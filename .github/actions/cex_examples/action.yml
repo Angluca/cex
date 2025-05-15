@@ -14,10 +14,27 @@ runs:
       run: |
         echo ""
         echo "---------------------------------------------------------------------"
+        echo "           STEP: libs deps"
+        echo "---------------------------------------------------------------------"
+        cd examples/libs_deps/
+        cc -g ./cex.c -o ./cex 
+        ./cex config
+        ./cex app run cex_downloader
+        ./cex build-unzip
+        ./cex app run cex_unzip
+        ./cex help sqlite3.
+        cd ./build
+        ls -la
+
+    - name: Cex Example
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
         echo "           STEP: example lua_module"
         echo "---------------------------------------------------------------------"
         cd examples/lua_module/
-        clang -g ./cex.c -o ./cex 
+        cc -g ./cex.c -o ./cex 
         ./cex config
         ./cex build-lua
         ./cex build-lib
@@ -31,8 +48,10 @@ runs:
         echo "           STEP: example sqlite"
         echo "---------------------------------------------------------------------"
         cd examples/sqlite/
-        clang -g ./cex.c -o ./cex 
+        cc -g ./cex.c -o ./cex 
+        ./cex config
         ./cex
         ./build/hello_sqlite hello.db
         ./build/sqlite3 build/hello.db "SELECT * FROM Messages;"
+
 

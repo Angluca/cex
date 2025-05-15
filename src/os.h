@@ -100,7 +100,7 @@ __attribute__((unused)) static const char* OSArch_str[] = {
             if (str.find(a, " ")) {                                                                \
                 io.printf("\'%s\'", a);                                                            \
             } else if (a == NULL || *a == '\0') {                                                  \
-                io.printf("\'(empty arg)\'");                                                      \
+                io.printf("\'%s\'", a);                                                      \
             } else {                                                                               \
                 io.printf("%s", a);                                                                \
             }                                                                                      \

@@ -35,6 +35,8 @@ jobs:
           sudo apt-get install curl
           sudo apt-get install unzip
           sudo apt-get install libreadline-dev # only for lua_module!
+          sudo apt-get install libcurl4-openssl-dev
+          sudo apt-get install libzip-dev
           echo "Replacing: cc to ${{ matrix.compiler }}"
           sudo rm /usr/bin/cc
           sudo ln -s /usr/bin/${{ matrix.compiler }} /usr/bin/cc 
@@ -79,12 +81,21 @@ jobs:
             git
             curl
             unzip
+            libcurl
+            libcurl-devel
+            libzstd-devel
+            tree
           pacboy: >-
             toolchain:p
 
       - name: 'Test cc version / config'
         run: |
           git config --global core.autocrlf input
+          cd /c/vcpkg
+          ./vcpkg install --triplet=x64-mingw-static curl
+          ./vcpkg install --triplet=x64-mingw-static libzip
+          cd installed/
+          tree
           cc --version
 
       - name: 'Checkout'
@@ -135,6 +146,7 @@ jobs:
           brew install readline   # for lua_module compilation
           brew install curl
           brew install unzip
+          brew install libzip
 
       - name: cex initial build
         run: |

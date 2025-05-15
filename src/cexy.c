@@ -748,8 +748,8 @@ _cexy__fn_match(str_s fn_name, str_s ns_prefix)
         if (str.slice.match(fn_name, fn_sub_pattern) ||
             str.slice.match(fn_name, fn_sub_pattern_cex)) {
             return true;
-        } else if ((str.slice.match(fn_name, fn_private) ||
-                    str.slice.match(fn_name, fn_private_cex)) ||
+        } else if ((str.slice.match(fn_name, fn_private) || str.slice.match(fn_name, fn_private_cex)
+                   ) ||
                    (!str.slice.match(fn_name, fn_pattern_cex) &&
                     !str.slice.match(fn_name, fn_pattern))) {
             return false;
@@ -1705,47 +1705,83 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     mem$scope(tmem$, _)
     {
         bool has_git = os.cmd.exists("git");
-        bool has_pkg_config = os.cmd.exists("pkg-config");
-        io.printf("\nTools installed:\n");
-        io.printf("* git (optional)            %s\n", has_git ? "OK" : "Not found");
+
+        io.printf("\nTools installed (optional):\n");
+        io.printf("* git                       %s\n", has_git ? "OK" : "Not found");
+        char* pkgconf_cmd[] = { cexy$pkgconf_cmd };
+        bool has_pkg_config = false;
+        if (arr$len(pkgconf_cmd) && pkgconf_cmd[0] && pkgconf_cmd[0][0] != '\0') {
+            has_pkg_config = os.cmd.exists(pkgconf_cmd[0]);
+        }
         if (has_pkg_config) {
-            io.printf("* pkg-config (optional)     %s\n", "OK");
+            io.printf(
+                "* cexy$pkgconf_cmd          %s (%s)\n",
+                "OK",
+                cex$stringize(cexy$pkgconf_cmd)
+            );
         } else {
             switch (os.platform.current()) {
                 case OSPlatform__win:
                     io.printf(
-                        "* pkg-config (optional)     %s\n",
-                        "Not found (try `pacman -S pkg-config` via MSYS2)"
+                        "* cexy$pkgconf_cmd          %s\n",
+                        "Not found (try `pacman -S pkg-config` via MSYS2 or try this https://github.com/skeeto/u-config)"
                     );
                     break;
                 case OSPlatform__macos:
                     io.printf(
-                        "* pkg-config (optional)     %s\n",
+                        "* cexy$pkgconf_cmd          %s\n",
                         "Not found (try `brew install pkg-config`)"
                     );
                     break;
                 default:
                     io.printf(
-                        "* pkg-config (optional)     %s\n",
+                        "* cexy$pkgconf_cmd          %s\n",
                         "Not found (try to install `pkg-config` using package manager)"
                     );
                     break;
             }
         }
-        if (has_pkg_config) {
-            char* pkgconf_libargs[] = { cexy$pkgconf_libs };
-            if (arr$len(pkgconf_libargs)) {
-                arr$(char*) args = arr$new(args, _);
-                Exc err = cexy$pkgconf(_, &args, "--libs", cexy$pkgconf_libs);
-                if (err == EOK) {
+
+        char* triplet[] = { cexy$vcpkg_triplet };
+        char* vcpkg_root = cexy$vcpkg_root;
+
+        if (arr$len(triplet) && triplet[0] != NULL && triplet[0][0] != '\0') {
+            io.printf("* cexy$vcpkg_root           %s\n", (vcpkg_root) ? vcpkg_root : "Not set)");
+            io.printf("* cexy$vcpkg_triplet        %s\n", triplet[0]);
+            if (!vcpkg_root) {
+                log$error("Build system expects vcpkg to be installed and configured\n");
+                result = "vcpkg not installed/misconfigured";
+            }
+        } else {
+            io.printf("* cexy$vcpkg_root           %s\n", (vcpkg_root) ? vcpkg_root : "Not set");
+            io.printf("* cexy$vcpkg_triplet        %s\n", "Not set");
+        }
+
+        char* pkgconf_libargs[] = { cexy$pkgconf_libs };
+        if (arr$len(pkgconf_libargs)) {
+            arr$(char*) args = arr$new(args, _);
+            Exc err = cexy$pkgconf(_, &args, "--libs", cexy$pkgconf_libs);
+            if (err == EOK) {
+                io.printf(
+                    "* cexy$pkgconf_libs         %s (all found)\n",
+                    str.join(args, arr$len(args), " ", _)
+                );
+            } else {
+                io.printf("* cexy$pkgconf_libs         %s [%s]\n", "ERROR", err);
+                if (err == Error.runtime && arr$len(triplet) && triplet[0] != NULL) {
+                    // pkg-conf failed to find lib it could be a missing .pc
                     io.printf(
-                        "* pkg-config (libs test)    %s\n",
-                        str.join(args, arr$len(args), " ", _)
+                        "WARNING: Looks like vcpkg library (.a file) exists, but missing/misspelled .pc file for pkg-conf. \n"
                     );
-                } else {
-                    io.printf("* pkg-config (libs test)    %s[%s]\n", "ERROR", err);
-                    result = "Missing Libs";
+                    io.printf("\tTry to resolve it manually via cexy$ld_args.\n");
+                    io.printf(
+                        "\tPKG_CONFIG_LIBDIR: %s/installed/%s/lib/pkgconfig\n",
+                        vcpkg_root,
+                        triplet[0]
+                    );
                 }
+                io.printf("\tCompile with `#define CEX_LOG_LVL 5` for more info\n");
+                result = "Missing Libs";
             }
         }
 
@@ -2337,7 +2373,7 @@ _cexy__utils__pkgconf_parse(IAllocator allc, arr$(char*) * out_cc_args, char* pk
             case '\r': {
                 if (arg) {
                     str_s a = { .buf = arg, .len = cur - arg };
-                    arr$push(*out_cc_args, str.slice.clone(a, allc));
+                    if (a.len > 0) { arr$push(*out_cc_args, str.slice.clone(a, allc)); }
                 }
                 arg = NULL;
                 break;
@@ -2369,7 +2405,7 @@ _cexy__utils__pkgconf_parse(IAllocator allc, arr$(char*) * out_cc_args, char* pk
 
     if (arg) {
         str_s a = { .buf = arg, .len = cur - arg };
-        arr$push(*out_cc_args, str.slice.clone(a, allc));
+        if (a.len > 0) { arr$push(*out_cc_args, str.slice.clone(a, allc)); }
     }
 
     return EOK;
@@ -2393,11 +2429,102 @@ cexy__utils__pkgconf(
     mem$arena(2048, _)
     {
         arr$(char*) args = arr$new(args, _);
+        char* vcpkg_root = cexy$vcpkg_root;
+        char* triplet[] = { cexy$vcpkg_triplet };
+
+        if (vcpkg_root) {
+            log$trace("Looking vcpkg libs at '%s' triplet='%s'\n", vcpkg_root, triplet[0]);
+            if (!os.path.exists(vcpkg_root)) {
+                return e$raise(Error.not_found, "cexy$vcpkg_root not exists: %s", vcpkg_root);
+            }
+            char* triplet_path = str.fmt(_, "%s/installed/%s", vcpkg_root, triplet[0]);
+            if (!os.path.exists(triplet_path)) {
+                return e$raise(Error.not_found, "vcpkg triplet path not exists: %s", triplet_path);
+            }
+            char* lib_path = str.fmt(_, "%s/lib/", triplet_path);
+            if (!os.path.exists(lib_path)) {
+                return e$raise(Error.not_found, "vcpkg lib path not exists: %s", lib_path);
+            }
+            char* inc_path = str.fmt(_, "%s/include/", triplet_path);
+            if (!os.path.exists(inc_path)) {
+                return e$raise(Error.not_found, "vcpkg include path not exists: %s", inc_path);
+            }
+            char* pkgconf_path = str.fmt(_, "%s/lib/pkgconfig", triplet_path);
+            if (!os.path.exists(pkgconf_path)) {
+                return e$raise(
+                    Error.not_found,
+                    "vcpkg lib/pkgconfig path not exists: %s",
+                    pkgconf_path
+                );
+            }
+
+            log$trace("Setting: PKG_CONFIG_LIBDIR='%s'\n", pkgconf_path);
+            e$ret(os.env.set("PKG_CONFIG_LIBDIR", pkgconf_path));
+
+            log$trace("Using PKG_CONFIG_LIBDIR from vcpkg, not all packages provide .pc files!\n");
+            for$each (it, pkgconf_args, pkgconf_args_len) {
+                if (str.starts_with(it, "--")) { continue; }
+
+                // checking libfoo.a, and foo.a
+                char* lib_search[] = {
+                    str.fmt(
+                        _,
+                        "%s/%s%s" cexy$build_ext_lib_stat, // append platform specific .a or .lib
+                        lib_path,
+                        (str.starts_with(it, "lib")) ? "" : "lib",
+                        it
+                    ),
+                    str.fmt(
+                        _,
+                        "%s/%S" cexy$build_ext_lib_stat, // append platform specific .a or .lib
+                        lib_path,
+                        (str.starts_with(it, "lib")) ? str.sub(it, 3, 0) : str.sstr(it)
+                    )
+                };
+                bool is_found = false;
+                for$each (lib_file_name, lib_search) {
+                    log$trace("Probing lib: %s\n", lib_file_name);
+                    if (os.path.exists(lib_file_name)) {
+                        log$trace("Found lib: %s\n", lib_file_name);
+                        is_found = true;
+                    }
+                }
+
+                if (!is_found) {
+                    return e$raise(
+                        Error.not_found,
+                        "vcpkg: lib '%s' not found (try `vcpkg install %s`) dir: %s",
+                        it,
+                        it,
+                        lib_path
+                    );
+                }
+            }
+        }
         arr$pushm(args, cexy$pkgconf_cmd);
         arr$pusha(args, pkgconf_args, pkgconf_args_len);
         arr$push(args, NULL);
-        e$ret(
-            os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
+        log$trace("Looking system libs with: %s\n", args[0]);
+
+#    if CEX_LOG_LVL > 4
+        os$cmd(args[0], "--print-errors", "--variable", "pc_path", "pkg-config");
+        io.printf("\n");
+        log$trace("CMD: ");
+        for (u32 i = 0; i < arr$len(args) - 1; i++) {
+            char* a = args[i];
+            io.printf(" ");
+            if (str.find(a, " ")) {
+                io.printf("\'%s\'", a);
+            } else if (a == NULL || *a == '\0') {
+                io.printf("\'(empty arg)\'");
+            } else {
+                io.printf("%s", a);
+            }
+        }
+        io.printf("\n");
+
+#    endif
+        e$ret(os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
         );
 
         char* output = os.cmd.read_all(&c, _);
