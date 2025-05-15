@@ -15,7 +15,7 @@
 #        define cexy$build_ext_lib_stat ".a"
 #        define cexy$vcpkg_triplet "x64-mingw-static"
 #elif defined(__APPLE__) || defined(__MACH__)
-#        define cexy$vcpkg_triplet "x64-osx"
+#        define cexy$vcpkg_triplet "arm64-osx"
 #    else
 #        define cexy$vcpkg_triplet "x64-linux"
 #    endif
