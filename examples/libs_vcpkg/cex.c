@@ -81,7 +81,7 @@ cmd_vcpkg_install(int argc, char** argv, void* user_ctx)
                 e$ret(os$cmd("cmd.exe", "/c", "bootstrap-vcpkg.bat"));
             }
         } else {
-            if (!os.path.exists("vcpkg")) { e$ret(os$cmd("bootstrap-vcpkg.sh")); }
+            if (!os.path.exists("vcpkg")) { e$ret(os$cmd("/bin/sh", "bootstrap-vcpkg.sh")); }
         }
         e$ret(os$cmd(
             "./vcpkg",
