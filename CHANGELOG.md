@@ -11,8 +11,23 @@
 - (breaking) `os.fm.remove_tree()` - attempt for removing non existing path will lead to `Error.not_found`
 - `cexy app create` - refactored structure of new app (added argparse)
 - `cexy.app.find_app_target_src` - refactored arguments
+- Examples: added building/linking with system libs
+- `cexy` - Added support of vcpkg libs
+- Examples: added building/linking with vcpkg libs
+- refactor!: removed all const qualifiers from the cex project
+- feat: added __builtin_unreachable() after assert/panic
 
 ### Fixes
+- `os.match` - fixed `[A-Z+]*` pattern invalid match at the beginning
+- `./cex help` - now includes `./cex.h` if its a symlink
+- fix(cexy): fix cexy.src_include_changed() was not searching relative to src file
+- fix(cexy): pkgconf fixed include dirs flags before linker
+- fix: mingw warning visibility attribute not supported in this configuration
+- fix(cexy): compile flags failed if pkgconf failed (now just prints an error)
+- fix(cexy): help skipping build/ and tests/ dirs entirely
+- fix(cexy): help incorrectly handled forward-declared types
+- fix(cexy): ./cex process all - ignores build/ and tests/ now
+
 
 ## 0.12.0
 2025-05-12
