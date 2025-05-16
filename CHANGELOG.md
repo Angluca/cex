@@ -1,6 +1,12 @@
 # CEX Release Notes
 
-## 0.13.0 WIP
+## 0.14.0 WIP
+### Changes / improvements
+### Fixes
+
+
+## 0.13.0
+2025-05-16
 
 ### Changes / improvements
 - (breaking) `cexy.src_changed()` - refactored with array length argument
