@@ -1527,7 +1527,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
             mem$scope(tmem$, _)
             {
                 char* abspath = os.path.abs(src_fn, _);
-                if (str.starts_with(abspath, build_path) || str.starts_with(abspath, test_path)){
+                if (str.starts_with(abspath, build_path) || str.starts_with(abspath, test_path)) {
                     continue;
                 }
 
@@ -1586,6 +1586,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 
                         if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
                             if (d->type == CexTkn__cex_module_def) { continue; }
+                            if (d->type == CexTkn__typedef && d->ret_type[0] == '\0') { continue; }
                             // We have full match display full help
                             return _cexy__display_full_info(
                                 d,
