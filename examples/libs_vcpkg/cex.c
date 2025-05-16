@@ -43,7 +43,7 @@ main(int argc, char** argv)
             cexy$cmd_app,  /* feel free to make your own if needed */
             { .name = "vcpkg-install",
               .func = cmd_vcpkg_install,
-              .help = "Download and bulld vcpkg libs" },
+              .help = "Download and build vcpkg libs" },
         ),
     };
     if (argparse.parse(&args, argc, argv)) { return 1; }

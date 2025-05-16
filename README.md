@@ -197,6 +197,8 @@ CEX is tested on various platforms, compiler versions, sanitizers, and optimizat
 ## Examples
 * [Building Lua + Lua Module in CEX](https://github.com/alexveden/cex/tree/master/examples/lua_module)
 * [Building SQLite Program From Source](https://github.com/alexveden/cex/tree/master/examples/sqlite)
+* [Building with system libraries](https://github.com/alexveden/cex/tree/master/examples/libs_sys)
+* [Building with vcpkg local repo](https://github.com/alexveden/cex/tree/master/examples/libs_vcpkg)
 
 ## Licence
 >    MIT License 2023-2025 (c) Alex Veden

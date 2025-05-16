@@ -1,7 +1,7 @@
 # Building Lua + Lua Module in CEX
 
 1. This example project is standalone project with its own `./cex.c` build commands
-2. It works on Linux, Windows and MacOS.
+2. It works  on Linux, Windows and MacOS. (see [CI file](https://github.com/alexveden/cex/blob/master/.github/workflows/examples.yml))
 3. It builds automatically Lua from source and makes a module for Lua import.
 
 ## CEX Capabilities used
@@ -13,6 +13,7 @@
 * Unit testing of library logic on host without Lua itself
 * Introducing custom build commands to `./cex` tool
 * Automatic launching `lua` script and grabbing its output for testing expected values
+* All build settings and steps are defined in `./cex.c` file
 
 ## Getting started 
 

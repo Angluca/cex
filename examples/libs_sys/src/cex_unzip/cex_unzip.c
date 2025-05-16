@@ -82,8 +82,8 @@ cex_unzip(int argc, char** argv)
 {
     (void)argc;
     (void)argv;
-    char* archive = "./build/sqlite-amalgamation-3490200.zip";
+    char* archive = "./sqlite-amalgamation-3490200.zip";
     e$assert(os.path.exists(archive) && "no archive, run ./cex app run cex_downloader");
-    e$ret(extract_zip(archive, "./build/"));
+    e$ret(extract_zip(archive, "."));
     return EOK;
 }

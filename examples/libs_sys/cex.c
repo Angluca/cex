@@ -10,14 +10,20 @@
 #    if _WIN32
 // using mingw libs .a
 #        define cexy$build_ext_lib_stat ".a"
+// NOTE: windows is a special case, the best way to manage dependencies to have vcpkg
+//       you have to manually install vcpkg and configure paths. Currently it uses static
+//       environment and mingw because it was tested under MSYS2
+//
+//  Also install the following in `classic` mode:
+//  > vcpkg install --triplet=x64-mingw-static curl
+//  > vcpkg install --triplet=x64-mingw-static libzip
+
 #        define cexy$vcpkg_triplet "x64-mingw-static"
 #        define cexy$vcpkg_root "c:/vcpkg/"
 #    else
 // NOTE: linux / macos will use system wide libs
 //       make sure you installed libcurl-dev libzip-dev via package manager
 //       names of packages will depend on linux distro and macos home brew.
-// #        define cexy$vcpkg_root "../vcpkg/"
-// #        define cexy$vcpkg_triplet "x64-linux"
 #    endif
 #endif
 
@@ -70,6 +76,10 @@ cmd_build_unzip(int argc, char** argv, void* user_ctx)
     log$info("Building cex_unzip app\n");
     mem$scope(tmem$, _)
     {
+        // This scope shows minimal steps for building programs in CEX 
+        // 1. Finding main.c from name: cex_unzip -> `./src/cex_unzip/main.c`
+        // 2. Checking if main.c needs rebuild (also checks all #include of main.c for changes)
+        // 3. Building dynamic `cc` arguments + including dependency args
         char* app_name = "cex_unzip";
         char* app_src;
         e$ret(cexy.app.find_app_target_src(_, app_name, &app_src));
@@ -87,7 +97,8 @@ cmd_build_unzip(int argc, char** argv, void* user_ctx)
                 cexy$cc_include // -I / search path
             );
 
-            // Injecting pkgconf results into args
+            // cexy$pkgconf: commands provides compiler flags for system dependencies,
+            //   it calls `pkg-config` on the system, but can work with vcpkg environment too
             e$ret(cexy$pkgconf(_, &args, "--cflags", "libzip"));
             arr$pushm(args, (char*)app_src, "-o", app_exe);
             e$ret(cexy$pkgconf(_, &args, "--libs", "libzip"));

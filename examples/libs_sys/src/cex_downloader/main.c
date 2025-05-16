@@ -16,7 +16,7 @@ download()
 {
     Exc result = EOK;
     char* sqlite_url = "https://www.sqlite.org/2025/sqlite-amalgamation-3490200.zip";
-    char* out_file = "./build/sqlite-amalgamation-3490200.zip";
+    char* out_file = "sqlite-amalgamation-3490200.zip";
     CURL* curl = curl_easy_init();
     if (curl) {
         FILE* fp;

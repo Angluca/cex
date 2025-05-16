@@ -1,7 +1,7 @@
 # Building SQLite Program From Source
 
 1. This is minimalist `./cex.c` with all `cexy` CLI capabilities disabled by default
-2. It works  on Linux, Windows and MacOS.
+2. It works  on Linux, Windows and MacOS. (see [CI file](https://github.com/alexveden/cex/blob/master/.github/workflows/examples.yml))
 3. It downloads and builds automatically `SQLite` source code and link it into the program (`sqlite` is shipped as bundled single file, or about 260k or lines (~8Mb)).
 
 ## Example highlights
@@ -14,6 +14,7 @@
 [INFO]    ( cex.c:62 cmd_build_lib() ) Compilation time: sqlite3.c file size: 9016KB compiled in 30.3581 seconds
 ```
 * `src/main.c` - shows error handling patterns for CEX, also resource management and cleanup. It uses minimalist argument parsing and error handling.
+* All build settings and steps are defined in `./cex.c` file
 
 ## Getting started 
 
