@@ -110,7 +110,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 13
 #define cex$version_patch 0
-#define cex$version_date "2025-05-15"
+#define cex$version_date "2025-05-16"
 
 
 
@@ -14701,6 +14701,8 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         } else {
             query_pattern = str.fmt(arena, "*%s*", query);
         }
+        char* build_path = os.path.abs(cexy$build_dir, arena);
+        char* test_path = os.path.abs("./tests/", arena);
 
         hm$(str_s, cex_decl_s*) names = hm$new(names, arena, .capacity = 1024);
         hm$(char*, char*) cex_ns_map = hm$new(cex_ns_map, arena, .capacity = 256);
@@ -14709,6 +14711,11 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         for$each (src_fn, sources) {
             mem$scope(tmem$, _)
             {
+                char* abspath = os.path.abs(src_fn, _);
+                if (str.starts_with(abspath, build_path) || str.starts_with(abspath, test_path)){
+                    continue;
+                }
+
                 var basename = os.path.basename(src_fn, _);
                 if (str.starts_with(basename, "_") || str.starts_with(basename, "test_")) {
                     continue;
