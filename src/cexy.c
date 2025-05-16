@@ -862,7 +862,16 @@ cexy__cmd__process(int argc, char** argv, void* user_ctx)
 
     mem$scope(tmem$, _)
     {
+        char* build_path = os.path.abs(cexy$build_dir, _);
+        char* test_path = os.path.abs("./tests/", _);
+
         for$each (src_fn, os.fs.find(target, true, _)) {
+            if (only_update) {
+                char* abspath = os.path.abs(src_fn, _);
+                if (str.starts_with(abspath, build_path) || str.starts_with(abspath, test_path)) {
+                    continue;
+                }
+            }
             char* basename = os.path.basename(src_fn, _);
             if (str.starts_with(basename, "test") || str.eq(basename, "cex.c")) { continue; }
             mem$scope(tmem$, _)
