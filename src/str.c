@@ -1325,7 +1325,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                                 return false;
                             }
                         }
-                        if (*pattern == *str) {
+                        if (str_len > 0 && *pattern == *str) {
                             matched = true;
                         } else {
                             while (*pattern != '|' && *pattern != ')' && *pattern != '\0') {

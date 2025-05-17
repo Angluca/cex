@@ -2230,6 +2230,7 @@ test$case(test_str_slice_match)
     tassert(str.slice.match(str.slice.sub(src, 0, 4), "my_t*"));
     tassert(str.slice.match(str.slice.sub(src, 0, 4), "my_?"));
     tassert(!str.slice.match(str.slice.sub(src, 0, 4), "my_t?"));
+    tassert(!str.slice.match(str.slice.sub(src, 0, 1), "(mock|fock)"));
 
     str_s hex_slice = str$s("abcdef ");
     tassert_eq(str.slice.strip(hex_slice), str$s("abcdef"));
