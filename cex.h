@@ -15975,8 +15975,12 @@ const char* CexTkn_str[] = {
 // NOTE: lx$ are the temporary macros (will be #undef at the end of this file)
 #define lx$next(lx)                                                                                \
     ({                                                                                             \
-        if (*lx->cur == '\n') { lx->line++; }                                                      \
-        *(lx->cur++);                                                                              \
+        char res = '\0';                                                                           \
+        if ((lx->cur < lx->content_end)) {                                                         \
+            if (*lx->cur == '\n') { lx->line++; }                                                  \
+            res = *(lx->cur++);                                                                    \
+        }                                                                                          \
+        res;                                                                                       \
     })
 
 #define lx$rewind(lx)                                                                              \
@@ -15988,6 +15992,8 @@ const char* CexTkn_str[] = {
     })
 
 #define lx$peek(lx) (lx->cur < lx->content_end) ? *lx->cur : '\0'
+
+#define lx$peek_next(lx) (lx->cur + 1 < lx->content_end) ? lx->cur[1] : '\0'
 
 #define lx$skip_space(lx, c)                                                                       \
     while (c && isspace((c))) {                                                                    \
@@ -16106,7 +16112,7 @@ _CexParser__scan_comment(CexParser_c* lx)
                 break;
             case '*':
                 if (t.type == CexTkn__comment_multi) {
-                    if (lx->cur[0] == '/') {
+                    if (lx$peek(lx) == '/') {
                         lx$next(lx);
                         t.value.len += 2;
                         return t;
@@ -16123,6 +16129,11 @@ static cex_token_s
 _CexParser__scan_preproc(CexParser_c* lx)
 {
     lx$next(lx);
+
+    if(lx->cur >= lx->content_end) {
+        return (cex_token_s){ .type = CexTkn__error };
+    }
+
     char c = *lx->cur;
     lx$skip_space(lx, c);
     cex_token_s t = { .type = CexTkn__preproc, .value = { .buf = lx->cur, .len = 0 } };
@@ -16274,7 +16285,7 @@ CexParser_next_token(CexParser_c* lx)
             case '"':
                 return _CexParser__scan_string(lx);
             case '/':
-                if (lx->cur[1] == '/' || lx->cur[1] == '*') {
+                if (lx$peek_next(lx) == '/' || lx$peek_next(lx) == '*') {
                     return _CexParser__scan_comment(lx);
                 } else {
                     break;
@@ -16313,7 +16324,7 @@ CexParser_next_token(CexParser_c* lx)
                             break;
                     }
                 }
-                switch (lx->cur[1]) {
+                switch (lx$peek_next(lx)) {
                     case '=':
                         goto unkn;
                     default:
