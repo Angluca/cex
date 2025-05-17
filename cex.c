@@ -45,51 +45,81 @@ main(int argc, char** argv)
 Exception
 cmd_fuzz_test(int argc, char** argv, void* user_ctx)
 {
-    // Extended test runner
+    (void)user_ctx;
     mem$scope(tmem$, _)
     {
+        u32 max_total_time = 60;
         argparse_c cmd_args = {
             .program_name = "./cex",
-            .usage = "fuzz fuzz/some/fuzz_file.c [-fuz-options]",
+            .usage = "fuzz all|fuzz/some/fuzz_file.c [-fuz-options]",
             .description = "Compiles and runs fuzz test on target",
             .epilog = _cexy$cmd_test_epilog,
-            argparse$opt_list(argparse$opt_help(), ),
+            argparse$opt_list(
+                argparse$opt_help(),
+                argparse$opt(
+                    &max_total_time,
+                    't',
+                    "max-total-time",
+                    .help = "Maximum time per fuzz if `all` in seconds"
+                ),
+            ),
         };
 
         e$ret(argparse.parse(&cmd_args, argc, argv));
         char* src = argparse.next(&cmd_args);
-        if (!os.path.exists(src)) { return e$raise(Error.not_found, "target not found: %s", src); }
-        e$assert(os.cmd.exists("clang") && "only clang is supported");
-        char* dir = os.path.dirname(src, _);
-        char* file = os.path.basename(src, _);
-        e$assert(str.ends_with(file, ".c"));
-        str_s prefix = str.sub(file, 0, -2);
-        char* inc_proj = str.fmt(_, "-I%s", os.path.abs(".", _));
+        if (src == NULL) {
+            argparse.usage(&cmd_args);
+            io.printf("Bad fuzz file argument\n");
+            return Error.argsparse;
+        }
 
-        e$ret(os.fs.chdir(dir));
+        bool run_all = false;
+        if (str.eq(src, "all")) {
+            src = "fuzz/fuzz*.c";
+            run_all = true;
+        } else {
+            if (!os.path.exists(src)) {
+                return e$raise(Error.not_found, "target not found: %s", src);
+            }
+        }
+        char* proj_dir = os.path.abs(".", _);
 
-        char* target_exe = str.fmt(_, "./%S.fuzz", prefix);
-        e$ret(os$cmd(
-            "clang",
-            inc_proj,
-            "-g",
-            "-fsanitize=address,fuzzer,undefined",
-            "-fsanitize-undefined-trap-on-error",
-            "-o",
-            target_exe,
-            file
-        ));
-        arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, target_exe, "-timeout=10", str.fmt(_, "-artifact_prefix=%S.", prefix));
+        for$each (src_file, os.fs.find(src, true, _)) {
+            e$ret(os.fs.chdir(proj_dir));
 
-        char* dict_file = str.fmt(_, "%S.dict", prefix);
-        if (os.path.exists(dict_file)) { arr$push(args, str.fmt(_, "-dict=%s", dict_file)); }
+            e$assert(os.cmd.exists("clang") && "only clang is supported");
+            char* dir = os.path.dirname(src_file, _);
+            char* file = os.path.basename(src_file, _);
+            e$assert(str.ends_with(file, ".c"));
+            str_s prefix = str.sub(file, 0, -2);
+            char* inc_proj = str.fmt(_, "-I%s", proj_dir);
 
-        char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
-        if (os.path.exists(corpus_dir)) { arr$push(args, corpus_dir); }
+            e$ret(os.fs.chdir(dir));
 
-        arr$push(args, NULL);
-        e$ret(os$cmda(args));
+            char* target_exe = str.fmt(_, "./%S.fuzz", prefix);
+            e$ret(os$cmd(
+                "clang",
+                inc_proj,
+                "-g",
+                "-fsanitize=address,fuzzer,undefined",
+                "-fsanitize-undefined-trap-on-error",
+                "-o",
+                target_exe,
+                file
+            ));
+            arr$(char*) args = arr$new(args, _);
+            arr$pushm(args, target_exe, "-timeout=10", str.fmt(_, "-artifact_prefix=%S.", prefix));
+            if (run_all) { arr$pushm(args, str.fmt(_, "-max_total_time=%d", max_total_time)); }
+
+            char* dict_file = str.fmt(_, "%S.dict", prefix);
+            if (os.path.exists(dict_file)) { arr$push(args, str.fmt(_, "-dict=%s", dict_file)); }
+
+            char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
+            if (os.path.exists(corpus_dir)) { arr$push(args, corpus_dir); }
+
+            arr$push(args, NULL);
+            e$ret(os$cmda(args));
+        }
     }
     return EOK;
 }
