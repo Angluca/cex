@@ -85,6 +85,7 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
         char* proj_dir = os.path.abs(".", _);
 
         for$each (src_file, os.fs.find(src, true, _)) {
+            fflush(stdout); // typically for CI
             e$ret(os.fs.chdir(proj_dir));
 
             e$assert(os.cmd.exists("clang") && "only clang is supported");
@@ -115,7 +116,13 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
             if (os.path.exists(dict_file)) { arr$push(args, str.fmt(_, "-dict=%s", dict_file)); }
 
             char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
-            if (os.path.exists(corpus_dir)) { arr$push(args, corpus_dir); }
+            if (os.path.exists(corpus_dir)) { 
+                char* corpus_dir_tmp = str.fmt(_, "%S_corpus.tmp", prefix);
+                e$ret(os.fs.mkdir(corpus_dir_tmp));
+
+                arr$push(args, corpus_dir_tmp); 
+                arr$push(args, corpus_dir); 
+            }
 
             arr$push(args, NULL);
             e$ret(os$cmda(args));

@@ -71,3 +71,4 @@ docs/html/
 archive/
 *.fuzz
 *.fuzz.exe
+*.tmp/
