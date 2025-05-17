@@ -265,7 +265,7 @@ _CexParser__scan_scope(CexParser_c* lx)
                     continue;
                 }
                 case '/': {
-                    if (lx->cur[1] == '/' || lx->cur[1] == '*') {
+                    if (lx$peek_next(lx) == '/' || lx$peek_next(lx) == '*') {
                         var s = _CexParser__scan_comment(lx);
                         t.value.len += s.value.len;
                         continue;

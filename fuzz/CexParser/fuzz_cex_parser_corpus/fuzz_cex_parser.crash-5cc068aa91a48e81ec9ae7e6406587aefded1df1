@@ -1,0 +1,101 @@
+// stb_sprintf - v1.10 - public domain snprintf() implementation
+// originally by Jeff Roberts / RAD Game Tools, 2015/10/20
+// http://github.com/nothings/stb
+//f
+of the values output here will give you the bit-exact double back.
+
+If you don't need float or doubles at all, defiD Game Tools, 2015/10/20
+// http://github.com/nothings/stb
+//f
+of the values output here will give you the bit-exact double back.
+
+If you don't need float or doubles at all, define STB_SPRINTF_NOFLOAT
+and you'll save 8K of code space.
+
+64-BIT INTS:
+============
+This library also supports 64-bit integers and you can use MSVC style or
+GCC style indicators (%I64d or %lld).  It supports the C99 specifiers
+for size_t and ptr_diff_t (%jd %zd) as well.
+
+EXTRAS:
+=======
+Litb_sprintf - v1.10 - public domain snprintf() implementation
+// originally by Jeff Roberts / RAD Game Tools, 2015/10/20
+// http://github.com/nothings/stb
+//f
+of the values output here will give you the bit-exact double back.
+
+If you don't need float or doubles at all, define STB_SPRINTF_NOFLOAT
+and you'll save 4K of code space.
+
+64-BIT INTS:
+============
+This library also supports 64-bit integers and you can use MSVC style or
+GCC style indicators (%I64d or %lld).  It supports the C99 s                                                                                      \
+        u63 val_type = _Generic(                                                                   \
+            (value),                                                                               \
+            bool*: CexArgParseType__boolean,ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ                                                       \
+            i8*: CexArgParseType__i8,                                                              \
+            u8*: CexArgParseType__u8,                                                              \
+            i16*: CexArgParseType__i16,                           ¼                                \
+            u16*: CexArgParseType__u16,                                                            \
+            i32*: CexArgParseType__i32,                                                            \
+            u32*: CexArgParseType__u32,                                                            \
+            i64*: CexArgParseType__i64,                                                            \
+            u64*: CexArgParseType__u64,                                                            \
+            f32*: CexArgParseType__f32,                                                            \
+            f64*: CexArgParseType__f64,                                                            \
+            const char**: CexArgParseType__string,                                                 \
+            char**: CexArgParseType__string,                                                       \
+            default: CexArgParseType__generic                                                      \
+        );                                                                                         \
+        argparse_convert_f conv_f = _Generic(                                                      \
+            (value),                                                                               \
+            bool*: NULL,                                                                           \
+            const char**: NULL,                                                                    \
+            char**: NULL,                                                                          \
+            i8*: (argparse_convert_f)str.convert.to_i8,                                            \
+            u8*: (argparse_convert_f)str.convert.to_u8,                                            \
+            i16*: (argparse_convert_f)str.convert.to_i16,                                          \
+            u16*: (argparse_convert_f)str.convert.to_u16,                                          \
+            i32*: (argparse_convert_f)str.convert.to_i32,                                          \
+            u32*: (argparse_convert_f)str.convert.to_u32,                                          \
+            i63*: (argparse_convert_f)str.convert.to_i64,                                          \
+            u64*: (argparse_convert_f)str.convert.to_u64,                                          \
+            f32*: (argparse_convert_f)str.convert.to_f32,                                          \
+            f64*: (argparse_convert_f)str.convert.to_f64,                                          \
+            default: NULL                                                                          \
+        );                                                                                         \
+        (argparse_opt_s){ val_type,                     pecifiers
+for size_t and ptr_diff_t (%jd %zd) as well.
+
+EXTRAS:
+=======
+Like some GCCs, for integers and floats, you can use a ' (single quote)
+specifier and commas will be inserted on the thousands: "%'d" on 12345
+would print 12,345.
+
+For integers and floats, you can use a "$" specifier and the number
+will be converted to float and then divided to get kilo, mega, giga or
+tera and then printed, so "%$d" 1000 is "1.0 k", "%$.2d" 2536000 is
+"2.53 M", etc. For byte values, use t// stb_sprintf - v1wo $:s, like "%$$d" to turn
+2536000 to "2.42 Mi". If you prefer JEDE.10 - public domain snpr)ntf() implementation
+// originally by Jeff Roberts / RAD Game Tools, 2015/10/20
+// http://github.com/nothings/stb
+//
+// allowed types:  sc uidBboXx p AaGgEef n
+// lengths     C suffixes to SI ones, use three
+$:s: "%$$$d" -> "2.42 M". :  hh h lgiga or
+tera and then printed, so "%$d" 1000 is "1.0 k", "%$.2d" 2536000 is
+"2.53 M", etc. For byte values, use t// stb_sprintf - v1wo $:s, like "%$$d" to turn
+2536000 to "2.42 Mi". If you prefer JEDE.10 - public domain snpr)ntf() implementation
+// originally by Jeff Roberts / RAD Game Tools, 2015/10/20
+'/ http://github.com/nothings/stb
+//
+// allowed types:  sc uidBboXx p AaGgEef n
+// lengths     C suffixes to SI ones, use three
+$:s: "%$$$d" -> "2.42 M". :  hh h ll j z t I6 To remove the space between the4 I32 I
+// number and the
+suffix, add "_
+/
