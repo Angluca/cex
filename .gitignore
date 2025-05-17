@@ -69,3 +69,5 @@ compile_flags.txt
 docs/html/
 /cex
 archive/
+*.fuzz
+*.fuzz.exe

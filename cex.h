@@ -110,7 +110,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 13
 #define cex$version_patch 0
-#define cex$version_date "2025-05-16"
+#define cex$version_date "2025-05-17"
 
 
 
@@ -7931,12 +7931,14 @@ cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max
     uassert(num_min >= INT64_MIN + 1 && "try num_min+1, negation overflow");
 
     if (unlikely(self == NULL)) { return Error.argument; }
+    if (unlikely(len > 32)) { return Error.argument; }
 
     char* s = self;
     if (len == 0) { len = strlen(self); }
     usize i = 0;
 
-    for (; s[i] == ' ' && i < len; i++) {}
+    for (; i < len && s[i] == ' '; i++) {}
+    if (unlikely(i >= len)) { return Error.argument; }
 
     u64 neg = 1;
     if (s[i] == '-') {
@@ -8007,9 +8009,12 @@ cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
     if (unlikely(s == NULL)) { return Error.argument; }
 
     if (len == 0) { len = strlen(s); }
+    if (unlikely(len > 32)) { return Error.argument; }
     usize i = 0;
 
-    for (; s[i] == ' ' && i < len; i++) {}
+    for (; i < len && s[i] == ' '; i++) {}
+    if (unlikely(i >= len)) { return Error.argument; }
+
 
     if (s[i] == '-') {
         return Error.argument;
@@ -8077,10 +8082,13 @@ cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
 
     char* s = self;
     if (len == 0) { len = strlen(s); }
+    if (unlikely(len > 64)) { return Error.argument; }
+
     usize i = 0;
     double number = 0.0;
 
-    for (; s[i] == ' ' && i < len; i++) {}
+    for (; i < len && s[i] == ' '; i++) {}
+    if (unlikely(i >= len)) { return Error.argument; }
 
     double sign = 1;
     if (s[i] == '-') {
@@ -8190,13 +8198,15 @@ cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
 
             n = n * 10 + c;
         }
+        if (unlikely(n > INT32_MAX)) { return Error.overflow; }
 
         exponent += n * sign;
+
     }
 
     if (num_digits == 0) { return Error.argument; }
 
-    if (exponent < exp_min || exponent > exp_max) { return Error.overflow; }
+    if (unlikely(exponent < exp_min || exponent > exp_max)) { return Error.overflow; }
 
     // Scale the result
     double p10 = 10.;

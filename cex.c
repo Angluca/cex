@@ -9,6 +9,7 @@
 
 
 Exception cmd_custom_test(int argc, char** argv, void* user_ctx);
+Exception cmd_fuzz_test(int argc, char** argv, void* user_ctx);
 void cex_bundle(void);
 
 int
@@ -30,6 +31,7 @@ main(int argc, char** argv)
         argparse$cmd_list(
             cexy$cmd_all,
             { .name = "test", .func = cmd_custom_test, .help = "Test running" },
+            { .name = "fuzz", .func = cmd_fuzz_test, .help = "libFuzzer tester" },
             cexy$cmd_app,  /* feel free to make your own if needed */
         ),
     };
@@ -38,6 +40,58 @@ main(int argc, char** argv)
     if (argparse.parse(&args, argc, argv)) { return 1; }
     if (argparse.run_command(&args, NULL)) { return 1; }
     return 0;
+}
+
+Exception
+cmd_fuzz_test(int argc, char** argv, void* user_ctx)
+{
+    // Extended test runner
+    mem$scope(tmem$, _)
+    {
+        argparse_c cmd_args = {
+            .program_name = "./cex",
+            .usage = "fuzz fuzz/some/fuzz_file.c [-fuz-options]",
+            .description = "Compiles and runs fuzz test on target",
+            .epilog = _cexy$cmd_test_epilog,
+            argparse$opt_list(argparse$opt_help(), ),
+        };
+
+        e$ret(argparse.parse(&cmd_args, argc, argv));
+        char* src = argparse.next(&cmd_args);
+        if (!os.path.exists(src)) { return e$raise(Error.not_found, "target not found: %s", src); }
+        e$assert(os.cmd.exists("clang") && "only clang is supported");
+        char* dir = os.path.dirname(src, _);
+        char* file = os.path.basename(src, _);
+        e$assert(str.ends_with(file, ".c"));
+        str_s prefix = str.sub(file, 0, -2);
+        char* inc_proj = str.fmt(_, "-I%s", os.path.abs(".", _));
+
+        e$ret(os.fs.chdir(dir));
+
+        char* target_exe = str.fmt(_, "./%S.fuzz", prefix);
+        e$ret(os$cmd(
+            "clang",
+            inc_proj,
+            "-g",
+            "-fsanitize=address,fuzzer,undefined",
+            "-fsanitize-undefined-trap-on-error",
+            "-o",
+            target_exe,
+            file
+        ));
+        arr$(char*) args = arr$new(args, _);
+        arr$pushm(args, target_exe, "-timeout=10", str.fmt(_, "-artifact_prefix=%S", prefix));
+
+        char* dict_file = str.fmt(_, "%S.dict", prefix);
+        if (os.path.exists(dict_file)) { arr$push(args, str.fmt(_, "-dict=%s", dict_file)); }
+
+        char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
+        if (os.path.exists(corpus_dir)) { arr$push(args, corpus_dir); }
+
+        arr$push(args, NULL);
+        e$ret(os$cmda(args));
+    }
+    return EOK;
 }
 
 Exception
