@@ -1308,6 +1308,9 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                     uassert(false && "Empty '()' group");
                     return false;
                 }
+                if (unlikely(str_len_start) == 0) {
+                    return false;
+                }
 
                 while (str_len_start > 0) {
                     pattern++;

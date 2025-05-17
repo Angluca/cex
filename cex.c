@@ -80,7 +80,7 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
             file
         ));
         arr$(char*) args = arr$new(args, _);
-        arr$pushm(args, target_exe, "-timeout=10", str.fmt(_, "-artifact_prefix=%S", prefix));
+        arr$pushm(args, target_exe, "-timeout=10", str.fmt(_, "-artifact_prefix=%S.", prefix));
 
         char* dict_file = str.fmt(_, "%S.dict", prefix);
         if (os.path.exists(dict_file)) { arr$push(args, str.fmt(_, "-dict=%s", dict_file)); }
