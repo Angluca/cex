@@ -1,0 +1,53 @@
+name: FuzzTests
+
+on:
+  push:
+    branches: [ dev*, master ]
+  pull_request:
+    branches: [ dev* ]
+
+
+jobs:
+  tests-linux:
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Don't abort runners if a single one fails
+      fail-fast: false
+
+      matrix:
+        compiler: ["clang"]
+        cex_preset: ["CEX_DEBUG"]
+
+    steps:
+      - name: Checkout cex
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/env_setup
+        name: Setup env
+
+      - name: cc setup
+        run: |
+          sudo apt-get install ${{ matrix.compiler }}
+          echo "Replacing: cc to ${{ matrix.compiler }}"
+          sudo rm /usr/bin/cc
+          sudo ln -s /usr/bin/${{ matrix.compiler }} /usr/bin/cc 
+          echo "cc --version"
+          cc --version
+
+      - name: cex initial build
+        run: |
+          ulimit -c unlimited 
+          ls -la
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex 
+          ./cex config
+
+      - name: cex initial build
+        run: |
+          ./cex fuzz all
+
+      - uses: actions/upload-artifact@master # capture all binaries
+        with:
+          name: ${{ github.job }}_build_exe_${{ matrix.compiler }}-${{ matrix.cex_preset }}
+          path: build/
