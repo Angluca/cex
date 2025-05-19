@@ -110,7 +110,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 13
 #define cex$version_patch 0
-#define cex$version_date "2025-05-17"
+#define cex$version_date "2025-05-19"
 
 
 
@@ -15096,7 +15096,9 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
         .usage = "test [options] {run,build,create,clean,debug} all|tests/test_file.c [--test-options]",
         .description = _cexy$cmd_test_help,
         .epilog = _cexy$cmd_test_epilog,
-        argparse$opt_list(argparse$opt_help(), ),
+        argparse$opt_list(
+            argparse$opt_help(),
+        ),
     };
 
     e$ret(argparse.parse(&cmd_args, argc, argv));
@@ -15115,6 +15117,7 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
         e$ret(cexy.test.clean(target));
         return EOK;
     }
+    bool single_test = !str.eq(target, "all");
     e$ret(cexy.test.make_target_pattern(&target)); // validation + convert 'all' -> "tests/test_*.c"
 
     log$info("Tests building: %s\n", target);
@@ -15129,7 +15132,7 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
             char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
             log$trace("Test src: %s -> %s\n", test_src, test_target);
             n_tests++;
-            if (!cexy.src_include_changed(test_target, test_src, NULL)) { continue; }
+            if (!single_test && !cexy.src_include_changed(test_target, test_src, NULL)) { continue; }
             arr$(char*) args = arr$new(args, _);
             arr$pushm(args, cexy$cc, );
             // NOTE: reconstructing char*[] because some cexy$ variables might be empty
