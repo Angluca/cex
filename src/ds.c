@@ -36,10 +36,10 @@ bool
 _cexds__arr_integrity(const void* arr, usize magic_num)
 {
     (void)magic_num;
-    _cexds__array_header* hdr = _cexds__header(arr);
-    (void)hdr;
 
 #ifndef NDEBUG
+    _cexds__array_header* hdr = _cexds__header(arr);
+    (void)hdr;
 
     uassert(arr != NULL && "array uninitialized or out-of-mem");
     // WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address"
