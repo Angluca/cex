@@ -1271,7 +1271,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
     if (unlikely(str == NULL || str_len <= 0)) { return false; }
     uassert(pattern && "null pattern");
 
-    while (*pattern != '\0' && str_len > 0) {
+    while (*pattern != '\0') {
         switch (*pattern) {
             case '*':
                 while (*pattern == '*') { pattern++; }

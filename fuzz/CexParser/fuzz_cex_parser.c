@@ -25,6 +25,8 @@ init_corp(void)
     }
 }
 
+arr$(cex_token_s) items = NULL;
+
 int
 LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
@@ -32,19 +34,31 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     CexParser_c lx = CexParser.create((char*)data, size, true);
     cex_token_s t;
-    while ((t = CexParser.next_token(&lx)).type) {}
+    while ((t = CexParser.next_token(&lx)).type) {
+        if (t.value.buf) {
+            uassert(t.type != CexTkn__error);
+            uassert(t.value.buf >= (char*)data);
+            uassert(t.value.buf < (char*)data + size);
+            uassert(t.value.buf + t.value.len <= (char*)data + size);
+        } else {
+            uassert(t.type == CexTkn__error);
+            uassert(t.value.len == 0);
+        }
+    }
 
-    /*
-    mem$scope(tmem$, _)
+    // mem$scope(tmem$, _)
     {
-        arr$(cex_token_s) items = arr$new(items, _);
+        if (items == NULL){
+            items = arr$new(items, mem$);
+        }
+        // arr$(cex_token_s) items = arr$new(items, _);
+        // arr$(cex_token_s) items = arr$new(items, m);
         CexParser_c lx2 = CexParser.create((char*)data, size, true);
         cex_token_s t;
         while ((t = CexParser.next_entity(&lx2, &items)).type) {
-            cex_decl_s* d = CexParser.decl_parse(&lx2, t, items, NULL, _);
-            if (d == NULL) { continue; }
+            // cex_decl_s* d = CexParser.decl_parse(&lx2, t, items, NULL, _);
+            // if (d == NULL) { continue; }
         }
     }
-    */
     return 0;
 }
