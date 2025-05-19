@@ -115,11 +115,9 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
             if (debug) { arr$pushm(args, cexy$debug_cmd); }
             arr$pushm(args, target_exe, str.fmt(_, "-artifact_prefix=%S.", prefix));
             if (cmd_args.argc > 0) {
-
                 arr$pusha(args, cmd_args.argv, cmd_args.argc);
             } else {
-                arr$push(args, "-timeout=10");
-
+                if (!debug) { arr$push(args, "-timeout=10"); }
                 if (run_all) { arr$pushm(args, str.fmt(_, "-max_total_time=%d", max_total_time)); }
 
                 char* dict_file = str.fmt(_, "%S.dict", prefix);
