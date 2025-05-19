@@ -49,11 +49,11 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
     mem$scope(tmem$, _)
     {
         u32 max_total_time = 60;
+        bool debug = false;
         argparse_c cmd_args = {
             .program_name = "./cex",
             .usage = "fuzz all|fuzz/some/fuzz_file.c [-fuz-options]",
             .description = "Compiles and runs fuzz test on target",
-            .epilog = _cexy$cmd_test_epilog,
             argparse$opt_list(
                 argparse$opt_help(),
                 argparse$opt(
@@ -62,6 +62,7 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
                     "max-total-time",
                     .help = "Maximum time per fuzz if `all` in seconds"
                 ),
+                argparse$opt(&debug, 'd', "debug", .help = "Run fuzzer in debugger"),
             ),
         };
 
@@ -98,30 +99,42 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
             e$ret(os.fs.chdir(dir));
 
             char* target_exe = str.fmt(_, "./%S.fuzz", prefix);
-            e$ret(os$cmd(
-                "clang",
-                inc_proj,
-                "-g",
-                "-fsanitize=address,fuzzer,undefined",
-                "-fsanitize-undefined-trap-on-error",
-                "-o",
-                target_exe,
-                file
-            ));
+            if (!run_all || cexy.src_include_changed(target_exe, file, NULL)) {
+                e$ret(os$cmd(
+                    "clang",
+                    inc_proj,
+                    "-g",
+                    "-fsanitize=address,fuzzer,undefined",
+                    "-fsanitize-undefined-trap-on-error",
+                    "-o",
+                    target_exe,
+                    file
+                ));
+            }
             arr$(char*) args = arr$new(args, _);
-            arr$pushm(args, target_exe, "-timeout=10", str.fmt(_, "-artifact_prefix=%S.", prefix));
-            if (run_all) { arr$pushm(args, str.fmt(_, "-max_total_time=%d", max_total_time)); }
+            if (debug) { arr$pushm(args, cexy$debug_cmd); }
+            arr$pushm(args, target_exe, str.fmt(_, "-artifact_prefix=%S.", prefix));
+            if (cmd_args.argc > 0) {
 
-            char* dict_file = str.fmt(_, "%S.dict", prefix);
-            if (os.path.exists(dict_file)) { arr$push(args, str.fmt(_, "-dict=%s", dict_file)); }
+                arr$pusha(args, cmd_args.argv, cmd_args.argc);
+            } else {
+                arr$push(args, "-timeout=10");
 
-            char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
-            if (os.path.exists(corpus_dir)) { 
-                char* corpus_dir_tmp = str.fmt(_, "%S_corpus.tmp", prefix);
-                e$ret(os.fs.mkdir(corpus_dir_tmp));
+                if (run_all) { arr$pushm(args, str.fmt(_, "-max_total_time=%d", max_total_time)); }
 
-                arr$push(args, corpus_dir_tmp); 
-                arr$push(args, corpus_dir); 
+                char* dict_file = str.fmt(_, "%S.dict", prefix);
+                if (os.path.exists(dict_file)) {
+                    arr$push(args, str.fmt(_, "-dict=%s", dict_file));
+                }
+
+                char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
+                if (os.path.exists(corpus_dir)) {
+                    char* corpus_dir_tmp = str.fmt(_, "%S_corpus.tmp", prefix);
+                    e$ret(os.fs.mkdir(corpus_dir_tmp));
+
+                    arr$push(args, corpus_dir_tmp);
+                    arr$push(args, corpus_dir);
+                }
             }
 
             arr$push(args, NULL);
