@@ -320,8 +320,8 @@ int __cex_test_uassert_enabled = 1;
                     #A                                                                             \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    __cex__panic();                                                                \
-                    __builtin_unreachable();                                                       \
+                    sanitizer_stack_trace();\
+                    __builtin_trap();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -339,8 +339,8 @@ int __cex_test_uassert_enabled = 1;
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    __cex__panic();                                                                \
-                    __builtin_unreachable();                                                       \
+                    sanitizer_stack_trace();\
+                    __builtin_trap();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
