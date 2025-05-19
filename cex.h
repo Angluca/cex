@@ -8201,7 +8201,6 @@ cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
         if (unlikely(n > INT32_MAX)) { return Error.overflow; }
 
         exponent += n * sign;
-
     }
 
     if (num_digits == 0) { return Error.argument; }
@@ -8667,9 +8666,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                     uassert(false && "Empty '()' group");
                     return false;
                 }
-                if (unlikely(str_len_start) == 0) {
-                    return false;
-                }
+                if (unlikely(str_len_start) == 0) { return false; }
 
                 while (str_len_start > 0) {
                     pattern++;
@@ -8800,6 +8797,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                 fallthrough();
 
             default:
+                // if (*pattern && str_len == 0) { return false; }
                 if (*pattern != *str) { return false; }
                 str++;
                 str_len--;
@@ -16412,7 +16410,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
         arr$push(*children, t);
         switch (t.type) {
             case CexTkn__preproc: {
-                if (str.slice.starts_with(t.value, str$s("define"))) {
+                if (str.slice.starts_with(t.value, str$s("define "))) {
                     CexParser_c _lx = CexParser.create(t.value.buf, t.value.len, true);
                     cex_token_s _t = CexParser.next_token(&_lx);
 

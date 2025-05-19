@@ -842,7 +842,6 @@ cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
         if (unlikely(n > INT32_MAX)) { return Error.overflow; }
 
         exponent += n * sign;
-
     }
 
     if (num_digits == 0) { return Error.argument; }
@@ -1308,9 +1307,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                     uassert(false && "Empty '()' group");
                     return false;
                 }
-                if (unlikely(str_len_start) == 0) {
-                    return false;
-                }
+                if (unlikely(str_len_start) == 0) { return false; }
 
                 while (str_len_start > 0) {
                     pattern++;
@@ -1441,6 +1438,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                 fallthrough();
 
             default:
+                // if (*pattern && str_len == 0) { return false; }
                 if (*pattern != *str) { return false; }
                 str++;
                 str_len--;

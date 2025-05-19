@@ -444,7 +444,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
         arr$push(*children, t);
         switch (t.type) {
             case CexTkn__preproc: {
-                if (str.slice.starts_with(t.value, str$s("define"))) {
+                if (str.slice.starts_with(t.value, str$s("define "))) {
                     CexParser_c _lx = CexParser.create(t.value.buf, t.value.len, true);
                     cex_token_s _t = CexParser.next_token(&_lx);
 
