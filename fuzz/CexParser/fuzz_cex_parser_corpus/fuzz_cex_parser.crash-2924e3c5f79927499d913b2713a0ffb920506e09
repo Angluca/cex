@@ -1,0 +1,69 @@
+" = "new", .func = cexy.cmd.new, .help = "Create new CEX project" }
+
+#    define _cexy$cmd_help                                                                         \
+        { .name = "help",                                                                          \
+          .func = cexy.cmd.help,                                                                   \
+          .help = "Search cex.h and project symbols and extract help" }
+
+#    define _cexy$cmd_config                                                                       \
+        { .name = "config",                                                                      ? \
+          .func = cexy.cmd.config,                                                                 \
+          .help = "Check project and system environment and config" }
+
+#    define _cexy$cmd_libfetch                                                                     \
+        { .name = "libfetch",                                                                      \
+          .func = cexy.cmd.libfetch,                                                               \
+          .help = "Get 3rd party source code via git or install CEX libs" }
+
+#    define _cexy$cmd_stats                                                                        \
+        { .name = "stats",                                                                         \
+          .func = cexy.cmd.stats,                                                                  \
+          .help = "Calculate project lines of code and quality stats" }
+
+/// Simple test runner command (test runner, debugger launch, etc)
+#    define cexy$cmd_test                                                                          \
+        { .name = "test",                                                                          \
+          .func = cexy.cmd.simple_test,                                                            \
+          .help = "Generic unit test build/run/debug" }
+
+
+/// Simple app build command (unity build, simple linking, runner, debugger launch, etc)
+#    define cexy$cmd_app                                                                           \
+        { .name = "app", .func = cexy.cmd.simple_app, .help = "Generic app build/run/debug" }
+
+/// All built-in commands for ./cex tool
+#    define cexy$cmd_all                                                                           \
+        _cexy$cmd_help, _cexy$cmd_process, _cexy$cmd_new, _cexy$cmd_stats, _cexy$cmd_config,       \
+            _cexy$cmd_libfetch
+
+/// Initialize CEX build system (build itself)
+#    define cexy$initialize() cexy.build_self(argc, argv, __FILE__)
+/// ./cex --help description
+#    define cexy$description "\nCEX language (cexy$) build and project management system"
+/// ./cex --help usage
+#    define cexy$usage " [-D] [-D<ARG2>] [-D<ARG2>] command [options] [args]"
+
+// clang-format off
+/// ./cex --help epilog
+    #define cexy$epilog \
+        "\nYou may try to get help for commands as well, try `cex process --help`\n"\
+        "Use `cex -DFOO -DBAR config` to set project config flags\n"\
+        "Use `cex -D config` to reset all project config flags to defaults\n"
+// clang-format on
+
+// clang-format off
+#define _cexy$cmd_test_help (\
+        "CEX built-in simple test runner\n"\
+        "\nEach cexy test is self-sufficient and unity build, which allows you to test\n"\
+        "static funcions, apply mocks to some selected modules and functions, have more\n"\
+        "control over your code. See `cex config --help` for customization/config info.\n"\
+\
+        "\nCEX test runner keep checking include modified time to track changes in the\n"\
+        "source files. It expects that each #include \"myfile.c\" has \"myfile.h\" in \n" \
+        "the same folder. Test runner uses cexy$cc_include for searching.\n"\
+\
+        "\nCEX is a test-centric language, it enables additional sanity checks then in\n" \
+        "test suite, all warnings are enabled -Wall -Wextra. Sanitizers are enabled by\n"\
+        "default.\n"\
+\
+        "\

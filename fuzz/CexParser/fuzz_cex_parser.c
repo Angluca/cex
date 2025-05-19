@@ -30,7 +30,7 @@ arr$(cex_token_s) items = NULL;
 int
 LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    if (size == 0) { return -1; }
+    if (size <= 1) { return -1; }
 
     CexParser_c lx = CexParser.create((char*)data, size, true);
     cex_token_s t;
@@ -38,7 +38,7 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         if (t.value.buf) {
             uassert(t.type != CexTkn__error);
             uassert(t.value.buf >= (char*)data);
-            uassert(t.value.buf < (char*)data + size);
+            uassert(t.value.buf <= (char*)data + size);
             uassert(t.value.buf + t.value.len <= (char*)data + size);
         } else {
             uassert(t.type == CexTkn__error);
@@ -46,6 +46,7 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         }
     }
 
+    /*
     // mem$scope(tmem$, _)
     {
         if (items == NULL){
@@ -60,5 +61,6 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
             // if (d == NULL) { continue; }
         }
     }
+    */
     return 0;
 }

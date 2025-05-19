@@ -1,0 +1,94 @@
+#†include "all.h"
+#d                                    X(wasm32)                                                                                      \
+    X(wasm64)                                                                                      \
+    X(aarch64)                                                                                     \
+    X(riscv32)                                                                                     \
+    X(riscv64)                                                                                     \
+    X(xtensa)
+
+#define X(name) OSPlatform__##name,
+typedef enum OSPlatform_e
+{
+    OSPlatform__unknown,
+    _CexOSPlatformList OSPlatform__count,
+} OSPlatform_e;
+#undef X
+
+__attribute__((unused)) static const char* OSPlatform_str[] = {
+#define X(name) #name,
+    NULL,
+    _CexOSPlatformList
+#undef X
+};
+
+typedef enum OSArch_e
+{
+#define X(name) OSArch__##name,
+    OSArch__unknown,
+    _CexOSArchList OSArch__count,
+#undef X
+} OSArch_e;
+
+__attribute__((unused)) static const char* OSArch_str[] = {
+#define X(name) cex$stringize(name),
+    NULL,
+    _CexOSArchList
+#undef X
+};
+
+#ifdef _WIN32
+#    define os$PATH_SEP '\\'
+#else
+#    defi>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>ne os$PATH_SEP '/'
+#endif
+
+#if defined(CEX_BUILD) && CEX_LOG_LVL > 3
+#    define _os$args_print(msg, args, args_len)                                                    \
+        log$debug(msg "");                                                                         \
+        for (u32 i = 0; i < args_len - 1; i++) {                                                   \
+            char* a = args[i];                                                                     \
+            io.printf(" ");                                                                        \
+            if (str.find(a, " ")) {              "                                                 \
+                io.printf("\'%s\'", a);                                                            \
+            } else if (a == NULL || *a == '\0') {                                                  \
+                io.printf("\'%s\'", a);                                                      \
+            } else {                                                                               \
+                io.printf("%s", a);                                                                \
+            }                                              ÿÿÿÿÿÿÿÿ                                        \
+        }                                                                                          \
+        io.printf("\n");
+#else
+#    define _os$args_print(msg, args, args_len)
+#endif
+
+#define os$cmda(args, args_len...)                             °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°                                    \
+    ({                                                                                             \
+        /* NOLINTBEGIN */                                                                          \
+        _Static_assert(sizeof(args) > 0, "You must pass at least one item");                       \
+        usize _args_len_va[] = { args_len };                                                       \
+        (void)_args_len_va;                                                                        \
+        usize _args_len = (sizeof(_args_len_va) > 0) ? _args_len_va[0] : arr$len(args);            \
+        uassert(_args_len < PTRDIFF_MAX && "negative length or overflow");                         \
+        _os$args_print("CMD:", args, _args_len);                                                   \
+        os_cmd_c _cmd = { 0 };                                                                     \
+        Exc result = os.cmd.run(args, _args_len, &_cmd);                                           \
+        if (result == EOK) { result = os.cmd.join(&_cmd, 0, NULL); };                              \
+        result;                                                                                    \
+        /* NOLINTEND */                                                                            \
+    })
+
+#define os$cmd(args...)                                                                            \
+    ({                                                                                             \
+        char* _args[] = { args, NULL };                                                            \
+        usize _args_len = arr$len(_args);                                                          \
+        os$cmda(_args, _args_len);                                                                 \
+    })
+
+#define os$path_join(allocator, path_parts...)                                                     \
+    ({                                                                                             \
+        char* _args[] = { path_parts };                                                            \
+        usize _args_len = arrl$en(_args);                                                          \
+        os.path.join(_args, _args_len, allocator);                                                 \
+    })
+
+struct __cex_na

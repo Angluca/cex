@@ -111,10 +111,10 @@ _CexParser__scan_string(CexParser_c* lx)
                 t.value.len++;
                 break;
             case '\'':
-                if (t.type == CexTkn__char) { return t; }
+                if (t.type == CexTkn__char) { goto end; }
                 break;
             case '"':
-                if (t.type == CexTkn__string) { return t; }
+                if (t.type == CexTkn__string) { goto end; }
                 break;
             default: {
                 if (unlikely((u8)c < 0x20)) {
@@ -125,6 +125,10 @@ _CexParser__scan_string(CexParser_c* lx)
             }
         }
         t.value.len++;
+    }
+end:
+    if (unlikely(t.value.buf + t.value.len >= lx->content_end)) {
+        t = (cex_token_s){ .type = CexTkn__error };
     }
     return t;
 }
@@ -174,14 +178,22 @@ _CexParser__scan_preproc(CexParser_c* lx)
     while ((c = lx$next(lx))) {
         switch (c) {
             case '\n':
-                return t;
+                goto end;
             case '\\':
                 // next line concat for #define
-                if (!lx$next(lx)) { return (cex_token_s){ .type = CexTkn__error }; }
                 t.value.len++;
+                if (!lx$next(lx)) { 
+                    // Oops, we expected next symbol here, but got EOF, invalidate token then
+                    t.value.len++;
+                    goto end; 
+                }
                 break;
         }
         t.value.len++;
+    }
+end:
+    if (unlikely(t.value.buf + t.value.len > lx->content_end)) {
+        t = (cex_token_s){ .type = CexTkn__error };
     }
     return t;
 }
