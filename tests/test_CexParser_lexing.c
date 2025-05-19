@@ -168,12 +168,12 @@ test$case(test_token_comment)
 {
     // <code>, <token txt>, <token_type>
     token_cmp_s tokens[] = {
+        { " /** hello */ foo", "/** hello */", CexTkn__comment_multi },
+        { " /* hello */\n foo", "/* hello */", CexTkn__comment_multi },
         { " // hello comment", "// hello comment", CexTkn__comment_single },
         { " // hello comment\n", "// hello comment", CexTkn__comment_single },
         { " /* hello */ foo", "/* hello */", CexTkn__comment_multi },
         { " /* hello\n bar */ foo", "/* hello\n bar */", CexTkn__comment_multi },
-        { " /** hello */ foo", "/** hello */", CexTkn__comment_multi },
-        { " /* hello */\n foo", "/* hello */", CexTkn__comment_multi },
     };
     for$each (it, tokens) {
         CexParser_c lx = CexParser_create(it.code, 0, false);
@@ -221,7 +221,6 @@ test$case(test_token_preproc)
         { "#include <foo.h>", "include <foo.h>", CexTkn__preproc },
         { "#   include <foo.h>", "include <foo.h>", CexTkn__preproc },
         { "   #   include <foo.h>", "include <foo.h>", CexTkn__preproc },
-        { "#", "", CexTkn__preproc },
         { "   #   include <foo.h> \n bar", "include <foo.h> ", CexTkn__preproc },
         { "   #   include \"foo.h\"", "include \"foo.h\"", CexTkn__preproc },
         { "   #   define my$foo(baz, bar) bar", "define my$foo(baz, bar) bar", CexTkn__preproc },
@@ -242,6 +241,33 @@ test$case(test_token_preproc)
             t.value
         );
         tassert(t.value.buf >= it.code && t.value.buf <= it.code + strlen(it.code));
+    }
+
+    return EOK;
+}
+
+test$case(test_token_preproc_bad)
+{
+    // <code>, <token txt>, <token_type>
+    token_cmp_s tokens[] = {
+        { "#", NULL, CexTkn__error },
+        { "#\\", NULL, CexTkn__error },
+        { "#define \\", NULL, CexTkn__error },
+    };
+    for$each (it, tokens) {
+        CexParser_c lx = CexParser_create(it.code, 0, false);
+        tassert(*lx.cur);
+        cex_token_s t = CexParser_next_token(&lx);
+        tassertf(t.type == it.type, "code='%s', type_exp=%d, type_act=%d", it.code, it.type, t.type);
+        tassertf(
+            str.slice.eq(t.value, str.sstr(it.exp_token)),
+            "code='%s', val_exp='%s' val_value='%S'",
+            it.code,
+            it.exp_token,
+            t.value
+        );
+        tassert(t.value.buf == NULL);
+        tassert(t.value.len == 0);
     }
 
     return EOK;

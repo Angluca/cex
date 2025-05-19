@@ -15994,9 +15994,9 @@ const char* CexTkn_str[] = {
         }                                                                                          \
     })
 
-#define lx$peek(lx) (lx->cur < lx->content_end) ? *lx->cur : '\0'
+#define lx$peek(lx) ((lx->cur < lx->content_end) ? *lx->cur : '\0')
 
-#define lx$peek_next(lx) (lx->cur + 1 < lx->content_end) ? lx->cur[1] : '\0'
+#define lx$peek_next(lx) ((lx->cur + 1 < lx->content_end) ? lx->cur[1] : '\0')
 
 #define lx$skip_space(lx, c)                                                                       \
     while (c && isspace((c))) {                                                                    \
@@ -16133,9 +16133,7 @@ _CexParser__scan_preproc(CexParser_c* lx)
 {
     lx$next(lx);
 
-    if(lx->cur >= lx->content_end) {
-        return (cex_token_s){ .type = CexTkn__error };
-    }
+    if (lx->cur >= lx->content_end) { return (cex_token_s){ .type = CexTkn__error }; }
 
     char c = *lx->cur;
     lx$skip_space(lx, c);
@@ -16147,7 +16145,7 @@ _CexParser__scan_preproc(CexParser_c* lx)
                 return t;
             case '\\':
                 // next line concat for #define
-                lx$next(lx);
+                if (!lx$next(lx)) { return (cex_token_s){ .type = CexTkn__error }; }
                 t.value.len++;
                 break;
         }
