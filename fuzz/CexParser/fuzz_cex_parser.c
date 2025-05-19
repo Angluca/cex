@@ -76,19 +76,12 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
                 uassert(t.value.len == 0);
                 uassert(arr$len(items) == 0);
             }
-            {
-                // if (t.value.len > 0) {
-                //     // u8* foo = mem$malloc(_, t.value.len * 128);
-                //     u8* foo = mem$malloc(_, 1);
-                //     (void)foo;
-                //     // memset(foo, 0xf0, t.value.len * 128);
-                // }
-            }
             n++;
 
-            // cex_decl_s* d = CexParser.decl_parse(&lx2, t, items, NULL, _);
-            // if (d == NULL) { continue; }
-            // uassert(d->type != CexTkn__eof);
+            cex_decl_s* d = CexParser.decl_parse(&lx2, t, items, NULL, mem$);
+            if (d == NULL) { continue; }
+            uassert(d->type != CexTkn__eof);
+            CexParser.decl_free(d, mem$);
             ndecl++;
         }
         (void)n;

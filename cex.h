@@ -16494,6 +16494,7 @@ CexParser_decl_free(cex_decl_s* decl, IAllocator alloc)
     if (decl) {
         sbuf.destroy(&decl->args);
         sbuf.destroy(&decl->ret_type);
+        mem$free(alloc, decl);
     }
 }
 
