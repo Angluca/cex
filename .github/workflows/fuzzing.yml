@@ -49,5 +49,5 @@ jobs:
 
       - uses: actions/upload-artifact@master # capture all binaries
         with:
-          name: ${{ github.job }}_build_exe_${{ matrix.compiler }}-${{ matrix.cex_preset }}
-          path: build/
+          name: ${{ github.job }}_fuzz_${{ matrix.compiler }}-${{ matrix.cex_preset }}
+          path: fuzz/
