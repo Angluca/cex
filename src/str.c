@@ -1438,7 +1438,7 @@ _cex_str_match(char* str, isize str_len, char* pattern)
                 fallthrough();
 
             default:
-                // if (*pattern && str_len == 0) { return false; }
+                if (*pattern && str_len == 0) { return false; }
                 if (*pattern != *str) { return false; }
                 str++;
                 str_len--;
