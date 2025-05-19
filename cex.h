@@ -437,8 +437,8 @@ int __cex_test_uassert_enabled = 1;
                     #A                                                                             \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    __cex__panic();                                                                \
-                    __builtin_unreachable();                                                       \
+                    sanitizer_stack_trace();\
+                    __builtin_trap();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -456,8 +456,8 @@ int __cex_test_uassert_enabled = 1;
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    __cex__panic();                                                                \
-                    __builtin_unreachable();                                                       \
+                    sanitizer_stack_trace();\
+                    __builtin_trap();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -4754,10 +4754,10 @@ bool
 _cexds__arr_integrity(const void* arr, usize magic_num)
 {
     (void)magic_num;
-    _cexds__array_header* hdr = _cexds__header(arr);
-    (void)hdr;
 
 #ifndef NDEBUG
+    _cexds__array_header* hdr = _cexds__header(arr);
+    (void)hdr;
 
     uassert(arr != NULL && "array uninitialized or out-of-mem");
     // WARNING: next can trigger sanitizer with "stack/heap-buffer-underflow on address"
@@ -16148,10 +16148,10 @@ _CexParser__scan_preproc(CexParser_c* lx)
             case '\\':
                 // next line concat for #define
                 t.value.len++;
-                if (!lx$next(lx)) { 
+                if (!lx$next(lx)) {
                     // Oops, we expected next symbol here, but got EOF, invalidate token then
                     t.value.len++;
-                    goto end; 
+                    goto end;
                 }
                 break;
         }
@@ -16382,7 +16382,6 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
 #endif
     arr$clear(*children);
     cex_token_s t;
-    cex_token_s* prev_t = NULL;
     bool has_cex_namespace = false;
     u32 i = 0;
     (void)i;
@@ -16390,10 +16389,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
 #ifdef CEX_TEST
         log$trace("%02d: %-15s %S\n", i, CexTkn_str[t.type], t.value);
 #endif
-        if (unlikely(t.type == CexTkn__error)) {
-            arr$clear(*children);
-            return t;
-        }
+        if (unlikely(t.type == CexTkn__error)) { goto error; }
 
         if (unlikely(!result.type)) {
             result.type = CexTkn__global_misc;
@@ -16415,10 +16411,9 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                     cex_token_s _t = CexParser.next_token(&_lx);
 
                     _t = CexParser.next_token(&_lx);
-                    if (_t.type != CexTkn__ident) {
+                    if (unlikely(_t.type != CexTkn__ident)) {
                         log$trace("Expected ident at %S line: %d\n", t.value, lx->line);
-                        result.type = CexTkn__error;
-                        goto end;
+                        goto error;
                     }
                     result.type = CexTkn__macro_const;
 
@@ -16435,8 +16430,8 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                         result.type = CexTkn__func_decl; // Check if not __attribute__(())
                     }
                 } else {
-                    if (prev_t && prev_t->type == CexTkn__ident) {
-                        if (!str.slice.match(prev_t->value, "__attribute__")) {
+                    if (i > 0 && children[0][i-1].type == CexTkn__ident) {
+                        if (!str.slice.match(children[0][i-1].value, "__attribute__")) {
                             result.type = CexTkn__func_decl;
                         }
                     }
@@ -16481,10 +16476,15 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
             }
         }
         i++;
-        prev_t = &(*children)[arr$len(*children) - 1];
+        uassert(arr$len(*children) == i);
     }
 end:
     return result;
+
+error:
+    arr$clear(*children);
+    result = (cex_token_s){ .type = CexTkn__error };
+    goto end;
 }
 
 void
@@ -16577,7 +16577,9 @@ CexParser_decl_parse(
                 if (decl_token.type == CexTkn__macro_func ||
                     decl_token.type == CexTkn__macro_const) {
                     args_idx = -1;
+                    uassert(it.value.len > 0);
                     CexParser_c _lx = CexParser.create(it.value.buf, it.value.len, true);
+
                     cex_token_s _t = CexParser.next_token(&_lx);
                     uassert(str.slice.starts_with(_t.value, str$s("define")));
 
