@@ -36,6 +36,7 @@ bool
 _cexds__arr_integrity(const void* arr, usize magic_num)
 {
     (void)magic_num;
+    (void)arr;
 
 #ifndef NDEBUG
     _cexds__array_header* hdr = _cexds__header(arr);
