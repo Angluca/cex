@@ -1933,6 +1933,7 @@ cexy__cmd__simple_test(int argc, char** argv, void* user_ctx)
         for$each (test_src, os.fs.find(target, true, _)) {
             char* test_target = cexy.target_make(test_src, cexy$build_dir, ".test", _);
             log$trace("Test src: %s -> %s\n", test_src, test_target);
+            fflush(stdout); // typically for CI
             n_tests++;
             if (!single_test && !cexy.src_include_changed(test_target, test_src, NULL)) { continue; }
             arr$(char*) args = arr$new(args, _);
