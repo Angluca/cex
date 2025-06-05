@@ -49,6 +49,11 @@ jobs:
       - uses: ./.github/actions/cex_test
         name: cex test suite
 
+      - name: valgrind tests
+        run: |
+          ./cex -DCEX_VALGRIND config
+          ./cex test debug all
+
       - uses: actions/upload-artifact@master # capture all binaries
         with:
           name: ${{ github.job }}_build_exe_${{ matrix.compiler }}-${{ matrix.cex_preset }}
