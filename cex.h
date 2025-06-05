@@ -8736,7 +8736,13 @@ _cex_str_match(char* str, isize str_len, char* pattern)
     while (*pattern != '\0') {
         switch (*pattern) {
             case '*':
-                while (*pattern == '*') { pattern++; }
+                while (*pattern == '*' || *pattern == '?') {
+                    if (unlikely(str_len > 0 && *pattern == '?')) {
+                        str++;
+                        str_len--;
+                    }
+                    pattern++;
+                }
 
                 if (!*pattern) { return true; }
 
@@ -15737,6 +15743,7 @@ cexy__cmd__simple_fuzz(int argc, char** argv, void* user_ctx)
         if (str.eq(src, "all")) {
             src = "fuzz/fuzz_*.c";
             run_all = true;
+            if (max_time == 0) { max_time = 60; }
         } else {
             if (!os.path.exists(src)) {
                 return e$raise(Error.not_found, "target not found: %s", src);
@@ -15808,10 +15815,7 @@ cexy__cmd__simple_fuzz(int argc, char** argv, void* user_ctx)
 
                     arr$pushm(args, "-t", str.fmt(_, "%d", max_timeout_sec * 1000));
 
-                    if (run_all || max_time > 0) {
-                        if (run_all && max_time == 0) { max_time = 60; }
-                        arr$pushm(args, "-V", str.fmt(_, "%d", max_time));
-                    }
+                    if (max_time > 0) { arr$pushm(args, "-V", str.fmt(_, "%d", max_time)); }
 
                     char* dict_file = str.fmt(_, "%S.dict", prefix);
                     if (os.path.exists(dict_file)) { arr$pushm(args, "-x", dict_file); }
@@ -15831,8 +15835,7 @@ cexy__cmd__simple_fuzz(int argc, char** argv, void* user_ctx)
                     arr$pusha(args, cmd_args.argv, cmd_args.argc);
                 } else {
                     if (!debug) { arr$push(args, str.fmt(_, "-timeout=%d", max_timeout_sec)); }
-                    if (run_all || max_time > 0) {
-                        if (run_all && max_time == 0) { max_time = 60; }
+                    if (max_time > 0) {
                         arr$pushm(args, str.fmt(_, "-max_total_time=%d", max_time));
                     }
 
