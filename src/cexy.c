@@ -1710,6 +1710,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
     "* cexy$cc_args              " cex$stringize(cexy$cc_args) "\n"                                \
     "* cexy$cc_args_test         " cex$stringize(cexy$cc_args_test) "\n"                           \
     "* cexy$ld_args              " cex$stringize(cexy$ld_args) "\n"                                \
+    "* cexy$fuzzer               " cex$stringize(cexy$fuzzer) "\n"                                \
     "* cexy$debug_cmd            " cex$stringize(cexy$debug_cmd) "\n"                              \
     "* cexy$pkgconf_cmd          " cex$stringize(cexy$pkgconf_cmd) "\n"                              \
     "* cexy$pkgconf_libs         " cex$stringize(cexy$pkgconf_libs) "\n"                              \

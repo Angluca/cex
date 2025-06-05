@@ -6,7 +6,7 @@
 
 
 int
-LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+fuzz$case(const u8* data, usize size)
 {
     if (size == 0) { return -1; }
     json_iter_c js;
@@ -21,3 +21,5 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     return 0;
 }
+
+fuzz$main();

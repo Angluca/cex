@@ -48,7 +48,8 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
     (void)user_ctx;
     mem$scope(tmem$, _)
     {
-        u32 max_total_time = 60;
+        u32 max_time = 0;
+        u32 max_timeout_sec = 10;
         bool debug = false;
         argparse_c cmd_args = {
             .program_name = "./cex",
@@ -57,12 +58,23 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
             argparse$opt_list(
                 argparse$opt_help(),
                 argparse$opt(
-                    &max_total_time,
-                    't',
-                    "max-total-time",
-                    .help = "Maximum time per fuzz if `all` in seconds"
+                    &max_time,
+                    '\0',
+                    "max-time",
+                    .help = "Maximum time per fuzz in seconds (60 seconds if 'all' target)"
                 ),
-                argparse$opt(&debug, 'd', "debug", .help = "Run fuzzer in debugger"),
+                argparse$opt(
+                    &max_timeout_sec,
+                    '\0',
+                    "timeout",
+                    .help = "Timeout in seconds for hanging task"
+                ),
+                argparse$opt(
+                    &debug,
+                    'd',
+                    "debug",
+                    .help = "Run fuzzer in debugger (only for clang libFuzzer)"
+                ),
             ),
         };
 
@@ -76,62 +88,120 @@ cmd_fuzz_test(int argc, char** argv, void* user_ctx)
 
         bool run_all = false;
         if (str.eq(src, "all")) {
-            src = "fuzz/fuzz*.c";
+            src = "fuzz/fuzz_*.c";
             run_all = true;
         } else {
             if (!os.path.exists(src)) {
                 return e$raise(Error.not_found, "target not found: %s", src);
             }
         }
+
         char* proj_dir = os.path.abs(".", _);
+        bool is_afl_fuzzer = false;
 
         for$each (src_file, os.fs.find(src, true, _)) {
             fflush(stdout); // typically for CI
             e$ret(os.fs.chdir(proj_dir));
 
-            e$assert(os.cmd.exists("clang") && "only clang is supported");
             char* dir = os.path.dirname(src_file, _);
             char* file = os.path.basename(src_file, _);
+            if (str.ends_with(dir, ".out") || str.ends_with(dir, ".afl") ||
+                str.ends_with(dir, "_corpus")) {
+                continue;
+            }
             e$assert(str.ends_with(file, ".c"));
             str_s prefix = str.sub(file, 0, -2);
-            char* inc_proj = str.fmt(_, "-I%s", proj_dir);
+
+            char* target_exe = str.fmt(_, "%s/%S.fuzz", dir, prefix);
+            arr$(char*) args = arr$new(args, _);
+            arr$clear(args);
+            if (!run_all || cexy.src_include_changed(target_exe, src_file, NULL)) {
+                arr$pushm(args, cexy$fuzzer);
+                e$assert(arr$len(args) > 0 && "empty cexy$fuzzer");
+                e$assertf(os.cmd.exists(args[0]), "fuzzer command not found: %s", args[0]);
+                if (str.find(args[0], "afl")) { is_afl_fuzzer = true; }
+                if (is_afl_fuzzer) { arr$push(args, "-DCEX_FUZZ_AFL"); }
+
+                char* cc_include[] = { cexy$cc_include };
+                char* cc_ld_args[] = { cexy$ld_args };
+                arr$pusha(args, cc_include);
+
+                char* pkgconf_libargs[] = { cexy$pkgconf_libs };
+                if (arr$len(pkgconf_libargs)) {
+                    e$ret(cexy$pkgconf(_, &args, "--cflags", cexy$pkgconf_libs));
+                }
+                arr$push(args, src_file);
+                arr$pusha(args, cc_ld_args);
+                if (arr$len(pkgconf_libargs)) {
+                    e$ret(cexy$pkgconf(_, &args, "--libs", cexy$pkgconf_libs));
+                }
+                arr$pushm(args, "-o", target_exe);
+                arr$push(args, NULL);
+
+                e$ret(os$cmda(args));
+            }
 
             e$ret(os.fs.chdir(dir));
 
-            char* target_exe = str.fmt(_, "./%S.fuzz", prefix);
-            if (!run_all || cexy.src_include_changed(target_exe, file, NULL)) {
-                e$ret(os$cmd(
-                    "clang",
-                    inc_proj,
-                    "-g",
-                    "-fsanitize=address,fuzzer,undefined",
-                    "-fsanitize-undefined-trap-on-error",
-                    "-o",
-                    target_exe,
-                    file
-                ));
-            }
-            arr$(char*) args = arr$new(args, _);
-            if (debug) { arr$pushm(args, cexy$debug_cmd); }
-            arr$pushm(args, target_exe, str.fmt(_, "-artifact_prefix=%S.", prefix));
-            if (cmd_args.argc > 0) {
-                arr$pusha(args, cmd_args.argv, cmd_args.argc);
-            } else {
-                if (!debug) { arr$push(args, "-timeout=10"); }
-                if (run_all) { arr$pushm(args, str.fmt(_, "-max_total_time=%d", max_total_time)); }
+            arr$clear(args);
+            if (is_afl_fuzzer) {
+                // AFL++ or something
+                e$ret(os.env.set("ASAN_OPTIONS", ""));
 
-                char* dict_file = str.fmt(_, "%S.dict", prefix);
-                if (os.path.exists(dict_file)) {
-                    arr$push(args, str.fmt(_, "-dict=%s", dict_file));
+                if (debug) { e$assert(false && "AFL fuzzer debugging is not supported"); }
+                arr$pushm(args, "afl-fuzz");
+
+                if (cmd_args.argc > 0) {
+                    // Fully user driven arguments
+                    arr$pusha(args, cmd_args.argv, cmd_args.argc);
+                } else {
+                    char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
+                    char* corpus_dir_out = str.fmt(_, "%S_corpus.afl", prefix);
+                    arr$pushm(args, "-i", corpus_dir, "-o", corpus_dir_out);
+
+                    arr$pushm(args, "-t", str.fmt(_, "%d", max_timeout_sec * 1000));
+
+                    if (run_all || max_time > 0) {
+                        if (run_all && max_time == 0) { max_time = 60; }
+                        arr$pushm(args, "-V", str.fmt(_, "%d", max_time));
+                    }
+
+                    char* dict_file = str.fmt(_, "%S.dict", prefix);
+                    if (os.path.exists(dict_file)) { arr$pushm(args, "-x", dict_file); }
+
+                    // adding exe file
+                    arr$pushm(args, "--", str.fmt(_, "./%S.fuzz", prefix));
                 }
+            } else {
+                // clang - libFuzzer
+                if (debug) { arr$pushm(args, cexy$debug_cmd); }
+                arr$pushm(
+                    args,
+                    str.fmt(_, "./%S.fuzz", prefix),
+                    str.fmt(_, "-artifact_prefix=%S.", prefix)
+                );
+                if (cmd_args.argc > 0) {
+                    arr$pusha(args, cmd_args.argv, cmd_args.argc);
+                } else {
+                    if (!debug) { arr$push(args, str.fmt(_, "-timeout=%d", max_timeout_sec)); }
+                    if (run_all || max_time > 0) {
+                        if (run_all && max_time == 0) { max_time = 60; }
+                        arr$pushm(args, str.fmt(_, "-max_total_time=%d", max_time));
+                    }
 
-                char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
-                if (os.path.exists(corpus_dir)) {
-                    char* corpus_dir_tmp = str.fmt(_, "%S_corpus.tmp", prefix);
-                    e$ret(os.fs.mkdir(corpus_dir_tmp));
+                    char* dict_file = str.fmt(_, "%S.dict", prefix);
+                    if (os.path.exists(dict_file)) {
+                        arr$push(args, str.fmt(_, "-dict=%s", dict_file));
+                    }
 
-                    arr$push(args, corpus_dir_tmp);
-                    arr$push(args, corpus_dir);
+                    char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
+                    if (os.path.exists(corpus_dir)) {
+                        char* corpus_dir_tmp = str.fmt(_, "%S_corpus.out", prefix);
+                        e$ret(os.fs.mkdir(corpus_dir_tmp));
+
+                        arr$push(args, corpus_dir_tmp);
+                        arr$push(args, corpus_dir);
+                    }
                 }
             }
 

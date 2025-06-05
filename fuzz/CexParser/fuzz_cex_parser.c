@@ -3,15 +3,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 
-
-__attribute__((constructor(200))) void
-init_corp(void)
+fuzz$setup(void)
 {
-    char* corpus_dir = "fuzz_cex_parser_corpus.tmp";
-
-    uassert(os.path.exists(corpus_dir));
+    uassert(os.path.exists(fuzz$corpus_dir));
     uassert(os.path.exists("../../src") && "expected to be run from fuzz_cex_parser dir");
 
     mem$scope(tmem$, _)
@@ -19,16 +14,16 @@ init_corp(void)
         for$each (fn, os.fs.find("../../src/*.[hc]", false, _)) {
             e$except (
                 err,
-                os.fs.copy(fn, str.fmt(_, "%s/%S", corpus_dir, os.path.split(fn, false)))
+                os.fs.copy(fn, str.fmt(_, "%s.out/%S", fuzz$corpus_dir, os.path.split(fn, false)))
             );
         }
     }
 }
 
 arr$(cex_token_s) items = NULL;
-    
+
 int
-LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+fuzz$case(const u8* data, usize size)
 {
     if (size <= 1) { return -1; }
 
@@ -49,9 +44,7 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     // mem$scope(tmem$, _)
     {
         // arr$(cex_token_s) items = arr$new(items, _);
-        if (items == NULL){
-            items = arr$new(items, mem$);
-        }
+        if (items == NULL) { items = arr$new(items, mem$); }
         CexParser_c lx2 = CexParser.create((char*)data, size, true);
         cex_token_s t;
         u32 n = 0;
@@ -89,3 +82,5 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     }
     return 0;
 }
+
+fuzz$main();

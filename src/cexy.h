@@ -62,6 +62,11 @@
 #        define cexy$cc_args_test cexy$cc_args, "-Wno-unused-function", "-Itests/"
 #    endif
 
+#    ifndef cexy$fuzzer
+/// Fuzzer compilation command (supports clang libfuzzer and afl++)
+#        define cexy$fuzzer "clang", "-O0", "-Wall", "-Wextra", "-Werror", "-g", "-Wno-unused-function", "-fsanitize=address,fuzzer,undefined", "-fsanitize-undefined-trap-on-error"
+#    endif
+
 #    ifndef cexy$cex_self_args
 /// Compiler flags used for building ./cex.c -> ./cex (may be overridden by user)
 #        define cexy$cex_self_args

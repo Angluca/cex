@@ -71,4 +71,5 @@ docs/html/
 archive/
 *.fuzz
 *.fuzz.exe
-*.tmp/
+*.out/
+*.afl/

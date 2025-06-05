@@ -21,4 +21,5 @@
 #include "src/CexParser.h"
 #include "src/cexy.h"
 #include "src/test.h"
+#include "src/fuzz.h"
 // clang-format on

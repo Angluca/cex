@@ -28,12 +28,9 @@ match_make(char* out_file, char* text, char* pattern)
     return EOK;
 }
 
-__attribute__((constructor(200))) void
-init_corp(void)
+fuzz$setup()
 {
-    char* corpus_dir = "fuzz_match_corpus";
-
-    if (os.fs.mkdir(corpus_dir)) {}
+    if (os.fs.mkdir(fuzz$corpus_dir)) {}
     struct
     {
         char* text;
@@ -157,7 +154,7 @@ init_corp(void)
     mem$scope(tmem$, _)
     {
         for (u32 i = 0; i < arr$len(match_tuple); i++) {
-            char* fn = str.fmt(_, "%s/%05d", corpus_dir, i);
+            char* fn = str.fmt(_, "%s/%05d", fuzz$corpus_dir, i);
             e$except (err, match_make(fn, match_tuple[i].text, match_tuple[i].pattern)) {
                 uassertf(false, "Error writing file: %s", fn);
             }
@@ -166,7 +163,7 @@ init_corp(void)
 }
 
 int
-LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+fuzz$case(const u8* data, usize size)
 {
     if (size != sizeof(fuzz_match_s)) { return -1; }
 
@@ -179,3 +176,5 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     return 0;
 }
+
+fuzz$main();

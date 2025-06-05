@@ -46,3 +46,7 @@
 #    define cexy$debug_cmd "wine"
 #    define cexy$build_ext_exe ".exe"
 #endif
+
+#ifdef CEX_FUZZ_AFL
+#    define cexy$fuzzer "afl-cc", "-Wall", "-Wextra", "-Werror", "-g", "-Wno-unused-function", "-fsanitize=address,undefined", "-fsanitize-undefined-trap-on-error"
+#endif

@@ -4,26 +4,24 @@
 #include <stdint.h>
 #include <stdio.h>
 
-__attribute__((constructor(200))) void
-init_corp(void)
+fuzz$setup()
 {
-    char* corpus_dir = "fuzz_convert_corpus";
-    printf("Hey, this is constructor!\n");
+    io.printf("CORPUS: %s\n", fuzz$corpus_dir);
 
-    uassert(os.path.exists(corpus_dir));
+    uassert(os.path.exists(fuzz$corpus_dir));
     char* corp_seeds[] = { "123", "255",      "123.3", "23e+1",     "nan",
                            "inf", "infinity", "-inf",  "-infinity", "283e-1" };
     mem$scope(tmem$, _)
     {
         for (u32 i = 0; i < arr$len(corp_seeds); i++) {
-            char* fn = str.fmt(_, "%s/%03d", corpus_dir, i);
+            char* fn = str.fmt(_, "%s/%03d", fuzz$corpus_dir, i);
             if (io.file.save(fn, corp_seeds[i])) { uassertf(false, "Error writing file: %s", fn); }
         }
     }
 }
 
 int
-LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+fuzz$case(const u8* data, usize size)
 {
     if (size == 0) { return -1; }
     if (size > 100) { return -1; }
@@ -53,3 +51,5 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     return 0;
 }
+
+fuzz$main();

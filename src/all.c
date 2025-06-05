@@ -21,6 +21,7 @@
 #include "CexParser.c"
 #include "cexy.c"
 #include "test.c"
+#include "fuzz.c"
 #include "json.c"
 #endif // CEX_HEADER_H
 // clang-format on
