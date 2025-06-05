@@ -356,7 +356,6 @@ cex_test_main_fn(int argc, char** argv)
     }
 
     ctx->orig_stdout_fd = dup(fileno(stdout));
-    ctx->orig_stderr_fd = dup(fileno(stderr));
 
     mem$scope(tmem$, _)
     {
@@ -475,10 +474,6 @@ cex_test_main_fn(int argc, char** argv)
             ctx->tests_failed++;
         }
     }
-    if (ctx->out_stream) {
-        fclose(ctx->out_stream);
-        ctx->out_stream = NULL;
-    }
 
     if (ctx->teardown_suite_fn) {
         e$except (err, ctx->teardown_suite_fn()) {
@@ -515,7 +510,13 @@ cex_test_main_fn(int argc, char** argv)
                 ctx->tests_failed
             );
         }
-    } // Return code, logic is inversed
+    }
+
+    if (ctx->out_stream) {
+        fclose(ctx->out_stream);
+        close(ctx->orig_stdout_fd);
+        ctx->out_stream = NULL;
+    }
     return ctx->tests_run == 0 || ctx->tests_failed > 0;
 }
 #endif // ifdef CEX_TEST
