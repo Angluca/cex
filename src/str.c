@@ -1273,7 +1273,13 @@ _cex_str_match(char* str, isize str_len, char* pattern)
     while (*pattern != '\0') {
         switch (*pattern) {
             case '*':
-                while (*pattern == '*') { pattern++; }
+                while (*pattern == '*' || *pattern == '?') {
+                    if (unlikely(str_len > 0 && *pattern == '?')) {
+                        str++;
+                        str_len--;
+                    }
+                    pattern++;
+                }
 
                 if (!*pattern) { return true; }
 

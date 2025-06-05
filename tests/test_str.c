@@ -2205,6 +2205,13 @@ test$case(test_str_match)
     tassert(!str.match("abc+", "[a-c\\+]"));
     tassert(str.match("a+", "a[a-c\\+]"));
 
+    tassert(!str.match("029123098123", "*?*?*?*(fa|\377\377)"));
+    tassert(str.match("fa", "*?"));
+    tassert(str.match("fa", "*fa*"));
+    tassert(str.match("fa", "f*a"));
+    tassert(str.match("f", "*?"));
+    tassert(str.match("fa", "**?"));
+
     tassert(str.match("clean", "(clean)"));
     tassert(str.match("run", "(run|clean)"));
     tassert(str.match("build", "(run|build|clean)"));
