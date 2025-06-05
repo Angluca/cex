@@ -57,7 +57,8 @@ stats               Calculate project lines of code and quality stats
 config              Check project and system environment and config
 libfetch            Get 3rd party source code via git or install CEX libs
 test                Test running
-app                 App runner
+fuzz                Generic fuzz tester
+app                 Generic app build/run/debug
 
 You may try to get help for commands as well, try `cex process --help`
 Use `cex -DFOO -DBAR config` to set project config flags
