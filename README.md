@@ -1,13 +1,14 @@
 # CEX.C - Comprehensively EXtended C Language
-MOCCA - Make Old C Cexy Again!
+**MOCCA - Make Old C Cexy Again!**
 
 ![Test suite](https://github.com/alexveden/cex/actions/workflows/main.yml/badge.svg)
+![Fuzz Test](https://github.com/alexveden/cex/actions/workflows/fuzzing.yml/badge.svg)
 ![Multiarch support](https://github.com/alexveden/cex/actions/workflows/multiarch.yml/badge.svg)
 ![Examples](https://github.com/alexveden/cex/actions/workflows/examples.yml/badge.svg)
 
 
 CEX is self-contained C language extension, the only dependency is one of gcc/clang compilers.
-cex.h contains build system, unit test runner, small standard lib and help system.
+cex.h contains build system, unit test runner, fuzz tester, small standard lib and help system.
 
 ## GETTING STARTED
 

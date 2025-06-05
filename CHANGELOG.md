@@ -1,8 +1,18 @@
 # CEX Release Notes
 
-## 0.14.0 WIP
+## 0.14.0
+2025-06-05
 ### Changes / improvements
+- Added fuzzer support (LibFuzzer + AFL++)
+- Added `./cex fuzz run ...` command
+- uassert() now emits __builtin_trap() instead of abort() for better call stack
+- Added fuzz tests for core elements of CEX
+- `./cex test run test/file.c` - test always rebuilt when called as single file
+
 ### Fixes
+- CexParser - various fuzzer driven fixes
+- str.match - various fuzzer driven fixes
+- json - various fuzzer driven fixes
 
 
 ## 0.13.0
