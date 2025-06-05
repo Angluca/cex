@@ -127,7 +127,7 @@ _CexParser__scan_string(CexParser_c* lx)
         t.value.len++;
     }
 end:
-    if (unlikely(t.value.buf + t.value.len >= lx->content_end)) {
+    if (unlikely(t.value.buf + t.value.len > lx->content_end)) {
         t = (cex_token_s){ .type = CexTkn__error };
     }
     return t;
@@ -146,7 +146,7 @@ _CexParser__scan_comment(CexParser_c* lx)
             case '\n':
                 if (t.type == CexTkn__comment_single) {
                     lx$rewind(lx);
-                    return t;
+                    goto end;
                 }
                 break;
             case '*':
@@ -154,12 +154,16 @@ _CexParser__scan_comment(CexParser_c* lx)
                     if (lx$peek(lx) == '/') {
                         lx$next(lx);
                         t.value.len += 2;
-                        return t;
+                        goto end;
                     }
                 }
                 break;
         }
         t.value.len++;
+    }
+end:
+    if (unlikely(t.value.buf + t.value.len > lx->content_end)) {
+        t = (cex_token_s){ .type = CexTkn__error };
     }
     return t;
 }
@@ -220,6 +224,9 @@ _CexParser__scan_scope(CexParser_c* lx)
         }
         t.value.len = 1;
         lx$next(lx);
+        if (unlikely(t.value.buf + t.value.len > lx->content_end)) {
+            t = (cex_token_s){ .type = CexTkn__error };
+        }
         return t;
     } else {
         char scope_stack[128] = { 0 };
@@ -285,25 +292,27 @@ _CexParser__scan_scope(CexParser_c* lx)
                 case '#': {
                     char* ppstart = lx->cur;
                     var s = _CexParser__scan_preproc(lx);
-                    if (s.value.buf) { t.value.len += s.value.len + (s.value.buf - ppstart) + 1; }
+                    if (s.value.buf) {
+                        t.value.len += s.value.len + (s.value.buf - ppstart) + 1;
+                    } else {
+                        goto end;
+                    }
                     continue;
                 }
             }
-            t.value.len++;
-            lx$next(lx);
+            if (lx$next(lx)) { t.value.len++; }
 
-            if (scope_depth == 0) { return t; }
+            if (scope_depth == 0) { goto end; }
         }
 
 #undef scope$push
 #undef scope$pop_if
 
-        if (scope_depth != 0) {
-            t.type = CexTkn__error;
-            t.value.buf = NULL;
-            t.value.len = 0;
-        }
-        return t;
+end:
+    if (unlikely(scope_depth != 0 || t.value.buf + t.value.len > lx->content_end)) {
+        t = (cex_token_s){ .type = CexTkn__error };
+    }
+    return t;
     }
 }
 
@@ -464,8 +473,8 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
                         result.type = CexTkn__func_decl; // Check if not __attribute__(())
                     }
                 } else {
-                    if (i > 0 && children[0][i-1].type == CexTkn__ident) {
-                        if (!str.slice.match(children[0][i-1].value, "__attribute__")) {
+                    if (i > 0 && children[0][i - 1].type == CexTkn__ident) {
+                        if (!str.slice.match(children[0][i - 1].value, "__attribute__")) {
                             result.type = CexTkn__func_decl;
                         }
                     }
