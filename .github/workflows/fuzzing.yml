@@ -45,7 +45,7 @@ jobs:
 
       - name: cex initial build
         run: |
-          ./cex fuzz all
+          ./cex fuzz run all
 
       - uses: actions/upload-artifact@master # capture all binaries
         with:
