@@ -13200,7 +13200,6 @@ cex_test_main_fn(int argc, char** argv)
 
     if (ctx->out_stream) {
         fclose(ctx->out_stream);
-        close(ctx->orig_stdout_fd);
         ctx->out_stream = NULL;
     }
     return ctx->tests_run == 0 || ctx->tests_failed > 0;
