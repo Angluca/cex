@@ -24,6 +24,7 @@ main(int argc, char** argv)
         .usage = cexy$usage,
         argparse$cmd_list(
             cexy$cmd_all,
+            cexy$cmd_fuzz, /* feel free to make your own if needed */
             cexy$cmd_test, /* feel free to make your own if needed */
             cexy$cmd_app,  /* feel free to make your own if needed */
             { .name = "build-lib", .func = cmd_build_lib, .help = "Custom build command" },

@@ -9,7 +9,6 @@
 
 
 Exception cmd_custom_test(int argc, char** argv, void* user_ctx);
-Exception cmd_fuzz_test(int argc, char** argv, void* user_ctx);
 void cex_bundle(void);
 
 int
@@ -31,8 +30,8 @@ main(int argc, char** argv)
         argparse$cmd_list(
             cexy$cmd_all,
             { .name = "test", .func = cmd_custom_test, .help = "Test running" },
-            { .name = "fuzz", .func = cmd_fuzz_test, .help = "libFuzzer tester" },
-            cexy$cmd_app,  /* feel free to make your own if needed */
+            cexy$cmd_fuzz,  /* feel free to make your own if needed */
+            cexy$cmd_app,   /* feel free to make your own if needed */
         ),
     };
     // clang-format on
@@ -42,175 +41,6 @@ main(int argc, char** argv)
     return 0;
 }
 
-Exception
-cmd_fuzz_test(int argc, char** argv, void* user_ctx)
-{
-    (void)user_ctx;
-    mem$scope(tmem$, _)
-    {
-        u32 max_time = 0;
-        u32 max_timeout_sec = 10;
-        bool debug = false;
-        argparse_c cmd_args = {
-            .program_name = "./cex",
-            .usage = "fuzz all|fuzz/some/fuzz_file.c [-fuz-options]",
-            .description = "Compiles and runs fuzz test on target",
-            argparse$opt_list(
-                argparse$opt_help(),
-                argparse$opt(
-                    &max_time,
-                    '\0',
-                    "max-time",
-                    .help = "Maximum time per fuzz in seconds (60 seconds if 'all' target)"
-                ),
-                argparse$opt(
-                    &max_timeout_sec,
-                    '\0',
-                    "timeout",
-                    .help = "Timeout in seconds for hanging task"
-                ),
-                argparse$opt(
-                    &debug,
-                    'd',
-                    "debug",
-                    .help = "Run fuzzer in debugger (only for clang libFuzzer)"
-                ),
-            ),
-        };
-
-        e$ret(argparse.parse(&cmd_args, argc, argv));
-        char* src = argparse.next(&cmd_args);
-        if (src == NULL) {
-            argparse.usage(&cmd_args);
-            io.printf("Bad fuzz file argument\n");
-            return Error.argsparse;
-        }
-
-        bool run_all = false;
-        if (str.eq(src, "all")) {
-            src = "fuzz/fuzz_*.c";
-            run_all = true;
-        } else {
-            if (!os.path.exists(src)) {
-                return e$raise(Error.not_found, "target not found: %s", src);
-            }
-        }
-
-        char* proj_dir = os.path.abs(".", _);
-        bool is_afl_fuzzer = false;
-
-        for$each (src_file, os.fs.find(src, true, _)) {
-            fflush(stdout); // typically for CI
-            e$ret(os.fs.chdir(proj_dir));
-
-            char* dir = os.path.dirname(src_file, _);
-            char* file = os.path.basename(src_file, _);
-            if (str.ends_with(dir, ".out") || str.ends_with(dir, ".afl") ||
-                str.ends_with(dir, "_corpus")) {
-                continue;
-            }
-            e$assert(str.ends_with(file, ".c"));
-            str_s prefix = str.sub(file, 0, -2);
-
-            char* target_exe = str.fmt(_, "%s/%S.fuzz", dir, prefix);
-            arr$(char*) args = arr$new(args, _);
-            arr$clear(args);
-            if (!run_all || cexy.src_include_changed(target_exe, src_file, NULL)) {
-                arr$pushm(args, cexy$fuzzer);
-                e$assert(arr$len(args) > 0 && "empty cexy$fuzzer");
-                e$assertf(os.cmd.exists(args[0]), "fuzzer command not found: %s", args[0]);
-                if (str.find(args[0], "afl")) { is_afl_fuzzer = true; }
-                if (is_afl_fuzzer) { arr$push(args, "-DCEX_FUZZ_AFL"); }
-
-                char* cc_include[] = { cexy$cc_include };
-                char* cc_ld_args[] = { cexy$ld_args };
-                arr$pusha(args, cc_include);
-
-                char* pkgconf_libargs[] = { cexy$pkgconf_libs };
-                if (arr$len(pkgconf_libargs)) {
-                    e$ret(cexy$pkgconf(_, &args, "--cflags", cexy$pkgconf_libs));
-                }
-                arr$push(args, src_file);
-                arr$pusha(args, cc_ld_args);
-                if (arr$len(pkgconf_libargs)) {
-                    e$ret(cexy$pkgconf(_, &args, "--libs", cexy$pkgconf_libs));
-                }
-                arr$pushm(args, "-o", target_exe);
-                arr$push(args, NULL);
-
-                e$ret(os$cmda(args));
-            }
-
-            e$ret(os.fs.chdir(dir));
-
-            arr$clear(args);
-            if (is_afl_fuzzer) {
-                // AFL++ or something
-                e$ret(os.env.set("ASAN_OPTIONS", ""));
-
-                if (debug) { e$assert(false && "AFL fuzzer debugging is not supported"); }
-                arr$pushm(args, "afl-fuzz");
-
-                if (cmd_args.argc > 0) {
-                    // Fully user driven arguments
-                    arr$pusha(args, cmd_args.argv, cmd_args.argc);
-                } else {
-                    char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
-                    char* corpus_dir_out = str.fmt(_, "%S_corpus.afl", prefix);
-                    arr$pushm(args, "-i", corpus_dir, "-o", corpus_dir_out);
-
-                    arr$pushm(args, "-t", str.fmt(_, "%d", max_timeout_sec * 1000));
-
-                    if (run_all || max_time > 0) {
-                        if (run_all && max_time == 0) { max_time = 60; }
-                        arr$pushm(args, "-V", str.fmt(_, "%d", max_time));
-                    }
-
-                    char* dict_file = str.fmt(_, "%S.dict", prefix);
-                    if (os.path.exists(dict_file)) { arr$pushm(args, "-x", dict_file); }
-
-                    // adding exe file
-                    arr$pushm(args, "--", str.fmt(_, "./%S.fuzz", prefix));
-                }
-            } else {
-                // clang - libFuzzer
-                if (debug) { arr$pushm(args, cexy$debug_cmd); }
-                arr$pushm(
-                    args,
-                    str.fmt(_, "./%S.fuzz", prefix),
-                    str.fmt(_, "-artifact_prefix=%S.", prefix)
-                );
-                if (cmd_args.argc > 0) {
-                    arr$pusha(args, cmd_args.argv, cmd_args.argc);
-                } else {
-                    if (!debug) { arr$push(args, str.fmt(_, "-timeout=%d", max_timeout_sec)); }
-                    if (run_all || max_time > 0) {
-                        if (run_all && max_time == 0) { max_time = 60; }
-                        arr$pushm(args, str.fmt(_, "-max_total_time=%d", max_time));
-                    }
-
-                    char* dict_file = str.fmt(_, "%S.dict", prefix);
-                    if (os.path.exists(dict_file)) {
-                        arr$push(args, str.fmt(_, "-dict=%s", dict_file));
-                    }
-
-                    char* corpus_dir = str.fmt(_, "%S_corpus", prefix);
-                    if (os.path.exists(corpus_dir)) {
-                        char* corpus_dir_tmp = str.fmt(_, "%S_corpus.out", prefix);
-                        e$ret(os.fs.mkdir(corpus_dir_tmp));
-
-                        arr$push(args, corpus_dir_tmp);
-                        arr$push(args, corpus_dir);
-                    }
-                }
-            }
-
-            arr$push(args, NULL);
-            e$ret(os$cmda(args));
-        }
-    }
-    return EOK;
-}
 
 Exception
 cmd_custom_test(int argc, char** argv, void* user_ctx)
@@ -294,7 +124,7 @@ cex_bundle(void)
             "src/ds.h",       "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
             "src/io.h",       "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
             "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexParser.h",
-            "src/json.h",     "src/cex_maker.h"
+            "src/json.h",     "src/cex_maker.h", "src/fuzz.h"
 
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
