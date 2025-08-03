@@ -1,5 +1,10 @@
 # CEX Release Notes
 
+## 0.15.0
+2025-08-03
+### Changes / improvements
+- (breaking) e$except_errno() - triggered on any negative value returned (previous behavior only -1)
+
 ## 0.14.0
 2025-06-05
 ### Changes / improvements

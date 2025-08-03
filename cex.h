@@ -108,9 +108,9 @@ Use `cex -D config` to reset all project config flags to defaults
 #endif
 
 #define cex$version_major 0
-#define cex$version_minor 14
+#define cex$version_minor 15
 #define cex$version_patch 0
-#define cex$version_date "2025-06-05"
+#define cex$version_date "2025-08-03"
 
 
 
@@ -517,7 +517,7 @@ __attribute__((noinline)) void __cex__panic(void);
 
 #define e$except_errno(_expression)                                                                \
     for (int _tmp_errno = 0; unlikely(                                                             \
-             ((_tmp_errno == 0) && ((_expression) == -1) && ((_tmp_errno = errno), 1) &&           \
+             ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&           \
               (log$error(                                                                          \
                    "`%s` failed errno: %d, msg: %s\n",                                             \
                    #_expression,                                                                   \
