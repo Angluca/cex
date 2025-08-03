@@ -109,7 +109,6 @@ jobs:
           - ucrt64
           - clang64
         runs-on:
-          - 'windows-2019'
           - 'windows-2022'
           - 'windows-2025'
 
