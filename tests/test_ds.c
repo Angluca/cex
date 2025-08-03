@@ -1,5 +1,7 @@
 #include "src/all.c"
 #include "src/all.h"
+#include "src/ds.h"
+#include "src/test.h"
 
 
 static void
@@ -47,6 +49,136 @@ test$case(test_array)
     arr$free(array);
     arr$free(array2);
 
+    return EOK;
+}
+
+test$case(test_array_len)
+{
+    arr$(int) array = arr$new(array, mem$);
+    arr$pushm(array, 1, 2, 3);
+
+    // Works with CEX dynamic arrays
+    tassert_eq(arr$len(array), 3);
+
+
+    // NULL is supported, and emits 0 length
+    arr$free(array);
+    tassert(array == NULL); 
+    tassert_eq(arr$len(array), 0); // NOTE: NULL array - len = 0
+
+    // Works with static arrays
+    char buf[] = {"hello"}; 
+    tassert_eq(arr$len(buf), 6); // NOTE: include null term
+
+    // Works with arrays of given capacity
+    char buf2[10] = {0};
+    tassert_eq(arr$len(buf2), 10);
+
+    // Type doesn't matter
+    i32 a[7] = {0};
+    tassert_eq(arr$len(a), 7);
+
+    // Works with string literals
+    tassert_eq(arr$len("CEX"), 4); // NOTE: include null term
+
+
+    // Works with CEX hashmap
+    hm$(int, int) intmap = hm$new(intmap, mem$);
+    hm$set(intmap, 1, 3);
+    tassert_eq(arr$len(intmap), 1);
+
+    hm$free(intmap);
+
+    return EOK;
+}
+
+test$case(test_array_access)
+{
+    arr$(int) array = arr$new(array, mem$);
+    arr$pushm(array, 1, 2, 3);
+
+    // Dynamic array access is natural C index
+    tassert_eq(array[2], 3);
+    // tassert_eq(arr$at(array, 3), 3); // NOTE: this is bounds checking access, with assertion 
+    arr$free(array);
+
+    // Works with static arrays
+    char buf[] = {"hello"}; 
+    tassert_eq(buf[1], 'e'); 
+
+    // Works with CEX hashmap
+    hm$(int, int) intmap = hm$new(intmap, mem$);
+    hm$set(intmap, 1, 3);
+    hm$set(intmap, 2, 5);
+    tassert_eq(arr$len(intmap), 2);
+
+    // Accessing hashmap as array
+    // NOTE: hashmap elements are ordered until first deletion
+    tassert_eq(intmap[0].key, 1);
+    tassert_eq(intmap[0].value, 3);
+
+    tassert_eq(intmap[1].key, 2);
+    tassert_eq(intmap[1].value, 5);
+
+    hm$free(intmap);
+
+    return EOK;
+}
+
+test$case(test_array_iteration)
+{
+    arr$(int) array = arr$new(array, mem$);
+    arr$pushm(array, 1, 2, 3);
+
+    i32 nit = 0; // it's only for testing
+    for$each(it, array) {
+        tassert_eq(it, ++nit);
+        io.printf("el=%d\n", it);
+    }
+    // Prints: 
+    // el=1
+    // el=2
+    // el=3
+
+    nit = 0;
+    // NOTE: prefer this when you work with bigger structs to avoid extra memory copying
+    for$eachp(it, array) {
+        // TIP: making array index out of `it`
+        usize i = it - array;
+        tassert_eq(i, nit);
+
+        // NOTE: it now is a pointer
+        tassert_eq(*it, ++nit);
+        io.printf("el[%zu]=%d\n", i, *it);
+    }
+    // Prints: 
+    // el[0]=1
+    // el[1]=2
+    // el[2]=3
+
+    // Static arrays work as well (arr$len inferred)
+    i32 arr_int[] = {1, 2, 3, 4, 5};
+    for$each(it, arr_int) {
+        io.printf("static=%d\n", it);
+    }
+    // Prints:
+    // static=1
+    // static=2
+    // static=3
+    // static=4
+    // static=5
+
+
+    // Simple pointer+length also works (let's do a slice)
+    i32* slice = &arr_int[2];
+    for$each(it, slice, 2) {
+        io.printf("slice=%d\n", it);
+    }
+    // Prints:
+    // slice=3
+    // slice=4
+
+    arr$free(array);
     return EOK;
 }
 
@@ -1136,28 +1268,35 @@ test$case(test_hashmap_string_copy_del_cleanup)
     return EOK;
 }
 
+typedef hm$(char* , int) MyHashmap;
+
+struct my_hm_struct {
+    MyHashmap hm;
+};
+
 test$case(test_hashmap_string_copy_clear_cleanup)
 {
-    hm$(char*, int) smap = hm$new(smap, mem$, .copy_keys = true);
+    struct my_hm_struct hs = {0};
+    hm$new(hs.hm, mem$, .copy_keys = true);
 
     char key2[10] = "foo";
 
-    hm$set(smap, key2, 3);
-    tassert_eq(hm$len(smap), 1);
-    tassert_eq(hm$get(smap, "foo"), 3);
-    tassert_eq(hm$get(smap, key2), 3);
-    tassert_eq(smap[0].key, "foo");
+    hm$set(hs.hm, key2, 3);
+    tassert_eq(hm$len(hs.hm), 1);
+    tassert_eq(hm$get(hs.hm, "foo"), 3);
+    tassert_eq(hm$get(hs.hm, key2), 3);
+    tassert_eq(hs.hm[0].key, "foo");
 
     memset(key2, 0, sizeof(key2));
-    tassert_eq(smap[0].key, "foo");
-    tassert_eq(hm$clear(smap), 1);
-    tassert_eq(hm$get(smap, "foo"), 0);
+    tassert_eq(hs.hm[0].key, "foo");
+    tassert_eq(hm$clear(hs.hm), 1);
+    tassert_eq(hm$get(hs.hm, "foo"), 0);
 
     // Fool hm$free() make it not to cleanup the allocated copy_keys
-    var h = _cexds__header(smap);
+    var h = _cexds__header(hs.hm);
     h->_hash_table->copy_keys = false;
 
-    hm$free(smap);
+    hm$free(hs.hm);
     return EOK;
 }
 
@@ -1181,9 +1320,10 @@ test$case(test_hashmap_string_copy_arena)
     return EOK;
 }
 
+
 test$case(test_hashmap_string_copy_clear_cleanup_arena)
 {
-    hm$(char*, int) smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
+    MyHashmap smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
     var h = _cexds__header(smap);
     AllocatorArena_c* arena = (AllocatorArena_c*)h->_hash_table->key_arena;
     tassert_eq(arena->used, 0);
