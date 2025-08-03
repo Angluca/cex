@@ -400,7 +400,7 @@ __attribute__((noinline)) void __cex__panic(void);
 
 #define e$except_errno(_expression)                                                                \
     for (int _tmp_errno = 0; unlikely(                                                             \
-             ((_tmp_errno == 0) && ((_expression) == -1) && ((_tmp_errno = errno), 1) &&           \
+             ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&           \
               (log$error(                                                                          \
                    "`%s` failed errno: %d, msg: %s\n",                                             \
                    #_expression,                                                                   \

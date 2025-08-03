@@ -13,6 +13,7 @@ test$NOOPT int
 sys_func(int condition)
 {
     if (condition == -1) { errno = 999; }
+    if (condition < -1) { errno = -condition; }
     return condition;
 }
 
@@ -49,6 +50,24 @@ test$case(test_sysfunc)
     }
     tassert_eq(nit, 0);
     tassert_eq(ret, 100);
+
+    errno = 777;
+    nit = 0;
+    e$except_errno (ret = sys_func(0)) {
+        tassert(false && "not expected");
+        nit++;
+    }
+    tassert_eq(nit, 0);
+    tassert_eq(ret, 0);
+
+    errno = 777;
+    nit = 0;
+    e$except_errno (ret = sys_func(-2)) {
+        nit++;
+        tassert_eq(errno, 2);
+    }
+    tassert_eq(nit, 1);
+    tassert_eq(ret, -2);
     return EOK;
 }
 
