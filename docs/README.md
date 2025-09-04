@@ -2462,3 +2462,427 @@ e$ret(os$cmda(args));
 > You can get example source code with highlighting if any function is used in the project, use shell command: `./cex help --example os.platform.current`
 
 
+## Developer Tools
+
+CEX language is designed for improving developer experience with C, `./cex` CLI contains key tools for managing project, running apps, debugging, unit testing and fuzzing. 
+
+### Sanitizers
+CEX enables sanitizers by default if they are supported by your OS and compiler. ASAN/UBSAN are extremely useful for catching bugs. Also CEX uses sanitizers for call stack printouts for `uassert()`. `clang` has the best sanitizer support across many platforms, `gcc` sanitizers are supported on Linux.
+
+Default sanitizer arguments:
+```c
+// file cex.c
+#define cexy$cc_args_sanitizer    "-fsanitize-address-use-after-scope", "-fsanitize=address", "-fsanitize=undefined", "-fsanitize=leak", "-fstack-protector-strong"
+
+```
+
+### Asserts
+I'm a big fan of "asserts everywhere" code style, which is also known design by contract, or TigerBeetle style, it has many names. Apparently, C asserts kinda work, but are huge pain for debugging without live debugger session. 
+
+So `cex.h` has 2 types of asserts:
+
+- `uassert*()` family work like vanilla assertion and lead to abortion at failure (but they print tracebacks with call stack and line numbers). These asserts are stripped when `NDEBUG` is defined.
+- `e$assert()` returns `Error.assert` and only intended for usage in function with `Exception` return type. These asserts remain in place even when `NDEBUG` is defined.
+
+```c
+// Raises abort
+uassert(a == 4); // vanilla
+uassert(b == a && "Oops it's a message"); // with static message
+uassertf(b == 2, "b[%d] != 2", b); // with formatting
+
+// Disabling uassert() - only for unit test mode
+uassert_disable();
+run_bad_stuff(NULL);
+uassert_enable();
+
+// Returns Error.assert on failure + prints [ASSERT] file:line in the stdout
+Exception read_file(char* filename, char* buf, isize* out_buf_size) {
+    e$assert(buff != NULL); // vanilla
+    e$assert(filename != NULL && "invalid filename"); // with static message
+    e$assertf(filename == NULL, "filename: %s", filename); // with formatting
+    return EOK;
+}
+
+```
+
+> [!NOTE]
+> 
+> uassert() tracebacks only available if program was compiled with ASAN flags.
+
+
+### Unit Testing Tool
+Each CEX test file is compiled as stand alone executable, this allow making specialized tests with mocks, experiment with parts of bigger project without fixing plethora of compiler errors, and do  a test driven development and debugging.
+
+Create new test with: `./cex test create tests/test_file.c `, run it `./cex test run tests/test_file.c` or `./cex test run all`.
+
+```sh
+# Getting built-in help
+
+➜ ./cex test
+
+Usage:
+cex test [options] {run,build,create,clean,debug} all|tests/test_file.c [--test-options]
+CEX built-in simple test runner
+
+Each cexy test is self-sufficient and unity build, which allows you to test
+static funcions, apply mocks to some selected modules and functions, have more
+control over your code. See `cex config --help` for customization/config info.
+
+CEX test runner keep checking include modified time to track changes in the
+source files. It expects that each #include "myfile.c" has "myfile.h" in
+the same folder. Test runner uses cexy$cc_include for searching.
+
+CEX is a test-centric language, it enables additional sanity checks then in
+test suite, all warnings are enabled -Wall -Wextra. Sanitizers are enabled by
+default.
+
+Code requirements:
+1. You should include all your source files directly using #include "path/src.c"
+2. If needed provide linker options via cexy$ld_libs / cexy$ld_args
+3. If needed provide compiler options via cexy$cc_args_test
+4. All tests have to be in tests/ folder, and start with `test_` prefix
+5. Only #include with "" checked for modification
+
+Test suite setup/teardown:
+// setup before every case
+test$setup_case() {return EOK;}
+// teardown after every case
+test$setup_case() {return EOK;}
+// setup before suite (only once)
+test$setup_suite() {return EOK;}
+// teardown after suite (only once)
+test$setup_suite() {return EOK;}
+
+Test case:
+
+test$case(my_test_case_name) {
+    // run `cex help tassert_` / `cex help tassert_eq` to get more info
+    tassert(0 == 1);
+    tassertf(0 == 1, "this is a failure msg: %d", 3);
+    tassert_eq(buf, "foo");
+    tassert_eq(1, true);
+    tassert_eq(str.sstr("bar"), str$s("bar"));
+    tassert_ne(1, 0);
+    tassert_le(0, 1);
+    tassert_lt(0, 1);
+    return EOK;
+}
+
+If you need more control you can build your own test runner. Just use cex help
+and get source code `./cex help --source cexy.cmd.simple_test`
+
+
+    -h, --help    show this help message and exit
+
+Test running examples:
+cex test create tests/test_file.c        - creates new test file from template
+cex test build all                       - build all tests
+cex test run all                         - build and run all tests
+cex test run tests/test_file.c           - run test by path
+cex test debug tests/test_file.c         - run test via `cexy$debug_cmd` program
+cex test clean all                       - delete all test executables in `cexy$build_dir`
+cex test clean test/test_file.c          - delete specific test executable
+cex test run tests/test_file.c [--help]  - run test with passing arguments to the test runner program
+
+```
+
+### Fuzzers
+
+CEX has a fuzzers backend, currently  `libfuzzer` - built-in in `clang` is preferable, but `AFL++` also works. CEX fuzzers are designed to hit directly in heart of the code, therefore it's easier to use `clang`, however CEX fuzzer API in CEX remain compatible with AFL as well.
+
+> [!NOTE]
+> 
+> Try to split functionality across many small fuzz files for different aspects of your program. This will help to hit specific pain points easier.  Look into fuzz examples in CEX GIT repo in `fuzz/` folder.
+ 
+#### Making new fuzzer test
+```sh
+# Placing into fuzz/ directory is mandatory
+./cex fuzz create fuzz/myapp/fuzz_bar.c
+./cex fuzz create fuzz/mymodule/fuzz_foo.c
+```
+
+#### Sample fuzz file
+```c
+// file: fuzz/myapp/fuzz_bar.c
+
+#define CEX_IMPLEMENTATION
+#include "cex.h"
+
+/*
+// setup is not mandatory, but useful for establishing corpus
+fuzz$setup(void){
+    // This function allows programmatically seed new corpus for fuzzer
+    io.printf("CORPUS: %s\n", fuzz$corpus_dir);
+    mem$scope(tmem$, _){
+        char* fn = str.fmt(_, "%s/my_case", fuzz$corpus_dir);
+        (void)fn;
+        // io.file.save(fn, "my seed data");
+    }
+}
+*/
+
+int
+fuzz$case(const u8* data, usize size){
+    // TODO: do your stuff based on input data and size
+    if (size > 2 && data[0] == 'C' && data[1] == 'E' && data[2] == 'X') {
+        __builtin_trap();
+    }
+    return 0;
+}
+
+fuzz$main();
+
+```
+
+#### Running fuzzer case
+```sh
+# Run specific test (infinite timeout)
+./cex fuzz run fuzz/myapp/fuzz_bar.c
+
+# Run all with time limit per test
+./cex fuzz run all
+
+>> (output of fuzzer)
+
+SUMMARY: libFuzzer: deadly signal
+MS: 4 PersAutoDict-ChangeBit-ShuffleBytes-CMP- DE: "E\000"-"X\000"-; base unit: a04ab19fbcf9e6dd3b7f1b71cb156335556f3507
+0x43,0x45,0x58,0x0,0x3e,
+CEX\000>
+artifact_prefix='fuzz_file.'; Test unit written to fuzz_file.crash-88777
+Base64: Q0VYAD4=
+
+>> cat fuzz_file.crash-88777
+CEX >
+```
+
+#### Running / debugging crash file
+```sh
+# Run single artifact file caused crash
+# NOTE: fuzz_file.crash-88777 must be located at fuzz/myapp/ 
+./cex fuzz run fuzz/myapp/fuzz_bar.c fuzz_file.crash-88777
+
+# run in gdb (see cexy$debug_cmd )
+./cex fuzz debug fuzz/myapp/fuzz_bar.c fuzz_file.crash-88777
+
+```
+
+### Lines Of Code stats
+`./cex stats` calculates `.c/.h` lines of code and estimates assertion percentage as a code quality metric. 
+
+```sh
+
+~ ➜ ./cex stats 'src/*.c' 'tests/*.c'
+Project stats (parsed in 0.020sec)
+--------------------------------------------------------
+Metric                   |     Code     |    Tests     |
+--------------------------------------------------------
+Files                    |          27  |          30  |
+Asserts                  |         361  |        4230  |
+Lines of code            |       11494  |       12261  |
+Lines of comments        |         725  |         606  |
+Asserts per LOC          |        3.14% |       34.50% |
+Total asserts per LOC    |       39.94% |         <<<  |
+--------------------------------------------------------
+
+
+```
+
+### Fetching libraries and CEX updates
+
+`./cex libfetch` command is a simple `git` wrapper for retrieving/updating cex `lib/` files or updating `cex.h` itself. This command can be used with any git repo, for getting single-header files.
+
+```sh
+
+~ ➜ ./cex libfetch --help
+Usage:
+cex libfetch [options]
+Fetching 3rd party libraries via git (by default it uses cex git repo as source)
+
+    -h, --help            show this help message and exit
+    -u, --git-url         Git URL of the repository (default: 'https://github.com/alexveden/cex.git')
+    -l, --git-label       Git label (default: 'HEAD')
+    -o, --out-dir         Output directory relative to project root (default: './')
+    -U, --update          Force replacing existing code with repository files (default: N)
+    -p, --preserve-dirs   Preserve directory structure as in repo (default: Y)
+
+Command examples:
+cex libfetch lib/test/fff.h                            - fetch signle header lib from CEX repo
+cex libfetch -U cex.h                                  - update cex.h to most recent version
+cex libfetch lib/random/                               - fetch whole directory recursively from CEX lib
+cex libfetch --git-label=v2.0 file.h                   - fetch using specific label or commit
+cex libfetch -u https://github.com/m/lib.git file.h    - fetch from arbitrary repo
+cex help --example cexy.utils.git_lib_fetch            - you can call it from your cex.c (see example)
+
+```
+
+### Getting help for project
+
+`./cex help` is CLI command for getting help for your project, it works for CEX and your project as well. You can use it as symbol search: types, functions, files, examples and source code.  Also it supports CEX namespaces as struct intefraces and macro$namespaces as well.
+
+#### Help command
+
+```sh
+~ ➜ ./cex help --help
+Usage:
+cex help [options] [query]
+Symbol / documentation search tool for C projects
+
+
+Options
+    -h, --help        show this help message and exit
+    -f, --filter      file pattern for searching (default: './*.[hc]')
+    -s, --source      show full source on match (default: N)
+    -e, --example     finds random example in source base (default: N)
+
+Query examples:
+cex help                     - list all namespaces in project directory
+cex help foo                 - find any symbol containing 'foo' (case sensitive)
+cex help foo.                - find namespace prefix: foo$, Foo_func(), FOO_CONST, etc
+cex help 'foo_*_bar'         - find using pattern search for symbols (see 'cex help str.match')
+cex help '*_(bar|foo)'       - find any symbol ending with '_bar' or '_foo'
+cex help os                  - display all functions of 'os' namespace (for CEX or user project)
+cex help str.find            - display function documentation if exactly matched
+cex help 'os$PATH_SEP'       - display macro constant value if exactly matched
+cex help str_s               - display type info and documentation if exactly matched
+cex help --source str.find   - display function source if exactly matched
+cex help --example str.find  - display random function use in codebase if exactly matched
+
+```
+
+#### Real project search
+```c
+// NOTE: you may get help for any available code in your project, not limited by cex.h
+// >> ./cex help json (json is a cex.h namespace)
+
+Symbol found at ./cex.h:3634
+
+/// Add new [...] scope into (json$buf)
+#define json$arr()
+/// Opens JSON buffer scope (json_buf_ptr data is cleared out)
+#define json$buf(json_buf_ptr, jsontype_arr_or_obj)
+/// Append any formatted string, it's for low level printing (json$buf)
+#define json$fmt(format, ...)
+/// Add new key: [...] scope into (json$buf)
+#define json$karr(key)
+/// Beginning of json$key_match chain (always first, checks if key is NULL)
+#define json$key_invalid(json_iter)
+/// Matches object key by key literal name (compile time optimized string compare)
+#define json$key_match(json_iter, key_literal)
+/// Checks if there is unexpected key
+#define json$key_unmatched(json_iter)
+/// Add new key: {...} scope into (json$buf)
+#define json$kobj(key)
+/// Append `"<key>": "<format>"` (with your own format) into object scope (json$buf)
+#define json$kstr(key, format, ...)
+/// Append `"<key>": <format>` into object scope (json$buf)
+#define json$kval(key, format, ...)
+/// Add new {...} scope into (json$buf)
+#define json$obj()
+/// Append string item into array scope (json$buf)
+#define json$str(format, ...)
+/// Append value item into array scope (json$buf)
+#define json$val(format, ...)
+
+
+json {
+    // Autogenerated by CEX
+    // clang-format off
+
+
+    struct {
+        /// Create JSON buffer/builder container used with json$buf / json$fmt / json$kstr macros
+        Exception       (*create)(json_buf_c* jb, u32 capacity, u8 indent, IAllocator allc);
+        /// Destroy JSON buffer instance (not necessary to call if initialized on tmem$ allocator)
+        void            (*destroy)(json_buf_c* jb);
+        /// Get JSON buffer contents (NULL if any error occurred)
+        char*           (*get)(json_buf_c* jb);
+        /// Check if there is any error in JSON buffer
+        Exception       (*validate)(json_buf_c* jb);
+    } buf;
+
+    struct {
+        /// Create new JSON reader (it doesn't allocate memory and uses content slicing)
+        Exception       (*create)(json_iter_c* it, char* content, usize content_len, bool strict_mode);
+        /// Get next JSON item for a scope
+        bool            (*next)(json_iter_c* it);
+        /// Make step inside JSON object or array scope (json.iter.next() starts emitting this scope)
+        Exception       (*step_in)(json_iter_c* it, JsonType_e expected_type);
+        /// Early step out from JSON scope (you must immediately break the loop/func after step out)
+        Exception       (*step_out)(json_iter_c* it);
+    } iter;
+
+    // clang-format on
+};
+
+
+```
+
+#### Example roulette
+If you need some use-case example for some function/symbol in your project you can test your luck and find random use-case of that function with the following:
+
+```c
+// NOTE: in example mode you must provide full symbol name without wildcards
+~ ➜ ./cex help --example str.find
+
+Found at ./cex.h:13704
+Exception cexy__test__create(char* target, bool include_sample)
+{
+    if (os.path.exists(target)) {
+        return e$raise(Error.exists, "Test file already exists: %s", target);
+    }
+    if (str.eq(target, "all") || str.find(target, "*")) {
+        return e$raise(
+            Error.argument,
+            "You must pass exact file path, not pattern, got: %s",
+            target
+        );
+    }
+
+    ...
+}
+
+```
+
+### Project management
+Using `./cex` CLI you could seed new project or add/run/debug/clean apps/fuzz/tests in existing project. 
+
+> [!NOTE]
+> 
+> Try `./cex app --help`, `./cex test --help`, `./cex fuzz --help` for more info. Also, this functionality may not work properly if you use custom build routines.
+
+#### Creating
+```sh
+# Create new project from scratch + bootstraps ./cex cli + sample hello world project structure
+./cex new new_dir_path
+
+# Create new app for existing project as src/myapp/main.c
+./cex app create myapp
+
+# Create new unit test for existing project
+./cex test create tests/test_file.c  
+
+# Create new fuzz test
+./cex fuzz create fuzz/myapp/fuzz_bar.c
+
+```
+
+#### Running
+```sh
+./cex app run myapp --app-opt=1 app_arg1 app_arg2
+
+./cex test run tests/test_file.c  
+
+./cex fuzz run fuzz/myapp/fuzz_bar.c
+
+```
+
+#### Debugging
+```sh
+./cex app debug myapp
+
+./cex test debug tests/test_file.c  
+
+./cex fuzz debug fuzz/myapp/fuzz_bar.c
+
+```
+
