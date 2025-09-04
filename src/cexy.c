@@ -1087,7 +1087,7 @@ cexy__cmd__stats(int argc, char** argv, void* user_ctx)
             if (hm$getp(excl_files, src_fn.key)) { continue; }
 
             char* basename = os.path.basename(src_fn.key, _);
-            if (str.eq(basename, "cex.h") && str.eq(target, "*.[ch]")) { continue; }
+            if (str.eq(basename, "cex.h")) { continue; }
             struct code_stats* stats = (str.find(basename, "test") != NULL) ? &test_stats
                                                                             : &code_stats;
 
