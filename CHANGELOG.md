@@ -1,5 +1,10 @@
 # CEX Release Notes
 
+## 0.16.0
+2025-09-04
+### Changes / improvements
+- (fix) ./cex stats - cex.h still included in LOC stats for side projects
+
 ## 0.15.0
 2025-08-03
 ### Changes / improvements
