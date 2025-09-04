@@ -1,0 +1,9 @@
+/* css styles */
+#quarto-header > nav.navbar {
+   padding: 0; 
+}
+
+code:not(.sourceCode) {
+    background-color:  #2e363e !important;
+   color: #c6d7e0 !important;
+}

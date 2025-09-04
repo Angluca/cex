@@ -73,3 +73,5 @@ archive/
 *.fuzz.exe
 *.out/
 *.afl/
+
+docs/README.html
