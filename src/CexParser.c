@@ -500,7 +500,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
             case CexTkn__ident: {
                 if (str.slice.match(t.value, "(typedef|struct|enum|union)")) {
                     if (result.type != CexTkn__var_decl) { result.type = CexTkn__typedef; }
-                } else if (str.slice.match(t.value, "CEX_NAMESPACE")) {
+                } else if (str.slice.match(t.value, "CEX_NAMESPACE") || str.slice.match(t.value, "extern")) {
                     result.type = CexTkn__var_decl;
                 } else if (str.slice.match(t.value, "__cex_namespace__*")) {
                     has_cex_namespace = true;
@@ -750,8 +750,7 @@ CexParser_decl_parse(
     //  <<<<<  #define $append_fmt
 
     // Exclude items with starting _ or special functions or other stuff
-    if (str.slice.starts_with(result->name, str$s("_")) ||
-        str.slice.match(result->name, "(_Static_assert|static_assert)")) {
+    if (str.slice.match(result->name, "(_Static_assert|static_assert)")) {
         goto fail;
     }
 
