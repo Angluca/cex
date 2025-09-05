@@ -248,6 +248,137 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 * [GitHub Repo](https://github.com/alexveden/cex)
 * [Ask a question on GitHub](https://github.com/alexveden/cex/discussions)
 
+## CEX philosophy
+
+### Main purpose of CEX
+
+Cex was designed as a thin base layer above core C language, with the followings goals in mind:
+
+* **Enhancing developer experience.** Most common things should be seamless as possible, without changing core language mechanics. Reducing boilerplate code, with improving readability and debugability. 
+* **Eliminating dependencies.** Cex is a single header, all-in-one language, with core tools for building, testing and debugging your project. You need only C compiler (clang or gcc), that's it. Build system is included, you can write your build logic in C.
+* **Cross-platform.** All Cex capabilities are cross-platform tested, and you don't need to figure out nuances of behavior of system API for different platforms.
+* **Self-sufficient build system.** CMake/Make/ShellScripts are dependencies, they essentially separate programming languages, it's a burden. Cex itself is a build system, with simple CLI and supports cross-platform builds, persistent configuration, build logic written in C (like in Zig).
+* **Scripting-flavor.** CEX designed to make common code patterns easy to work with, it combats with extra complexity, reducing mental overhead for writing code. New memory management and error handling make daily life way more easier.
+* **Less is more and enough is enough.** Cex trying to add just enough new entities (types, namespaces, functions) to original C to make life easier, extend C functionality only when needed. Cex embraces conservatism of C, and it's goal to be a stable base layer for projects years ahead.
+* **Code quality tools.** Cex leverages existing compiler capabilities for making C code better. It includes sanitizers, lib fuzzers, and unit tests out of the box, letting your to focus on development.
+* **Long-term lifetime.** When a project is built with CEX, it carries all what's needed inside its repo, CEX header itself after 1.0 release will be maintained for ultimate backward compatibility. Ideally, it has to be API stable at SQLite project.
+
+### Simplicity as a virtue
+C was a least common denominator for legacy and modern system software for decades. It's a simple language, but very hard to master. Cex tries to add thin layer of things, for making life a little bit easier, but without bringing to much complexity to the code.
+
+It's challenging to make something simple by adding more stuff, which by definition adding a complexity. However, by adding stuff Cex reduces decision making burden, providing common code patterns, utility functions, and rethinking C experience. 
+
+For example:
+
+* Cex errors make vanilla C error handling obsolete. It's just one type with two states (error / no error), with unlimited options for errors variants. No more special enums, no more `-1 and errno`. Cex errors are easy to throw, easy to log, easy to handle.
+* Memory handling via allocators make all allocating function explicit. It's easier to reason about the code, easier to track lifetimes, easier to cleanup when using arenas and scopes. Also having standard allocators allows to make reusable code or use allocators for memory leaks debugging.
+* Namespaces mitigate remembering burden when we have dozens of functions with the same prefix, it's easier to type and follow by LSP suggestions. Using sub-namespaces allows to reduce mental overhead of picking right one. For example, `str.convert.` and `str.slice.` expand to specific sub-namespaces in LSP suggestions in CEX. Using namespaces feels like a decision tree, you branch step by step from upper namespace to sub-namespace to end function. It's feels much easier to work with `str.slice.remove_prefix` typing than remembering full function name `str_slice_remove_prefix.` 
+* Commonality of data collections. Cex has dynamic arrays and hashmaps, which can be handled as any other C array.Inspired by Python approach of applying of `len` and `for` to anything iterable, Cex also has `arr$len` and `for$each` which can be commonly used for any C/Cex static or dynamic array, hashmap or pointer+length data.
+* Cex built system might look like overkill (~~just use CMake~~) however with it you still practicing C/Cex, no extra dependency needed for building your project. Cex on the other hand doing its best to provide utility tools for building code, working with files, strings, and OS.
+
+### Making C cexy again
+
+Old kind C99 might look too outdated for the modern times, but we have C23 compilers nowadays with brilliant tooling like sanitizers and fuzzers included. This opens a new era of C, safer C. 
+
+C looks like it's a perfect fit for unsafe low-level applications like OS kernels, drivers, math libraries. Doing higher level stuff was always miserable in C in different reasons. Cex is an attempt of bringing C on a little bit higher level. 
+
+#### Joy of C
+
+In my opinion, the unsafety of C is a really fun to work with, everything is under your control, everything is your responsibility. You can do wild stuff without any complaints from the compiler, ultimate freedom of code with ultimate responsibility.
+
+This freedom of code is not nearly achievable with any modern language, they tend to set unlimited guardrails and protect us from any possible issues. This comes hand in hand with language complexity, unlimited struggle with compiler warnings, and adding new abstraction levels over everything which may hurt you. We end up with a sterile world of safe computer science, without any chance to touch and understand how machine works on low level.
+
+Mission of CEX is to bring joy of the programming in C on the new level, to help in making C code safer and easier to write and understand.
+
+#### Shooting in the foot
+
+What if self shooting in the foot is not a bad idea? Before you start imagining pistol or shotgun, hold off, let's start small... What if we could pick a toy gun with plastic bullets? What if we could stress test our code under different conditions and see what's happened? What happens when we pass NULL to that argument? What about buffer overflow?
+
+> [!CAUTION]
+> 
+> CEX Principle: making by shaking.
+
+For making safe C code we must have tools for that, fortunately modern compilers already have them:
+
+1. Address sanitizers - for clang/gcc catch variety of bugs (buffer overflows, use after free, memory leaks, etc.). We only need to help them to trigger, by shaking the code via unit tests or fuzzers.
+2. Unit Tests - C is the one of the languages which require 3x more testing efforts than any other programming language.
+3. Fuzzers - for some cases the variety of inputs is too large, so we could not cover all of them via unit testing. Fuzzers come to help with this issue, but also can be used in Deterministic Simulation Testing, or randomized testing. LibFuzzer is included in clang, or you can use AFL++ if you want.
+4. Assertions - placing asserts everywhere in your code is a big deal for a code quality, and long term early warning about possible system inconsistencies. They can be used not only at checking input of a function, but validating results, or even at intermediate stages.
+
+All of the tools above are available with `cex.h` out of the box, so adding new test via CLI never has been easier:
+
+```sh
+# New test boilerplate
+./cex test create tests/test_my_stuff.c
+
+# Running a test
+./cex test run tests/test_my_stuff.c
+
+# Running all tests in a project
+./cex test run all
+
+```
+
+#### Problems and solutions of C
+
+Every programming language has its own quirks, sharp edges, and workarounds. C is not an exception here. However, in my opinion, sanitizers made a revolution in C development. With modern compilers C is much safer than it used to be even 10 years ago. Fuzzers made another step above, especially if your program works a lot with user input. 
+
+
+| Problem | Solution |
+| -------------- | --------------- |
+| Memory safety | We can use sanitizers to catch most of the cases, more unit tests! |
+| Memory leaks | Memory scopes in CEX, sanitizers for checking |
+| Manual memory management | Temp allocator in CEX, memory scopes, arenas |
+| Name conflicts | Hard to solve, CEX mitigates it by introducing namespace generation |
+| Error handling is inconsistent | CEX introduces new unified error handling | 
+| Type overflows | Unit testing, fuzzing |
+| Unsafe type casting | It hurts especially at refactoring, but unit testing will catch everything. |
+| Undefined behavior | Use UB sanitizer, fix all compiler warnings |
+| Macros | People hate macros, I don't know why, just use in moderation |
+| No generic types | CEX dynamic arrays and hashmaps are fully generic, solvable with macros and `_Generic` |
+| No tracebacks | Use sanitizers, also Cex `uassert` prints tracebacks, Cex errors handling can generate tracebacks |
+| Poor core types (strings, dynamic arrays, hashmaps) | CEX introducing general purpose core types |
+
+
+#### When C shines
+
+
+| What | Why |
+| -------------- | --------------- |
+| Simple semantics | It's a good thing to have less cryptic combinations of special characters and keywords in the language. C is simple, and it doesn't mean it's easy. |
+| Full control | We have full control over everything what's happening in our program: how memory is aligned, how control flow is aligned in assembly, how memory is allocated. |
+| Tooling | C has enourmous amount of development tools: testers, fuzzers, debuggers, coverage, performance, etc... |
+| Language stability | It's cool to have a project that compiles and works after 5-10 years, with minimal changes. I would call C is an anti-language to modern NodeJS world. |
+| Knowledge base | Probably it's a most diverse and stable knowledge base of all languages. |
+| Works everywhere | Anybody tried to run doom on a toaster? |
+| Performance | It feels good when you beat blazingly fast javascript by a factor of 100x with moderate C code |
+| Compatibility | C is a lowest common denominator of all languages, anything can wrap and call C code |
+
+
+#### How to improve C
+
+Cex was initially inspired by my Python experience, especially how very limited set of built-in types (str, list, dict, tuple, set + primitives) and simple semantics were able to produce huge ecosystem of Python nowadays. In my opinion, we don't need to have every hyped programming paradigm to be added to the C language to make it better. 
+
+However, we need some things to be productive in C that CEX tries to implement:
+
+1. New error handling system - which makes error handling seamless and easy to work with.
+2. New memory management model - for making memory management more transparent, tracking lifetimes of objects more clear.
+3. Better strings - because modern computing became string-centric, strings are everywhere, we need better tool set in C.
+4. Better arrays - there are no built-in dynamic arrays in C, but it's the most used data structure of all times.
+5. Hashmaps / sets - the second most used data structure, without C coverage.
+6. Build system - current build system situation is endless source of dependency conflicts, cross-platform headaches, and other issues that steals our mental energy.
+7. Code quality tools - we should lower barriers for running unit tests, fuzzers, coverage, benchmarks, etc.
+
+Cex also includes some things for IO, OS/file system operations, JSON lib for fueling cross-platform build system and configuration. However, the goal of CEX core is to remain thin layer above original C, adding just enough.
+
+### Why just not use R\*\*t, Z\*g or C\@\$ ?
+
+There is something appealing in C simplicity, it shines when we need full control over the code and assembly. Maybe it's not for everyone, and maybe it's a bad idea to use C for web-backends. But modern languages often affected by rush for adding new things,  new paradigms, piling a complexity of semantics and dependencies.
+
+C brings stability on the table, if something is written in C there is a chance that this project will be compilable after 5 years from now. Very few modern languages have this paradigm in mind. Most keep rushing to make changes, adding new features.
+
+
+
 ## Basics
 
 ### Code Style Guidelines
@@ -388,11 +519,6 @@ Key features of the CEX data structures:
 * Support of any item type.
 
 See more information about [data structures and arrays in CEX](#lang-data-structures)
-
-### Code Quality Tools
-### Typical Project Structure
-### Build system
-### Project Tools
 
 <a id="lang-error-handling"></a>
 
