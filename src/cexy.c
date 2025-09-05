@@ -1396,6 +1396,13 @@ _cexy__display_full_info(
             }
         }
         if (d->docs.buf) {
+            // strip doxygen tags
+            if (str.slice.starts_with(d->docs, str$s("/**"))) {
+                d->docs = str.slice.sub(d->docs, 3, 0);
+            }
+            if (str.slice.ends_with(d->docs, str$s("*/"))) {
+                d->docs = str.slice.sub(d->docs, 0, -2);
+            }
             _cexy__colorize_print(d->docs, name);
             io.printf("\n");
         }
@@ -1409,12 +1416,19 @@ _cexy__display_full_info(
 
                 hm$(str_s, cex_decl_s*) ns_symbols = hm$new(ns_symbols, _, .capacity = 128);
                 for$each (it, cex_ns_decls) {
+                    // Check if __namespace$ exists
+                    if (it->type == CexTkn__macro_const &&
+                        str.slice.starts_with(it->name, str$s("__"))) {
+                        if (str.slice.eq(str.slice.sub(it->name, 2, -1), base_name)) {
+                            ns_struct = it;
+                        }
+                    }
                     if (!str.slice.starts_with(it->name, base_name)) { continue; }
 
                     if ((it->type == CexTkn__macro_func || it->type == CexTkn__macro_const)) {
-                        if (it->name.buf[name.len] != '$') { continue; }
+                        if (it->name.buf[base_name.len] != '$') { continue; }
                     } else if (it->type == CexTkn__typedef) {
-                        if (it->name.buf[name.len] != '_') { continue; }
+                        if (it->name.buf[base_name.len] != '_') { continue; }
                         if (!(str.slice.ends_with(it->name, str$s("_c")) ||
                               str.slice.ends_with(it->name, str$s("_s")))) {
                             continue;
@@ -1460,6 +1474,9 @@ _cexy__display_full_info(
         }
 
         if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
+            if (str.slice.starts_with(d->name, str$s("__"))) {
+                return EOK; // NOTE: it's likely placeholder i.e. __foo$ - only for docs, just skip
+            }
             io.printf("#define ");
         }
 
@@ -1675,13 +1692,14 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
                             if (d->type == CexTkn__cex_module_def) { continue; }
                             if (d->type == CexTkn__typedef && d->ret_type[0] == '\0') { continue; }
+                            if (is_namespace_filter) { continue; }
                             // We have full match display full help
                             return _cexy__display_full_info(
                                 d,
                                 base_ns,
                                 show_source,
                                 show_example,
-                                (d->type == CexTkn__cex_module_struct) ? all_decls : NULL
+                                NULL
                             );
                         }
 
@@ -1703,6 +1721,15 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                                 }
                             } else {
                                 // query case: ./cex help foo$
+                                if (d->type == CexTkn__macro_const &&
+                                    str.slice.starts_with(d->name, str$s("__"))) {
+                                    // include __foo$ (doc name)
+                                    sub_name = str.slice.sub(d->name, 2, -1);
+                                    if (str.slice.eq(sub_name, prefix)) {
+                                        ns_decl = d;
+                                        has_match = true;
+                                    }
+                                }
                                 if (str.slice.eq(sub_name, prefix)) {
                                     if (d->type == CexTkn__cex_module_struct &&
                                         str.slice.eq(d->name, prefix)) {
@@ -1735,11 +1762,6 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 
                 if (ns_decl) {
                     char* ns_prefix = str.slice.clone(str.sub(query, 0, -1), _);
-                    log$info(
-                        "Found namespaces: #%d, base_ns: '%s'\n",
-                        arr$len(all_decls),
-                        ns_prefix
-                    );
                     return _cexy__display_full_info(ns_decl, ns_prefix, false, false, all_decls);
                 }
                 if (arr$len(names) == 0) { continue; }
