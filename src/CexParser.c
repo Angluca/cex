@@ -500,7 +500,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
             case CexTkn__ident: {
                 if (str.slice.match(t.value, "(typedef|struct|enum|union)")) {
                     if (result.type != CexTkn__var_decl) { result.type = CexTkn__typedef; }
-                } else if (str.slice.match(t.value, "extern")) {
+                } else if (str.slice.match(t.value, "CEX_NAMESPACE")) {
                     result.type = CexTkn__var_decl;
                 } else if (str.slice.match(t.value, "__cex_namespace__*")) {
                     has_cex_namespace = true;
