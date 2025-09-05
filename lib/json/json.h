@@ -1,5 +1,4 @@
-#pragma once
-#include "all.h"
+#include "cex.h"
 
 #ifndef CEX_MAX_JSON_DEPTH
 #    define CEX_MAX_JSON_DEPTH 128
