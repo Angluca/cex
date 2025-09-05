@@ -57,8 +57,8 @@ typedef struct
     usize length; // This MUST BE LAST before __poison_area
     u8 __poison_area[8];
 } _cexds__array_header;
-_Static_assert(alignof(_cexds__array_header) == alignof(usize), "align");
-_Static_assert(
+static_assert(alignof(_cexds__array_header) == alignof(usize), "align");
+static_assert(
     sizeof(usize) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
     "size for x64 is 48 / for x32 is 32"
 );
@@ -73,7 +73,7 @@ struct _cexds__arr_new_kwargs_s
 };
 #define arr$new(a, allocator, kwargs...)                                                           \
     ({                                                                                             \
-        _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
+        static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
         uassert(allocator != NULL);                                                                \
         struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                      \
         (a) = (typeof(*a)*)_cexds__arrgrowf(                                                       \
@@ -140,7 +140,7 @@ struct _cexds__arr_new_kwargs_s
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
         typeof(*a) _args[] = { items };                                                            \
-        _Static_assert(sizeof(_args) > 0, "You must pass at least one item");                      \
+        static_assert(sizeof(_args) > 0, "You must pass at least one item");                      \
         arr$pusha(a, _args, arr$len(_args));                                                       \
         /* NOLINTEND */                                                                            \
     })
@@ -284,7 +284,7 @@ struct _cexds__hm_new_kwargs_s
 
 #define hm$new(t, allocator, kwargs...)                                                            \
     ({                                                                                             \
-        _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
+        static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
         uassert(allocator != NULL);                                                                \
         enum _CexDsKeyType_e _key_type = _Generic(                                                 \
             &((t)->key),                                                                           \

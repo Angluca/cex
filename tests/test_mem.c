@@ -2,11 +2,11 @@
 
 test$case(test_is_power_of2)
 {
-    _Static_assert(!mem$is_power_of2(0), "fail");
-    _Static_assert(mem$is_power_of2(1), "fail");
-    _Static_assert(mem$is_power_of2(2), "fail");
-    _Static_assert(mem$is_power_of2(64), "fail");
-    _Static_assert(mem$is_power_of2(128), "fail");
+    static_assert(!mem$is_power_of2(0), "fail");
+    static_assert(mem$is_power_of2(1), "fail");
+    static_assert(mem$is_power_of2(2), "fail");
+    static_assert(mem$is_power_of2(64), "fail");
+    static_assert(mem$is_power_of2(128), "fail");
     return EOK;
 }
 

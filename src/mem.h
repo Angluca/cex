@@ -26,9 +26,9 @@ typedef struct Allocator_i
     //<<< 64 byte cacheline
 } Allocator_i;
 // clang-format on
-_Static_assert(alignof(Allocator_i) == 64, "size");
-_Static_assert(sizeof(Allocator_i) == 64, "size");
-_Static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
+static_assert(alignof(Allocator_i) == 64, "size");
+static_assert(sizeof(Allocator_i) == 64, "size");
+static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
 
 
 void _cex_allocator_memscope_cleanup(IAllocator* allc);

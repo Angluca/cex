@@ -64,7 +64,7 @@ __attribute__((unused)) static const char* OSArch_str[] = {
 #define os$cmda(args, args_len...)                             같같같같같같같같같같같같같같같같같같같같같같같같같                                    \
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
-        _Static_assert(sizeof(args) > 0, "You must pass at least one item");                       \
+        static_assert(sizeof(args) > 0, "You must pass at least one item");                       \
         usize _args_len_va[] = { args_len };                                                       \
         (void)_args_len_va;                                                                        \
         usize _args_len = (sizeof(_args_len_va) > 0) ? _args_len_va[0] : arr$len(args);            \

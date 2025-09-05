@@ -94,6 +94,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <assert.h>
 
 
 #if defined(__APPLE__) || defined(__MACH__)
@@ -138,8 +139,10 @@ typedef double f64;
 typedef size_t usize;
 typedef ptrdiff_t isize;
 
-/// automatic variable type, supported by GCC/Clang
-#define auto __auto_type
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ < 202311L
+/// automatic variable type, supported by GCC/Clang or C23
+#    define auto __auto_type
+#endif
 
 /*
  *                 BRANCH MANAGEMENT
@@ -220,9 +223,9 @@ __cex__fprintf_dummy(void)
 #endif
 
 #ifndef _WIN32
-#define CEX_NAMESPACE __attribute__((visibility("hidden"))) extern const
+#    define CEX_NAMESPACE __attribute__((visibility("hidden"))) extern const
 #else
-#define CEX_NAMESPACE extern const
+#    define CEX_NAMESPACE extern const
 #endif
 
 
@@ -411,7 +414,7 @@ int __cex_test_uassert_enabled = 1;
 #        define uassert_is_enabled() (__cex_test_uassert_enabled)
 #    else
 #        define uassert_disable()                                                                  \
-            _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
+            static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
 #        define uassert_enable() (void)0
 #        define uassert_is_enabled() true
 #        define __cex_test_postmortem_ctx NULL
@@ -437,8 +440,8 @@ int __cex_test_uassert_enabled = 1;
                     #A                                                                             \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();\
-                    __builtin_trap();                                                       \
+                    sanitizer_stack_trace();                                                       \
+                    __builtin_trap();                                                              \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -456,8 +459,8 @@ int __cex_test_uassert_enabled = 1;
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();\
-                    __builtin_trap();                                                       \
+                    sanitizer_stack_trace();                                                       \
+                    __builtin_trap();                                                              \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -517,7 +520,7 @@ __attribute__((noinline)) void __cex__panic(void);
 
 #define e$except_errno(_expression)                                                                \
     for (int _tmp_errno = 0; unlikely(                                                             \
-             ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&           \
+             ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&             \
               (log$error(                                                                          \
                    "`%s` failed errno: %d, msg: %s\n",                                             \
                    #_expression,                                                                   \
@@ -574,10 +577,10 @@ typedef struct
     u8 stopped;
     u8 initialized;
 } cex_iterator_s;
-_Static_assert(sizeof(usize) == sizeof(void*), "usize expected as sizeof ptr");
-_Static_assert(alignof(usize) == alignof(void*), "alignof pointer != alignof usize");
-_Static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
-_Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
+static_assert(sizeof(usize) == sizeof(void*), "usize expected as sizeof ptr");
+static_assert(alignof(usize) == alignof(void*), "alignof pointer != alignof usize");
+static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
+static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 
 /**
  * @brief Iterates via iterator function (see usage below)
@@ -649,9 +652,9 @@ typedef struct Allocator_i
     //<<< 64 byte cacheline
 } Allocator_i;
 // clang-format on
-_Static_assert(alignof(Allocator_i) == 64, "size");
-_Static_assert(sizeof(Allocator_i) == 64, "size");
-_Static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
+static_assert(alignof(Allocator_i) == 64, "size");
+static_assert(sizeof(Allocator_i) == 64, "size");
+static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
 
 
 void _cex_allocator_memscope_cleanup(IAllocator* allc);
@@ -832,8 +835,8 @@ typedef struct
     } stats;
 } AllocatorHeap_c;
 
-_Static_assert(sizeof(AllocatorHeap_c) == 128, "size!");
-_Static_assert(offsetof(AllocatorHeap_c, alloc) == 0, "base must be the 1st struct member");
+static_assert(sizeof(AllocatorHeap_c) == 128, "size!");
+static_assert(offsetof(AllocatorHeap_c, alloc) == 0, "base must be the 1st struct member");
 
 extern AllocatorHeap_c _cex__default_global__allocator_heap;
 extern IAllocator const _cex__default_global__allocator_heap__allc;
@@ -873,8 +876,8 @@ typedef struct
 
 } AllocatorArena_c;
 
-_Static_assert(sizeof(AllocatorArena_c) <= 256, "size!");
-_Static_assert(offsetof(AllocatorArena_c, alloc) == 0, "base must be the 1st struct member");
+static_assert(sizeof(AllocatorArena_c) <= 256, "size!");
+static_assert(offsetof(AllocatorArena_c, alloc) == 0, "base must be the 1st struct member");
 
 typedef struct allocator_arena_page_s
 {
@@ -886,9 +889,9 @@ typedef struct allocator_arena_page_s
     u8 __poison_area[(sizeof(usize) == 8 ? 32 : 44)]; // barrier of sanitizer poison + space reserve
     char data[];                                      // trailing chunk of data
 } allocator_arena_page_s;
-_Static_assert(sizeof(allocator_arena_page_s) == 64, "size!");
-_Static_assert(alignof(allocator_arena_page_s) == 64, "align");
-_Static_assert(offsetof(allocator_arena_page_s, data) == 64, "data must be aligned to 64");
+static_assert(sizeof(allocator_arena_page_s) == 64, "size!");
+static_assert(alignof(allocator_arena_page_s) == 64, "align");
+static_assert(offsetof(allocator_arena_page_s, data) == 64, "data must be aligned to 64");
 
 typedef struct allocator_arena_rec_s
 {
@@ -898,8 +901,8 @@ typedef struct allocator_arena_rec_s
     u8 is_free;       // indication that address has been free()'d
     u8 ptr_offset;    // byte offset for allocated pointer for this item
 } allocator_arena_rec_s;
-_Static_assert(sizeof(allocator_arena_rec_s) == 8, "size!");
-_Static_assert(offsetof(allocator_arena_rec_s, ptr_offset) == 7, "ptr_offset must be last");
+static_assert(sizeof(allocator_arena_rec_s) == 8, "size!");
+static_assert(offsetof(allocator_arena_rec_s, ptr_offset) == 7, "ptr_offset must be last");
 
 extern _Thread_local AllocatorArena_c _cex__default_global__allocator_temp;
 
@@ -978,8 +981,8 @@ typedef struct
     usize length; // This MUST BE LAST before __poison_area
     u8 __poison_area[8];
 } _cexds__array_header;
-_Static_assert(alignof(_cexds__array_header) == alignof(usize), "align");
-_Static_assert(
+static_assert(alignof(_cexds__array_header) == alignof(usize), "align");
+static_assert(
     sizeof(usize) == 8 ? sizeof(_cexds__array_header) == 48 : sizeof(_cexds__array_header) == 32,
     "size for x64 is 48 / for x32 is 32"
 );
@@ -994,7 +997,7 @@ struct _cexds__arr_new_kwargs_s
 };
 #define arr$new(a, allocator, kwargs...)                                                           \
     ({                                                                                             \
-        _Static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
+        static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
         uassert(allocator != NULL);                                                                \
         struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                      \
         (a) = (typeof(*a)*)_cexds__arrgrowf(                                                       \
@@ -1061,7 +1064,7 @@ struct _cexds__arr_new_kwargs_s
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
         typeof(*a) _args[] = { items };                                                            \
-        _Static_assert(sizeof(_args) > 0, "You must pass at least one item");                      \
+        static_assert(sizeof(_args) > 0, "You must pass at least one item");                      \
         arr$pusha(a, _args, arr$len(_args));                                                       \
         /* NOLINTEND */                                                                            \
     })
@@ -1205,7 +1208,7 @@ struct _cexds__hm_new_kwargs_s
 
 #define hm$new(t, allocator, kwargs...)                                                            \
     ({                                                                                             \
-        _Static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
+        static_assert(_Alignof(typeof(*t)) <= 64, "hashmap record alignment too high");           \
         uassert(allocator != NULL);                                                                \
         enum _CexDsKeyType_e _key_type = _Generic(                                                 \
             &((t)->key),                                                                           \
@@ -1501,8 +1504,8 @@ typedef struct
     char* buf;
 } str_s;
 
-_Static_assert(alignof(str_s) == alignof(usize), "align");
-_Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
+static_assert(alignof(str_s) == alignof(usize), "align");
+static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
 
 
 /**
@@ -1651,8 +1654,8 @@ typedef struct
     const Allocator_i* allocator;
 } __attribute__((packed)) sbuf_head_s;
 
-_Static_assert(alignof(sbuf_head_s) == 1, "align");
-_Static_assert(alignof(sbuf_head_s) == alignof(char), "align");
+static_assert(alignof(sbuf_head_s) == 1, "align");
+static_assert(alignof(sbuf_head_s) == alignof(char), "align");
 
 struct __cex_namespace__sbuf {
     // Autogenerated by CEX
@@ -2315,7 +2318,7 @@ typedef struct os_cmd_flags_s
     u32 no_search_path : 1;    // if 1 - disables propagating PATH= env to command line
     u32 no_window : 1;         // if 1 - disables creation of new window if OS supported
 } os_cmd_flags_s;
-_Static_assert(sizeof(os_cmd_flags_s) == sizeof(u32), "size?");
+static_assert(sizeof(os_cmd_flags_s) == sizeof(u32), "size?");
 
 typedef struct os_cmd_c
 {
@@ -2338,7 +2341,7 @@ typedef struct os_fs_stat_s
         time_t mtime;
     };
 } os_fs_stat_s;
-_Static_assert(sizeof(os_fs_stat_s) <= sizeof(u64) * 2, "size?");
+static_assert(sizeof(os_fs_stat_s) <= sizeof(u64) * 2, "size?");
 
 typedef Exception os_fs_dir_walk_f(char* path, os_fs_stat_s ftype, void* user_ctx);
 
@@ -2422,7 +2425,7 @@ __attribute__((unused)) static const char* OSArch_str[] = {
 #define os$cmda(args, args_len...)                                                                 \
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
-        _Static_assert(sizeof(args) > 0, "You must pass at least one item");                       \
+        static_assert(sizeof(args) > 0, "You must pass at least one item");                       \
         usize _args_len_va[] = { args_len };                                                       \
         (void)_args_len_va;                                                                        \
         usize _args_len = (sizeof(_args_len_va) > 0) ? _args_len_va[0] : arr$len(args);            \
@@ -2745,11 +2748,11 @@ struct _cex_test_context_s
     ({                                                                                             \
         auto _a = (a);                                                                              \
         auto _b = (b);                                                                              \
-        _Static_assert(                                                                            \
+        static_assert(                                                                            \
             __builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)),                          \
             "incompatible"                                                                         \
         );                                                                                         \
-        _Static_assert(sizeof(_a) == sizeof(_b), "different size");                                \
+        static_assert(sizeof(_a) == sizeof(_b), "different size");                                \
         if (memcmp(&_a, &_b, sizeof(_a)) != 0) {                                                   \
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
@@ -2765,11 +2768,11 @@ struct _cex_test_context_s
     ({                                                                                             \
         auto _a = (a);                                                                              \
         auto _b = (b);                                                                              \
-        _Static_assert(                                                                            \
+        static_assert(                                                                            \
             __builtin_types_compatible_p(__typeof__(*a), __typeof__(*b)),                          \
             "incompatible"                                                                         \
         );                                                                                         \
-        _Static_assert(sizeof(*_a) == sizeof(*_b), "different size");                              \
+        static_assert(sizeof(*_a) == sizeof(*_b), "different size");                              \
         usize _alen = arr$len(a);                                                                  \
         usize _blen = arr$len(b);                                                                  \
         usize _itsize = sizeof(*_a);                                                               \
@@ -3934,7 +3937,7 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
 #endif
 
     if (alignment < 8) {
-        _Static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
+        static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
         alignment = 8;
     } else {
         uassert(mem$is_power_of2(alignment) && "must be pow2");
@@ -4238,8 +4241,8 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
     usize size = alloc_size;
 
     if (alignment < 8) {
-        _Static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
-        _Static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
+        static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
+        static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
         alignment = 8;
         size = mem$aligned_round(alloc_size, 8);
     } else {
@@ -4369,8 +4372,8 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
     uassert((((usize)(page_rec) & ((8) - 1)) == 0) && "unaligned pointer");
-    _Static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
-    _Static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
+    static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
+    static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
 
     mem$asan_unpoison(page_rec, sizeof(allocator_arena_rec_s));
     *page_rec = rec;
@@ -4943,7 +4946,7 @@ typedef struct
     usize hash[_CEXDS_BUCKET_LENGTH];
     ptrdiff_t index[_CEXDS_BUCKET_LENGTH];
 } _cexds__hash_bucket;
-_Static_assert(sizeof(_cexds__hash_bucket) % 64 == 0, "cacheline aligned");
+static_assert(sizeof(_cexds__hash_bucket) % 64 == 0, "cacheline aligned");
 
 typedef struct _cexds__hash_index
 {
@@ -7906,8 +7909,8 @@ cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
         usize split_by_len;
         usize str_len;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
-    _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
+    static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
+    static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
 
     if (unlikely(!iterator->initialized)) {
         iterator->initialized = 1;
@@ -7973,7 +7976,7 @@ cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
 static Exception
 cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max)
 {
-    _Static_assert(sizeof(i64) == 8, "unexpected u64 size");
+    static_assert(sizeof(i64) == 8, "unexpected u64 size");
     uassert(num_min < num_max);
     uassert(num_min <= 0);
     uassert(num_max > 0);
@@ -8053,7 +8056,7 @@ cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max
 static Exception
 cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
 {
-    _Static_assert(sizeof(u64) == 8, "unexpected u64 size");
+    static_assert(sizeof(u64) == 8, "unexpected u64 size");
     uassert(num_max > 0);
     uassert(num_max > 64);
 
@@ -8128,7 +8131,7 @@ cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
 static Exception
 cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
 {
-    _Static_assert(sizeof(double) == 8, "unexpected double precision");
+    static_assert(sizeof(double) == 8, "unexpected double precision");
     if (unlikely(self == NULL)) { return Error.argument; }
 
     char* s = self;

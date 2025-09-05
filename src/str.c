@@ -509,8 +509,8 @@ cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
         usize split_by_len;
         usize str_len;
     }* ctx = (struct iter_ctx*)iterator->_ctx;
-    _Static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
-    _Static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
+    static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
+    static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
 
     if (unlikely(!iterator->initialized)) {
         iterator->initialized = 1;
@@ -576,7 +576,7 @@ cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
 static Exception
 cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max)
 {
-    _Static_assert(sizeof(i64) == 8, "unexpected u64 size");
+    static_assert(sizeof(i64) == 8, "unexpected u64 size");
     uassert(num_min < num_max);
     uassert(num_min <= 0);
     uassert(num_max > 0);
@@ -656,7 +656,7 @@ cex_str__to_signed_num(char* self, usize len, i64* num, i64 num_min, i64 num_max
 static Exception
 cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
 {
-    _Static_assert(sizeof(u64) == 8, "unexpected u64 size");
+    static_assert(sizeof(u64) == 8, "unexpected u64 size");
     uassert(num_max > 0);
     uassert(num_max > 64);
 
@@ -731,7 +731,7 @@ cex_str__to_unsigned_num(char* s, usize len, u64* num, u64 num_max)
 static Exception
 cex_str__to_double(char* self, usize len, double* num, i32 exp_min, i32 exp_max)
 {
-    _Static_assert(sizeof(double) == 8, "unexpected double precision");
+    static_assert(sizeof(double) == 8, "unexpected double precision");
     if (unlikely(self == NULL)) { return Error.argument; }
 
     char* s = self;

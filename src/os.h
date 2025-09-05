@@ -8,7 +8,7 @@ typedef struct os_cmd_flags_s
     u32 no_search_path : 1;    // if 1 - disables propagating PATH= env to command line
     u32 no_window : 1;         // if 1 - disables creation of new window if OS supported
 } os_cmd_flags_s;
-_Static_assert(sizeof(os_cmd_flags_s) == sizeof(u32), "size?");
+static_assert(sizeof(os_cmd_flags_s) == sizeof(u32), "size?");
 
 typedef struct os_cmd_c
 {
@@ -31,7 +31,7 @@ typedef struct os_fs_stat_s
         time_t mtime;
     };
 } os_fs_stat_s;
-_Static_assert(sizeof(os_fs_stat_s) <= sizeof(u64) * 2, "size?");
+static_assert(sizeof(os_fs_stat_s) <= sizeof(u64) * 2, "size?");
 
 typedef Exception os_fs_dir_walk_f(char* path, os_fs_stat_s ftype, void* user_ctx);
 
@@ -115,7 +115,7 @@ __attribute__((unused)) static const char* OSArch_str[] = {
 #define os$cmda(args, args_len...)                                                                 \
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
-        _Static_assert(sizeof(args) > 0, "You must pass at least one item");                       \
+        static_assert(sizeof(args) > 0, "You must pass at least one item");                       \
         usize _args_len_va[] = { args_len };                                                       \
         (void)_args_len_va;                                                                        \
         usize _args_len = (sizeof(_args_len_va) > 0) ? _args_len_va[0] : arr$len(args);            \

@@ -241,7 +241,7 @@ Random_buf(Random_c* self, void* buf, usize buf_len)
 
     usize reminder = buf_len % 4;
     usize buf_aligned_len = buf_len - reminder;
-    _Static_assert(sizeof(u32) == 4, "u32 size mismatch");
+    static_assert(sizeof(u32) == 4, "u32 size mismatch");
 
     // Fill buf, with 4 byte at a step
     for (usize i = 0; i < buf_aligned_len; i += 4) {

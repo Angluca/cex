@@ -153,7 +153,7 @@ test$case(random_buf)
     tassert_eq(b1, r2);
 
     u32 b2[10] = { 0 };
-    _Static_assert(sizeof(b2) == 10 * sizeof(u32), "size");
+    static_assert(sizeof(b2) == 10 * sizeof(u32), "size");
     Random.buf(&rnd, b2, 0);
     for (u32 i = 0; i < arr$len(b2); i++) { tassert(b2[i] == 0); }
 

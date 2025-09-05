@@ -59,8 +59,8 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
     usize size = alloc_size;
 
     if (alignment < 8) {
-        _Static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
-        _Static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
+        static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
+        static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
         alignment = 8;
         size = mem$aligned_round(alloc_size, 8);
     } else {
@@ -190,8 +190,8 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
     uassert((((usize)(page_rec) & ((8) - 1)) == 0) && "unaligned pointer");
-    _Static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
-    _Static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
+    static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
+    static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
 
     mem$asan_unpoison(page_rec, sizeof(allocator_arena_rec_s));
     *page_rec = rec;

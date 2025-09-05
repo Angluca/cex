@@ -226,11 +226,11 @@ struct _cex_test_context_s
     ({                                                                                             \
         auto _a = (a);                                                                              \
         auto _b = (b);                                                                              \
-        _Static_assert(                                                                            \
+        static_assert(                                                                            \
             __builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)),                          \
             "incompatible"                                                                         \
         );                                                                                         \
-        _Static_assert(sizeof(_a) == sizeof(_b), "different size");                                \
+        static_assert(sizeof(_a) == sizeof(_b), "different size");                                \
         if (memcmp(&_a, &_b, sizeof(_a)) != 0) {                                                   \
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
@@ -246,11 +246,11 @@ struct _cex_test_context_s
     ({                                                                                             \
         auto _a = (a);                                                                              \
         auto _b = (b);                                                                              \
-        _Static_assert(                                                                            \
+        static_assert(                                                                            \
             __builtin_types_compatible_p(__typeof__(*a), __typeof__(*b)),                          \
             "incompatible"                                                                         \
         );                                                                                         \
-        _Static_assert(sizeof(*_a) == sizeof(*_b), "different size");                              \
+        static_assert(sizeof(*_a) == sizeof(*_b), "different size");                              \
         usize _alen = arr$len(a);                                                                  \
         usize _blen = arr$len(b);                                                                  \
         usize _itsize = sizeof(*_a);                                                               \

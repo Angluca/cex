@@ -91,6 +91,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <assert.h>
 
 
 #if defined(__APPLE__) || defined(__MACH__)

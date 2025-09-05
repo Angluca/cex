@@ -803,7 +803,7 @@ test$case(test_hashmap_struct_full_setget)
     hm$s(struct test64_s) smap = hm$new(smap, mem$);
     tassert(smap != NULL);
 
-    _Static_assert(offsetof(struct test64_s, key) == sizeof(usize), "unexp");
+    static_assert(offsetof(struct test64_s, key) == sizeof(usize), "unexp");
 
     tassert_eq(hm$len(smap), 0);
 

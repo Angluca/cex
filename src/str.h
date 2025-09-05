@@ -13,8 +13,8 @@ typedef struct
     char* buf;
 } str_s;
 
-_Static_assert(alignof(str_s) == alignof(usize), "align");
-_Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
+static_assert(alignof(str_s) == alignof(usize), "align");
+static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
 
 
 /**

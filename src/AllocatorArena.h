@@ -30,8 +30,8 @@ typedef struct
 
 } AllocatorArena_c;
 
-_Static_assert(sizeof(AllocatorArena_c) <= 256, "size!");
-_Static_assert(offsetof(AllocatorArena_c, alloc) == 0, "base must be the 1st struct member");
+static_assert(sizeof(AllocatorArena_c) <= 256, "size!");
+static_assert(offsetof(AllocatorArena_c, alloc) == 0, "base must be the 1st struct member");
 
 typedef struct allocator_arena_page_s
 {
@@ -43,9 +43,9 @@ typedef struct allocator_arena_page_s
     u8 __poison_area[(sizeof(usize) == 8 ? 32 : 44)]; // barrier of sanitizer poison + space reserve
     char data[];                                      // trailing chunk of data
 } allocator_arena_page_s;
-_Static_assert(sizeof(allocator_arena_page_s) == 64, "size!");
-_Static_assert(alignof(allocator_arena_page_s) == 64, "align");
-_Static_assert(offsetof(allocator_arena_page_s, data) == 64, "data must be aligned to 64");
+static_assert(sizeof(allocator_arena_page_s) == 64, "size!");
+static_assert(alignof(allocator_arena_page_s) == 64, "align");
+static_assert(offsetof(allocator_arena_page_s, data) == 64, "data must be aligned to 64");
 
 typedef struct allocator_arena_rec_s
 {
@@ -55,8 +55,8 @@ typedef struct allocator_arena_rec_s
     u8 is_free;       // indication that address has been free()'d
     u8 ptr_offset;    // byte offset for allocated pointer for this item
 } allocator_arena_rec_s;
-_Static_assert(sizeof(allocator_arena_rec_s) == 8, "size!");
-_Static_assert(offsetof(allocator_arena_rec_s, ptr_offset) == 7, "ptr_offset must be last");
+static_assert(sizeof(allocator_arena_rec_s) == 8, "size!");
+static_assert(offsetof(allocator_arena_rec_s, ptr_offset) == 7, "ptr_offset must be last");
 
 extern _Thread_local AllocatorArena_c _cex__default_global__allocator_temp;
 

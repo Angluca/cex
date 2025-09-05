@@ -296,7 +296,7 @@ int __cex_test_uassert_enabled = 1;
 #        define uassert_is_enabled() (__cex_test_uassert_enabled)
 #    else
 #        define uassert_disable()                                                                  \
-            _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
+            static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
 #        define uassert_enable() (void)0
 #        define uassert_is_enabled() true
 #        define __cex_test_postmortem_ctx NULL
@@ -459,10 +459,10 @@ typedef struct
     u8 stopped;
     u8 initialized;
 } cex_iterator_s;
-_Static_assert(sizeof(usize) == sizeof(void*), "usize expected as sizeof ptr");
-_Static_assert(alignof(usize) == alignof(void*), "alignof pointer != alignof usize");
-_Static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
-_Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
+static_assert(sizeof(usize) == sizeof(void*), "usize expected as sizeof ptr");
+static_assert(alignof(usize) == alignof(void*), "alignof pointer != alignof usize");
+static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
+static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
 
 /**
  * @brief Iterates via iterator function (see usage below)
