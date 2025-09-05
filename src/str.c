@@ -93,13 +93,26 @@ cex_str__slice__eqi(str_s a, str_s b)
 static str_s
 cex_str__slice__sub(str_s s, isize start, isize end)
 {
-    slice$define(*s.buf) slice = { 0 };
-    if (s.buf != NULL) { _arr$slice_get(slice, s.buf, s.len, start, end); }
+    str_s result = {0};
 
-    return (str_s){
-        .buf = slice.arr,
-        .len = slice.len,
-    };
+    if (s.buf != NULL) {
+        isize _len = s.len;
+        if (unlikely(start < 0)) { start += _len; }
+        if (end == 0) { /* _end=0 equivalent infinity */
+            end = _len;
+        } else if (unlikely(end < 0)) {
+            end += _len;
+        }
+        end = end < _len ? end : _len;
+        start = start > 0 ? start : 0;
+
+        if (start < end) {
+            result.buf = &(s.buf[start]);
+            result.len = (usize)(end - start);
+        }
+    }
+
+    return result;
 }
 
 static str_s

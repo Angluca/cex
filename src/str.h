@@ -27,16 +27,6 @@ _Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
     (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
 
-/**
- * @brief creates slice of str_s instance
- */
-#define str$sslice(str_self, ...)                                                                  \
-    ({                                                                                             \
-        slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
-        _arr$slice_get(__slice, str_self.buf, str_self.len, __VA_ARGS__);                          \
-        __slice;                                                                                   \
-    })
-
 /// Joins parts of strings using a separator str$join(allc, ",", "a", "b", "c") -> "a,b,c"
 #define str$join(allocator, str_join_by, str_parts...)                                             \
     ({                                                                                             \

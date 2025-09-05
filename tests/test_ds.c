@@ -479,26 +479,6 @@ test$case(test_for_each_null)
     return EOK;
 }
 
-test$case(test_slice)
-{
-    char buf[] = { 'a', 'b', 'c' };
-
-    var b = arr$slice(buf, 1);
-    tassert_eq(b.arr[0], 'b');
-    tassert_eq(b.len, 2);
-
-    arr$(int) array = arr$new(array, mem$);
-    arr$push(array, 1);
-    arr$push(array, 2);
-    arr$push(array, 3);
-
-    var i = arr$slice(array, 1);
-    tassert_eq(i.arr[0], 2);
-    tassert_eq(i.len, 2);
-    arr$free(array);
-    return EOK;
-}
-
 test$case(test_for_arr_custom_size)
 {
 

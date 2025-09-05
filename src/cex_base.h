@@ -436,65 +436,8 @@ __attribute__((noinline)) void __cex__panic(void);
 
 
 /*
- *                  ARRAYS / SLICES / ITERATORS INTERFACE
+ *                  ARRAYS ITERATORS INTERFACE
  */
-#define slice$define(eltype)                                                                       \
-    struct                                                                                         \
-    {                                                                                              \
-        typeof(eltype)* arr;                                                                       \
-        usize len;                                                                                 \
-    }
-
-struct _cex_arr_slice
-{
-    isize start;
-    isize end;
-    isize __placeholder;
-};
-
-#define _arr$slice_get(slice, array, array_len, ...)                                               \
-    {                                                                                              \
-        struct _cex_arr_slice _slice = { __VA_ARGS__, .__placeholder = 0 };                        \
-        isize _len = array_len;                                                                    \
-        if (unlikely(_slice.start < 0)) _slice.start += _len;                                      \
-        if (_slice.end == 0) /* _end=0 equivalent of python's arr[_star:] */                       \
-            _slice.end = _len;                                                                     \
-        else if (unlikely(_slice.end < 0)) _slice.end += _len;                                     \
-        _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
-        _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
-        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */                                                                                                \
-        if (_slice.start < _slice.end && array != NULL) {                                          \
-            slice.arr = &((array)[_slice.start]);                                                  \
-            slice.len = (usize)(_slice.end - _slice.start);                                        \
-        }                                                                                          \
-    }
-
-
-/**
- * @brief Gets array generic slice (typed as array)
- *
- * Example:
- * var s = arr$slice(arr, .start = 1, .end = -2);
- * var s = arr$slice(arr, 1, -2);
- * var s = arr$slice(arr, .start = -2);
- * var s = arr$slice(arr, .end = 3);
- *
- * Note: arr$slice creates a temporary type, and it's preferable to use var keyword
- *
- * @param array - generic array
- * @param .start - start index, may be negative to get item from the end of array
- * @param .end - end index, 0 - means all, or may be negative to get item from the end of array
- * @return struct {eltype* arr, usize len}, or {NULL, 0} if bad slice index/not found/NULL array
- *
- * @warning returns {.arr = NULL, .len = 0} if bad indexes or array
- */
-#define arr$slice(array, ...)                                                                      \
-    ({                                                                                             \
-        slice$define(*array) s = { .arr = NULL, .len = 0 };                                        \
-        _arr$slice_get(s, array, arr$len(array), __VA_ARGS__);                                     \
-        s;                                                                                         \
-    })
-
 
 /**
  * @brief cex_iterator_s - CEX iterator interface

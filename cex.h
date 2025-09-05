@@ -553,65 +553,8 @@ __attribute__((noinline)) void __cex__panic(void);
 
 
 /*
- *                  ARRAYS / SLICES / ITERATORS INTERFACE
+ *                  ARRAYS ITERATORS INTERFACE
  */
-#define slice$define(eltype)                                                                       \
-    struct                                                                                         \
-    {                                                                                              \
-        typeof(eltype)* arr;                                                                       \
-        usize len;                                                                                 \
-    }
-
-struct _cex_arr_slice
-{
-    isize start;
-    isize end;
-    isize __placeholder;
-};
-
-#define _arr$slice_get(slice, array, array_len, ...)                                               \
-    {                                                                                              \
-        struct _cex_arr_slice _slice = { __VA_ARGS__, .__placeholder = 0 };                        \
-        isize _len = array_len;                                                                    \
-        if (unlikely(_slice.start < 0)) _slice.start += _len;                                      \
-        if (_slice.end == 0) /* _end=0 equivalent of python's arr[_star:] */                       \
-            _slice.end = _len;                                                                     \
-        else if (unlikely(_slice.end < 0)) _slice.end += _len;                                     \
-        _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
-        _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
-        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */                                                                                                \
-        if (_slice.start < _slice.end && array != NULL) {                                          \
-            slice.arr = &((array)[_slice.start]);                                                  \
-            slice.len = (usize)(_slice.end - _slice.start);                                        \
-        }                                                                                          \
-    }
-
-
-/**
- * @brief Gets array generic slice (typed as array)
- *
- * Example:
- * var s = arr$slice(arr, .start = 1, .end = -2);
- * var s = arr$slice(arr, 1, -2);
- * var s = arr$slice(arr, .start = -2);
- * var s = arr$slice(arr, .end = 3);
- *
- * Note: arr$slice creates a temporary type, and it's preferable to use var keyword
- *
- * @param array - generic array
- * @param .start - start index, may be negative to get item from the end of array
- * @param .end - end index, 0 - means all, or may be negative to get item from the end of array
- * @return struct {eltype* arr, usize len}, or {NULL, 0} if bad slice index/not found/NULL array
- *
- * @warning returns {.arr = NULL, .len = 0} if bad indexes or array
- */
-#define arr$slice(array, ...)                                                                      \
-    ({                                                                                             \
-        slice$define(*array) s = { .arr = NULL, .len = 0 };                                        \
-        _arr$slice_get(s, array, arr$len(array), __VA_ARGS__);                                     \
-        s;                                                                                         \
-    })
-
 
 /**
  * @brief cex_iterator_s - CEX iterator interface
@@ -1571,16 +1514,6 @@ _Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
 #define str$s(string)                                                                              \
     (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
-
-/**
- * @brief creates slice of str_s instance
- */
-#define str$sslice(str_self, ...)                                                                  \
-    ({                                                                                             \
-        slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
-        _arr$slice_get(__slice, str_self.buf, str_self.len, __VA_ARGS__);                          \
-        __slice;                                                                                   \
-    })
 
 /// Joins parts of strings using a separator str$join(allc, ",", "a", "b", "c") -> "a,b,c"
 #define str$join(allocator, str_join_by, str_parts...)                                             \
@@ -2947,7 +2880,7 @@ typedef struct _cex__codegen_s
 /*
  *                  CODE MACROS
  */
-#    define cg$pn(text)                                                                              \
+#    define cg$pn(text)                                                                            \
         ((text && text[0] == '\0') ? _cex__codegen_print_line(cg$var, "\n")                        \
                                    : _cex__codegen_print_line(cg$var, "%s\n", text))
 #    define cg$pf(format, ...) _cex__codegen_print_line(cg$var, format "\n", __VA_ARGS__)
@@ -2961,20 +2894,22 @@ typedef struct _cex__codegen_s
         *cex$tmpname(codegen_sentinel) = cg$var;                                    \
         cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;        \
         cex$tmpname(codegen_sentinel) = NULL)
-#define cg$func(format, ...) cg$scope(format, __VA_ARGS__)
 // clang-format on
 
 
+#    define cg$func(format, ...) cg$scope(format, __VA_ARGS__)
+
 #    define cg$if(format, ...) cg$scope("if (" format ") ", __VA_ARGS__)
 #    define cg$elseif(format, ...)                                                                   \
-        cg$pa(" else ", "");                                                                         \
+        cg$pa(" else ", "");                                                                       \
         cg$if(format, __VA_ARGS__)
 #    define cg$else()                                                                                \
-        cg$pa(" else", "");                                                                          \
+        cg$pa(" else", "");                                                                        \
         cg$scope(" ", "")
 
 
 #    define cg$while(format, ...) cg$scope("while (" format ") ", __VA_ARGS__)
+#    define cg$for(format, ...) cg$scope("for (" format ") ", __VA_ARGS__)
 #    define cg$foreach(format, ...) cg$scope("for$each (" format ") ", __VA_ARGS__)
 
 
@@ -7555,13 +7490,26 @@ cex_str__slice__eqi(str_s a, str_s b)
 static str_s
 cex_str__slice__sub(str_s s, isize start, isize end)
 {
-    slice$define(*s.buf) slice = { 0 };
-    if (s.buf != NULL) { _arr$slice_get(slice, s.buf, s.len, start, end); }
+    str_s result = {0};
 
-    return (str_s){
-        .buf = slice.arr,
-        .len = slice.len,
-    };
+    if (s.buf != NULL) {
+        isize _len = s.len;
+        if (unlikely(start < 0)) { start += _len; }
+        if (end == 0) { /* _end=0 equivalent infinity */
+            end = _len;
+        } else if (unlikely(end < 0)) {
+            end += _len;
+        }
+        end = end < _len ? end : _len;
+        start = start > 0 ? start : 0;
+
+        if (start < end) {
+            result.buf = &(s.buf[start]);
+            result.len = (usize)(end - start);
+        }
+    }
+
+    return result;
 }
 
 static str_s
