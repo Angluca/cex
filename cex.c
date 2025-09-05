@@ -9,6 +9,8 @@
 
 
 Exception cmd_custom_test(int argc, char** argv, void* user_ctx);
+Exception cmd_build_docs(int argc, char** argv, void* user_ctx);
+
 void cex_bundle(void);
 
 int
@@ -30,6 +32,7 @@ main(int argc, char** argv)
         argparse$cmd_list(
             cexy$cmd_all,
             { .name = "test", .func = cmd_custom_test, .help = "Test running" },
+            { .name = "build-docs", .func = cmd_build_docs, .help = "Build CEX documentation" },
             cexy$cmd_fuzz,  /* feel free to make your own if needed */
             cexy$cmd_app,   /* feel free to make your own if needed */
         ),
@@ -124,7 +127,7 @@ cex_bundle(void)
             "src/ds.h",       "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
             "src/io.h",       "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
             "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexParser.h",
-            "src/json.h",     "src/cex_maker.h", "src/fuzz.h"
+            "src/json.h",     "src/cex_maker.h",    "src/fuzz.h"
 
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
@@ -220,4 +223,35 @@ cex_bundle(void)
         log$debug("Saving cex.h: new size: %dKB lines: %d\n", sbuf.len(&hbuf) / 1024, cex_lines);
         e$except (err, io.file.save("cex.h", hbuf)) { exit(1); }
     }
+}
+
+Exception
+cmd_build_docs(int argc, char** argv, void* user_ctx)
+{
+    (void)argc;
+    (void)argv;
+    (void)user_ctx;
+
+    char* namespaces[] = { "mem", "str", "test", "os",       "fuzz", "arr", "hm",
+                           "for", "io",  "sbuf", "argparse", "cg",   "json" };
+
+    for$each (it, namespaces) {
+        mem$scope(tmem$, _)
+        {
+            arr$(char*) args = arr$new(args, _);
+            arr$pushm(
+                args,
+                "help",
+                "--filter",
+                "./cex.h",
+                "--out",
+                str.fmt(_, "./docs/_include/%s.md", it),
+                str.fmt(_, "%s$", it)
+            );
+            _os$args_print("Parse help: ", args, arr$len(args));
+            e$ret(cexy.cmd.help(arr$len(args), args, NULL));
+        }
+    }
+
+    return EOK;
 }

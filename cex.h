@@ -14943,7 +14943,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
     mem$arena(1024 * 100, arena)
     {
 
-        arr$(char*) sources = os.fs.find("./*.[hc]", true, arena);
+        arr$(char*) sources = os.fs.find(filter, true, arena);
         if (os.fs.stat("./cex.h").is_symlink) { arr$push(sources, "./cex.h"); }
         arr$sort(sources, str.qscmp);
 
