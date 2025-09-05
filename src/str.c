@@ -921,7 +921,7 @@ cex_str__convert__to_i16s(str_s s, i16* num)
 {
     uassert(num != NULL);
     i64 res = 0;
-    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT16_MIN, INT16_MAX);
+    auto r = cex_str__to_signed_num(s.buf, s.len, &res, INT16_MIN, INT16_MAX);
     *num = res;
     return r;
 }
@@ -931,7 +931,7 @@ cex_str__convert__to_i32s(str_s s, i32* num)
 {
     uassert(num != NULL);
     i64 res = 0;
-    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT32_MIN, INT32_MAX);
+    auto r = cex_str__to_signed_num(s.buf, s.len, &res, INT32_MIN, INT32_MAX);
     *num = res;
     return r;
 }
@@ -943,7 +943,7 @@ cex_str__convert__to_i64s(str_s s, i64* num)
     uassert(num != NULL);
     i64 res = 0;
     // NOTE:INT64_MIN+1 because negating of INT64_MIN leads to UB!
-    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT64_MIN + 1, INT64_MAX);
+    auto r = cex_str__to_signed_num(s.buf, s.len, &res, INT64_MIN + 1, INT64_MAX);
     *num = res;
     return r;
 }

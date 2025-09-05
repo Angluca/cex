@@ -380,7 +380,7 @@ test$case(test_git_lib_fetch_no_rewrite)
         u32 nfiles = 0;
         for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
-            var stat = os.fs.stat(it);
+            auto stat = os.fs.stat(it);
             tassert(stat.is_valid);
             tassert(stat.size > 100);
 
@@ -406,7 +406,7 @@ test$case(test_git_lib_fetch_no_rewrite)
         nfiles = 0;
         for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
-            var stat = os.fs.stat(it);
+            auto stat = os.fs.stat(it);
             tassert(stat.is_valid);
             tassert_eq(stat.size, 3);
         }
@@ -429,7 +429,7 @@ test$case(test_git_lib_fetch_no_rewrite)
         nfiles = 0;
         for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
-            var stat = os.fs.stat(it);
+            auto stat = os.fs.stat(it);
             tassert(stat.is_valid);
             // cex.h got updated, because it didn't exist
             if (str.ends_with(it, "cex.h")) {
@@ -473,7 +473,7 @@ test$case(test_git_lib_fetch_update)
         u32 nfiles = 0;
         for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
-            var stat = os.fs.stat(it);
+            auto stat = os.fs.stat(it);
             tassert(stat.is_valid);
             tassert(stat.size > 100);
 
@@ -501,7 +501,7 @@ test$case(test_git_lib_fetch_update)
         nfiles = 0;
         for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
-            var stat = os.fs.stat(it);
+            auto stat = os.fs.stat(it);
             tassert(stat.is_valid);
             tassert_eq(stat.size, 3);
         }
@@ -524,7 +524,7 @@ test$case(test_git_lib_fetch_update)
         tassert(os.path.exists(TBUILDDIR "/out/random/MyFile.h"));
         for$each (it, os.fs.find(TBUILDDIR "/out/*.*", true, _)) {
             nfiles++;
-            var stat = os.fs.stat(it);
+            auto stat = os.fs.stat(it);
             tassert(stat.is_valid);
             if (str.ends_with(it, "MyFile.h")) {
                 tassert_eq(stat.size, 3);

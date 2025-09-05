@@ -302,7 +302,7 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
     }
     tassert_eq(n_max * 4, sbuf.len(&s));
 
-    var sv2 = str.sstr(s);
+    auto sv2 = str.sstr(s);
     str_s sv = str.sstr(s);
     tassert_eq(str.slice.eq(sv2, sv), 1);
     tassert_eq(sv2.len, sv.len);

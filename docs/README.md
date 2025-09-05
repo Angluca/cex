@@ -177,7 +177,7 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
         e$assert(os.path.exists("tests/build/")); // evergreen assertion or error with traceback
 
         // auto type variables
-        var search_pattern = "tests/os_test/*.c";
+        auto search_pattern = "tests/os_test/*.c";
 
         // Trace with file:<line> + formatting
         log$trace("Finding/building simple os apps in %s\n", search_pattern);
@@ -400,7 +400,7 @@ CEX provides several short aliases for primitive types and some extra types for 
 
 | Type | Description |
 | -------------- | --------------- |
-| var | automatically inferred variable type |
+| auto | automatically inferred variable type |
 | bool | boolean type |
 | u8/i8 | 8-bit integer |
 | u16/i16 | 16-bit integer |

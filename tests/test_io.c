@@ -28,7 +28,7 @@ test$case(test_readall)
     str_s content;
     tassert_eq(Error.ok, io.fread_all(file, &content, mem$));
 
-    var stat = os.fs.stat("tests/data/text_file_50b.txt");
+    auto stat = os.fs.stat("tests/data/text_file_50b.txt");
     tassert_eq(stat.is_valid, 1);
     tassert_eq(stat.size, 50);
     tassert_eq(50, io.file.size(file));

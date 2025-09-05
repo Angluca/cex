@@ -77,7 +77,7 @@ cexy_build_self(int argc, char** argv, char* cex_source)
                 if (clean_it.len == 0) { continue; }
                 if (!str.slice.starts_with(clean_it, str$s("-D"))) { continue; }
                 if (str.slice.eq(clean_it, str$s("-D"))) { continue; }
-                var _darg = str.fmt(_, "%S", clean_it);
+                auto _darg = str.fmt(_, "%S", clean_it);
                 arr$push(args, _darg);
                 e$goto(sbuf.appendf(&dargs_sbuf, "%s ", _darg), err);
             }
@@ -130,7 +130,7 @@ cexy_src_include_changed(char* target_path, char* src_path, arr$(char*) alt_incl
         return false;
     }
 
-    var src_meta = os.fs.stat(src_path);
+    auto src_meta = os.fs.stat(src_path);
     if (!src_meta.is_valid) {
         (void)e$raise(src_meta.error, "Error src: %s", src_path);
         return false;
@@ -139,7 +139,7 @@ cexy_src_include_changed(char* target_path, char* src_path, arr$(char*) alt_incl
         return false;
     }
 
-    var target_meta = os.fs.stat(target_path);
+    auto target_meta = os.fs.stat(target_path);
     if (!target_meta.is_valid) {
         if (target_meta.error == Error.not_found) {
             return true;
@@ -231,7 +231,7 @@ cexy_src_include_changed(char* target_path, char* src_path, arr$(char*) alt_incl
                         for$each (inc_dir, incl_path) {
                             char* try_path = os$path_join(_, inc_dir, inc_fn);
                             uassert(try_path != NULL);
-                            var src_meta = os.fs.stat(try_path);
+                            auto src_meta = os.fs.stat(try_path);
                             log$trace("Probing include: %s\n", try_path);
                             if (src_meta.is_valid && src_meta.mtime > target_meta.mtime) {
                                 return true;
@@ -260,7 +260,7 @@ cexy_src_changed(char* target_path, char** src_array, usize src_array_len)
         log$error("target_path is NULL\n");
         return false;
     }
-    var target_ftype = os.fs.stat(target_path);
+    auto target_ftype = os.fs.stat(target_path);
     if (!target_ftype.is_valid) {
         if (target_ftype.error == Error.not_found) {
             log$trace("Target '%s' not exists, needs build.\n", target_path);
@@ -276,7 +276,7 @@ cexy_src_changed(char* target_path, char** src_array, usize src_array_len)
 
     bool has_error = false;
     for$each (p, src_array, src_array_len) {
-        var ftype = os.fs.stat(p);
+        auto ftype = os.fs.stat(p);
         if (!ftype.is_valid) {
             (void)e$raise(ftype.error, "Error src: %s", p);
             has_error = true;
@@ -1668,7 +1668,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     continue;
                 }
 
-                var basename = os.path.basename(src_fn, _);
+                auto basename = os.path.basename(src_fn, _);
                 if (str.starts_with(basename, "_") || str.starts_with(basename, "test_")) {
                     continue;
                 }
@@ -2177,10 +2177,10 @@ cexy__utils__make_new_project(char* proj_dir)
         }
 
         log$info("Making '%s/cex.c'\n", proj_dir);
-        var cex_c = os$path_join(_, proj_dir, "cex.c");
-        var lib_h = os$path_join(_, proj_dir, "lib", "mylib.h");
-        var lib_c = os$path_join(_, proj_dir, "lib", "mylib.c");
-        var app_c = os$path_join(_, proj_dir, "src", "myapp.c");
+        auto cex_c = os$path_join(_, proj_dir, "cex.c");
+        auto lib_h = os$path_join(_, proj_dir, "lib", "mylib.h");
+        auto lib_c = os$path_join(_, proj_dir, "lib", "mylib.c");
+        auto app_c = os$path_join(_, proj_dir, "src", "myapp.c");
         e$assert(!os.path.exists(cex_c) && "cex.c already exists");
         e$assert(!os.path.exists(lib_h) && "mylib.h already exists");
         e$assert(!os.path.exists(lib_h) && "mylib.c already exists");
@@ -2249,11 +2249,11 @@ cexy__utils__make_new_project(char* proj_dir)
             e$ret(io.file.save(app_c, buf));
         }
 
-        var test_c = os$path_join(_, proj_dir, "tests", "test_mylib.c");
+        auto test_c = os$path_join(_, proj_dir, "tests", "test_mylib.c");
         log$info("Making '%s'\n", test_c);
         e$ret(cexy.test.create(test_c, true));
         log$info("Compiling new cex app for a new project...\n");
-        var old_dir = os.fs.getcwd(_);
+        auto old_dir = os.fs.getcwd(_);
 
         e$ret(os.fs.chdir(proj_dir));
         char* bin_path = "cex" cexy$build_ext_exe;
@@ -3029,12 +3029,12 @@ cexy__utils__git_lib_fetch(
             char* out_path = (preserve_dirs)
                                ? str.fmt(_, "%s/%s", out_dir, it)
                                : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
-            var in_stat = os.fs.stat(in_path);
+            auto in_stat = os.fs.stat(in_path);
             if (!in_stat.is_valid) {
                 return e$raise(in_stat.error, "Invalid stat for path: %s", in_path);
             }
 
-            var out_stat = os.fs.stat(out_path);
+            auto out_stat = os.fs.stat(out_path);
             if (!out_stat.is_valid || update_existing) {
                 log$info("Updating file: %s -> %s\n", it, out_path);
                 if (in_stat.is_directory) {

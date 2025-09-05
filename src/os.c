@@ -435,7 +435,7 @@ cex_os__fs__dir_walk(char* path, bool is_recursive, os_fs_dir_walk_f callback_fn
             goto end;
         }
 
-        var ftype = os.fs.stat(path_buf);
+        auto ftype = os.fs.stat(path_buf);
         if (!ftype.is_valid) {
             result = ftype.error;
             goto end;
@@ -591,7 +591,7 @@ static arr$(char*) cex_os__fs__find(char* path, bool is_recursive, IAllocator al
     }
 
     if (!is_recursive) {
-        var f = os.fs.stat(path);
+        auto f = os.fs.stat(path);
         if (f.is_valid && f.is_file) {
             // Find used with exact file path, we still have to return array + allocated path copy
             arr$(char*) result = arr$new(result, allc);
@@ -765,7 +765,7 @@ cex_os__env__set(char* name, char* value)
 static bool
 cex_os__path__exists(char* file_path)
 {
-    var ftype = os.fs.stat(file_path);
+    auto ftype = os.fs.stat(file_path);
     return ftype.is_valid;
 }
 

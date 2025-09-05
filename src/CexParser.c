@@ -277,13 +277,13 @@ _CexParser__scan_scope(CexParser_c* lx)
                     break;
                 case '"':
                 case '\'': {
-                    var s = _CexParser__scan_string(lx);
+                    auto s = _CexParser__scan_string(lx);
                     t.value.len += s.value.len + 2;
                     continue;
                 }
                 case '/': {
                     if (lx$peek_next(lx) == '/' || lx$peek_next(lx) == '*') {
-                        var s = _CexParser__scan_comment(lx);
+                        auto s = _CexParser__scan_comment(lx);
                         t.value.len += s.value.len;
                         continue;
                     }
@@ -291,7 +291,7 @@ _CexParser__scan_scope(CexParser_c* lx)
                 }
                 case '#': {
                     char* ppstart = lx->cur;
-                    var s = _CexParser__scan_preproc(lx);
+                    auto s = _CexParser__scan_preproc(lx);
                     if (s.value.buf) {
                         t.value.len += s.value.len + (s.value.buf - ppstart) + 1;
                     } else {
@@ -636,7 +636,7 @@ CexParser_decl_parse(
                     char* prev_end = _t.value.buf + _t.value.len;
                     _t = CexParser.next_token(&_lx);
                     if (_t.type == CexTkn__paren_block) {
-                        var _args = _t.value.len > 2 ? str.slice.sub(_t.value, 1, -1) : str$s("");
+                        auto _args = _t.value.len > 2 ? str.slice.sub(_t.value, 1, -1) : str$s("");
                         e$goto(sbuf.appendf(&result->args, "%S", _args), fail);
                         prev_end = _t.value.buf + _t.value.len;
                         _t = CexParser.next_token(&_lx);

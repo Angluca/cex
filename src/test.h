@@ -190,7 +190,7 @@ struct _cex_test_context_s
 #define tassert_eq(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -224,8 +224,8 @@ struct _cex_test_context_s
     })
 #define tassert_eq_mem(a, b...)                                                                    \
     ({                                                                                             \
-        var _a = (a);                                                                              \
-        var _b = (b);                                                                              \
+        auto _a = (a);                                                                              \
+        auto _b = (b);                                                                              \
         _Static_assert(                                                                            \
             __builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)),                          \
             "incompatible"                                                                         \
@@ -244,8 +244,8 @@ struct _cex_test_context_s
 
 #define tassert_eq_arr(a, b...)                                                                    \
     ({                                                                                             \
-        var _a = (a);                                                                              \
-        var _b = (b);                                                                              \
+        auto _a = (a);                                                                              \
+        auto _b = (b);                                                                              \
         _Static_assert(                                                                            \
             __builtin_types_compatible_p(__typeof__(*a), __typeof__(*b)),                          \
             "incompatible"                                                                         \
@@ -283,7 +283,7 @@ struct _cex_test_context_s
 #define tassert_ne(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -293,7 +293,7 @@ struct _cex_test_context_s
 #define tassert_le(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -303,7 +303,7 @@ struct _cex_test_context_s
 #define tassert_lt(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -313,7 +313,7 @@ struct _cex_test_context_s
 #define tassert_ge(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -323,7 +323,7 @@ struct _cex_test_context_s
 #define tassert_gt(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \

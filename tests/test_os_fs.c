@@ -328,7 +328,7 @@ test$case(test_os_getcwd)
 {
     mem$scope(tmem$, _)
     {
-        var p = os.fs.getcwd(_);
+        auto p = os.fs.getcwd(_);
         tassert(p != NULL);
         tassert_eq(true, str.ends_with(p, "cex"));
 
@@ -354,7 +354,7 @@ test$case(test_os_path_exists)
     tassert_eq(1, os.path.exists(__FILE__));
     tassert_eq(0, os.path.exists("./tests/test_os_posix.cpp"));
 
-    var st = os.fs.stat("tests");
+    auto st = os.fs.stat("tests");
     tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
     tassert_eq(1, os.path.exists("tests"));
 
@@ -384,7 +384,7 @@ test$case(test_dir_stat)
     tassert_eq(1, os.path.exists(__FILE__));
     tassert_eq(0, os.path.exists("./tests/test_os_posix.cpp"));
 
-    var st = os.fs.stat("tests");
+    auto st = os.fs.stat("tests");
     tassertf(st.is_valid, "os.fs.stat('tests/') error : %s", st.error);
     tassert_eq(st.is_directory, true);
     tassert_ne(st.mtime, 0);
@@ -431,7 +431,7 @@ test$case(test_os_mkdir)
         if (err != Error.not_found) { tassert_er(Error.not_found, err); }
     }
 
-    var ftype = os.fs.stat(TBUILDDIR "mytestdir");
+    auto ftype = os.fs.stat(TBUILDDIR "mytestdir");
     tassert_eq(ftype.is_valid, 0);
     tassert_eq(ftype.is_directory, 0);
     tassert_eq(ftype.is_file, 0);
@@ -472,7 +472,7 @@ test$case(test_os_fs_stat)
 {
 
     tassert_eq(1, os.path.exists(__FILE__));
-    var ftype = os.fs.stat(__FILE__);
+    auto ftype = os.fs.stat(__FILE__);
     tassert_eq(ftype.is_valid, 1);
     tassert_ne(ftype.mtime, 0);
     tassert_eq(ftype.is_directory, 0);
@@ -502,7 +502,7 @@ test$case(test_os_rename_dir)
     tassert_er(Error.ok, os.fs.rename(TBUILDDIR "mytestdir", TBUILDDIR "mytestdir2"));
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestdir"));
     tassert_eq(1, os.path.exists(TBUILDDIR "mytestdir2"));
-    var ftype = os.fs.stat(TBUILDDIR "mytestdir2");
+    auto ftype = os.fs.stat(TBUILDDIR "mytestdir2");
     tassert_eq(ftype.is_valid, 1);
     tassert_ne(ftype.mtime, 0);
     tassert_eq(ftype.is_directory, 1);
@@ -532,7 +532,7 @@ test$case(test_os_rename_file)
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt2"));
 
-    var ftype = os.fs.stat(TBUILDDIR "mytestfile.txt2");
+    auto ftype = os.fs.stat(TBUILDDIR "mytestfile.txt2");
     tassert_eq(ftype.is_valid, 1);
     tassert_eq(ftype.is_directory, 0);
     tassert_eq(ftype.is_file, 1);
@@ -696,7 +696,7 @@ test$case(test_os_copy_file)
     tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt"));
     tassert_eq(1, os.path.exists(TBUILDDIR "mytestfile.txt2"));
 
-    var ftype = os.fs.stat(TBUILDDIR "mytestfile.txt2");
+    auto ftype = os.fs.stat(TBUILDDIR "mytestfile.txt2");
     tassert_eq(ftype.is_valid, 1);
     tassert_eq(ftype.is_directory, 0);
     tassert_eq(ftype.is_file, 1);
@@ -705,7 +705,7 @@ test$case(test_os_copy_file)
 
     mem$scope(tmem$, _)
     {
-        var content = io.file.load(TBUILDDIR "mytestfile.txt2", _);
+        auto content = io.file.load(TBUILDDIR "mytestfile.txt2", _);
         tassert(content);
         tassert_eq(content, "foo");
     }
@@ -791,11 +791,11 @@ test$case(test_os_path_abs)
 
     mem$scope(tmem$, _)
     {
-        var p = os.fs.getcwd(_);
+        auto p = os.fs.getcwd(_);
         tassert(p != NULL);
         tassert_eq(true, str.ends_with(p, "cex"));
 
-        var abs_cwd = os.path.abs(".", _);
+        auto abs_cwd = os.path.abs(".", _);
         tassert(abs_cwd != NULL);
         tassert(str.starts_with(abs_cwd, p));
         tassert_eq(true, str.ends_with(abs_cwd, "cex"));

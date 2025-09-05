@@ -59,7 +59,7 @@ test$case(test_cstr_sdollar)
 
     // // WARNING: buffers for str$s() are extremely bad idea, they may not be null term!
     char buf[30] = { 0 };
-    var s = str.sstr(buf);
+    auto s = str.sstr(buf);
     tassert_eq(s.buf, buf);
     tassert_eq(s.len, 0); // lazy init until str.length() is called
 
@@ -263,7 +263,7 @@ test$case(test_sub_negative_start)
     tassert(s.buf);
 
     str_s s_empty = { 0 };
-    var sub = str.slice.sub(s_empty, 0, 2);
+    auto sub = str.slice.sub(s_empty, 0, 2);
     tassert_eq(sub.len, 0);
     tassert(sub.buf == NULL);
     tassert(sub.buf == NULL);
@@ -1811,7 +1811,7 @@ test$case(test_slice_clone)
         str_s fcontent = str.sstr(fcont);
         tassert(str.len(fcont) > CEX_SPRINTF_MIN * 2);
 
-        var snew = str.slice.clone(fcontent, _);
+        auto snew = str.slice.clone(fcontent, _);
         tassert(snew != NULL);
         tassert(snew != fcontent.buf);
         tassert_eq(strlen(snew), fcontent.len);
@@ -1832,7 +1832,7 @@ test$case(test_clone)
     {
 
         char* foo = "foo";
-        var snew = str.clone(foo, _);
+        auto snew = str.clone(foo, _);
         tassert(snew != NULL);
         tassert(snew != foo);
         tassert_eq(strlen(snew), strlen(foo));
@@ -1875,7 +1875,7 @@ test$case(test_tsplit)
     mem$scope(tmem$, _)
     {
         u32 nit = 0;
-        var s = str.sstr("123,456");
+        auto s = str.sstr("123,456");
         char* expected[] = {
             "123",
             "456",
@@ -1893,7 +1893,7 @@ test$case(test_tsplit)
     mem$scope(tmem$, _)
     {
         u32 nit = 0;
-        var s = str.sstr("123,456, 789");
+        auto s = str.sstr("123,456, 789");
         char* expected[] = {
             "123",
             "456",
@@ -1912,7 +1912,7 @@ test$case(test_tsplit)
     mem$scope(tmem$, _)
     {
         u32 nit = 0;
-        var s = str.sstr("123,456, 789,");
+        auto s = str.sstr("123,456, 789,");
         char* expected[] = {
             "123",
             "456",
@@ -1935,7 +1935,7 @@ test$case(test_split_lines)
 {
     mem$scope(tmem$, _)
     {
-        var s = str.sstr("123\n456\r\n789\r");
+        auto s = str.sstr("123\n456\r\n789\r");
         char* expected[] = {
             "123",
             "456",
@@ -1954,7 +1954,7 @@ test$case(test_split_lines)
 
     mem$scope(tmem$, _)
     {
-        var s = str.sstr("ab c\n\nde fg\rkl\r\nfff\fvvv\v");
+        auto s = str.sstr("ab c\n\nde fg\rkl\r\nfff\fvvv\v");
         char* expected[] = {
             "ab c", "", "de fg", "kl", "fff", "vvv",
         };

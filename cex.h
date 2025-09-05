@@ -139,7 +139,7 @@ typedef size_t usize;
 typedef ptrdiff_t isize;
 
 /// automatic variable type, supported by GCC/Clang
-#define var __auto_type
+#define auto __auto_type
 
 /*
  *                 BRANCH MANAGEMENT
@@ -2709,7 +2709,7 @@ struct _cex_test_context_s
 #define tassert_eq(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -2743,8 +2743,8 @@ struct _cex_test_context_s
     })
 #define tassert_eq_mem(a, b...)                                                                    \
     ({                                                                                             \
-        var _a = (a);                                                                              \
-        var _b = (b);                                                                              \
+        auto _a = (a);                                                                              \
+        auto _b = (b);                                                                              \
         _Static_assert(                                                                            \
             __builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)),                          \
             "incompatible"                                                                         \
@@ -2763,8 +2763,8 @@ struct _cex_test_context_s
 
 #define tassert_eq_arr(a, b...)                                                                    \
     ({                                                                                             \
-        var _a = (a);                                                                              \
-        var _b = (b);                                                                              \
+        auto _a = (a);                                                                              \
+        auto _b = (b);                                                                              \
         _Static_assert(                                                                            \
             __builtin_types_compatible_p(__typeof__(*a), __typeof__(*b)),                          \
             "incompatible"                                                                         \
@@ -2802,7 +2802,7 @@ struct _cex_test_context_s
 #define tassert_ne(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -2812,7 +2812,7 @@ struct _cex_test_context_s
 #define tassert_le(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -2822,7 +2822,7 @@ struct _cex_test_context_s
 #define tassert_lt(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -2832,7 +2832,7 @@ struct _cex_test_context_s
 #define tassert_ge(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -2842,7 +2842,7 @@ struct _cex_test_context_s
 #define tassert_gt(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        var genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                     \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -3832,7 +3832,7 @@ _cex_global_allocators_destructor()
     AllocatorArena_c* allc = (AllocatorArena_c*)tmem$;
     allocator_arena_page_s* page = allc->last_page;
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         mem$free(mem$, page);
         page = tpage;
     }
@@ -4283,7 +4283,7 @@ _cex_allocator_arena__check_pointer_valid(AllocatorArena_c* self, void* old_ptr)
     allocator_arena_page_s* page = self->last_page;
     allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(old_ptr);
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         if ((char*)rec > (char*)page &&
             (char*)rec < (((char*)page) + sizeof(allocator_arena_page_s) + page->capacity)) {
             uassert((char*)rec >= (char*)page + sizeof(allocator_arena_page_s));
@@ -4563,7 +4563,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
 
     allocator_arena_page_s* page = self->last_page;
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         if (page->used_start == 0 || page->used_start < used_mark) {
             // last page, just set mark and poison
             usize free_offset = (used_mark - page->used_start);
@@ -4713,7 +4713,7 @@ AllocatorArena_destroy(IAllocator self)
 
     allocator_arena_page_s* page = allc->last_page;
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         mem$free(mem$, page);
         page = tpage;
     }
@@ -8318,7 +8318,7 @@ cex_str__convert__to_i16s(str_s s, i16* num)
 {
     uassert(num != NULL);
     i64 res = 0;
-    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT16_MIN, INT16_MAX);
+    auto r = cex_str__to_signed_num(s.buf, s.len, &res, INT16_MIN, INT16_MAX);
     *num = res;
     return r;
 }
@@ -8328,7 +8328,7 @@ cex_str__convert__to_i32s(str_s s, i32* num)
 {
     uassert(num != NULL);
     i64 res = 0;
-    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT32_MIN, INT32_MAX);
+    auto r = cex_str__to_signed_num(s.buf, s.len, &res, INT32_MIN, INT32_MAX);
     *num = res;
     return r;
 }
@@ -8340,7 +8340,7 @@ cex_str__convert__to_i64s(str_s s, i64* num)
     uassert(num != NULL);
     i64 res = 0;
     // NOTE:INT64_MIN+1 because negating of INT64_MIN leads to UB!
-    var r = cex_str__to_signed_num(s.buf, s.len, &res, INT64_MIN + 1, INT64_MAX);
+    auto r = cex_str__to_signed_num(s.buf, s.len, &res, INT64_MIN + 1, INT64_MAX);
     *num = res;
     return r;
 }
@@ -10483,7 +10483,7 @@ cex_argparse_next(argparse_c* self)
     uassert(self != NULL);
     uassert(self->argv != NULL && "forgot argparse.parse() call?");
 
-    var result = self->argv[0];
+    auto result = self->argv[0];
     if (self->argc > 0) {
 
         if (self->_ctx.cpidx > 0) {
@@ -11765,7 +11765,7 @@ cex_os__fs__dir_walk(char* path, bool is_recursive, os_fs_dir_walk_f callback_fn
             goto end;
         }
 
-        var ftype = os.fs.stat(path_buf);
+        auto ftype = os.fs.stat(path_buf);
         if (!ftype.is_valid) {
             result = ftype.error;
             goto end;
@@ -11921,7 +11921,7 @@ static arr$(char*) cex_os__fs__find(char* path, bool is_recursive, IAllocator al
     }
 
     if (!is_recursive) {
-        var f = os.fs.stat(path);
+        auto f = os.fs.stat(path);
         if (f.is_valid && f.is_file) {
             // Find used with exact file path, we still have to return array + allocated path copy
             arr$(char*) result = arr$new(result, allc);
@@ -12095,7 +12095,7 @@ cex_os__env__set(char* name, char* value)
 static bool
 cex_os__path__exists(char* file_path)
 {
-    var ftype = os.fs.stat(file_path);
+    auto ftype = os.fs.stat(file_path);
     return ftype.is_valid;
 }
 
@@ -13328,7 +13328,7 @@ cexy_build_self(int argc, char** argv, char* cex_source)
                 if (clean_it.len == 0) { continue; }
                 if (!str.slice.starts_with(clean_it, str$s("-D"))) { continue; }
                 if (str.slice.eq(clean_it, str$s("-D"))) { continue; }
-                var _darg = str.fmt(_, "%S", clean_it);
+                auto _darg = str.fmt(_, "%S", clean_it);
                 arr$push(args, _darg);
                 e$goto(sbuf.appendf(&dargs_sbuf, "%s ", _darg), err);
             }
@@ -13381,7 +13381,7 @@ cexy_src_include_changed(char* target_path, char* src_path, arr$(char*) alt_incl
         return false;
     }
 
-    var src_meta = os.fs.stat(src_path);
+    auto src_meta = os.fs.stat(src_path);
     if (!src_meta.is_valid) {
         (void)e$raise(src_meta.error, "Error src: %s", src_path);
         return false;
@@ -13390,7 +13390,7 @@ cexy_src_include_changed(char* target_path, char* src_path, arr$(char*) alt_incl
         return false;
     }
 
-    var target_meta = os.fs.stat(target_path);
+    auto target_meta = os.fs.stat(target_path);
     if (!target_meta.is_valid) {
         if (target_meta.error == Error.not_found) {
             return true;
@@ -13482,7 +13482,7 @@ cexy_src_include_changed(char* target_path, char* src_path, arr$(char*) alt_incl
                         for$each (inc_dir, incl_path) {
                             char* try_path = os$path_join(_, inc_dir, inc_fn);
                             uassert(try_path != NULL);
-                            var src_meta = os.fs.stat(try_path);
+                            auto src_meta = os.fs.stat(try_path);
                             log$trace("Probing include: %s\n", try_path);
                             if (src_meta.is_valid && src_meta.mtime > target_meta.mtime) {
                                 return true;
@@ -13511,7 +13511,7 @@ cexy_src_changed(char* target_path, char** src_array, usize src_array_len)
         log$error("target_path is NULL\n");
         return false;
     }
-    var target_ftype = os.fs.stat(target_path);
+    auto target_ftype = os.fs.stat(target_path);
     if (!target_ftype.is_valid) {
         if (target_ftype.error == Error.not_found) {
             log$trace("Target '%s' not exists, needs build.\n", target_path);
@@ -13527,7 +13527,7 @@ cexy_src_changed(char* target_path, char** src_array, usize src_array_len)
 
     bool has_error = false;
     for$each (p, src_array, src_array_len) {
-        var ftype = os.fs.stat(p);
+        auto ftype = os.fs.stat(p);
         if (!ftype.is_valid) {
             (void)e$raise(ftype.error, "Error src: %s", p);
             has_error = true;
@@ -14919,7 +14919,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     continue;
                 }
 
-                var basename = os.path.basename(src_fn, _);
+                auto basename = os.path.basename(src_fn, _);
                 if (str.starts_with(basename, "_") || str.starts_with(basename, "test_")) {
                     continue;
                 }
@@ -15428,10 +15428,10 @@ cexy__utils__make_new_project(char* proj_dir)
         }
 
         log$info("Making '%s/cex.c'\n", proj_dir);
-        var cex_c = os$path_join(_, proj_dir, "cex.c");
-        var lib_h = os$path_join(_, proj_dir, "lib", "mylib.h");
-        var lib_c = os$path_join(_, proj_dir, "lib", "mylib.c");
-        var app_c = os$path_join(_, proj_dir, "src", "myapp.c");
+        auto cex_c = os$path_join(_, proj_dir, "cex.c");
+        auto lib_h = os$path_join(_, proj_dir, "lib", "mylib.h");
+        auto lib_c = os$path_join(_, proj_dir, "lib", "mylib.c");
+        auto app_c = os$path_join(_, proj_dir, "src", "myapp.c");
         e$assert(!os.path.exists(cex_c) && "cex.c already exists");
         e$assert(!os.path.exists(lib_h) && "mylib.h already exists");
         e$assert(!os.path.exists(lib_h) && "mylib.c already exists");
@@ -15500,11 +15500,11 @@ cexy__utils__make_new_project(char* proj_dir)
             e$ret(io.file.save(app_c, buf));
         }
 
-        var test_c = os$path_join(_, proj_dir, "tests", "test_mylib.c");
+        auto test_c = os$path_join(_, proj_dir, "tests", "test_mylib.c");
         log$info("Making '%s'\n", test_c);
         e$ret(cexy.test.create(test_c, true));
         log$info("Compiling new cex app for a new project...\n");
-        var old_dir = os.fs.getcwd(_);
+        auto old_dir = os.fs.getcwd(_);
 
         e$ret(os.fs.chdir(proj_dir));
         char* bin_path = "cex" cexy$build_ext_exe;
@@ -16280,12 +16280,12 @@ cexy__utils__git_lib_fetch(
             char* out_path = (preserve_dirs)
                                ? str.fmt(_, "%s/%s", out_dir, it)
                                : str.fmt(_, "%s/%s", out_dir, os.path.basename(it, _));
-            var in_stat = os.fs.stat(in_path);
+            auto in_stat = os.fs.stat(in_path);
             if (!in_stat.is_valid) {
                 return e$raise(in_stat.error, "Invalid stat for path: %s", in_path);
             }
 
-            var out_stat = os.fs.stat(out_path);
+            auto out_stat = os.fs.stat(out_path);
             if (!out_stat.is_valid || update_existing) {
                 log$info("Updating file: %s -> %s\n", it, out_path);
                 if (in_stat.is_directory) {
@@ -16664,13 +16664,13 @@ _CexParser__scan_scope(CexParser_c* lx)
                     break;
                 case '"':
                 case '\'': {
-                    var s = _CexParser__scan_string(lx);
+                    auto s = _CexParser__scan_string(lx);
                     t.value.len += s.value.len + 2;
                     continue;
                 }
                 case '/': {
                     if (lx$peek_next(lx) == '/' || lx$peek_next(lx) == '*') {
-                        var s = _CexParser__scan_comment(lx);
+                        auto s = _CexParser__scan_comment(lx);
                         t.value.len += s.value.len;
                         continue;
                     }
@@ -16678,7 +16678,7 @@ _CexParser__scan_scope(CexParser_c* lx)
                 }
                 case '#': {
                     char* ppstart = lx->cur;
-                    var s = _CexParser__scan_preproc(lx);
+                    auto s = _CexParser__scan_preproc(lx);
                     if (s.value.buf) {
                         t.value.len += s.value.len + (s.value.buf - ppstart) + 1;
                     } else {
@@ -17023,7 +17023,7 @@ CexParser_decl_parse(
                     char* prev_end = _t.value.buf + _t.value.len;
                     _t = CexParser.next_token(&_lx);
                     if (_t.type == CexTkn__paren_block) {
-                        var _args = _t.value.len > 2 ? str.slice.sub(_t.value, 1, -1) : str$s("");
+                        auto _args = _t.value.len > 2 ? str.slice.sub(_t.value, 1, -1) : str$s("");
                         e$goto(sbuf.appendf(&result->args, "%S", _args), fail);
                         prev_end = _t.value.buf + _t.value.len;
                         _t = CexParser.next_token(&_lx);

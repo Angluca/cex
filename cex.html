@@ -4580,7 +4580,7 @@ Note
       button.blur();
       // flash "checked"
       button.classList.add('code-copy-button-checked');
-      var currentTitle = button.getAttribute("title");
+      auto currentTitle = button.getAttribute("title");
       button.setAttribute("title", "Copied!");
       let tooltip;
       if (window.bootstrap) {
@@ -4627,14 +4627,14 @@ Note
       });
       clipboardModal.on('success', onCopySuccess);
     }
-      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-      var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
-      var isInternal = (href) => {
+      auto localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      auto mailtoRegex = new RegExp(/^mailto:/);
+        auto filterRegex = new RegExp('/' + window.location.host + '/');
+      auto isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+     auto links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -4933,18 +4933,18 @@ Note
         return undefined;
       }
     };
-    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    auto bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
     for (var i=0; i<bibliorefs.length; i++) {
       const ref = bibliorefs[i];
       const citeInfo = findCites(ref);
       if (citeInfo) {
         tippyHover(citeInfo.el, function() {
-          var popup = window.document.createElement('div');
+          auto popup = window.document.createElement('div');
           citeInfo.cites.forEach(function(cite) {
-            var citeDiv = window.document.createElement('div');
+            auto citeDiv = window.document.createElement('div');
             citeDiv.classList.add('hanging-indent');
             citeDiv.classList.add('csl-entry');
-            var biblioDiv = window.document.getElementById('ref-' + cite);
+            auto biblioDiv = window.document.getElementById('ref-' + cite);
             if (biblioDiv) {
               citeDiv.innerHTML = biblioDiv.innerHTML;
             }

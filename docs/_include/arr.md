@@ -4,12 +4,12 @@ Symbol found at ./cex.h:608
  * @brief Gets array generic slice (typed as array)
  *
  * Example:
- * var s = arr$slice(arr, .start = 1, .end = -2);
- * var s = arr$slice(arr, 1, -2);
- * var s = arr$slice(arr, .start = -2);
- * var s = arr$slice(arr, .end = 3);
+ * auto s = arr$slice(arr, .start = 1, .end = -2);
+ * auto s = arr$slice(arr, 1, -2);
+ * auto s = arr$slice(arr, .start = -2);
+ * auto s = arr$slice(arr, .end = 3);
  *
- * Note: arr$slice creates a temporary type, and it's preferable to use var keyword
+ * Note: arr$slice creates a temporary type, and it's preferable to use auto keyword
  *
  * @param array - generic array
  * @param .start - start index, may be negative to get item from the end of array

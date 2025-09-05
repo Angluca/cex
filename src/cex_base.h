@@ -21,8 +21,10 @@ typedef double f64;
 typedef size_t usize;
 typedef ptrdiff_t isize;
 
-/// automatic variable type, supported by GCC/Clang
-#define var __auto_type
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ < 202311L
+/// automatic variable type, supported by GCC/Clang or C23
+#    define auto __auto_type
+#endif
 
 /*
  *                 BRANCH MANAGEMENT
@@ -103,9 +105,9 @@ __cex__fprintf_dummy(void)
 #endif
 
 #ifndef _WIN32
-#define CEX_NAMESPACE __attribute__((visibility("hidden"))) extern const
+#    define CEX_NAMESPACE __attribute__((visibility("hidden"))) extern const
 #else
-#define CEX_NAMESPACE extern const
+#    define CEX_NAMESPACE extern const
 #endif
 
 
@@ -320,8 +322,8 @@ int __cex_test_uassert_enabled = 1;
                     #A                                                                             \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();\
-                    __builtin_trap();                                                       \
+                    sanitizer_stack_trace();                                                       \
+                    __builtin_trap();                                                              \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -339,8 +341,8 @@ int __cex_test_uassert_enabled = 1;
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();\
-                    __builtin_trap();                                                       \
+                    sanitizer_stack_trace();                                                       \
+                    __builtin_trap();                                                              \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -400,7 +402,7 @@ __attribute__((noinline)) void __cex__panic(void);
 
 #define e$except_errno(_expression)                                                                \
     for (int _tmp_errno = 0; unlikely(                                                             \
-             ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&           \
+             ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&             \
               (log$error(                                                                          \
                    "`%s` failed errno: %d, msg: %s\n",                                             \
                    #_expression,                                                                   \

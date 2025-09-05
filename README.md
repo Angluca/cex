@@ -107,7 +107,7 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
         e$assert(os.path.exists("tests/build/")); // evergreen assertion or error with traceback
 
         // auto type variables
-        var search_pattern = "tests/os_test/*.c";
+        auto search_pattern = "tests/os_test/*.c";
 
         // Trace with file:<line> + formatting
         log$trace("Finding/building simple os apps in %s\n", search_pattern);

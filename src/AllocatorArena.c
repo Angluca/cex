@@ -104,7 +104,7 @@ _cex_allocator_arena__check_pointer_valid(AllocatorArena_c* self, void* old_ptr)
     allocator_arena_page_s* page = self->last_page;
     allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(old_ptr);
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         if ((char*)rec > (char*)page &&
             (char*)rec < (((char*)page) + sizeof(allocator_arena_page_s) + page->capacity)) {
             uassert((char*)rec >= (char*)page + sizeof(allocator_arena_page_s));
@@ -384,7 +384,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
 
     allocator_arena_page_s* page = self->last_page;
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         if (page->used_start == 0 || page->used_start < used_mark) {
             // last page, just set mark and poison
             usize free_offset = (used_mark - page->used_start);
@@ -534,7 +534,7 @@ AllocatorArena_destroy(IAllocator self)
 
     allocator_arena_page_s* page = allc->last_page;
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         mem$free(mem$, page);
         page = tpage;
     }
