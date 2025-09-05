@@ -110,7 +110,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 16
 #define cex$version_patch 0
-#define cex$version_date "2025-09-01"
+#define cex$version_date "2025-09-05"
 
 
 
@@ -13305,6 +13305,8 @@ _cex__codegen_print_case_exit(_cex__codegen_s** cgptr)
 /*
 *                          src/cexy.c
 */
+#include <stdbool.h>
+#include <stdio.h>
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
 #    include <ctype.h>
@@ -14106,8 +14108,8 @@ _cexy__fn_match(str_s fn_name, str_s ns_prefix)
         if (str.slice.match(fn_name, fn_sub_pattern) ||
             str.slice.match(fn_name, fn_sub_pattern_cex)) {
             return true;
-        } else if ((str.slice.match(fn_name, fn_private) || str.slice.match(fn_name, fn_private_cex)
-                   ) ||
+        } else if ((str.slice.match(fn_name, fn_private) ||
+                    str.slice.match(fn_name, fn_private_cex)) ||
                    (!str.slice.match(fn_name, fn_pattern_cex) &&
                     !str.slice.match(fn_name, fn_pattern))) {
             return false;
@@ -14614,10 +14616,10 @@ _cexy__colorize_ansi(str_s token, str_s exact_match, char current_char)
     return "\033[0m"; // no color, not matched
 }
 static void
-_cexy__colorize_print(str_s code, str_s name)
+_cexy__colorize_print(str_s code, str_s name, FILE* output)
 {
-    if (code.buf == NULL || !io.isatty(stdout)) {
-        io.printf("%S", code);
+    if (code.buf == NULL || !io.isatty(output)) {
+        io.fprintf(output, "%S", code);
         return;
     }
 
@@ -14633,7 +14635,7 @@ _cexy__colorize_print(str_s code, str_s name)
                 token.buf = &code.buf[i];
                 token.len = 1;
             } else {
-                putc(c, stdout);
+                putc(c, output);
             }
         } else {
             switch (c) {
@@ -14661,8 +14663,8 @@ _cexy__colorize_print(str_s code, str_s name)
                     } else if (c == ')' && i > 2 && token.buf[-1] == '*' && token.buf[-2] == '(') {
                         _c = '(';
                     }
-                    io.printf("%s%S\033[0m", _cexy__colorize_ansi(token, name, _c), token);
-                    putc(c, stdout);
+                    io.fprintf(output, "%s%S\033[0m", _cexy__colorize_ansi(token, name, _c), token);
+                    putc(c, output);
                     in_token = false;
                     break;
                 }
@@ -14672,7 +14674,9 @@ _cexy__colorize_print(str_s code, str_s name)
         }
     }
 
-    if (in_token) { io.printf("%s%S\033[0m", _cexy__colorize_ansi(token, name, 0), token); }
+    if (in_token) {
+        io.fprintf(output, "%s%S\033[0m", _cexy__colorize_ansi(token, name, 0), token);
+    }
     return;
 }
 
@@ -14682,13 +14686,18 @@ _cexy__display_full_info(
     char* base_ns,
     bool show_source,
     bool show_example,
-    arr$(cex_decl_s*) cex_ns_decls
+    arr$(cex_decl_s*) cex_ns_decls,
+    FILE* output
 )
 {
+    uassert(output);
+
     str_s name = d->name;
+    str_s base_name = str.sstr(base_ns);
+
     mem$scope(tmem$, _)
     {
-        io.printf("Symbol found at %s:%d\n", d->file, d->line + 1);
+        io.fprintf(output, "Symbol found at %s:%d\n\n", d->file, d->line + 1);
         if (d->type == CexTkn__func_def) {
             name = _cexy__fn_dotted(d->name, base_ns, _);
             if (!name.buf) {
@@ -14697,80 +14706,129 @@ _cexy__display_full_info(
             }
         }
         if (d->docs.buf) {
-            _cexy__colorize_print(d->docs, name);
-            io.printf("\n");
+            // strip doxygen tags
+            if (str.slice.starts_with(d->docs, str$s("/**"))) {
+                d->docs = str.slice.sub(d->docs, 3, 0);
+            }
+            if (str.slice.ends_with(d->docs, str$s("*/"))) {
+                d->docs = str.slice.sub(d->docs, 0, -2);
+            }
+            _cexy__colorize_print(d->docs, name, output);
+            io.fprintf(output, "\n");
         }
+
+        if (output != stdout) {
+            // For export using c code block (markdown compatible)
+            io.fprintf(output, "\n```c\n");
+        }
+
+        cex_decl_s* ns_struct = NULL;
+
         if (cex_ns_decls) {
             // This only passed if we have cex namespace struct here
-            bool has_macro = false;
             mem$scope(tmem$, _)
             {
-                hm$(str_s, cex_decl_s*) macros = hm$new(macros, _, .capacity = 64);
+
+                hm$(str_s, cex_decl_s*) ns_symbols = hm$new(ns_symbols, _, .capacity = 128);
                 for$each (it, cex_ns_decls) {
-                    if (!(it->type == CexTkn__macro_func || it->type == CexTkn__macro_const)) {
+                    // Check if __namespace$ exists
+                    if (it->type == CexTkn__macro_const &&
+                        str.slice.starts_with(it->name, str$s("__"))) {
+                        if (str.slice.eq(str.slice.sub(it->name, 2, -1), base_name)) {
+                            ns_struct = it;
+                        }
+                    }
+                    if (!str.slice.starts_with(it->name, base_name)) { continue; }
+
+                    if ((it->type == CexTkn__macro_func || it->type == CexTkn__macro_const)) {
+                        if (it->name.buf[base_name.len] != '$') { continue; }
+                    } else if (it->type == CexTkn__typedef) {
+                        if (it->name.buf[base_name.len] != '_') { continue; }
+                        if (!(str.slice.ends_with(it->name, str$s("_c")) ||
+                              str.slice.ends_with(it->name, str$s("_s")))) {
+                            continue;
+                        }
+                    } else if (it->type == CexTkn__cex_module_struct) {
+                        ns_struct = it;
+                        continue; // does not add, use special treatment
+                    } else {
                         continue;
                     }
-                    if (str.slice.starts_with(it->name, name) && it->name.buf[name.len] == '$') {
-                        if (!has_macro) {
-                            io.printf("\n");
-                            has_macro = true;
-                        }
-                        if (hm$getp(macros, it->name) != NULL) {
-                            if (it->docs.buf) { hm$set(macros, it->name, it); }
-                            continue; // duplicate
-                        }
-                        hm$set(macros, it->name, it);
+
+                    if (hm$getp(ns_symbols, it->name) != NULL) {
+                        // Maybe new with docs?
+                        if (it->docs.buf) { hm$set(ns_symbols, it->name, it); }
+                        continue; // duplicate
+                    } else {
+                        hm$set(ns_symbols, it->name, it);
                     }
                 }
                 // WARNING: sorting of hashmap items is a dead end, hash indexes get invalidated
-                qsort(macros, hm$len(macros), sizeof(*macros), str.slice.qscmp);
+                qsort(ns_symbols, hm$len(ns_symbols), sizeof(*ns_symbols), str.slice.qscmp);
 
-                for$each (it, macros) {
+                for$each (it, ns_symbols) {
                     if (it.value->docs.buf) {
                         str_s brief_str = _cexy__process_make_brief_docs(it.value);
-                        if (brief_str.len) { io.printf("/// %S\n", brief_str); }
+                        if (brief_str.len) { io.fprintf(output, "/// %S\n", brief_str); }
                     }
                     char* l = NULL;
                     if (it.value->type == CexTkn__macro_func) {
                         l = str.fmt(_, "#define %S(%s)\n", it.value->name, it.value->args);
-                    } else {
+                    } else if (it.value->type == CexTkn__macro_const) {
                         l = str.fmt(_, "#define %S\n", it.value->name);
+                    } else if (it.value->type == CexTkn__typedef) {
+                        l = str.fmt(_, "%s %S\n", it.value->ret_type, it.value->name);
                     }
-                    _cexy__colorize_print(str.sstr(l), name);
+                    if (l) {
+                        _cexy__colorize_print(str.sstr(l), name, output);
+                        io.fprintf(output, "\n");
+                    }
                 }
             }
-            io.printf("\n\n");
+            io.fprintf(output, "\n\n");
         }
 
         if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
-            io.printf("#define ");
+            if (str.slice.starts_with(d->name, str$s("__"))) {
+                return EOK; // NOTE: it's likely placeholder i.e. __foo$ - only for docs, just skip
+            }
+            io.fprintf(output, "#define ");
         }
 
         if (sbuf.len(&d->ret_type)) {
-            _cexy__colorize_print(str.sstr(d->ret_type), name);
-            io.printf(" ");
+            _cexy__colorize_print(str.sstr(d->ret_type), name, output);
+            io.fprintf(output, " ");
         }
 
-        _cexy__colorize_print(name, name);
-        io.printf(" ");
+        _cexy__colorize_print(name, name, output);
+        io.fprintf(output, " ");
 
         if (sbuf.len(&d->args)) {
-            io.printf("(");
-            _cexy__colorize_print(str.sstr(d->args), name);
-            io.printf(")");
+            io.fprintf(output, "(");
+            _cexy__colorize_print(str.sstr(d->args), name, output);
+            io.fprintf(output, ")");
         }
         if (!show_source && d->type == CexTkn__func_def) {
-            io.printf(";");
+            io.fprintf(output, ";");
         } else if (d->body.buf) {
-            _cexy__colorize_print(d->body, name);
-            io.printf(";");
+            _cexy__colorize_print(d->body, name, output);
+            io.fprintf(output, ";");
+        } else if (ns_struct) {
+            _cexy__colorize_print(ns_struct->body, name, output);
         }
-        io.printf("\n");
+        io.fprintf(output, "\n");
 
-        if (!show_example) { return EOK; }
+        if (output != stdout) {
+            // For export using c code block (markdown compatible)
+            io.fprintf(output, "\n```\n");
+        }
+
+        // No examples for whole namespaces (early exit) 
+        if (!show_example || ns_struct) { return EOK; }
+
         // Looking for a random example
         srand(time(NULL));
-        io.printf("\nSearching for examples of '%S'\n", name);
+        io.fprintf(output, "\nSearching for examples of '%S'\n", name);
         arr$(char*) sources = os.fs.find("./*.[hc]", true, _);
 
         u32 n_used = 0;
@@ -14795,10 +14853,16 @@ _cexy__display_full_info(
                         n_used++;
                         double dice = (double)rand() / (RAND_MAX + 1.0);
                         if (dice < 0.25) {
-                            io.printf("\n\nFound at %s:%d\n", src_fn, d->line);
-                            io.printf("%s %S(%s)\n", d->ret_type, d->name, d->args);
-                            _cexy__colorize_print(d->body, name);
-                            io.printf("\n");
+                            io.fprintf(output, "\n\nFound at %s:%d\n", src_fn, d->line);
+
+                            if (output != stdout) { io.fprintf(output, "\n```c\n"); }
+
+                            io.fprintf(output, "%s %S(%s)\n", d->ret_type, d->name, d->args);
+                            _cexy__colorize_print(d->body, name, output);
+                            io.fprintf(output, "\n");
+
+                            if (output != stdout) { io.fprintf(output, "\n```\n"); }
+
                             return EOK;
                         }
                     }
@@ -14806,9 +14870,10 @@ _cexy__display_full_info(
             }
         }
         if (n_used == 0) {
-            io.printf("No usages of %S in the codebase\n", name);
+            io.fprintf(output, "No usages of %S in the codebase\n", name);
         } else {
-            io.printf(
+            io.fprintf(
+                output,
                 "%d usages of %S in the codebase, but no random pick, try again!\n",
                 n_used,
                 name
@@ -14830,9 +14895,9 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         "cex help                     - list all namespaces in project directory\n"
         "cex help foo                 - find any symbol containing 'foo' (case sensitive)\n"
         "cex help foo.                - find namespace prefix: foo$, Foo_func(), FOO_CONST, etc\n"
+        "cex help os$                 - find CEX namespace help (docs, macros, functions, types)\n"
         "cex help 'foo_*_bar'         - find using pattern search for symbols (see 'cex help str.match')\n"
         "cex help '*_(bar|foo)'       - find any symbol ending with '_bar' or '_foo'\n"
-        "cex help os                  - display all functions of 'os' namespace (for CEX or user project)\n"
         "cex help str.find            - display function documentation if exactly matched\n"
         "cex help 'os$PATH_SEP'       - display macro constant value if exactly matched\n"
         "cex help str_s               - display type info and documentation if exactly matched\n"
@@ -14840,6 +14905,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
         "cex help --example str.find  - display random function use in codebase if exactly matched\n"
     ;
     char* filter = "./*.[hc]";
+    char* out_file = NULL;
     bool show_source = false;
     bool show_example = false;
 
@@ -14860,11 +14926,19 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                 "example",
                 .help = "finds random example in source base"
             ),
+            argparse$opt(&out_file, 'o', "out", .help = "write output of command to file"),
         ),
     };
     if (argparse.parse(&cmd_args, argc, argv)) { return Error.argsparse; }
     char* query = argparse.next(&cmd_args);
     str_s query_s = str.sstr(query);
+
+    FILE* output = NULL;
+    if (out_file) {
+        e$ret(io.fopen(&output, out_file, "w"));
+    } else {
+        output = stdout;
+    }
 
     mem$arena(1024 * 100, arena)
     {
@@ -14875,7 +14949,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
 
         char* query_pattern = NULL;
         bool is_namespace_filter = false;
-        if (str.match(query, "[a-zA-Z0-9+].")) {
+        if (str.match(query, "[a-zA-Z0-9+].") || str.match(query, "[a-zA-Z0-9+]$")) {
             query_pattern = str.fmt(arena, "%S[._$]*", str.sub(query, 0, -1));
             is_namespace_filter = true;
         } else if (_cexy__is_str_pattern(query)) {
@@ -14911,6 +14985,7 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                 }
                 arr$(cex_token_s) items = arr$new(items, _);
                 arr$(cex_decl_s*) all_decls = arr$new(all_decls, _);
+                cex_decl_s* ns_decl = NULL;
 
                 CexParser_c lx = CexParser.create(code, 0, true);
                 cex_token_s t;
@@ -14954,13 +15029,15 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         if (str.slice.eq(d->name, query_s) || str.slice.eq(fndotted, query_s)) {
                             if (d->type == CexTkn__cex_module_def) { continue; }
                             if (d->type == CexTkn__typedef && d->ret_type[0] == '\0') { continue; }
+                            if (is_namespace_filter) { continue; }
                             // We have full match display full help
                             return _cexy__display_full_info(
                                 d,
                                 base_ns,
                                 show_source,
                                 show_example,
-                                (d->type == CexTkn__cex_module_struct) ? all_decls : NULL
+                                NULL,
+                                output
                             );
                         }
 
@@ -14970,17 +15047,67 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                         if (is_namespace_filter) {
                             str_s prefix = str.sub(query, 0, -1);
                             str_s sub_name = str.slice.sub(d->name, 0, prefix.len);
-                            if (str.slice.eqi(sub_name, prefix) &&
-                                sub_name.buf[prefix.len] == '_') {
-                                if (d->type == CexTkn__func_def && str.eqi(query, "cex.")) {
-                                    // skipping other namespaces of cex, e.g. cex_str_len()
-                                    continue;
+                            if (prefix.buf[prefix.len] == '.') {
+                                // query case: ./cex help foo.
+                                if (str.slice.eqi(sub_name, prefix) &&
+                                    sub_name.buf[prefix.len] == '_') {
+                                    if (d->type == CexTkn__func_def && str.eqi(query, "cex.")) {
+                                        // skipping other namespaces of cex, e.g. cex_str_len()
+                                        continue;
+                                    }
+                                    has_match = true;
                                 }
-                                has_match = true;
+                            } else {
+                                // query case: ./cex help foo$
+                                if (d->type == CexTkn__macro_const &&
+                                    str.slice.starts_with(d->name, str$s("__"))) {
+                                    // include __foo$ (doc name)
+                                    sub_name = str.slice.sub(d->name, 2, -1);
+                                    if (str.slice.eq(sub_name, prefix)) {
+                                        ns_decl = d;
+                                        has_match = true;
+                                    }
+                                }
+                                if (str.slice.eq(sub_name, prefix)) {
+                                    if (d->type == CexTkn__cex_module_struct &&
+                                        str.slice.eq(d->name, prefix)) {
+                                        // full match of CEX namespace, query: os$, d->name = 'os'
+                                        ns_decl = d;
+                                        has_match = true;
+                                    } else {
+                                        switch (sub_name.buf[prefix.len]) {
+                                            case '_':
+                                                if (d->type != CexTkn__typedef) { continue; }
+                                                if (!(str.slice.ends_with(d->name, str$s("_c")) ||
+                                                      str.slice.ends_with(d->name, str$s("_s")))) {
+                                                    continue;
+                                                }
+                                                fallthrough();
+                                            case '$':
+                                                if (!ns_decl) { ns_decl = d; }
+                                                has_match = true;
+                                                break;
+                                            default:
+                                                continue;
+                                        }
+                                    }
+                                }
                             }
                         }
                         if (has_match) { hm$set(names, d->name, d); }
                     }
+                }
+
+                if (ns_decl) {
+                    char* ns_prefix = str.slice.clone(str.sub(query, 0, -1), _);
+                    return _cexy__display_full_info(
+                        ns_decl,
+                        ns_prefix,
+                        false,
+                        false,
+                        all_decls,
+                        output
+                    );
                 }
                 if (arr$len(names) == 0) { continue; }
             }
@@ -14993,16 +15120,16 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
             if (query == NULL) {
                 switch (it.value->type) {
                     case CexTkn__cex_module_struct:
-                        io.printf("%-20s", "cexy namespace");
+                        io.fprintf(output, "%-20s", "cexy namespace");
                         break;
                     case CexTkn__macro_func:
                     case CexTkn__macro_const:
-                        io.printf("%-20s", "macro namespace");
+                        io.fprintf(output, "%-20s", "macro namespace");
                         break;
                     default:
-                        io.printf("%-20s", CexTkn_str[it.value->type]);
+                        io.fprintf(output, "%-20s", CexTkn_str[it.value->type]);
                 }
-                io.printf(" %-30S %s:%d\n", it.key, it.value->file, it.value->line + 1);
+                io.fprintf(output, " %-30S %s:%d\n", it.key, it.value->file, it.value->line + 1);
             } else {
                 str_s name = it.key;
                 char* cex_ns = hm$get(cex_ns_map, (char*)it.value->file);
@@ -15019,7 +15146,8 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
                     }
                 }
 
-                io.printf(
+                io.fprintf(
+                    output,
                     "%-20s %-30S %s:%d\n",
                     CexTkn_str[it.value->type],
                     name,
@@ -15029,6 +15157,8 @@ cexy__cmd__help(int argc, char** argv, void* user_ctx)
             }
         }
     }
+
+    if (output && output != stdout) { io.fclose(&output); }
 
     return EOK;
 }
@@ -16078,7 +16208,8 @@ cexy__utils__pkgconf(
         io.printf("\n");
 
 #    endif
-        e$ret(os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
+        e$ret(
+            os.cmd.create(&c, args, arr$len(args), &(os_cmd_flags_s){ .combine_stdouterr = true })
         );
 
         char* output = os.cmd.read_all(&c, _);
@@ -16809,7 +16940,7 @@ CexParser_next_entity(CexParser_c* lx, arr$(cex_token_s) * children)
             case CexTkn__ident: {
                 if (str.slice.match(t.value, "(typedef|struct|enum|union)")) {
                     if (result.type != CexTkn__var_decl) { result.type = CexTkn__typedef; }
-                } else if (str.slice.match(t.value, "extern")) {
+                } else if (str.slice.match(t.value, "CEX_NAMESPACE") || str.slice.match(t.value, "extern")) {
                     result.type = CexTkn__var_decl;
                 } else if (str.slice.match(t.value, "__cex_namespace__*")) {
                     has_cex_namespace = true;
@@ -17059,8 +17190,7 @@ CexParser_decl_parse(
     //  <<<<<  #define $append_fmt
 
     // Exclude items with starting _ or special functions or other stuff
-    if (str.slice.starts_with(result->name, str$s("_")) ||
-        str.slice.match(result->name, "(_Static_assert|static_assert)")) {
+    if (str.slice.match(result->name, "(_Static_assert|static_assert)")) {
         goto fail;
     }
 
