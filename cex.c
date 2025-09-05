@@ -135,9 +135,9 @@ cex_bundle(void)
         // Using CEX code generation engine for bundling
         sbuf_c hbuf = sbuf.create(1024 * 1024, _);
         cg$init(&hbuf);
-        $pn("#pragma once");
-        $pn("#ifndef CEX_HEADER_H");
-        $pn("#define CEX_HEADER_H");
+        cg$pn("#pragma once");
+        cg$pn("#ifndef CEX_HEADER_H");
+        cg$pn("#define CEX_HEADER_H");
 
         time_t t = time(NULL);
         struct tm tm = *localtime(&t);
@@ -162,13 +162,13 @@ cex_bundle(void)
         cex_header = str.replace(cex_header, "{date}", date, _);
         uassert(cex_header != NULL);
 
-        $pn(cex_header);
+        cg$pn(cex_header);
 
         for$each (hdr, bundle) {
-            $pn("\n");
-            $pn("/*");
-            $pf("*                          %s", hdr);
-            $pn("*/");
+            cg$pn("\n");
+            cg$pn("/*");
+            cg$pf("*                          %s", hdr);
+            cg$pn("*/");
             FILE* fh;
             e$except (err, io.fopen(&fh, hdr, "r")) { exit(1); }
             str_s content;
@@ -176,30 +176,30 @@ cex_bundle(void)
             for$iter (str_s, it, str.slice.iter_split(content, "\n", &it.iterator)) {
                 if (str.slice.match(it.val, "#pragma once*")) { continue; }
                 if (str.slice.match(it.val, "#include \"*\"")) { continue; }
-                $pf("%S", it.val);
+                cg$pf("%S", it.val);
             }
         }
 
 
-        $pn("\n");
-        $pn("/*");
-        $pn("*                   CEX IMPLEMENTATION ");
-        $pn("*/");
-        $pn("\n\n");
-        $pn("#if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)\n");
+        cg$pn("\n");
+        cg$pn("/*");
+        cg$pn("*                   CEX IMPLEMENTATION ");
+        cg$pn("*/");
+        cg$pn("\n\n");
+        cg$pn("#if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)\n");
 
         e$except_null (cex_header = io.file.load("src/cex_header.c", _)) { exit(1); }
-        $pn(cex_header);
+        cg$pn(cex_header);
 
-        $pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
+        cg$pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
         embed_code(&hbuf, "src/cex_boilerplate.c");
 
         for$each (hdr, bundle) {
             char* cfile = str.replace(hdr, ".h", ".c", _);
-            $pn("\n");
-            $pn("/*");
-            $pf("*                          %s", cfile);
-            $pn("*/");
+            cg$pn("\n");
+            cg$pn("/*");
+            cg$pf("*                          %s", cfile);
+            cg$pn("*/");
             FILE* fh;
             e$except (err, io.fopen(&fh, cfile, "r")) { exit(1); }
             str_s content;
@@ -207,13 +207,13 @@ cex_bundle(void)
             for$iter (str_s, it, str.slice.iter_split(content, "\n", &it.iterator)) {
                 if (str.slice.match(it.val, "#pragma once*")) { continue; }
                 if (str.slice.match(it.val, "#include \"*\"")) { continue; }
-                $pf("%S", it.val);
+                cg$pf("%S", it.val);
             }
         }
 
 
-        $pn("\n\n#endif // ifndef CEX_IMPLEMENTATION");
-        $pn("\n\n#endif // ifndef CEX_HEADER_H");
+        cg$pn("\n\n#endif // ifndef CEX_IMPLEMENTATION");
+        cg$pn("\n\n#endif // ifndef CEX_HEADER_H");
 
         u32 cex_lines = 0;
         (void)cex_lines;

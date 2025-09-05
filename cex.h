@@ -2947,47 +2947,46 @@ typedef struct _cex__codegen_s
 /*
  *                  CODE MACROS
  */
-#    define $pn(text)                                                                              \
+#    define cg$pn(text)                                                                              \
         ((text && text[0] == '\0') ? _cex__codegen_print_line(cg$var, "\n")                        \
                                    : _cex__codegen_print_line(cg$var, "%s\n", text))
-#    define $pf(format, ...) _cex__codegen_print_line(cg$var, format "\n", __VA_ARGS__)
-#    define $pa(format, ...) _cex__codegen_print(cg$var, true, format, __VA_ARGS__)
+#    define cg$pf(format, ...) _cex__codegen_print_line(cg$var, format "\n", __VA_ARGS__)
+#    define cg$pa(format, ...) _cex__codegen_print(cg$var, true, format, __VA_ARGS__)
 
 // clang-format off
-#define $scope(format, ...) \
+#define cg$scope(format, ...) \
     for (_cex__codegen_s* cex$tmpname(codegen_scope)  \
                 __attribute__ ((__cleanup__(_cex__codegen_print_scope_exit))) =     \
                 _cex__codegen_print_scope_enter(cg$var, format, __VA_ARGS__),       \
         *cex$tmpname(codegen_sentinel) = cg$var;                                    \
         cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;        \
         cex$tmpname(codegen_sentinel) = NULL)
-#define $func(format, ...) $scope(format, __VA_ARGS__)
+#define cg$func(format, ...) cg$scope(format, __VA_ARGS__)
 // clang-format on
 
 
-#    define $if(format, ...) $scope("if (" format ") ", __VA_ARGS__)
-#    define $elseif(format, ...)                                                                   \
-        $pa(" else ", "");                                                                         \
-        $if(format, __VA_ARGS__)
-#    define $else()                                                                                \
-        $pa(" else", "");                                                                          \
-        $scope(" ", "")
+#    define cg$if(format, ...) cg$scope("if (" format ") ", __VA_ARGS__)
+#    define cg$elseif(format, ...)                                                                   \
+        cg$pa(" else ", "");                                                                         \
+        cg$if(format, __VA_ARGS__)
+#    define cg$else()                                                                                \
+        cg$pa(" else", "");                                                                          \
+        cg$scope(" ", "")
 
 
-#    define $while(format, ...) $scope("while (" format ") ", __VA_ARGS__)
-#    define $for(format, ...) $scope("for (" format ") ", __VA_ARGS__)
-#    define $foreach(format, ...) $scope("for$each (" format ") ", __VA_ARGS__)
+#    define cg$while(format, ...) cg$scope("while (" format ") ", __VA_ARGS__)
+#    define cg$foreach(format, ...) cg$scope("for$each (" format ") ", __VA_ARGS__)
 
 
-#    define $switch(format, ...) $scope("switch (" format ") ", __VA_ARGS__)
-#    define $case(format, ...)                                                                     \
+#    define cg$switch(format, ...) cg$scope("switch (" format ") ", __VA_ARGS__)
+#    define cg$case(format, ...)                                                                     \
         for (_cex__codegen_s * cex$tmpname(codegen_scope)                                          \
                                    __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =   \
                  _cex__codegen_print_case_enter(cg$var, "case " format, __VA_ARGS__),              \
                                    *cex$tmpname(codegen_sentinel) = cg$var;                        \
              cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;                  \
              cex$tmpname(codegen_sentinel) = NULL)
-#    define $default()                                                                             \
+#    define cg$default()                                                                             \
         for (_cex__codegen_s * cex$tmpname(codegen_scope)                                          \
                                    __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =   \
                  _cex__codegen_print_case_enter(cg$var, "default", NULL),                          \
@@ -13666,37 +13665,37 @@ cexy__fuzz__create(char* target)
     {
         sbuf_c buf = sbuf.create(1024 * 10, _);
         cg$init(&buf);
-        $pn("#define CEX_IMPLEMENTATION");
-        $pn("#include \"cex.h\"");
+        cg$pn("#define CEX_IMPLEMENTATION");
+        cg$pn("#include \"cex.h\"");
 
-        $pn("");
-        $pn("/*");
-        $func("fuzz$setup(void)", "")
+        cg$pn("");
+        cg$pn("/*");
+        cg$func("fuzz$setup(void)", "")
         {
-            $pn("// This function allows programmatically seed new corpus for fuzzer");
-            $pn("io.printf(\"CORPUS: %s\\n\", fuzz$corpus_dir);");
-            $scope("mem$scope(tmem$, _)", "")
+            cg$pn("// This function allows programmatically seed new corpus for fuzzer");
+            cg$pn("io.printf(\"CORPUS: %s\\n\", fuzz$corpus_dir);");
+            cg$scope("memcg$scope(tmem$, _)", "")
             {
-                $pn("char* fn = str.fmt(_, \"%s/my_case\", fuzz$corpus_dir);");
-                $pn("(void)fn;");
-                $pn("// io.file.save(fn, \"my seed data\");");
+                cg$pn("char* fn = str.fmt(_, \"%s/my_case\", fuzz$corpus_dir);");
+                cg$pn("(void)fn;");
+                cg$pn("// io.file.save(fn, \"my seed data\");");
             }
         }
-        $pn("*/");
+        cg$pn("*/");
 
-        $pn("");
-        $func("int\nfuzz$case(const u8* data, usize size)", "")
+        cg$pn("");
+        cg$func("int\nfuzz$case(const u8* data, usize size)", "")
         {
-            $pn("// TODO: do your stuff based on input data and size");
-            $if("size > 2 && data[0] == 'C' && data[1] == 'E' && data[2] == 'X'", "")
+            cg$pn("// TODO: do your stuff based on input data and size");
+            cg$if("size > 2 && data[0] == 'C' && data[1] == 'E' && data[2] == 'X'", "")
             {
-                $pn("__builtin_trap();");
+                cg$pn("__builtin_trap();");
             }
-            $pn("return 0;");
+            cg$pn("return 0;");
         }
 
-        $pn("");
-        $pn("fuzz$main();");
+        cg$pn("");
+        cg$pn("fuzz$main();");
 
         e$ret(io.file.save(target, buf));
     }
@@ -13722,29 +13721,29 @@ cexy__test__create(char* target, bool include_sample)
     {
         sbuf_c buf = sbuf.create(1024 * 10, _);
         cg$init(&buf);
-        $pn("#define CEX_IMPLEMENTATION");
-        $pn("#define CEX_TEST");
-        $pn("#include \"cex.h\"");
-        if (include_sample) { $pn("#include \"lib/mylib.c\""); }
-        $pn("");
-        $pn("//test$setup_case() {return EOK;}");
-        $pn("//test$teardown_case() {return EOK;}");
-        $pn("//test$setup_suite() {return EOK;}");
-        $pn("//test$teardown_suite() {return EOK;}");
-        $pn("");
-        $scope("test$case(%s)", (include_sample) ? "mylib_test_case" : "my_test_case")
+        cg$pn("#define CEX_IMPLEMENTATION");
+        cg$pn("#define CEX_TEST");
+        cg$pn("#include \"cex.h\"");
+        if (include_sample) { cg$pn("#include \"lib/mylib.c\""); }
+        cg$pn("");
+        cg$pn("//test$setup_case() {return EOK;}");
+        cg$pn("//test$teardown_case() {return EOK;}");
+        cg$pn("//test$setup_suite() {return EOK;}");
+        cg$pn("//test$teardown_suite() {return EOK;}");
+        cg$pn("");
+        cg$scope("test$case(%s)", (include_sample) ? "mylib_test_case" : "my_test_case")
         {
             if (include_sample) {
-                $pn("tassert_eq(mylib_add(1, 2), 3);");
-                $pn("// Next will be available after calling `cex process lib/mylib.c`");
-                $pn("// tassert_eq(mylib.add(1, 2), 3);");
+                cg$pn("tassert_eq(mylib_add(1, 2), 3);");
+                cg$pn("// Next will be available after calling `cex process lib/mylib.c`");
+                cg$pn("// tassert_eq(mylib.add(1, 2), 3);");
             } else {
-                $pn("tassert_eq(1, 0);");
+                cg$pn("tassert_eq(1, 0);");
             }
-            $pn("return EOK;");
+            cg$pn("return EOK;");
         }
-        $pn("");
-        $pn("test$main();");
+        cg$pn("");
+        cg$pn("test$main();");
 
         e$ret(io.file.save(target, buf));
     }
@@ -13895,11 +13894,11 @@ _cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
     cg$init(out_buf);
     str_s subn = { 0 };
 
-    $scope("struct __cex_namespace__%S ", ns_prefix)
+    cg$scope("struct __cex_namespace__%S ", ns_prefix)
     {
-        $pn("// Autogenerated by CEX");
-        $pn("// clang-format off");
-        $pn("");
+        cg$pn("// Autogenerated by CEX");
+        cg$pn("// clang-format off");
+        cg$pn("");
         for$each (it, decls) {
             str_s clean_name = it->name;
             if (str.slice.starts_with(clean_name, str$s("cex_"))) {
@@ -13916,31 +13915,31 @@ _cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
                     if (subn.buf != NULL) {
                         // End previous sub-namespace
                         cg$dedent();
-                        $pf("} %S;", subn);
+                        cg$pf("} %S;", subn);
                     }
 
                     // new subnamespace begin
-                    $pn("");
-                    $pf("struct {", subn);
+                    cg$pn("");
+                    cg$pf("struct {", subn);
                     cg$indent();
                     subn = new_ns;
                 }
                 clean_name = str.slice.sub(clean_name, 1 + subn.len + 2, 0);
             }
             str_s brief_str = _cexy__process_make_brief_docs(it);
-            if (brief_str.len) { $pf("/// %S", brief_str); }
-            $pf("%-15s (*%S)(%s);", it->ret_type, clean_name, it->args);
+            if (brief_str.len) { cg$pf("/// %S", brief_str); }
+            cg$pf("%-15s (*%S)(%s);", it->ret_type, clean_name, it->args);
         }
 
         if (subn.buf != NULL) {
             // End previous sub-namespace
             cg$dedent();
-            $pf("} %S;", subn);
+            cg$pf("} %S;", subn);
         }
-        $pn("");
-        $pn("// clang-format on");
+        cg$pn("");
+        cg$pn("// clang-format on");
     }
-    $pa("%s", ";");
+    cg$pa("%s", ";");
 
     if (!cg$is_valid()) { return e$raise(Error.runtime, "Code generation error occured\n"); }
     return EOK;
@@ -13952,11 +13951,11 @@ _cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out
     cg$init(out_buf);
     str_s subn = { 0 };
 
-    $scope("const struct __cex_namespace__%S %S = ", ns_prefix, ns_prefix)
+    cg$scope("const struct __cex_namespace__%S %S = ", ns_prefix, ns_prefix)
     {
-        $pn("// Autogenerated by CEX");
-        $pn("// clang-format off");
-        $pn("");
+        cg$pn("// Autogenerated by CEX");
+        cg$pn("// clang-format off");
+        cg$pn("");
         for$each (it, decls) {
             str_s clean_name = it->name;
             if (str.slice.starts_with(clean_name, str$s("cex_"))) {
@@ -13973,29 +13972,29 @@ _cexy__process_gen_var_def(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out
                     if (subn.buf != NULL) {
                         // End previous sub-namespace
                         cg$dedent();
-                        $pn("},");
+                        cg$pn("},");
                     }
 
                     // new subnamespace begin
-                    $pn("");
-                    $pf(".%S = {", new_ns);
+                    cg$pn("");
+                    cg$pf(".%S = {", new_ns);
                     cg$indent();
                     subn = new_ns;
                 }
                 clean_name = str.slice.sub(clean_name, 1 + subn.len + 2, 0);
             }
-            $pf(".%S = %S,", clean_name, it->name);
+            cg$pf(".%S = %S,", clean_name, it->name);
         }
 
         if (subn.buf != NULL) {
             // End previous sub-namespace
             cg$dedent();
-            $pf("},", subn);
+            cg$pf("},", subn);
         }
-        $pn("");
-        $pn("// clang-format on");
+        cg$pn("");
+        cg$pn("// clang-format on");
     }
-    $pa("%s", ";");
+    cg$pa("%s", ";");
 
     if (!cg$is_valid()) { return e$raise(Error.runtime, "Code generation error occured\n"); }
     return EOK;
@@ -15511,10 +15510,10 @@ cexy__utils__make_new_project(char* proj_dir)
             e$ret(os.fs.mkpath(lib_h));
             sbuf.clear(&buf);
             cg$init(&buf);
-            $pn("#pragma once");
-            $pn("#include \"cex.h\"");
-            $pn("");
-            $pn("i32 mylib_add(i32 a, i32 b);");
+            cg$pn("#pragma once");
+            cg$pn("#include \"cex.h\"");
+            cg$pn("");
+            cg$pn("i32 mylib_add(i32 a, i32 b);");
             e$ret(io.file.save(lib_h, buf));
         }
 
@@ -15523,12 +15522,12 @@ cexy__utils__make_new_project(char* proj_dir)
             e$ret(os.fs.mkpath(lib_c));
             sbuf.clear(&buf);
             cg$init(&buf);
-            $pn("#include \"mylib.h\"");
-            $pn("#include \"cex.h\"");
-            $pn("");
-            $func("i32 mylib_add(i32 a, i32 b)", "")
+            cg$pn("#include \"mylib.h\"");
+            cg$pn("#include \"cex.h\"");
+            cg$pn("");
+            cg$func("i32 mylib_add(i32 a, i32 b)", "")
             {
-                $pn("return a + b;");
+                cg$pn("return a + b;");
             }
             e$ret(io.file.save(lib_c, buf));
         }
@@ -15538,17 +15537,17 @@ cexy__utils__make_new_project(char* proj_dir)
             e$ret(os.fs.mkpath(app_c));
             sbuf.clear(&buf);
             cg$init(&buf);
-            $pn("#define CEX_IMPLEMENTATION");
-            $pn("#include \"cex.h\"");
-            $pn("#include \"lib/mylib.c\"  /* NOTE: include .c to make unity build! */");
-            $pn("");
-            $func("int main(int argc, char** argv)", "")
+            cg$pn("#define CEX_IMPLEMENTATION");
+            cg$pn("#include \"cex.h\"");
+            cg$pn("#include \"lib/mylib.c\"  /* NOTE: include .c to make unity build! */");
+            cg$pn("");
+            cg$func("int main(int argc, char** argv)", "")
             {
-                $pn("(void)argc;");
-                $pn("(void)argv;");
-                $pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
-                $pn("io.printf(\"1 + 2 = %d\\n\", mylib_add(1, 2));");
-                $pn("return 0;");
+                cg$pn("(void)argc;");
+                cg$pn("(void)argv;");
+                cg$pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
+                cg$pn("io.printf(\"1 + 2 = %d\\n\", mylib_add(1, 2));");
+                cg$pn("return 0;");
             }
             e$ret(io.file.save(app_c, buf));
         }
@@ -15617,25 +15616,25 @@ cexy__app__create(char* target)
         sbuf_c buf = sbuf.create(1024 * 10, _);
         cg$init(&buf);
         // clang-format off
-        $pn("#include \"cex.h\"");
-        $pn("");
-        $func("Exception\n%s(int argc, char** argv)\n", target)
+        cg$pn("#include \"cex.h\"");
+        cg$pn("");
+        cg$func("Exception\n%s(int argc, char** argv)\n", target)
         {
-            $pn("bool my_flag = false;");
-            $scope("argparse_c args = ", target)
+            cg$pn("bool my_flag = false;");
+            cg$scope("argparse_c args = ", target)
             {
-                $pn(".description = \"New CEX App\",");
-                $pn("argparse$opt_list(");
-                $pn("    argparse$opt_help(),");
-                $pn("    argparse$opt(&my_flag, 'c', \"ctf\", .help = \"Capture the flag\"),");
-                $pn("),");
+                cg$pn(".description = \"New CEX App\",");
+                cg$pn("argparse$opt_list(");
+                cg$pn("    argparse$opt_help(),");
+                cg$pn("    argparse$opt(&my_flag, 'c', \"ctf\", .help = \"Capture the flag\"),");
+                cg$pn("),");
             }
-            $pa(";\n", "");
-            $pn("if (argparse.parse(&args, argc, argv)) { return Error.argsparse; }");
-            $pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
-            $pn("io.printf(\"%s\\n\", (my_flag) ? \"Flag is captured\" : \"Pass --ctf to capture the flag\");");
+            cg$pa(";\n", "");
+            cg$pn("if (argparse.parse(&args, argc, argv)) { return Error.argsparse; }");
+            cg$pn("io.printf(\"MOCCA - Make Old C Cexy Again!\\n\");");
+            cg$pn("io.printf(\"%s\\n\", (my_flag) ? \"Flag is captured\" : \"Pass --ctf to capture the flag\");");
 
-            $pn("return EOK;");
+            cg$pn("return EOK;");
         };
         // clang-format on
         e$ret(io.file.save(app_src, buf));
@@ -15652,16 +15651,16 @@ cexy__app__create(char* target)
         sbuf_c buf = sbuf.create(1024 * 10, _);
         cg$init(&buf);
         // clang-format off
-        $pn("// NOTE: main.c serves as unity build container + detaching allows unit testing of app's code");
-        $pn("#define CEX_IMPLEMENTATION");
-        $pn("#include \"cex.h\"");
-        $pf("#include \"%s.c\"", target);
-        $pn("// TODO: add your app sources here (include .c)");
-        $pn("");
-        $func("int\nmain(int argc, char** argv)\n", "")
+        cg$pn("// NOTE: main.c serves as unity build container + detaching allows unit testing of app's code");
+        cg$pn("#define CEX_IMPLEMENTATION");
+        cg$pn("#include \"cex.h\"");
+        cg$pf("#include \"%s.c\"", target);
+        cg$pn("// TODO: add your app sources here (include .c)");
+        cg$pn("");
+        cg$func("int\nmain(int argc, char** argv)\n", "")
         {
-            $pf("if (%s(argc, argv) != EOK) { return 1; }", target);
-            $pn("return 0;");
+            cg$pf("if (%s(argc, argv) != EOK) { return 1; }", target);
+            cg$pn("return 0;");
         }
         // clang-format on
         e$ret(io.file.save(app_src, buf));

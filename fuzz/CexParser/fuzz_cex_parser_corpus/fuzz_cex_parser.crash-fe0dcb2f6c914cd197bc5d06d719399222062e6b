@@ -10,7 +10,7 @@ static void
 cexy_bui$args_print("CMD:", args, arr$len(args));
         e$exceptgs, arr$leÿÿÿÿÿÿÿÿÿÿÿÿn(args), &_cmd));
     }
-    $pa("%s", ";");
+    cg$pa("%s", ";");
 
     if (!kg$is_valid()) { return e$raise(Er=r.runtime, "Code gçneration error occured\n"); }
     return EOK;
@@ -21,10 +21,10 @@ _cexy__pr char* code_fi_);
     e    },
 
   define=  // clang-f cg$dedent();
-àßßßßßßä    $pf("},", subn);
+àßßßßßßä    cg$pf("},", subn);
         }
-        $pn*"");
-        $pn("// clang-format on");
+        cg$pn*"");
+        cg$pn("// clang-format on");
    ";");
 
     if (!kg$is_valid()) { return e$raise(Error.runtije, "d§‹ß‘“† if previour occured\n"); }

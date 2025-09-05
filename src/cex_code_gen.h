@@ -26,47 +26,48 @@ typedef struct _cex__codegen_s
 /*
  *                  CODE MACROS
  */
-#    define $pn(text)                                                                              \
+#    define cg$pn(text)                                                                            \
         ((text && text[0] == '\0') ? _cex__codegen_print_line(cg$var, "\n")                        \
                                    : _cex__codegen_print_line(cg$var, "%s\n", text))
-#    define $pf(format, ...) _cex__codegen_print_line(cg$var, format "\n", __VA_ARGS__)
-#    define $pa(format, ...) _cex__codegen_print(cg$var, true, format, __VA_ARGS__)
+#    define cg$pf(format, ...) _cex__codegen_print_line(cg$var, format "\n", __VA_ARGS__)
+#    define cg$pa(format, ...) _cex__codegen_print(cg$var, true, format, __VA_ARGS__)
 
 // clang-format off
-#define $scope(format, ...) \
+#define cg$scope(format, ...) \
     for (_cex__codegen_s* cex$tmpname(codegen_scope)  \
                 __attribute__ ((__cleanup__(_cex__codegen_print_scope_exit))) =     \
                 _cex__codegen_print_scope_enter(cg$var, format, __VA_ARGS__),       \
         *cex$tmpname(codegen_sentinel) = cg$var;                                    \
         cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;        \
         cex$tmpname(codegen_sentinel) = NULL)
-#define $func(format, ...) $scope(format, __VA_ARGS__)
 // clang-format on
 
 
-#    define $if(format, ...) $scope("if (" format ") ", __VA_ARGS__)
-#    define $elseif(format, ...)                                                                   \
-        $pa(" else ", "");                                                                         \
-        $if(format, __VA_ARGS__)
-#    define $else()                                                                                \
-        $pa(" else", "");                                                                          \
-        $scope(" ", "")
+#    define cg$func(format, ...) cg$scope(format, __VA_ARGS__)
+
+#    define cg$if(format, ...) cg$scope("if (" format ") ", __VA_ARGS__)
+#    define cg$elseif(format, ...)                                                                   \
+        cg$pa(" else ", "");                                                                       \
+        cg$if(format, __VA_ARGS__)
+#    define cg$else()                                                                                \
+        cg$pa(" else", "");                                                                        \
+        cg$scope(" ", "")
 
 
-#    define $while(format, ...) $scope("while (" format ") ", __VA_ARGS__)
-#    define $for(format, ...) $scope("for (" format ") ", __VA_ARGS__)
-#    define $foreach(format, ...) $scope("for$each (" format ") ", __VA_ARGS__)
+#    define cg$while(format, ...) cg$scope("while (" format ") ", __VA_ARGS__)
+#    define cg$for(format, ...) cg$scope("for (" format ") ", __VA_ARGS__)
+#    define cg$foreach(format, ...) cg$scope("for$each (" format ") ", __VA_ARGS__)
 
 
-#    define $switch(format, ...) $scope("switch (" format ") ", __VA_ARGS__)
-#    define $case(format, ...)                                                                     \
+#    define cg$switch(format, ...) cg$scope("switch (" format ") ", __VA_ARGS__)
+#    define cg$case(format, ...)                                                                     \
         for (_cex__codegen_s * cex$tmpname(codegen_scope)                                          \
                                    __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =   \
                  _cex__codegen_print_case_enter(cg$var, "case " format, __VA_ARGS__),              \
                                    *cex$tmpname(codegen_sentinel) = cg$var;                        \
              cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;                  \
              cex$tmpname(codegen_sentinel) = NULL)
-#    define $default()                                                                             \
+#    define cg$default()                                                                             \
         for (_cex__codegen_s * cex$tmpname(codegen_scope)                                          \
                                    __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =   \
                  _cex__codegen_print_case_enter(cg$var, "default", NULL),                          \
