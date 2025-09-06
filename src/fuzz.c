@@ -1,5 +1,6 @@
 #include "fuzz.h"
 
+/// Creates new fuzz data generator, for fuzz-driven randomization
 cex_fuzz_s
 cex_fuzz_create(const u8* data, usize size)
 {
@@ -9,6 +10,7 @@ cex_fuzz_create(const u8* data, usize size)
     };
 }
 
+/// Get result from random data into buffer (returns false if not enough data)
 bool
 cex_fuzz_dget(cex_fuzz_s* fz, void* out_result, usize result_size)
 {
@@ -19,6 +21,7 @@ cex_fuzz_dget(cex_fuzz_s* fz, void* out_result, usize result_size)
     return true;
 }
 
+/// Get current corpus dir relative tho the `this_file_name`
 char*
 cex_fuzz_corpus_dir(char* this_file_name)
 {
@@ -40,6 +43,7 @@ cex_fuzz_corpus_dir(char* this_file_name)
     return buf;
 }
 
+/// Get probability using fuzz data, based on threshold
 bool
 cex_fuzz_dprob(cex_fuzz_s* fz, double threshold)
 {
