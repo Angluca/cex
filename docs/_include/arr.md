@@ -1,23 +1,5 @@
-Symbol found at ./cex.h:608
+Symbol found at ./cex.h:998
 
-
- * @brief Gets array generic slice (typed as array)
- *
- * Example:
- * auto s = arr$slice(arr, .start = 1, .end = -2);
- * auto s = arr$slice(arr, 1, -2);
- * auto s = arr$slice(arr, .start = -2);
- * auto s = arr$slice(arr, .end = 3);
- *
- * Note: arr$slice creates a temporary type, and it's preferable to use auto keyword
- *
- * @param array - generic array
- * @param .start - start index, may be negative to get item from the end of array
- * @param .end - end index, 0 - means all, or may be negative to get item from the end of array
- * @return struct {eltype* arr, usize len}, or {NULL, 0} if bad slice index/not found/NULL array
- *
- * @warning returns {.arr = NULL, .len = 0} if bad indexes or array
- 
 
 ```c
 #define arr$(T)
@@ -56,17 +38,23 @@ Symbol found at ./cex.h:608
 
 #define arr$setcap(a, n)
 
-#define arr$slice(array, ...)
-
 #define arr$sort(a, qsort_cmp)
 
 
 
-#define arr$slice (array, ...)                                                                      \
+#define arr$new (a, allocator, kwargs...)                                                           \
     ({                                                                                             \
-        slice$define(*array) s = { .arr = NULL, .len = 0 };                                        \
-        _arr$slice_get(s, array, arr$len(array), __VA_ARGS__);                                     \
-        s;                                                                                         \
+        static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
+        uassert(allocator != NULL);                                                                \
+        struct _cexds__arr_new_kwargs_s _kwargs = { kwargs };                                      \
+        (a) = (typeof(*a)*)_cexds__arrgrowf(                                                       \
+            NULL,                                                                                  \
+            sizeof(*a),                                                                            \
+            _kwargs.capacity,                                                                      \
+            0,                                                                                     \
+            alignof(typeof(*a)),                                                                   \
+            allocator                                                                              \
+        );                                                                                         \
     });
 
 ```

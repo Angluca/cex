@@ -420,10 +420,42 @@ CEX provides several short aliases for primitive types and some extra types for 
 | hm\$(T) | generic type hashmap|
 
 ### CEX Core Namespaces
+> [!NOTE]
+>
+> You can get cheat-sheet with `./cex help <namespace>$` command (ending `$` is important!). For example, `./cex help io$`, `./cex help e$`.
+
 
 | Namespace | Description |
 | -------------- | --------------- |
-| mem$ | automatically inferred variable type |
+| e$ | CEX Exception handling |
+| for$ | CEX array looping (for\$each, etc.) |
+| mem\$\* | Memory management and allocators |
+| mem$ | Global variable for general purpose heap allocator |
+| tmem$ | Global variable for temporary arena allocator |
+| str | General purpose string / slice namespace | 
+| sbuf | String builder class |
+| arr$ | Type-safe, generic, dynamic array |
+| hm$ | Type-safe, generic hashmap |
+| io | Cross-platform IO namespace |
+| test$ | Unit-test namespace (see tassert_*) |
+| fuzz$ | Fuzz-test interface |
+| argparse | Command line argument parsing class |
+| cg$ | Code generation namespace |
+| cexy$ | CEX Build system config vars and interface |
+
+
+### Utility macros
+
+| Name | Description |
+| -------------- | --------------- |
+| uassert() | General purpose assert with tracebacks |
+| uassertf() | General purpose assert with formatting  |
+| unlikely() | Branch predictor management for unexpected conditions |
+| likely() | Branch predictor management for expected conditions |
+| breakpoint() | Cross-platform debugger breakpoint |
+| fallthrough() | Explicit fallthrough to the next switch case |
+| unreachable() | Panics in debug mode, __builtin_unreachable() `#ifdef NDEBUG` mode |
+| tassert_* | Unit-test assertions see `./cex help tassert_` |
 
 ## Error handling
 
@@ -3067,4 +3099,54 @@ Using `./cex` CLI you could seed new project or add/run/debug/clean apps/fuzz/te
 ./cex fuzz debug fuzz/myapp/fuzz_bar.c
 
 ```
+
+## Cheat-sheet
+
+## Core Namespace Reference
+
+### Getting help
+
+### `argparse`
+
+{{< include _include/argparse.md >}}
+
+### `arr`
+{{< include _include/arr.md >}}
+
+### `cexy`
+
+{{< include _include/cexy.md >}}
+
+### `cg`
+{{< include _include/cg.md >}}
+
+### `e`
+{{< include _include/e.md >}}
+
+### `for`
+{{< include _include/for.md >}}
+
+### `fuzz`
+{{< include _include/fuzz.md >}}
+
+### `hm`
+{{< include _include/hm.md >}}
+
+### `io`
+{{< include _include/io.md >}}
+
+### `mem`
+{{< include _include/mem.md >}}
+
+### `os`
+{{< include _include/os.md >}}
+
+### `sbuf`
+{{< include _include/sbuf.md >}}
+
+### `str`
+{{< include _include/str.md >}}
+
+### `test`
+{{< include _include/test.md >}}
 

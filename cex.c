@@ -233,7 +233,7 @@ cmd_build_docs(int argc, char** argv, void* user_ctx)
     (void)user_ctx;
 
     char* namespaces[] = { "mem", "str", "test", "os",       "fuzz", "arr", "hm",
-                           "for", "io",  "sbuf", "argparse", "cg"};
+                           "for", "io",  "sbuf", "argparse", "cg",   "e",   "cexy" };
 
     for$each (it, namespaces) {
         mem$scope(tmem$, _)
@@ -251,6 +251,26 @@ cmd_build_docs(int argc, char** argv, void* user_ctx)
             _os$args_print("Parse help: ", args, arr$len(args));
             e$ret(cexy.cmd.help(arr$len(args), args, NULL));
         }
+    }
+    e$assert(!os.path.exists("_include/") && "should not exist, remove if it's quarto remainder");
+
+    e$ret(os.fs.chdir("docs/"));
+    e$ret(os$cmd(
+        "quarto",
+        "render",
+        "README.md",
+        "--to",
+        "html",
+        "-o",
+        "cex_docs.html",
+        "--output-dir",
+        ".."
+    ));
+    e$ret(os.fs.chdir(".."));
+
+    if(os.path.exists("_include")){
+        // weird bug in quarto tool (_include copied)
+        e$ret(os.fs.remove_tree("_include/"));
     }
 
     return EOK;

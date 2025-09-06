@@ -1,4 +1,4 @@
-Symbol found at ./cex.h:1622
+Symbol found at ./cex.h:1558
 
 
 ```c
@@ -10,9 +10,6 @@ Symbol found at ./cex.h:1622
 
 /// creates str_s, instance from string literals/constants: str$s("my string")
 #define str$s(string)
-
-/// creates slice of str_s instance
-#define str$sslice(str_self, ...)
 
 /// Represents char* slice (string view) + may not be null-term at len!
 typedef struct str_s

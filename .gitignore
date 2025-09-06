@@ -75,3 +75,6 @@ archive/
 *.afl/
 
 docs/README.html
+
+/.quarto/
+**/*.quarto_ipynb
