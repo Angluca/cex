@@ -925,6 +925,77 @@ CEX_NAMESPACE struct __cex_namespace__AllocatorArena AllocatorArena;
 *                          src/ds.h
 */
 
+/**
+
+* Creating array
+```c
+    // Using heap allocator (need to free later!)
+    arr$(i32) array = arr$new(array, mem$);
+    
+    // adding elements
+    arr$pushm(array, 1, 2, 3); // multiple at once
+    arr$push(array, 4); // single element
+
+    // length of array
+    arr$len(array);
+
+    // getting i-th elements
+    array[1];
+
+    // iterating array (by value)
+    for$each(it, array) {
+        io.printf("el=%d\n", it);
+    }
+
+    // iterating array (by pointer - prefer for bigger structs to avoid copying)
+    for$each(it, array) {
+        // TIP: making array index out of `it`
+        usize i = it - array;
+
+        // NOTE: 'it' now is a pointer
+        io.printf("el[%zu]=%d\n", i, *it);
+    }
+
+    // free resources
+    arr$free(array);
+```
+
+* Temp allocator / array of structs
+```c
+
+typedef struct
+{
+    int key;
+    float my_val;
+    char* my_string;
+    int value;
+} my_struct;
+
+void somefunc(void)
+{
+    arr$(my_struct) array = arr$new(array, mem$, .capacity = 128);
+    uassert(arr$cap(array), 128);
+
+    my_struct s;
+    s = (my_struct){ 20, 5.0, "hello ", 0 };
+    arr$push(array, s);
+    s = (my_struct){ 40, 2.5, "failure", 0 };
+    arr$push(array, s);
+    s = (my_struct){ 40, 1.1, "world!", 0 };
+    arr$push(array, s);
+
+    for (usize i = 0; i < arr$len(array); ++i) {
+        io.printf("key: %d str: %s\n", array[i].key, array[i].my_string);
+    }
+    arr$free(array);
+
+    return EOK;
+}
+```
+
+*/
+#define __arr$
+
 // this is a simple string arena allocator, initialize with e.g. 'cexds_string_arena my_arena={0}'.
 typedef struct _cexds__string_arena _cexds__string_arena;
 extern char* _cexds__stralloc(_cexds__string_arena* a, char* str);
@@ -989,12 +1060,14 @@ static_assert(
 
 #define _cexds__header(t) ((_cexds__array_header*)(((char*)(t)) - sizeof(_cexds__array_header)))
 
+/// Generic array type definition. Use arr$(int) myarr - defines new myarr variable, as int array
 #define arr$(T) T*
 
 struct _cexds__arr_new_kwargs_s
 {
     usize capacity;
 };
+/// Array initialization: use arr$(int) arr = arr$new(arr, mem$, .capacity = , ...)
 #define arr$new(a, allocator, kwargs...)                                                           \
     ({                                                                                             \
         static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
@@ -1010,12 +1083,19 @@ struct _cexds__arr_new_kwargs_s
         );                                                                                         \
     })
 
+/// Free resources for dynamic array (only needed if mem$ allocator was used)
 #define arr$free(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__arrfreef((a)), (a) = NULL)
 
+/// Set array capacity and resise if needed
 #define arr$setcap(a, n) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), arr$grow(a, 0, n))
+
+/// Clear array contents
 #define arr$clear(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__header(a)->length = 0)
+
+/// Returns current array capacity 
 #define arr$cap(a) ((a) ? (_cexds__header(a)->capacity) : 0)
 
+/// Delete array elements by index (memory will be shifted, order preserved)
 #define arr$del(a, i)                                                                              \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
@@ -1023,6 +1103,8 @@ struct _cexds__arr_new_kwargs_s
         memmove(&(a)[i], &(a)[(i) + 1], sizeof *(a) * (_cexds__header(a)->length - 1 - (i)));      \
         _cexds__header(a)->length--;                                                               \
     })
+
+/// Delete element by swapping with last one (no memory overhear, element order changes)
 #define arr$delswap(a, i)                                                                          \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
@@ -1031,12 +1113,15 @@ struct _cexds__arr_new_kwargs_s
         _cexds__header(a)->length -= 1;                                                            \
     })
 
+/// Return last element of array
 #define arr$last(a)                                                                                \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
         uassert(_cexds__header(a)->length > 0 && "empty array");                                   \
         (a)[_cexds__header(a)->length - 1];                                                        \
     })
+
+/// Get element at index (bounds checking with uassert())
 #define arr$at(a, i)                                                                               \
     ({                                                                                             \
         _cexds__arr_integrity(a, 0); /* may work also on hm$ */                                    \
@@ -1044,6 +1129,7 @@ struct _cexds__arr_new_kwargs_s
         (a)[i];                                                                                    \
     })
 
+/// Pop element from the end
 #define arr$pop(a)                                                                                 \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
@@ -1051,6 +1137,7 @@ struct _cexds__arr_new_kwargs_s
         (a)[_cexds__header(a)->length];                                                            \
     })
 
+/// Push element to the end
 #define arr$push(a, value...)                                                                      \
     ({                                                                                             \
         if (unlikely(!arr$grow_check(a, 1))) {                                                     \
@@ -1060,6 +1147,7 @@ struct _cexds__arr_new_kwargs_s
         (a)[_cexds__header(a)->length++] = (value);                                                \
     })
 
+/// Push many elements to the end
 #define arr$pushm(a, items...)                                                                     \
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
@@ -1069,6 +1157,7 @@ struct _cexds__arr_new_kwargs_s
         /* NOLINTEND */                                                                            \
     })
 
+/// Push another array into a. array can be dynamic or static or pointer+len 
 #define arr$pusha(a, array, array_len...)                                                          \
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
@@ -1086,6 +1175,7 @@ struct _cexds__arr_new_kwargs_s
         for (usize i = 0; i < arr_len; i++) { (a)[_cexds__header(a)->length++] = ((array)[i]); }   \
     })
 
+/// Sort array with qsort() libc function
 #define arr$sort(a, qsort_cmp)                                                                     \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
@@ -1093,6 +1183,7 @@ struct _cexds__arr_new_kwargs_s
     })
 
 
+/// Inserts element into array at index `i`
 #define arr$ins(a, i, value...)                                                                    \
     do {                                                                                           \
         if (unlikely(!arr$grow_check(a, 1))) {                                                     \
@@ -1105,12 +1196,14 @@ struct _cexds__arr_new_kwargs_s
         (a)[i] = (value);                                                                          \
     } while (0)
 
+/// Check array capacity and return false on memory error
 #define arr$grow_check(a, add_extra)                                                               \
     ((_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC) &&                                                \
       _cexds__header(a)->length + (add_extra) > _cexds__header(a)->capacity)                       \
          ? (arr$grow(a, add_extra, 0), a != NULL)                                                  \
          : true)
 
+/// Grows array capacity
 #define arr$grow(a, add_len, min_cap)                                                              \
     ((a) = _cexds__arrgrowf((a), sizeof *(a), (add_len), (min_cap), alignof(typeof(*a)), NULL))
 
@@ -1128,6 +1221,7 @@ struct _cexds__arr_new_kwargs_s
                   );                                                                               \
         })
 #else
+/// Versatile array length, works with dynamic (arr$) and static compile time arrays
 #    define arr$len(arr)                                                                           \
         ({                                                                                         \
             _Pragma("GCC diagnostic push");                                                        \
@@ -1738,6 +1832,7 @@ typedef Exception (*argparse_callback_f)(
 typedef Exception (*argparse_convert_f)(char* s, void* out_val);
 typedef Exception (*argparse_command_f)(int argc, char** argv, void* user_ctx);
 
+/// command line options type (prefer macros)
 typedef struct argparse_opt_s
 {
     u8 type;
@@ -1752,6 +1847,7 @@ typedef struct argparse_opt_s
     bool is_present; // also setting in in argparse$opt* macro, allows optional parameter sugar
 } argparse_opt_s;
 
+/// command settings type (prefer macros)
 typedef struct argparse_cmd_s
 {
     char* name;
@@ -1779,9 +1875,7 @@ enum CexArgParseType_e
     CexArgParseType__generic,
 };
 
-/**
- * argpparse
- */
+/// main argparse struct (used as options config)
 typedef struct argparse_c
 {
     // user supplied options
@@ -1811,7 +1905,10 @@ typedef struct argparse_c
 } argparse_c;
 
 
-// built-in option macros
+/// holder for list of  argparse$opt()
+#define argparse$opt_list(...) .options = (argparse_opt_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
+
+/// command line option record (generic type of arguments)
 #define argparse$opt(value, ...)                                                                   \
     ({                                                                                             \
         u32 val_type = _Generic(                                                                   \
@@ -1856,14 +1953,98 @@ typedef struct argparse_c
     })
 // clang-format off
 
-#define argparse$opt_list(...) .options = (argparse_opt_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
+
+/// holder for list of 
+#define argparse$cmd_list(...) .commands = (argparse_cmd_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
+
+/// options group separator
 #define argparse$opt_group(h)     { CexArgParseType__group, NULL, '\0', NULL, h, false, NULL, 0, 0, .is_present=0 }
+
+/// built-in option for -h,--help
 #define argparse$opt_help()       {CexArgParseType__boolean, NULL, 'h', "help",                           \
                                         "show this help message and exit", false,    \
                                         NULL, 0, .is_present = 0}
-#define argparse$pop(argc, argv) ((argc > 0) ? (--argc, (*argv)++) : NULL)
-#define argparse$cmd_list(...) .commands = (argparse_cmd_s[]) {__VA_ARGS__ {0} /* NULL TERM */}
 
+
+/**
+
+* Command line args parsing
+
+```c
+// NOTE: Command example 
+
+Exception cmd_build_docs(int argc, char** argv, void* user_ctx);
+
+int
+main(int argc, char** argv)
+{
+    // clang-format off
+    argparse_c args = {
+        .description = "My description",
+        .usage = "Usage help",
+        .epilog = "Epilog text",
+        argparse$cmd_list(
+            { .name = "build-docs", .func = cmd_build_docs, .help = "Build CEX documentation" },
+        ),
+    };
+    if (argparse.parse(&args, argc, argv)) { return 1; }
+    if (argparse.run_command(&args, NULL)) { return 1; }
+    return 0;
+}
+
+Exception
+cmd_build_docs(int argc, char** argv, void* user_ctx)
+{
+    // Command handling func
+}
+
+```
+
+* Parsing custom arguments
+
+```c
+// Simple options example
+
+int
+main(int argc, char** argv)
+{
+    bool force = 0;
+    bool test = 0;
+    int int_num = 0;
+    float flt_num = 0.f;
+    char* path = NULL;
+
+    char* usage = "basic [options] [[--] args]\n"
+                  "basic [options]\n";
+
+    argparse_c argparse = {
+        argparse$opt_list(
+            argparse$opt_help(),
+            argparse$opt_group("Basic options"),
+            argparse$opt(&force, 'f', "force", "force to do"),
+            argparse$opt(&test, 't', "test", .help = "test only"),
+            argparse$opt(&path, 'p', "path", "path to read", .required = true),
+            argparse$opt_group("Another group"),
+            argparse$opt(&int_num, 'i', "int", "selected integer"),
+            argparse$opt(&flt_num, 's', "float", "selected float"),
+        ),
+        // NOTE: usage/description are optional 
+
+        .usage = usage,
+        .description = "\nA brief description of what the program does and how it works.",
+        "\nAdditional description of the program after the description of the arguments.",
+    };
+    if (argparse.parse(&args, argc, argv)) { return 1; }
+
+    // NOTE: all args are filled and parsed after this line
+
+    return 0;
+}
+
+```
+
+
+*/
 struct __cex_namespace__argparse {
     // Autogenerated by CEX
     // clang-format off
@@ -14516,6 +14697,7 @@ _cexy__display_full_info(
 
         if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
             if (str.slice.starts_with(d->name, str$s("__"))) {
+                if (output != stdout) { io.fprintf(output, "\n```\n"); }
                 goto end; // NOTE: it's likely placeholder i.e. __foo$ - only for docs, just skip
             }
             io.fprintf(output, "#define ");
@@ -14549,7 +14731,7 @@ _cexy__display_full_info(
             io.fprintf(output, "\n```\n");
         }
 
-        // No examples for whole namespaces (early exit) 
+        // No examples for whole namespaces (early exit)
         if (!show_example || ns_struct) { goto end; }
 
         // Looking for a random example
@@ -14608,7 +14790,7 @@ _cexy__display_full_info(
     }
 end:
     if (output != stdout) {
-        if(io.fflush(output)){};
+        if (io.fflush(output)) {};
         io.fclose(&output);
     }
     return EOK;

@@ -1,25 +1,109 @@
-Symbol found at ./cex.h:1867
+Symbol found at ./cex.h:2048
+
+
+
+* Command line args parsing
+
+```c
+// NOTE: Command example 
+
+Exception cmd_build_docs(int argc, char** argv, void* user_ctx);
+
+int
+main(int argc, char** argv)
+{
+    // clang-format off
+    argparse_c args = {
+        .description = "My description",
+        .usage = "Usage help",
+        .epilog = "Epilog text",
+        argparse$cmd_list(
+            { .name = "build-docs", .func = cmd_build_docs, .help = "Build CEX documentation" },
+        ),
+    };
+    if (argparse.parse(&args, argc, argv)) { return 1; }
+    if (argparse.run_command(&args, NULL)) { return 1; }
+    return 0;
+}
+
+Exception
+cmd_build_docs(int argc, char** argv, void* user_ctx)
+{
+    // Command handling func
+}
+
+```
+
+* Parsing custom arguments
+
+```c
+// Simple options example
+
+int
+main(int argc, char** argv)
+{
+    bool force = 0;
+    bool test = 0;
+    int int_num = 0;
+    float flt_num = 0.f;
+    char* path = NULL;
+
+    char* usage = "basic [options] [[--] args]\n"
+                  "basic [options]\n";
+
+    argparse_c argparse = {
+        argparse$opt_list(
+            argparse$opt_help(),
+            argparse$opt_group("Basic options"),
+            argparse$opt(&force, 'f', "force", "force to do"),
+            argparse$opt(&test, 't', "test", .help = "test only"),
+            argparse$opt(&path, 'p', "path", "path to read", .required = true),
+            argparse$opt_group("Another group"),
+            argparse$opt(&int_num, 'i', "int", "selected integer"),
+            argparse$opt(&flt_num, 's', "float", "selected float"),
+        ),
+        // NOTE: usage/description are optional 
+
+        .usage = usage,
+        .description = "\nA brief description of what the program does and how it works.",
+        "\nAdditional description of the program after the description of the arguments.",
+    };
+    if (argparse.parse(&args, argc, argv)) { return 1; }
+
+    // NOTE: all args are filled and parsed after this line
+
+    return 0;
+}
+
+```
+
+
 
 
 ```c
+/// holder for list of
 #define argparse$cmd_list(...)
 
+/// command line option record (generic type of arguments)
 #define argparse$opt(value, ...)
 
+/// options group separator
 #define argparse$opt_group(h)
 
+/// built-in option for -h,--help
 #define argparse$opt_help()
 
+/// holder for list of  argparse$opt()
 #define argparse$opt_list(...)
 
-#define argparse$pop(argc, argv)
-
-/// * argpparse
+/// main argparse struct (used as options config)
 typedef argparse_c
 
+/// command settings type (prefer macros)
 typedef argparse_cmd_s
 
- argparse_opt_s
+/// command line options type (prefer macros)
+typedef argparse_opt_s
 
 
 

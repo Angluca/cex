@@ -1,6 +1,77 @@
 #pragma once
 #include "all.h"
 
+/**
+
+* Creating array
+```c
+    // Using heap allocator (need to free later!)
+    arr$(i32) array = arr$new(array, mem$);
+    
+    // adding elements
+    arr$pushm(array, 1, 2, 3); // multiple at once
+    arr$push(array, 4); // single element
+
+    // length of array
+    arr$len(array);
+
+    // getting i-th elements
+    array[1];
+
+    // iterating array (by value)
+    for$each(it, array) {
+        io.printf("el=%d\n", it);
+    }
+
+    // iterating array (by pointer - prefer for bigger structs to avoid copying)
+    for$each(it, array) {
+        // TIP: making array index out of `it`
+        usize i = it - array;
+
+        // NOTE: 'it' now is a pointer
+        io.printf("el[%zu]=%d\n", i, *it);
+    }
+
+    // free resources
+    arr$free(array);
+```
+
+* Temp allocator / array of structs
+```c
+
+typedef struct
+{
+    int key;
+    float my_val;
+    char* my_string;
+    int value;
+} my_struct;
+
+void somefunc(void)
+{
+    arr$(my_struct) array = arr$new(array, mem$, .capacity = 128);
+    uassert(arr$cap(array), 128);
+
+    my_struct s;
+    s = (my_struct){ 20, 5.0, "hello ", 0 };
+    arr$push(array, s);
+    s = (my_struct){ 40, 2.5, "failure", 0 };
+    arr$push(array, s);
+    s = (my_struct){ 40, 1.1, "world!", 0 };
+    arr$push(array, s);
+
+    for (usize i = 0; i < arr$len(array); ++i) {
+        io.printf("key: %d str: %s\n", array[i].key, array[i].my_string);
+    }
+    arr$free(array);
+
+    return EOK;
+}
+```
+
+*/
+#define __arr$
+
 // this is a simple string arena allocator, initialize with e.g. 'cexds_string_arena my_arena={0}'.
 typedef struct _cexds__string_arena _cexds__string_arena;
 extern char* _cexds__stralloc(_cexds__string_arena* a, char* str);
@@ -65,12 +136,14 @@ static_assert(
 
 #define _cexds__header(t) ((_cexds__array_header*)(((char*)(t)) - sizeof(_cexds__array_header)))
 
+/// Generic array type definition. Use arr$(int) myarr - defines new myarr variable, as int array
 #define arr$(T) T*
 
 struct _cexds__arr_new_kwargs_s
 {
     usize capacity;
 };
+/// Array initialization: use arr$(int) arr = arr$new(arr, mem$, .capacity = , ...)
 #define arr$new(a, allocator, kwargs...)                                                           \
     ({                                                                                             \
         static_assert(_Alignof(typeof(*a)) <= 64, "array item alignment too high");               \
@@ -86,12 +159,19 @@ struct _cexds__arr_new_kwargs_s
         );                                                                                         \
     })
 
+/// Free resources for dynamic array (only needed if mem$ allocator was used)
 #define arr$free(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__arrfreef((a)), (a) = NULL)
 
+/// Set array capacity and resise if needed
 #define arr$setcap(a, n) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), arr$grow(a, 0, n))
+
+/// Clear array contents
 #define arr$clear(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__header(a)->length = 0)
+
+/// Returns current array capacity 
 #define arr$cap(a) ((a) ? (_cexds__header(a)->capacity) : 0)
 
+/// Delete array elements by index (memory will be shifted, order preserved)
 #define arr$del(a, i)                                                                              \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
@@ -99,6 +179,8 @@ struct _cexds__arr_new_kwargs_s
         memmove(&(a)[i], &(a)[(i) + 1], sizeof *(a) * (_cexds__header(a)->length - 1 - (i)));      \
         _cexds__header(a)->length--;                                                               \
     })
+
+/// Delete element by swapping with last one (no memory overhear, element order changes)
 #define arr$delswap(a, i)                                                                          \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
@@ -107,12 +189,15 @@ struct _cexds__arr_new_kwargs_s
         _cexds__header(a)->length -= 1;                                                            \
     })
 
+/// Return last element of array
 #define arr$last(a)                                                                                \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
         uassert(_cexds__header(a)->length > 0 && "empty array");                                   \
         (a)[_cexds__header(a)->length - 1];                                                        \
     })
+
+/// Get element at index (bounds checking with uassert())
 #define arr$at(a, i)                                                                               \
     ({                                                                                             \
         _cexds__arr_integrity(a, 0); /* may work also on hm$ */                                    \
@@ -120,6 +205,7 @@ struct _cexds__arr_new_kwargs_s
         (a)[i];                                                                                    \
     })
 
+/// Pop element from the end
 #define arr$pop(a)                                                                                 \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
@@ -127,6 +213,7 @@ struct _cexds__arr_new_kwargs_s
         (a)[_cexds__header(a)->length];                                                            \
     })
 
+/// Push element to the end
 #define arr$push(a, value...)                                                                      \
     ({                                                                                             \
         if (unlikely(!arr$grow_check(a, 1))) {                                                     \
@@ -136,6 +223,7 @@ struct _cexds__arr_new_kwargs_s
         (a)[_cexds__header(a)->length++] = (value);                                                \
     })
 
+/// Push many elements to the end
 #define arr$pushm(a, items...)                                                                     \
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
@@ -145,6 +233,7 @@ struct _cexds__arr_new_kwargs_s
         /* NOLINTEND */                                                                            \
     })
 
+/// Push another array into a. array can be dynamic or static or pointer+len 
 #define arr$pusha(a, array, array_len...)                                                          \
     ({                                                                                             \
         /* NOLINTBEGIN */                                                                          \
@@ -162,6 +251,7 @@ struct _cexds__arr_new_kwargs_s
         for (usize i = 0; i < arr_len; i++) { (a)[_cexds__header(a)->length++] = ((array)[i]); }   \
     })
 
+/// Sort array with qsort() libc function
 #define arr$sort(a, qsort_cmp)                                                                     \
     ({                                                                                             \
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
@@ -169,6 +259,7 @@ struct _cexds__arr_new_kwargs_s
     })
 
 
+/// Inserts element into array at index `i`
 #define arr$ins(a, i, value...)                                                                    \
     do {                                                                                           \
         if (unlikely(!arr$grow_check(a, 1))) {                                                     \
@@ -181,12 +272,14 @@ struct _cexds__arr_new_kwargs_s
         (a)[i] = (value);                                                                          \
     } while (0)
 
+/// Check array capacity and return false on memory error
 #define arr$grow_check(a, add_extra)                                                               \
     ((_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC) &&                                                \
       _cexds__header(a)->length + (add_extra) > _cexds__header(a)->capacity)                       \
          ? (arr$grow(a, add_extra, 0), a != NULL)                                                  \
          : true)
 
+/// Grows array capacity
 #define arr$grow(a, add_len, min_cap)                                                              \
     ((a) = _cexds__arrgrowf((a), sizeof *(a), (add_len), (min_cap), alignof(typeof(*a)), NULL))
 
@@ -204,6 +297,7 @@ struct _cexds__arr_new_kwargs_s
                   );                                                                               \
         })
 #else
+/// Versatile array length, works with dynamic (arr$) and static compile time arrays
 #    define arr$len(arr)                                                                           \
         ({                                                                                         \
             _Pragma("GCC diagnostic push");                                                        \
