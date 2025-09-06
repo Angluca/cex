@@ -1486,6 +1486,7 @@ _cexy__display_full_info(
 
         if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
             if (str.slice.starts_with(d->name, str$s("__"))) {
+                if (output != stdout) { io.fprintf(output, "\n```\n"); }
                 goto end; // NOTE: it's likely placeholder i.e. __foo$ - only for docs, just skip
             }
             io.fprintf(output, "#define ");
@@ -1519,7 +1520,7 @@ _cexy__display_full_info(
             io.fprintf(output, "\n```\n");
         }
 
-        // No examples for whole namespaces (early exit) 
+        // No examples for whole namespaces (early exit)
         if (!show_example || ns_struct) { goto end; }
 
         // Looking for a random example
@@ -1578,7 +1579,7 @@ _cexy__display_full_info(
     }
 end:
     if (output != stdout) {
-        if(io.fflush(output)){};
+        if (io.fflush(output)) {};
         io.fclose(&output);
     }
     return EOK;
