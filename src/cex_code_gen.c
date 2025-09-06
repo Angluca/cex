@@ -1,6 +1,5 @@
 #include "cex_code_gen.h"
 #include "all.h"
-#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 void
 _cex__codegen_indent(_cex__codegen_s* cg)
@@ -87,4 +86,3 @@ _cex__codegen_print_case_exit(_cex__codegen_s** cgptr)
 }
 
 #    undef cg$printva
-#endif // #ifdef CEX_BUILD

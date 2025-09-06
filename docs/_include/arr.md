@@ -35,7 +35,7 @@ Symbol found at ./cex.h:997
     arr$free(array);
 ```
 
-* Temp allocator / array of structs
+* Array of structs
 ```c
 
 typedef struct
@@ -122,7 +122,7 @@ void somefunc(void)
 /// Push many elements to the end
 #define arr$pushm(a, items...)
 
-/// Set array capacity and resise if needed
+/// Set array capacity and resize if needed
 #define arr$setcap(a, n)
 
 /// Sort array with qsort() libc function

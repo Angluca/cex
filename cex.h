@@ -960,7 +960,7 @@ CEX_NAMESPACE struct __cex_namespace__AllocatorArena AllocatorArena;
     arr$free(array);
 ```
 
-* Temp allocator / array of structs
+* Array of structs
 ```c
 
 typedef struct
@@ -1086,7 +1086,7 @@ struct _cexds__arr_new_kwargs_s
 /// Free resources for dynamic array (only needed if mem$ allocator was used)
 #define arr$free(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__arrfreef((a)), (a) = NULL)
 
-/// Set array capacity and resise if needed
+/// Set array capacity and resize if needed
 #define arr$setcap(a, n) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), arr$grow(a, 0, n))
 
 /// Clear array contents
@@ -3038,7 +3038,6 @@ struct _cex_test_context_s
 /*
 *                          src/cex_code_gen.h
 */
-#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 typedef struct _cex__codegen_s
 {
@@ -3050,12 +3049,117 @@ typedef struct _cex__codegen_s
 /*
  *                  CODE GEN MACROS
  */
+
+/**
+* Code generation module 
+
+```c
+
+test$case(test_codegen_test)
+{
+    sbuf_c b = sbuf.create(1024, mem$);
+    // NOTE: cg$ macros should be working within cg$init() scope or make sure cg$var is available
+    cg$init(&b);
+
+    tassert(cg$var->buf == &b);
+    tassert(cg$var->indent == 0);
+
+    cg$pn("printf(\"hello world\");");
+    cg$pn("#define GOO");
+    cg$pn("// this is empty scope");
+    cg$scope("", "")
+    {
+        cg$pf("printf(\"hello world: %d\");", 2);
+    }
+
+    cg$func("void my_func(int arg_%d)", 2)
+    {
+        cg$scope("var my_var = (mytype)", "")
+        {
+            cg$pf(".arg1 = %d,", 1);
+            cg$pf(".arg2 = %d,", 2);
+        }
+        cg$pa(";\n", "");
+
+        cg$if("foo == %d", 312)
+        {
+            cg$pn("printf(\"Hello: %d\", foo);");
+        }
+        cg$elseif("bar == foo + %d", 7)
+        {
+            cg$pn("// else if scope");
+        }
+        cg$else()
+        {
+            cg$pn("// else scope");
+        }
+
+        cg$while("foo == %d", 312)
+        {
+            cg$pn("printf(\"Hello: %d\", foo);");
+        }
+
+        cg$for("u32 i = 0; i < %d; i++", 312)
+        {
+            cg$pn("printf(\"Hello: %d\", foo);");
+            cg$foreach("it, my_var", "")
+            {
+                cg$pn("printf(\"Hello: %d\", foo);");
+            }
+        }
+
+        cg$scope("do ", "")
+        {
+            cg$pf("// do while", 1);
+        }
+        cg$pa(" while(0);\n", "");
+    }
+
+    cg$switch("foo", "")
+    {
+        cg$case("'%c'", 'a')
+        {
+            cg$pn("// case scope");
+        }
+        cg$scope("case '%c': ", 'b')
+        {
+            cg$pn("fallthrough();");
+        }
+        cg$default()
+        {
+            cg$pn("// default scope");
+        }
+    }
+
+    tassert(cg$is_valid());
+
+    printf("result: \n%s\n", b);
+
+
+    sbuf.destroy(&b);
+    return EOK;
+}
+
+```
+
+*/
+#define __cg$
+
+/// Common code gen buffer variable (all cg$ macros use it under the hood)
 #    define cg$var __cex_code_gen
+
+/// Initializes new code generator (uses sbuf instance as backing buffer)
 #    define cg$init(out_sbuf)                                                                      \
         _cex__codegen_s cex$tmpname(code_gen) = { .buf = (out_sbuf) };                             \
         _cex__codegen_s* cg$var = &cex$tmpname(code_gen)
+
+/// false if any cg$ operation failed, use cg$var->error to get Exception type of error
 #    define cg$is_valid() (cg$var != NULL && cg$var->buf != NULL && cg$var->error == EOK)
+
+/// increase code indent by 4
 #    define cg$indent() ({ cg$var->indent += 4; })
+
+/// decrease code indent by 4
 #    define cg$dedent()                                                                            \
         ({                                                                                         \
             if (cg$var->indent >= 4) cg$var->indent -= 4;                                          \
@@ -3064,13 +3168,20 @@ typedef struct _cex__codegen_s
 /*
  *                  CODE MACROS
  */
+/// add new line of code
 #    define cg$pn(text)                                                                            \
         ((text && text[0] == '\0') ? _cex__codegen_print_line(cg$var, "\n")                        \
                                    : _cex__codegen_print_line(cg$var, "%s\n", text))
+
+/// add new line of code with formatting
 #    define cg$pf(format, ...) _cex__codegen_print_line(cg$var, format "\n", __VA_ARGS__)
+
+/// append code at the current line without "\n"
 #    define cg$pa(format, ...) _cex__codegen_print(cg$var, true, format, __VA_ARGS__)
 
 // clang-format off
+
+/// add new code scope with indent (use for low-level stuff)
 #define cg$scope(format, ...) \
     for (_cex__codegen_s* cex$tmpname(codegen_scope)  \
                 __attribute__ ((__cleanup__(_cex__codegen_print_scope_exit))) =     \
@@ -3081,23 +3192,35 @@ typedef struct _cex__codegen_s
 // clang-format on
 
 
+/// add new function     cg$func("void my_func(int arg_%d)", 2)
 #    define cg$func(format, ...) cg$scope(format, __VA_ARGS__)
 
+/// add if statement
 #    define cg$if(format, ...) cg$scope("if (" format ") ", __VA_ARGS__)
+
+/// add else if
 #    define cg$elseif(format, ...)                                                                   \
         cg$pa(" else ", "");                                                                       \
         cg$if(format, __VA_ARGS__)
+
+/// add else 
 #    define cg$else()                                                                                \
         cg$pa(" else", "");                                                                        \
         cg$scope(" ", "")
 
-
+/// add while loop
 #    define cg$while(format, ...) cg$scope("while (" format ") ", __VA_ARGS__)
+
+/// add for loop
 #    define cg$for(format, ...) cg$scope("for (" format ") ", __VA_ARGS__)
+
+/// add CEX for$each loop
 #    define cg$foreach(format, ...) cg$scope("for$each (" format ") ", __VA_ARGS__)
 
-
+/// add switch() statement
 #    define cg$switch(format, ...) cg$scope("switch (" format ") ", __VA_ARGS__)
+
+/// add case in switch() statement
 #    define cg$case(format, ...)                                                                     \
         for (_cex__codegen_s * cex$tmpname(codegen_scope)                                          \
                                    __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =   \
@@ -3105,6 +3228,8 @@ typedef struct _cex__codegen_s
                                    *cex$tmpname(codegen_sentinel) = cg$var;                        \
              cex$tmpname(codegen_sentinel) && cex$tmpname(codegen_scope) != NULL;                  \
              cex$tmpname(codegen_sentinel) = NULL)
+
+/// add default in switch() statement
 #    define cg$default()                                                                             \
         for (_cex__codegen_s * cex$tmpname(codegen_scope)                                          \
                                    __attribute__((__cleanup__(_cex__codegen_print_case_exit))) =   \
@@ -3122,7 +3247,6 @@ _cex__codegen_s* _cex__codegen_print_case_enter(_cex__codegen_s* cg, char* forma
 void _cex__codegen_print_case_exit(_cex__codegen_s** cgptr);
 void _cex__codegen_indent(_cex__codegen_s* cg);
 
-#endif // ifdef CEX_BUILD
 
 
 
@@ -13118,7 +13242,6 @@ cex_test_main_fn(int argc, char** argv)
 /*
 *                          src/cex_code_gen.c
 */
-#if defined(CEX_BUILD) || defined(CEX_NEW)
 
 void
 _cex__codegen_indent(_cex__codegen_s* cg)
@@ -13205,7 +13328,6 @@ _cex__codegen_print_case_exit(_cex__codegen_s** cgptr)
 }
 
 #    undef cg$printva
-#endif // #ifdef CEX_BUILD
 
 
 

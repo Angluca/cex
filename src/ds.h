@@ -36,7 +36,7 @@
     arr$free(array);
 ```
 
-* Temp allocator / array of structs
+* Array of structs
 ```c
 
 typedef struct
@@ -162,7 +162,7 @@ struct _cexds__arr_new_kwargs_s
 /// Free resources for dynamic array (only needed if mem$ allocator was used)
 #define arr$free(a) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), _cexds__arrfreef((a)), (a) = NULL)
 
-/// Set array capacity and resise if needed
+/// Set array capacity and resize if needed
 #define arr$setcap(a, n) (_cexds__arr_integrity(a, _CEXDS_ARR_MAGIC), arr$grow(a, 0, n))
 
 /// Clear array contents
