@@ -63,6 +63,8 @@ jobs:
             compiler: "gcc-14"
           - cex_preset: CEX_VALGRIND
             compiler: "clang-18"
+          - cex_preset: CEX_C23
+            compiler: "clang-18"
 
     steps:
       - name: Checkout cex
