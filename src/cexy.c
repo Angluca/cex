@@ -1486,7 +1486,7 @@ _cexy__display_full_info(
 
         if (d->type == CexTkn__macro_const || d->type == CexTkn__macro_func) {
             if (str.slice.starts_with(d->name, str$s("__"))) {
-                return EOK; // NOTE: it's likely placeholder i.e. __foo$ - only for docs, just skip
+                goto end; // NOTE: it's likely placeholder i.e. __foo$ - only for docs, just skip
             }
             io.fprintf(output, "#define ");
         }
@@ -1520,7 +1520,7 @@ _cexy__display_full_info(
         }
 
         // No examples for whole namespaces (early exit) 
-        if (!show_example || ns_struct) { return EOK; }
+        if (!show_example || ns_struct) { goto end; }
 
         // Looking for a random example
         srand(time(NULL));
@@ -1559,7 +1559,7 @@ _cexy__display_full_info(
 
                             if (output != stdout) { io.fprintf(output, "\n```\n"); }
 
-                            return EOK;
+                            goto end;
                         }
                     }
                 }
@@ -1575,6 +1575,11 @@ _cexy__display_full_info(
                 name
             );
         }
+    }
+end:
+    if (output != stdout) {
+        if(io.fflush(output)){};
+        io.fclose(&output);
     }
     return EOK;
 }
