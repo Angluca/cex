@@ -3,13 +3,13 @@ Symbol found at ./cex.h:265
 
 CEX Error handling cheat sheet:
 
-1. Errors can be any `char*`
+1. Errors can be any `char*`, or string literals.
 2. EOK / Error.ok - is NULL, means no error
 3. Exception return type forced to be checked by compiler
 4. Error is built-in generic error type
 5. Errors should be checked by pointer comparison, not string contents.
-6. `e$` are helper functions for error handling
-7.  WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
+6. `e$` are helper macros for error handling
+7.  DO NOT USE break/continue inside e\$except/e\$except_* scopes (these macros are for loops too)!
 
 
 Generic errors:
