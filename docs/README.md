@@ -3,7 +3,7 @@ title: "CEX.C Language Documentation"
 format:
   html:
     toc: true
-    toc-location: left
+    toc-location: left-body
     toc-depth: 4
     embed-resources: true
     theme: darkly

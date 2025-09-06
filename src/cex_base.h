@@ -48,6 +48,104 @@ typedef ptrdiff_t isize;
  *                 ERRORS
  */
 
+/**
+CEX Error handling cheat sheet:
+
+1. Errors can be any `char*`, or string literals.
+2. EOK / Error.ok - is NULL, means no error
+3. Exception return type forced to be checked by compiler
+4. Error is built-in generic error type
+5. Errors should be checked by pointer comparison, not string contents.
+6. `e$` are helper macros for error handling
+7.  DO NOT USE break/continue inside e\$except/e\$except_* scopes (these macros are for loops too)!
+
+
+Generic errors:
+
+```c
+Error.ok = EOK;                       // Success
+Error.memory = "MemoryError";         // memory allocation error
+Error.io = "IOError";                 // IO error
+Error.overflow = "OverflowError";     // buffer overflow
+Error.argument = "ArgumentError";     // function argument error
+Error.integrity = "IntegrityError";   // data integrity error
+Error.exists = "ExistsError";         // entity or key already exists
+Error.not_found = "NotFoundError";    // entity or key already exists
+Error.skip = "ShouldBeSkipped";       // NOT an error, function result must be skipped
+Error.empty = "EmptyError";           // resource is empty
+Error.eof = "EOF";                    // end of file reached
+Error.argsparse = "ProgramArgsError"; // program arguments empty or incorrect
+Error.runtime = "RuntimeError";       // generic runtime error
+Error.assert = "AssertError";         // generic runtime check
+Error.os = "OSError";                 // generic OS check
+Error.timeout = "TimeoutError";       // await interval timeout
+Error.permission = "PermissionError"; // Permission denied
+Error.try_again = "TryAgainError";    // EAGAIN / EWOULDBLOCK errno analog for async operations
+```
+
+```c
+
+Exception
+remove_file(char* path)
+{
+    if (path == NULL || path[0] == '\0') { 
+        return Error.argument;  // Empty of null file
+    }
+    if (!os.path.exists(path)) {
+        return "Not exists" // literal error are allowed, but must be handled as strcmp()
+    }
+    if (str.eq(path, "magic.file")) {
+        // Returns an Error.integrity and logs error at current line to stdout
+        return e$raise(Error.integrity, "Removing magic file is not allowed!");
+    }
+    if (remove(path) < 0) { 
+        return strerror(errno); // using system error text (arbitrary!)
+    }
+    return EOK;
+}
+
+Exception read_file(char* filename) {
+    e$assert(buff != NULL);
+
+    int fd = 0;
+    e$except_errno(fd = open(filename, O_RDONLY)) { return Error.os; }
+    return EOK;
+}
+
+Exception do_stuff(char* filename) {
+    // return immediately with error + prints traceback
+    e$ret(read_file("foo.txt"));
+
+    // jumps to label if read_file() fails + prints traceback
+    e$goto(read_file(NULL), fail);
+
+    // silent error handing without tracebacks
+    e$except_silent (err, foo(0)) {
+
+        // Nesting of error handlers is allowed
+        e$except_silent (err, foo(2)) {
+            return err;
+        }
+
+        // NOTE: `err` is address of char* compared with address Error.os (not by string contents!)
+        if (err == Error.os) {
+            // Special handing
+            io.print("Ooops OS problem\n");
+        } else {
+            // propagate
+            return err;
+        }
+    }
+    return EOK;
+
+fail:
+    // TODO: cleanup here
+    return Error.io;
+}
+```
+*/
+#define __e$
+
 /// Generic CEX error is a char*, where NULL means success(no error)
 typedef char* Exc;
 
@@ -211,9 +309,7 @@ __cex__fprintf_dummy(void)
             fail_func                                                                              \
         ))
 
-/**
- * @brief Non disposable assert, returns Error.assert CEX exception when failed
- */
+/// Non disposable assert, returns Error.assert CEX exception when failed
 #    define e$assert(A)                                                                             \
         ({                                                                                          \
             if (unlikely(!((A)))) {                                                                 \
@@ -223,6 +319,7 @@ __cex__fprintf_dummy(void)
         })
 
 
+/// Non disposable assert, returns Error.assert CEX exception when failed (supports formatting)
 #    define e$assertf(A, format, ...)                                                              \
         ({                                                                                         \
             if (unlikely(!((A)))) {                                                                \
@@ -384,10 +481,11 @@ __attribute__((noinline)) void __cex__panic(void);
 #define cex$varname(a, b) cex$concat3(__cex__, a, b)
 #define cex$tmpname(base) cex$varname(base, __LINE__)
 
+/// raises an error, code: `return e$raise(Error.integrity, "ooops: %d", i);`
 #define e$raise(return_uerr, error_msg, ...)                                                       \
     (log$error("[%s] " error_msg "\n", return_uerr, ##__VA_ARGS__), (return_uerr))
 
-// WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
+/// catches the error of function inside scope + prints traceback
 #define e$except(_var_name, _func)                                                                 \
     for (Exc _var_name = _func;                                                                    \
          unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                 \
@@ -396,10 +494,12 @@ __attribute__((noinline)) void __cex__panic(void);
 #if defined(CEX_TEST) || defined(CEX_BUILD)
 #    define e$except_silent(_var_name, _func) e$except (_var_name, _func)
 #else
+/// catches the error of function inside scope (without traceback)
 #    define e$except_silent(_var_name, _func)                                                      \
         for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
 #endif
 
+/// catches the error of system function (if negative value + errno), prints errno error
 #define e$except_errno(_expression)                                                                \
     for (int _tmp_errno = 0; unlikely(                                                             \
              ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&             \
@@ -414,12 +514,15 @@ __attribute__((noinline)) void __cex__panic(void);
          );                                                                                        \
          _tmp_errno = 1)
 
+/// catches the error is expression returned null
 #define e$except_null(_expression)                                                                 \
     if (unlikely(((_expression) == NULL) && (log$error("`%s` returned NULL\n", #_expression), 1)))
 
+/// catches the error is expression returned true
 #define e$except_true(_expression)                                                                 \
     if (unlikely(((_expression)) && (log$error("`%s` returned non zero\n", #_expression), 1)))
 
+/// immediately returns from function with _func error + prints traceback 
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
@@ -428,6 +531,7 @@ __attribute__((noinline)) void __cex__panic(void);
          cex$tmpname(__cex_err_traceback_) = EOK)                                                  \
     return cex$tmpname(__cex_err_traceback_)
 
+/// `goto _label` when _func returned error + prints traceback
 #define e$goto(_func, _label)                                                                      \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
