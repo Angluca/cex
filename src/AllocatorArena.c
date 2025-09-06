@@ -146,7 +146,7 @@ _cex_allocator_arena__request_page_size(
         if (page_size == 0 || page_size > CEX_ARENA_MAX_ALLOC) {
             uassert(page_size > 0 && "page_size is zero");
             uassert(page_size <= CEX_ARENA_MAX_ALLOC && "page_size is to big");
-            return false;
+            return NULL;
         }
         allocator_arena_page_s*
             page = mem$->calloc(mem$, 1, page_size, alignof(allocator_arena_page_s));

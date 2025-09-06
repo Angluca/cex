@@ -350,20 +350,20 @@ int __cex_test_uassert_enabled = 1;
 
 __attribute__((noinline)) void __cex__panic(void);
 
-#define unreachable(format, ...)                                                                   \
-    ({                                                                                             \
-        __cex__fprintf(                                                                            \
-            stderr,                                                                                \
-            "[UNREACHABLE] ",                                                                      \
-            __FILE_NAME__,                                                                         \
-            __LINE__,                                                                              \
-            __func__,                                                                              \
-            format "\n",                                                                           \
-            ##__VA_ARGS__                                                                          \
-        );                                                                                         \
-        __cex__panic();                                                                            \
-        __builtin_unreachable();                                                                   \
-    })
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+#    undef unreachable
+#endif
+
+#ifdef NDEBUG
+#    define unreachable() __builtin_unreachable()
+#else
+#    define unreachable()                                                                          \
+        ({                                                                                         \
+            __cex__fprintf(stderr, "[UNREACHABLE] ", __FILE_NAME__, __LINE__, __func__, "\n");     \
+            __cex__panic();                                                                        \
+            __builtin_unreachable();                                                               \
+        })
+#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 #    define breakpoint() __debugbreak()

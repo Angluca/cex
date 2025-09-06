@@ -604,7 +604,7 @@ _cexds__hmkey_ptr(void* a, usize elemsize, usize index, usize keyoffset)
             break;
         }
         default:
-            unreachable("Not implemented");
+            unreachable();
     }
     return key_data_p;
 }

@@ -21,7 +21,7 @@ _check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
     char* ops = "?";
     switch (op) {
         case _cex_test_eq_op__na:
-            unreachable("bad op");
+            unreachable();
             break;
         case _cex_test_eq_op__eq:
             passed = a == b;
@@ -113,7 +113,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
     }
     switch (op) {
         case _cex_test_eq_op__na:
-            unreachable("bad op");
+            unreachable();
             break;
         case _cex_test_eq_op__eq:
             passed = is_equal;
@@ -172,7 +172,7 @@ _check_eq_str(char* a, char* b, int line, enum _cex_test_eq_op_e op)
             ops = "==";
             break;
         default:
-            unreachable("bad op or unsupported for strings");
+            unreachable();
     }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!passed) {
@@ -248,7 +248,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
             ops = "==";
             break;
         default:
-            unreachable("bad op or unsupported for strings");
+            unreachable();
     }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!passed) {

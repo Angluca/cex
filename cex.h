@@ -111,7 +111,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 16
 #define cex$version_patch 0
-#define cex$version_date "2025-09-05"
+#define cex$version_date "2025-09-06"
 
 
 
@@ -468,20 +468,20 @@ int __cex_test_uassert_enabled = 1;
 
 __attribute__((noinline)) void __cex__panic(void);
 
-#define unreachable(format, ...)                                                                   \
-    ({                                                                                             \
-        __cex__fprintf(                                                                            \
-            stderr,                                                                                \
-            "[UNREACHABLE] ",                                                                      \
-            __FILE_NAME__,                                                                         \
-            __LINE__,                                                                              \
-            __func__,                                                                              \
-            format "\n",                                                                           \
-            ##__VA_ARGS__                                                                          \
-        );                                                                                         \
-        __cex__panic();                                                                            \
-        __builtin_unreachable();                                                                   \
-    })
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+#    undef unreachable
+#endif
+
+#ifdef NDEBUG
+#    define unreachable() __builtin_unreachable()
+#else
+#    define unreachable()                                                                          \
+        ({                                                                                         \
+            __cex__fprintf(stderr, "[UNREACHABLE] ", __FILE_NAME__, __LINE__, __func__, "\n");     \
+            __cex__panic();                                                                        \
+            __builtin_unreachable();                                                               \
+        })
+#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 #    define breakpoint() __debugbreak()
@@ -4104,7 +4104,7 @@ _cex_allocator_arena__request_page_size(
         if (page_size == 0 || page_size > CEX_ARENA_MAX_ALLOC) {
             uassert(page_size > 0 && "page_size is zero");
             uassert(page_size <= CEX_ARENA_MAX_ALLOC && "page_size is to big");
-            return false;
+            return NULL;
         }
         allocator_arena_page_s*
             page = mem$->calloc(mem$, 1, page_size, alignof(allocator_arena_page_s));
@@ -5138,7 +5138,7 @@ _cexds__hmkey_ptr(void* a, usize elemsize, usize index, usize keyoffset)
             break;
         }
         default:
-            unreachable("Not implemented");
+            unreachable();
     }
     return key_data_p;
 }
@@ -12433,7 +12433,7 @@ _check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
     char* ops = "?";
     switch (op) {
         case _cex_test_eq_op__na:
-            unreachable("bad op");
+            unreachable();
             break;
         case _cex_test_eq_op__eq:
             passed = a == b;
@@ -12525,7 +12525,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
     }
     switch (op) {
         case _cex_test_eq_op__na:
-            unreachable("bad op");
+            unreachable();
             break;
         case _cex_test_eq_op__eq:
             passed = is_equal;
@@ -12584,7 +12584,7 @@ _check_eq_str(char* a, char* b, int line, enum _cex_test_eq_op_e op)
             ops = "==";
             break;
         default:
-            unreachable("bad op or unsupported for strings");
+            unreachable();
     }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!passed) {
@@ -12660,7 +12660,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
             ops = "==";
             break;
         default:
-            unreachable("bad op or unsupported for strings");
+            unreachable();
     }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!passed) {
