@@ -85,7 +85,7 @@ match_make(char* out_file, char* text, char* pattern)
 
     FILE* fh;
     e$ret(io.fopen(&fh, out_file, "wb"));
-    e$ret(io.fwrite(fh, &f, sizeof(f), 1));
+    e$ret(io.fwrite(fh, &f, sizeof(f)));
     io.fclose(&fh);
 
     return EOK;

@@ -1,5 +1,9 @@
 #pragma once
 #include "all.h"
+#include "cex.h"
+#include "src/cex_base.h"
+#include <errno.h>
+#include <stdio.h>
 
 #ifdef _WIN32
 #    include <io.h>
@@ -10,6 +14,7 @@
 #    include <unistd.h>
 #endif
 
+/// Opens new file
 Exception
 cex_io_fopen(FILE** file, char* filename, char* mode)
 {
@@ -138,27 +143,28 @@ cex_io__file__size(FILE* file)
 #endif
 }
 
-Exception
-cex_io_fread(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize* obj_count)
+isize
+cex_io_fread(FILE* file, void* buff, usize buff_len)
 {
-    if (file == NULL) { return Error.argument; }
-    if (obj_buffer == NULL) { return Error.argument; }
-    if (obj_el_size == 0) { return Error.argument; }
-    if (obj_count == NULL || *obj_count == 0) { return Error.argument; }
+    uassert(file != NULL);
+    uassert(buff != NULL);
+    uassert(buff_len < PTRDIFF_MAX && "Must fit to isize max");
 
-    usize ret_count = fread(obj_buffer, obj_el_size, *obj_count, file);
+    if (unlikely(buff_len >= PTRDIFF_MAX)) {
+        return -1; // hard protecting even in production
+    }
 
-    if (ret_count != *obj_count) {
+    usize ret_count = fread(buff, 1, buff_len, file);
+
+    if (ret_count != buff_len) {
         if (ferror(file)) {
-            *obj_count = 0;
-            return Error.io;
-        } else {
-            *obj_count = ret_count;
-            return (ret_count == 0) ? Error.eof : Error.ok;
+            // NOTE: use os.get_last_error() to get platform specific error
+            return -1;
         }
     }
 
-    return Error.ok;
+    uassert(ret_count < PTRDIFF_MAX);
+    return ret_count;
 }
 
 Exception
@@ -382,21 +388,20 @@ cex_io_printf(char* format, ...)
 }
 
 Exception
-cex_io_fwrite(FILE* file, void* restrict obj_buffer, usize obj_el_size, usize obj_count)
+cex_io_fwrite(FILE* file, void* buff, usize buff_len)
 {
     if (file == NULL) {
         uassert(file != NULL);
         return Error.argument;
     }
 
-    if (obj_buffer == NULL) { return Error.argument; }
-    if (obj_el_size == 0) { return Error.argument; }
-    if (obj_count == 0) { return Error.argument; }
+    if (buff == NULL) { return Error.argument; }
+    if (buff_len == 0) { return Error.argument; }
 
-    usize ret_count = fwrite(obj_buffer, obj_el_size, obj_count, file);
+    usize ret_count = fwrite(buff, 1, buff_len, file);
 
-    if (ret_count != obj_count) {
-        return Error.io;
+    if (ret_count != buff_len) {
+        return os.get_last_error();
     } else {
         return Error.ok;
     }
@@ -444,7 +449,7 @@ cex_io__file__save(char* path, char* contents)
 
     usize contents_len = strlen(contents);
     if (contents_len > 0) {
-        e$except_silent (err, cex_io_fwrite(file, contents, 1, contents_len)) {
+        e$except_silent (err, cex_io_fwrite(file, contents, contents_len)) {
             cex_io_fclose(&file);
             return err;
         }

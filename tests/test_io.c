@@ -1,4 +1,7 @@
 #include "src/all.c"
+#include "src/ds.h"
+#include "src/test.h"
+#include <stdio.h>
 
 test$teardown_suite()
 {
@@ -435,10 +438,25 @@ test$case(test_read)
     char buf[128];
     memset(buf, 'z', arr$len(buf));
 
-    usize read_len = 4;
-    tassert_eq(Error.ok, io.fread(file, buf, 2, &read_len));
-    tassert_eq(memcmp(buf, "40950000", 8), 0);
-    tassert_eq(read_len, 4);
+    tassert_eq(4, io.fread(file, buf, 4));
+    tassert_eq(memcmp(buf, "4095", 4), 0);
+
+    io.fclose(&file);
+    return EOK;
+}
+
+test$case(test_read_error)
+{
+    FILE* file;
+    tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_non_existing.txt", "w"));
+    tassert(!ferror(file));
+
+    char buf[128];
+    memset(buf, 'z', arr$len(buf));
+
+    tassert_lt(io.fread(file, buf, 4), 0);
+
+    e$ret(os.fs.remove("tests/data/text_file_non_existing.txt"));
 
     io.fclose(&file);
     return EOK;
@@ -452,10 +470,35 @@ test$case(test_read_empty)
     char buf[128];
     memset(buf, 'z', arr$len(buf));
 
-    usize read_len = 4;
-    tassert_eq(Error.eof, io.fread(file, buf, 2, &read_len));
+    tassert_eq(0, io.fread(file, buf, arr$len(buf)));
     tassert_eq(memcmp(buf, "zzzzzzzz", 8), 0); // untouched!
-    tassert_eq(read_len, 0);
+
+    io.fclose(&file);
+    return EOK;
+}
+
+test$case(test_read_loop)
+{
+    FILE* file;
+    tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
+
+    char buf[128];
+    memset(buf, 'z', arr$len(buf));
+
+    isize nread = 0;
+    while((nread = io.fread(file, buf, 10))) {
+        if (nread < 0) {
+            tassert(false && "Unexpected file io error");
+            break;
+        }
+        
+        tassert_eq(nread, 10);
+        tassert_eq(buf[0], '0');
+        tassert_eq(buf[9], '\n');
+
+        buf[10] = '\0';
+        io.printf("%s", buf);
+    }
 
     io.fclose(&file);
     return EOK;
@@ -469,14 +512,12 @@ test$case(test_read_not_all)
     char buf[128];
     memset(buf, 'z', arr$len(buf));
 
-    usize read_len = 100;
-    tassert_eq(Error.ok, io.fread(file, buf, 1, &read_len));
-    tassert_eq(read_len, 50);
+    tassert_eq(50, io.fread(file, buf, arr$len(buf)));
 
     // NOTE: read method does not null terminate!
-    tassert_eq(buf[read_len], 'z');
+    tassert_eq(buf[50], 'z');
 
-    buf[read_len] = '\0'; // null terminate to compare string result below
+    buf[50] = '\0'; // null terminate to compare string result below
     tassert_eq(
         "000000001\n"
         "000000002\n"
@@ -486,13 +527,26 @@ test$case(test_read_not_all)
         buf
     );
 
-    tassert_eq(Error.eof, io.fread(file, buf, 1, &read_len));
-    tassert_eq(read_len, 0);
+    tassert_eq(0, io.fread(file, buf, arr$len(buf)));
 
     io.fclose(&file);
     return EOK;
 }
 
+test$case(test_write_error)
+{
+    FILE* file;
+    tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
+    tassert(!ferror(file));
+
+    char buf[128];
+    memset(buf, 'z', arr$len(buf));
+
+    tassert_ne(EOK, io.fwrite(file, buf, 4));
+
+    io.fclose(&file);
+    return EOK;
+}
 
 test$case(test_fprintf_to_file)
 {
@@ -523,7 +577,7 @@ test$case(test_write)
     tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_write.txt", "w+"));
 
     char buf[5] = { "1234" };
-    tassert_eq(EOK, io.fwrite(file, buf, sizeof(char), 4));
+    tassert_eq(EOK, io.fwrite(file, buf, 4));
 
     str_s content;
     io.rewind(file);
