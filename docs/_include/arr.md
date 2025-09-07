@@ -23,7 +23,7 @@ Symbol found at ./cex.h:1045
     }
 
     // iterating array (by pointer - prefer for bigger structs to avoid copying)
-    for$each(it, array) {
+    for$eachp(it, array) {
         // TIP: making array index out of `it`
         usize i = it - array;
 

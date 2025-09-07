@@ -1377,7 +1377,7 @@ mem$scope(tmem$, _)
 ### Advanced topics
 #### Performance tips
 ##### TempAllocator makes CPU cache hot
-If we use `mem$scope(tmem$)` a lot, the ArenaAllocator re-uses same memory pages, therefore these memory areas will be prefetched by CPU cache, which will be beneficial for performance. The ArenaAllocator in general works like a stack, with automatic memory cleanup at the scope index.
+If we use `mem$scope(tmem$)` a lot, the ArenaAllocator re-uses same memory pages, therefore these memory areas will be prefetched by CPU cache, which will be beneficial for performance. The ArenaAllocator in general works like a stack, with automatic memory cleanup at the scope exit.
 
 ##### Arena allocation is cheap
 ArenaAllocator implements memory allocation by moving a memory pointer back and forth, it doesn't take much for allocating small chunks if there is no need for requesting memory from the OS for the new arena page.
@@ -3143,32 +3143,32 @@ Just type:
 
 {{< include _include/argparse.md >}}
 
-### `arr`
+### `arr$`
 {{< include _include/arr.md >}}
 
 ### `cexy`
 
 {{< include _include/cexy.md >}}
 
-### `cg`
+### `cg$`
 {{< include _include/cg.md >}}
 
-### `e`
+### `e$`
 {{< include _include/e.md >}}
 
-### `for`
+### `for$`
 {{< include _include/for.md >}}
 
-### `fuzz`
+### `fuzz$`
 {{< include _include/fuzz.md >}}
 
-### `hm`
+### `hm$`
 {{< include _include/hm.md >}}
 
 ### `io`
 {{< include _include/io.md >}}
 
-### `mem`
+### `mem$`
 {{< include _include/mem.md >}}
 
 ### `os`
@@ -3180,6 +3180,6 @@ Just type:
 ### `str`
 {{< include _include/str.md >}}
 
-### `test`
+### `test$`
 {{< include _include/test.md >}}
 
