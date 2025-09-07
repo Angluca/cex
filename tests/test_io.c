@@ -456,9 +456,9 @@ test$case(test_read_error)
 
     tassert_lt(io.fread(file, buf, 4), 0);
 
-    e$ret(os.fs.remove("tests/data/text_file_non_existing.txt"));
-
     io.fclose(&file);
+
+    e$ret(os.fs.remove("tests/data/text_file_non_existing.txt"));
     return EOK;
 }
 
