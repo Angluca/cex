@@ -1,7 +1,86 @@
-Symbol found at ./cex.h:2148
+Symbol found at ./cex.h:2228
+
+
+Cross-platform IO namespace
+
+- Read all file content (low level api)
+```c
+
+test$case(test_readall)
+{
+    // Open new file
+    FILE* file;
+    e$ret(io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
+
+
+    // get file size 
+    tassert_eq(50, io.file.size(file));
+
+    // Read all content
+    str_s content;
+    e$ret(io.fread_all(file, &content, mem$));
+    mem$free(mem$, content.buf); // content.buf is allocated by mem$ !
+
+    // Cleanup
+    io.fclose(&file); // file will be set to NULL
+    tassert(file == NULL);
+
+    return EOK;
+}
+
+```
+
+- File load/save (easy api)
+```c
+
+test$case(test_fload_save)
+{
+    tassert_eq(Error.ok, io.file.save("tests/data/text_file_write.txt", "Hello from CEX!\n"));
+    char* content = io.file.load("tests/data/text_file_write.txt", mem$);
+    tassert(content);
+    tassert_eq(content, "Hello from CEX!\n");
+    mem$free(mem$, content);
+    return EOK;
+}
+
+```
+
+- File read/write lines 
+
+```c
+test$case(test_write_line)
+{
+    FILE* file;
+    tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_write.txt", "w+"));
+
+    str_s content;
+    mem$scope(tmem$, _)
+    {
+        // Writing line by line
+        tassert_eq(EOK, io.file.writeln(file, "hello"));
+        tassert_eq(EOK, io.file.writeln(file, "world"));
+
+        // Reading line by line
+        io.rewind(file);
+
+        // easy api - backed by temp allocator
+        tassert_eq("hello", io.file.readln(file, _));
+
+        // low-level api (using heap allocator, needs free!)
+        tassert_er(EOK, io.fread_line(file, &content, mem$));
+        tassert(str.slice.eq(content, str$s("world")));
+        mem$free(mem$, content.buf);
+    }
+
+    io.fclose(&file);
+    return EOK;
+}
+```
+
 
 
 ```c
+/// Makes string literal with ansi colored test
 #define io$ansi(text, ansi_col)
 
 
