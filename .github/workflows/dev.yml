@@ -52,6 +52,7 @@ jobs:
       - name: valgrind tests
         run: |
           ./cex -DCEX_VALGRIND config
+          ./cex test clean all
           ./cex test debug all
 
       - uses: actions/upload-artifact@master # capture all binaries
