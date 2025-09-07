@@ -1,5 +1,3 @@
-Symbol found at ./cex.h:2116
-
 
 ```c
 typedef char* sbuf_c

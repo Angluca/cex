@@ -1,5 +1,3 @@
-Symbol found at ./cex.h:4328
-
 
 - Fuzz runner commands
 

@@ -1,5 +1,3 @@
-Symbol found at ./cex.h:3078
-
 
 ```c
 #define os$PATH_SEP

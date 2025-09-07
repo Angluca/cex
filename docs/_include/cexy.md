@@ -1,5 +1,3 @@
-Symbol found at ./cex.h:3970
-
 
 ```c
 /// Build dir for project executables and tests (may be overridden by user)

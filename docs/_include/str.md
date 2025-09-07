@@ -1,5 +1,3 @@
-Symbol found at ./cex.h:2014
-
 
 ```c
 /// Parses string contents as value type based on generic numeric type of out_var_ptr

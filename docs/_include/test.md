@@ -1,5 +1,3 @@
-Symbol found at ./cex.h:3183
-
 
 ```c
 #define test$NOOPT

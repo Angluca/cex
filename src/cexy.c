@@ -1393,7 +1393,10 @@ _cexy__display_full_info(
 
     mem$scope(tmem$, _)
     {
-        io.fprintf(output, "Symbol found at %s:%d\n\n", d->file, d->line + 1);
+        if (!cex_ns_decls) {
+            io.fprintf(output, "Symbol found at %s:%d\n\n", d->file, d->line + 1);
+        }
+
         if (d->type == CexTkn__func_def) {
             name = _cexy__fn_dotted(d->name, base_ns, _);
             if (!name.buf) {

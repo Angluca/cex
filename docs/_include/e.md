@@ -1,5 +1,3 @@
-Symbol found at ./cex.h:265
-
 
 CEX Error handling cheat sheet:
 

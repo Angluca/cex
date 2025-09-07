@@ -539,10 +539,8 @@ test$case(test_write_error)
     tassert_eq(Error.ok, io.fopen(&file, "tests/data/text_file_50b.txt", "r"));
     tassert(!ferror(file));
 
-    char buf[128];
-    memset(buf, 'z', arr$len(buf));
-
-    tassert_ne(EOK, io.fwrite(file, buf, 4));
+    char buf[] = "foobar";
+    tassert_ne(EOK, io.fwrite(file, buf, arr$len(buf)));
 
     io.fclose(&file);
     return EOK;

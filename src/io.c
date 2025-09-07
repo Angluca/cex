@@ -14,7 +14,7 @@
 #    include <unistd.h>
 #endif
 
-/// Opens new file
+/// Opens new file: io.fopen(&file, "file.txt", "r+")
 Exception
 cex_io_fopen(FILE** file, char* filename, char* mode)
 {
@@ -43,6 +43,8 @@ cex_io_fopen(FILE** file, char* filename, char* mode)
     return Error.ok;
 }
 
+
+/// Obtain file descriptor from FILE*
 int
 cex_io_fileno(FILE* file)
 {
@@ -50,6 +52,7 @@ cex_io_fileno(FILE* file)
     return fileno(file);
 }
 
+/// Check if current file supports ANSI colors and in interactive terminal mode
 bool
 cex_io_isatty(FILE* file)
 {
@@ -63,6 +66,7 @@ cex_io_isatty(FILE* file)
 #endif
 }
 
+/// Flush changes to file
 Exception
 cex_io_fflush(FILE* file)
 {
@@ -76,6 +80,7 @@ cex_io_fflush(FILE* file)
     }
 }
 
+/// Seek file position
 Exception
 cex_io_fseek(FILE* file, long offset, int whence)
 {
@@ -93,6 +98,7 @@ cex_io_fseek(FILE* file, long offset, int whence)
     }
 }
 
+/// Rewind file cursor at the beginning
 void
 cex_io_rewind(FILE* file)
 {
@@ -100,6 +106,7 @@ cex_io_rewind(FILE* file)
     rewind(file);
 }
 
+/// Returns current cursor position into `size` pointer
 Exception
 cex_io_ftell(FILE* file, usize* size)
 {
@@ -119,6 +126,7 @@ cex_io_ftell(FILE* file, usize* size)
     }
 }
 
+/// Return full file size, always 0 for NULL file or atty
 usize
 cex_io__file__size(FILE* file)
 {
@@ -143,6 +151,8 @@ cex_io__file__size(FILE* file)
 #endif
 }
 
+/// Read file contents into the buf, return nbytes read (can be < buff_len), 0 on EOF, negative on
+/// error (you may use os.get_last_error() for getting Exception for error, cross-platform )
 isize
 cex_io_fread(FILE* file, void* buff, usize buff_len)
 {
@@ -167,6 +177,7 @@ cex_io_fread(FILE* file, void* buff, usize buff_len)
     return ret_count;
 }
 
+/// Read all contents of the file, using allocator. You should free `s.buf` after.
 Exception
 cex_io_fread_all(FILE* file, str_s* s, IAllocator allc)
 {
@@ -264,6 +275,7 @@ fail:
     return result;
 }
 
+/// Reads line from a file into str_s buffer, allocates memory. You should free `s.buf` after.
 Exception
 cex_io_fread_line(FILE* file, str_s* s, IAllocator allc)
 {
@@ -360,6 +372,7 @@ fail:
     return result;
 }
 
+/// Prints formatted string to the file. Uses CEX printf() engine with special formatting.
 Exc
 cex_io_fprintf(FILE* stream, char* format, ...)
 {
@@ -377,6 +390,7 @@ cex_io_fprintf(FILE* stream, char* format, ...)
     }
 }
 
+/// Prints formatted string to stdout. Uses CEX printf() engine with special formatting.
 int
 cex_io_printf(char* format, ...)
 {
@@ -387,6 +401,7 @@ cex_io_printf(char* format, ...)
     return result;
 }
 
+/// Writes bytes to the file
 Exception
 cex_io_fwrite(FILE* file, void* buff, usize buff_len)
 {
@@ -407,6 +422,7 @@ cex_io_fwrite(FILE* file, void* buff, usize buff_len)
     }
 }
 
+/// Writes new line to the file
 Exception
 cex_io__file__writeln(FILE* file, char* line)
 {
@@ -427,6 +443,7 @@ cex_io__file__writeln(FILE* file, char* line)
     return Error.ok;
 }
 
+/// Closes file and set it to NULL.
 void
 cex_io_fclose(FILE** file)
 {
@@ -437,6 +454,7 @@ cex_io_fclose(FILE** file)
 }
 
 
+/// Saves full `contents` in the file at `path`, using text mode. 
 Exception
 cex_io__file__save(char* path, char* contents)
 {
@@ -459,6 +477,7 @@ cex_io__file__save(char* path, char* contents)
     return EOK;
 }
 
+/// Load full contents of the file at `path`, using text mode. Returns NULL on error.
 char*
 cex_io__file__load(char* path, IAllocator allc)
 {
@@ -488,6 +507,7 @@ end:
     return out_content.buf;
 }
 
+/// Reads line from file, allocates result. Returns NULL on error.
 char*
 cex_io__file__readln(FILE* file, IAllocator allc)
 {

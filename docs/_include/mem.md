@@ -1,5 +1,3 @@
-Symbol found at ./cex.h:477
-
 
 ```c
 #define mem$
