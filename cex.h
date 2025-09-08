@@ -111,7 +111,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 16
 #define cex$version_patch 0
-#define cex$version_date "2025-09-07"
+#define cex$version_date "2025-09-08"
 
 
 
@@ -3527,6 +3527,532 @@ struct _cex_test_context_s
             return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
+
+
+
+/*
+*                          src/test.c
+*/
+#ifdef CEX_TEST
+#    include <math.h>
+
+enum _cex_test_eq_op_e
+{
+    _cex_test_eq_op__na,
+    _cex_test_eq_op__eq,
+    _cex_test_eq_op__ne,
+    _cex_test_eq_op__lt,
+    _cex_test_eq_op__le,
+    _cex_test_eq_op__gt,
+    _cex_test_eq_op__ge,
+};
+
+static Exc __attribute__((noinline))
+_check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    bool passed = false;
+    char* ops = "?";
+    switch (op) {
+        case _cex_test_eq_op__na:
+            unreachable();
+            break;
+        case _cex_test_eq_op__eq:
+            passed = a == b;
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = a != b;
+            ops = "==";
+            break;
+        case _cex_test_eq_op__lt:
+            passed = a < b;
+            ops = ">=";
+            break;
+        case _cex_test_eq_op__le:
+            passed = a <= b;
+            ops = ">";
+            break;
+        case _cex_test_eq_op__gt:
+            passed = a > b;
+            ops = "<=";
+            break;
+        case _cex_test_eq_op__ge:
+            passed = a >= b;
+            ops = "<";
+            break;
+    }
+    if (!passed) {
+        str.sprintf(
+            _cex_test__mainfn_state.str_buf,
+            sizeof(_cex_test__mainfn_state.str_buf),
+            "%s:%d -> %ld %s %ld",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            a,
+            ops,
+            b
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc __attribute__((noinline))
+_check_eq_almost(f64 a, f64 b, f64 delta, int line)
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    bool passed = false;
+    f64 abdelta = a - b;
+    if (isnan(a) && isnan(b)) {
+        passed = true;
+    } else if (isinf(a) && isinf(b)) {
+        passed = (signbit(a) == signbit(b));
+    } else {
+        passed = fabs(abdelta) <= ((delta != 0) ? delta : (f64)0.0000001);
+    }
+    if (!passed) {
+        str.sprintf(
+            _cex_test__mainfn_state.str_buf,
+            sizeof(_cex_test__mainfn_state.str_buf),
+            "%s:%d -> %f != %f (delta: %f, diff: %f)",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            (a),
+            (b),
+            delta,
+            abdelta
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc __attribute__((noinline))
+_check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
+{
+    (void)op;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    bool passed = false;
+    char* ops = "?";
+    f64 delta = a - b;
+    bool is_equal = false;
+
+    if (isnan(a) && isnan(b)) {
+        is_equal = true;
+    } else if (isinf(a) && isinf(b)) {
+        is_equal = (signbit(a) == signbit(b));
+    } else {
+        is_equal = fabs(delta) <= (f64)0.0000001;
+    }
+    switch (op) {
+        case _cex_test_eq_op__na:
+            unreachable();
+            break;
+        case _cex_test_eq_op__eq:
+            passed = is_equal;
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = !is_equal;
+            ops = "==";
+            break;
+        case _cex_test_eq_op__lt:
+            passed = a < b;
+            ops = ">=";
+            break;
+        case _cex_test_eq_op__le:
+            passed = a < b || is_equal;
+            ops = ">";
+            break;
+        case _cex_test_eq_op__gt:
+            passed = a > b;
+            ops = "<=";
+            break;
+        case _cex_test_eq_op__ge:
+            passed = a >= b || is_equal;
+            ops = "<";
+            break;
+    }
+    if (!passed) {
+        str.sprintf(
+            _cex_test__mainfn_state.str_buf,
+            sizeof(_cex_test__mainfn_state.str_buf),
+            "%s:%d -> %f %s %f (delta: %f)",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            a,
+            ops,
+            b,
+            delta
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc __attribute__((noinline))
+_check_eq_str(char* a, char* b, int line, enum _cex_test_eq_op_e op)
+{
+    bool passed = false;
+    char* ops = "";
+    switch (op) {
+        case _cex_test_eq_op__eq:
+            passed = str.eq(a, b);
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = !str.eq(a, b);
+            ops = "==";
+            break;
+        default:
+            unreachable();
+    }
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    if (!passed) {
+        str.sprintf(
+            _cex_test__mainfn_state.str_buf,
+            CEX_TEST_AMSG_MAX_LEN - 1,
+            "%s:%d -> '%s' %s '%s'",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            a,
+            ops,
+            b
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc __attribute__((noinline))
+_check_eq_err(char* a, char* b, int line)
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    if (!str.eq(a, b)) {
+        char* ea = (a == EOK) ? "Error.ok" : a;
+        char* eb = (b == EOK) ? "Error.ok" : b;
+        str.sprintf(
+            _cex_test__mainfn_state.str_buf,
+            CEX_TEST_AMSG_MAX_LEN - 1,
+            "%s:%d -> Exc mismatch '%s' != '%s'",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            ea,
+            eb
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+
+static Exc __attribute__((noinline))
+_check_eq_ptr(void* a, void* b, int line)
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    if (a != b) {
+        str.sprintf(
+            _cex_test__mainfn_state.str_buf,
+            CEX_TEST_AMSG_MAX_LEN - 1,
+            "%s:%d -> %p != %p (ptr_diff: %ld)",
+            _cex_test__mainfn_state.suite_file,
+            line,
+            a,
+            b,
+            (a - b)
+        );
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static Exc __attribute__((noinline))
+_check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
+{
+    bool passed = false;
+    char* ops = "";
+    switch (op) {
+        case _cex_test_eq_op__eq:
+            passed = str.slice.eq(a, b);
+            ops = "!=";
+            break;
+        case _cex_test_eq_op__ne:
+            passed = !str.slice.eq(a, b);
+            ops = "==";
+            break;
+        default:
+            unreachable();
+    }
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    if (!passed) {
+        if (str.sprintf(
+                _cex_test__mainfn_state.str_buf,
+                CEX_TEST_AMSG_MAX_LEN - 1,
+                "%s:%d -> '%S' %s '%S'",
+                _cex_test__mainfn_state.suite_file,
+                line,
+                a,
+                ops,
+                b
+            )) {}
+        return _cex_test__mainfn_state.str_buf;
+    }
+    return EOK;
+}
+
+static void __attribute__((noinline))
+cex_test_mute()
+{
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->out_stream) {
+        fflush(stdout);
+        io.rewind(ctx->out_stream);
+        fflush(ctx->out_stream);
+        dup2(fileno(ctx->out_stream), STDOUT_FILENO);
+    }
+}
+static void __attribute__((noinline))
+cex_test_unmute(Exc test_result)
+{
+    (void)test_result;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->out_stream) {
+        fflush(stdout);
+        putc('\0', stdout);
+        fflush(stdout);
+        isize flen = io.file.size(ctx->out_stream);
+        io.rewind(ctx->out_stream);
+        dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
+
+        if (test_result != EOK && flen > 1) {
+            fflush(stdout);
+            fflush(stderr);
+            fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
+            int c;
+            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') { putc(c, stderr); }
+            fprintf(stderr, "\n============== <<<<<< TEST OUTPUT =============\n");
+        }
+    }
+}
+
+
+static int __attribute__((noinline))
+cex_test_main_fn(int argc, char** argv)
+{
+    (void)argc;
+    (void)argv;
+    extern struct _cex_test_context_s _cex_test__mainfn_state;
+
+    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
+    if (ctx->test_cases == NULL) {
+        fprintf(stderr, "No test$case() in the test file: %s\n", __FILE__);
+        return 1;
+    }
+    u32 max_name = 0;
+    for$each (t, ctx->test_cases) {
+        if (max_name < strlen(t.test_name) + 2) { max_name = strlen(t.test_name) + 2; }
+    }
+    max_name = (max_name < 70) ? 70 : max_name;
+
+    ctx->quiet_mode = false;
+    ctx->has_ansi = io.isatty(stdout);
+
+    argparse_opt_s options[] = {
+        argparse$opt_help(),
+        argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
+        argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
+        argparse$opt(&ctx->breakpoint, 'b', "breakpoint", .help = "breakpoint on tassert failure"),
+        argparse$opt(
+            &ctx->no_stdout_capture,
+            'o',
+            "no-capture",
+            .help = "prints all stdout as test goes"
+        ),
+    };
+
+    argparse_c args = {
+        .options = options,
+        .options_len = arr$len(options),
+        .description = "Test runner program",
+    };
+
+    e$except_silent (err, argparse.parse(&args, argc, argv)) { return 1; }
+
+    if (!ctx->no_stdout_capture) {
+        ctx->out_stream = tmpfile();
+        if (ctx->out_stream == NULL) {
+            fprintf(stderr, "Failed opening temp output for capturing tests\n");
+            uassert(false && "TODO: test this");
+        }
+    }
+
+    ctx->orig_stdout_fd = dup(fileno(stdout));
+
+    mem$scope(tmem$, _)
+    {
+        void* data = mem$malloc(_, 120);
+        (void)data;
+        uassert(data != NULL && "priming temp allocator failed");
+    }
+
+    if (!ctx->quiet_mode) {
+        fprintf(stderr, "-------------------------------------\n");
+        fprintf(stderr, "Running Tests: %s\n", argv[0]);
+        fprintf(stderr, "-------------------------------------\n\n");
+    }
+    if (ctx->setup_suite_fn) {
+        Exc err = NULL;
+        if ((err = ctx->setup_suite_fn())) {
+            fprintf(
+                stderr,
+                "[%s] test$setup_suite() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+    }
+
+    if (ctx->quiet_mode) { fprintf(stderr, "%s ", ctx->suite_file); }
+
+    for$each (t, ctx->test_cases) {
+        ctx->case_name = t.test_name;
+        ctx->tests_run++;
+        if (ctx->case_filter && !str.find(t.test_name, ctx->case_filter)) { continue; }
+
+        if (!ctx->quiet_mode) {
+            fprintf(stderr, "%s", t.test_name);
+            for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) { putc('.', stderr); }
+            if (ctx->no_stdout_capture) { putc('\n', stderr); }
+        }
+
+#    ifndef NDEBUG
+        uassert_enable(); // unconditionally enable previously disabled asserts
+#    endif
+        Exc err = EOK;
+        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
+        alloc_heap->stats.n_allocs = 0;
+        alloc_heap->stats.n_free = 0;
+
+        if (ctx->setup_case_fn && (err = ctx->setup_case_fn()) != EOK) {
+            fflush(stdout);
+            fprintf(
+                stderr,
+                "[%s] test$setup() failed with '%s' (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+
+        cex_test_mute();
+        err = t.test_fn();
+        if (ctx->quiet_mode && err != EOK) {
+            fprintf(stdout, "[%s] %s\n", ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL", err);
+            fprintf(stdout, "Test suite: %s case: %s\n", ctx->suite_file, t.test_name);
+        }
+        cex_test_unmute(err);
+
+        if (err == EOK) {
+            if (ctx->quiet_mode) {
+                fprintf(stderr, ".");
+            } else {
+                fprintf(stderr, "[%s]\n", ctx->has_ansi ? io$ansi("PASS", "32") : "PASS");
+            }
+        } else {
+            ctx->tests_failed++;
+            if (!ctx->quiet_mode) {
+                fprintf(
+                    stderr,
+                    "[%s] %s (%s)\n",
+                    ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                    err,
+                    t.test_name
+                );
+            } else {
+                fprintf(stderr, "F");
+            }
+        }
+        if (ctx->teardown_case_fn && (err = ctx->teardown_case_fn()) != EOK) {
+            fflush(stdout);
+            fprintf(
+                stderr,
+                "[%s] test$teardown() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+        if (err == EOK && alloc_heap->stats.n_allocs != alloc_heap->stats.n_free) {
+            if (!ctx->quiet_mode) {
+                fprintf(stderr, "%s", t.test_name);
+                for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) { putc('.', stderr); }
+            } else {
+                putc('\n', stderr);
+            }
+            fprintf(
+                stderr,
+                "[%s] %s:%d Possible memory leak: allocated %d != free %d\n",
+                ctx->has_ansi ? io$ansi("LEAK", "33") : "LEAK",
+                ctx->suite_file,
+                t.test_line,
+                alloc_heap->stats.n_allocs,
+                alloc_heap->stats.n_free
+            );
+            ctx->tests_failed++;
+        }
+    }
+
+    if (ctx->teardown_suite_fn) {
+        e$except (err, ctx->teardown_suite_fn()) {
+            fprintf(
+                stderr,
+                "[%s] test$teardown_suite() failed with %s (suite %s stopped)\n",
+                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
+                err,
+                __FILE__
+            );
+            return 1;
+        }
+    }
+
+    if (!ctx->quiet_mode) {
+        fprintf(stderr, "\n-------------------------------------\n");
+        fprintf(
+            stderr,
+            "Total: %d Passed: %d Failed: %d\n",
+            ctx->tests_run,
+            ctx->tests_run - ctx->tests_failed,
+            ctx->tests_failed
+        );
+        fprintf(stderr, "-------------------------------------\n");
+    } else {
+        fprintf(stderr, "\n");
+
+        if (ctx->tests_failed) {
+            fprintf(
+                stderr,
+                "\n[%s] %s %d tests failed\n",
+                (ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL"),
+                ctx->suite_file,
+                ctx->tests_failed
+            );
+        }
+    }
+
+    if (ctx->out_stream) {
+        fclose(ctx->out_stream);
+        ctx->out_stream = NULL;
+    }
+    return ctx->tests_run == 0 || ctx->tests_failed > 0;
+}
+#endif // ifdef CEX_TEST
 
 
 
@@ -13359,532 +13885,6 @@ const struct __cex_namespace__os os = {
 
     // clang-format on
 };
-
-
-
-/*
-*                          src/test.c
-*/
-#ifdef CEX_TEST
-#    include <math.h>
-
-enum _cex_test_eq_op_e
-{
-    _cex_test_eq_op__na,
-    _cex_test_eq_op__eq,
-    _cex_test_eq_op__ne,
-    _cex_test_eq_op__lt,
-    _cex_test_eq_op__le,
-    _cex_test_eq_op__gt,
-    _cex_test_eq_op__ge,
-};
-
-static Exc __attribute__((noinline))
-_check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
-{
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    bool passed = false;
-    char* ops = "?";
-    switch (op) {
-        case _cex_test_eq_op__na:
-            unreachable();
-            break;
-        case _cex_test_eq_op__eq:
-            passed = a == b;
-            ops = "!=";
-            break;
-        case _cex_test_eq_op__ne:
-            passed = a != b;
-            ops = "==";
-            break;
-        case _cex_test_eq_op__lt:
-            passed = a < b;
-            ops = ">=";
-            break;
-        case _cex_test_eq_op__le:
-            passed = a <= b;
-            ops = ">";
-            break;
-        case _cex_test_eq_op__gt:
-            passed = a > b;
-            ops = "<=";
-            break;
-        case _cex_test_eq_op__ge:
-            passed = a >= b;
-            ops = "<";
-            break;
-    }
-    if (!passed) {
-        str.sprintf(
-            _cex_test__mainfn_state.str_buf,
-            sizeof(_cex_test__mainfn_state.str_buf),
-            "%s:%d -> %ld %s %ld",
-            _cex_test__mainfn_state.suite_file,
-            line,
-            a,
-            ops,
-            b
-        );
-        return _cex_test__mainfn_state.str_buf;
-    }
-    return EOK;
-}
-
-static Exc __attribute__((noinline))
-_check_eq_almost(f64 a, f64 b, f64 delta, int line)
-{
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    bool passed = false;
-    f64 abdelta = a - b;
-    if (isnan(a) && isnan(b)) {
-        passed = true;
-    } else if (isinf(a) && isinf(b)) {
-        passed = (signbit(a) == signbit(b));
-    } else {
-        passed = fabs(abdelta) <= ((delta != 0) ? delta : (f64)0.0000001);
-    }
-    if (!passed) {
-        str.sprintf(
-            _cex_test__mainfn_state.str_buf,
-            sizeof(_cex_test__mainfn_state.str_buf),
-            "%s:%d -> %f != %f (delta: %f, diff: %f)",
-            _cex_test__mainfn_state.suite_file,
-            line,
-            (a),
-            (b),
-            delta,
-            abdelta
-        );
-        return _cex_test__mainfn_state.str_buf;
-    }
-    return EOK;
-}
-
-static Exc __attribute__((noinline))
-_check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
-{
-    (void)op;
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    bool passed = false;
-    char* ops = "?";
-    f64 delta = a - b;
-    bool is_equal = false;
-
-    if (isnan(a) && isnan(b)) {
-        is_equal = true;
-    } else if (isinf(a) && isinf(b)) {
-        is_equal = (signbit(a) == signbit(b));
-    } else {
-        is_equal = fabs(delta) <= (f64)0.0000001;
-    }
-    switch (op) {
-        case _cex_test_eq_op__na:
-            unreachable();
-            break;
-        case _cex_test_eq_op__eq:
-            passed = is_equal;
-            ops = "!=";
-            break;
-        case _cex_test_eq_op__ne:
-            passed = !is_equal;
-            ops = "==";
-            break;
-        case _cex_test_eq_op__lt:
-            passed = a < b;
-            ops = ">=";
-            break;
-        case _cex_test_eq_op__le:
-            passed = a < b || is_equal;
-            ops = ">";
-            break;
-        case _cex_test_eq_op__gt:
-            passed = a > b;
-            ops = "<=";
-            break;
-        case _cex_test_eq_op__ge:
-            passed = a >= b || is_equal;
-            ops = "<";
-            break;
-    }
-    if (!passed) {
-        str.sprintf(
-            _cex_test__mainfn_state.str_buf,
-            sizeof(_cex_test__mainfn_state.str_buf),
-            "%s:%d -> %f %s %f (delta: %f)",
-            _cex_test__mainfn_state.suite_file,
-            line,
-            a,
-            ops,
-            b,
-            delta
-        );
-        return _cex_test__mainfn_state.str_buf;
-    }
-    return EOK;
-}
-
-static Exc __attribute__((noinline))
-_check_eq_str(char* a, char* b, int line, enum _cex_test_eq_op_e op)
-{
-    bool passed = false;
-    char* ops = "";
-    switch (op) {
-        case _cex_test_eq_op__eq:
-            passed = str.eq(a, b);
-            ops = "!=";
-            break;
-        case _cex_test_eq_op__ne:
-            passed = !str.eq(a, b);
-            ops = "==";
-            break;
-        default:
-            unreachable();
-    }
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    if (!passed) {
-        str.sprintf(
-            _cex_test__mainfn_state.str_buf,
-            CEX_TEST_AMSG_MAX_LEN - 1,
-            "%s:%d -> '%s' %s '%s'",
-            _cex_test__mainfn_state.suite_file,
-            line,
-            a,
-            ops,
-            b
-        );
-        return _cex_test__mainfn_state.str_buf;
-    }
-    return EOK;
-}
-
-static Exc __attribute__((noinline))
-_check_eq_err(char* a, char* b, int line)
-{
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    if (!str.eq(a, b)) {
-        char* ea = (a == EOK) ? "Error.ok" : a;
-        char* eb = (b == EOK) ? "Error.ok" : b;
-        str.sprintf(
-            _cex_test__mainfn_state.str_buf,
-            CEX_TEST_AMSG_MAX_LEN - 1,
-            "%s:%d -> Exc mismatch '%s' != '%s'",
-            _cex_test__mainfn_state.suite_file,
-            line,
-            ea,
-            eb
-        );
-        return _cex_test__mainfn_state.str_buf;
-    }
-    return EOK;
-}
-
-
-static Exc __attribute__((noinline))
-_check_eq_ptr(void* a, void* b, int line)
-{
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    if (a != b) {
-        str.sprintf(
-            _cex_test__mainfn_state.str_buf,
-            CEX_TEST_AMSG_MAX_LEN - 1,
-            "%s:%d -> %p != %p (ptr_diff: %ld)",
-            _cex_test__mainfn_state.suite_file,
-            line,
-            a,
-            b,
-            (a - b)
-        );
-        return _cex_test__mainfn_state.str_buf;
-    }
-    return EOK;
-}
-
-static Exc __attribute__((noinline))
-_check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
-{
-    bool passed = false;
-    char* ops = "";
-    switch (op) {
-        case _cex_test_eq_op__eq:
-            passed = str.slice.eq(a, b);
-            ops = "!=";
-            break;
-        case _cex_test_eq_op__ne:
-            passed = !str.slice.eq(a, b);
-            ops = "==";
-            break;
-        default:
-            unreachable();
-    }
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    if (!passed) {
-        if (str.sprintf(
-                _cex_test__mainfn_state.str_buf,
-                CEX_TEST_AMSG_MAX_LEN - 1,
-                "%s:%d -> '%S' %s '%S'",
-                _cex_test__mainfn_state.suite_file,
-                line,
-                a,
-                ops,
-                b
-            )) {}
-        return _cex_test__mainfn_state.str_buf;
-    }
-    return EOK;
-}
-
-static void __attribute__((noinline))
-cex_test_mute()
-{
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
-    if (ctx->out_stream) {
-        fflush(stdout);
-        io.rewind(ctx->out_stream);
-        fflush(ctx->out_stream);
-        dup2(fileno(ctx->out_stream), STDOUT_FILENO);
-    }
-}
-static void __attribute__((noinline))
-cex_test_unmute(Exc test_result)
-{
-    (void)test_result;
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
-    if (ctx->out_stream) {
-        fflush(stdout);
-        putc('\0', stdout);
-        fflush(stdout);
-        isize flen = io.file.size(ctx->out_stream);
-        io.rewind(ctx->out_stream);
-        dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
-
-        if (test_result != EOK && flen > 1) {
-            fflush(stdout);
-            fflush(stderr);
-            fprintf(stderr, "\n============== TEST OUTPUT >>>>>>>=============\n\n");
-            int c;
-            while ((c = fgetc(ctx->out_stream)) != EOF && c != '\0') { putc(c, stderr); }
-            fprintf(stderr, "\n============== <<<<<< TEST OUTPUT =============\n");
-        }
-    }
-}
-
-
-static int __attribute__((noinline))
-cex_test_main_fn(int argc, char** argv)
-{
-    (void)argc;
-    (void)argv;
-    extern struct _cex_test_context_s _cex_test__mainfn_state;
-
-    struct _cex_test_context_s* ctx = &_cex_test__mainfn_state;
-    if (ctx->test_cases == NULL) {
-        fprintf(stderr, "No test$case() in the test file: %s\n", __FILE__);
-        return 1;
-    }
-    u32 max_name = 0;
-    for$each (t, ctx->test_cases) {
-        if (max_name < strlen(t.test_name) + 2) { max_name = strlen(t.test_name) + 2; }
-    }
-    max_name = (max_name < 70) ? 70 : max_name;
-
-    ctx->quiet_mode = false;
-    ctx->has_ansi = io.isatty(stdout);
-
-    argparse_opt_s options[] = {
-        argparse$opt_help(),
-        argparse$opt(&ctx->case_filter, 'f', "filter", .help = "execute cases with filter"),
-        argparse$opt(&ctx->quiet_mode, 'q', "quiet", .help = "run test in quiet_mode"),
-        argparse$opt(&ctx->breakpoint, 'b', "breakpoint", .help = "breakpoint on tassert failure"),
-        argparse$opt(
-            &ctx->no_stdout_capture,
-            'o',
-            "no-capture",
-            .help = "prints all stdout as test goes"
-        ),
-    };
-
-    argparse_c args = {
-        .options = options,
-        .options_len = arr$len(options),
-        .description = "Test runner program",
-    };
-
-    e$except_silent (err, argparse.parse(&args, argc, argv)) { return 1; }
-
-    if (!ctx->no_stdout_capture) {
-        ctx->out_stream = tmpfile();
-        if (ctx->out_stream == NULL) {
-            fprintf(stderr, "Failed opening temp output for capturing tests\n");
-            uassert(false && "TODO: test this");
-        }
-    }
-
-    ctx->orig_stdout_fd = dup(fileno(stdout));
-
-    mem$scope(tmem$, _)
-    {
-        void* data = mem$malloc(_, 120);
-        (void)data;
-        uassert(data != NULL && "priming temp allocator failed");
-    }
-
-    if (!ctx->quiet_mode) {
-        fprintf(stderr, "-------------------------------------\n");
-        fprintf(stderr, "Running Tests: %s\n", argv[0]);
-        fprintf(stderr, "-------------------------------------\n\n");
-    }
-    if (ctx->setup_suite_fn) {
-        Exc err = NULL;
-        if ((err = ctx->setup_suite_fn())) {
-            fprintf(
-                stderr,
-                "[%s] test$setup_suite() failed with %s (suite %s stopped)\n",
-                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
-                err,
-                __FILE__
-            );
-            return 1;
-        }
-    }
-
-    if (ctx->quiet_mode) { fprintf(stderr, "%s ", ctx->suite_file); }
-
-    for$each (t, ctx->test_cases) {
-        ctx->case_name = t.test_name;
-        ctx->tests_run++;
-        if (ctx->case_filter && !str.find(t.test_name, ctx->case_filter)) { continue; }
-
-        if (!ctx->quiet_mode) {
-            fprintf(stderr, "%s", t.test_name);
-            for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) { putc('.', stderr); }
-            if (ctx->no_stdout_capture) { putc('\n', stderr); }
-        }
-
-#    ifndef NDEBUG
-        uassert_enable(); // unconditionally enable previously disabled asserts
-#    endif
-        Exc err = EOK;
-        AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
-        alloc_heap->stats.n_allocs = 0;
-        alloc_heap->stats.n_free = 0;
-
-        if (ctx->setup_case_fn && (err = ctx->setup_case_fn()) != EOK) {
-            fflush(stdout);
-            fprintf(
-                stderr,
-                "[%s] test$setup() failed with '%s' (suite %s stopped)\n",
-                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
-                err,
-                __FILE__
-            );
-            return 1;
-        }
-
-        cex_test_mute();
-        err = t.test_fn();
-        if (ctx->quiet_mode && err != EOK) {
-            fprintf(stdout, "[%s] %s\n", ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL", err);
-            fprintf(stdout, "Test suite: %s case: %s\n", ctx->suite_file, t.test_name);
-        }
-        cex_test_unmute(err);
-
-        if (err == EOK) {
-            if (ctx->quiet_mode) {
-                fprintf(stderr, ".");
-            } else {
-                fprintf(stderr, "[%s]\n", ctx->has_ansi ? io$ansi("PASS", "32") : "PASS");
-            }
-        } else {
-            ctx->tests_failed++;
-            if (!ctx->quiet_mode) {
-                fprintf(
-                    stderr,
-                    "[%s] %s (%s)\n",
-                    ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
-                    err,
-                    t.test_name
-                );
-            } else {
-                fprintf(stderr, "F");
-            }
-        }
-        if (ctx->teardown_case_fn && (err = ctx->teardown_case_fn()) != EOK) {
-            fflush(stdout);
-            fprintf(
-                stderr,
-                "[%s] test$teardown() failed with %s (suite %s stopped)\n",
-                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
-                err,
-                __FILE__
-            );
-            return 1;
-        }
-        if (err == EOK && alloc_heap->stats.n_allocs != alloc_heap->stats.n_free) {
-            if (!ctx->quiet_mode) {
-                fprintf(stderr, "%s", t.test_name);
-                for (u32 i = 0; i < max_name - strlen(t.test_name) + 2; i++) { putc('.', stderr); }
-            } else {
-                putc('\n', stderr);
-            }
-            fprintf(
-                stderr,
-                "[%s] %s:%d Possible memory leak: allocated %d != free %d\n",
-                ctx->has_ansi ? io$ansi("LEAK", "33") : "LEAK",
-                ctx->suite_file,
-                t.test_line,
-                alloc_heap->stats.n_allocs,
-                alloc_heap->stats.n_free
-            );
-            ctx->tests_failed++;
-        }
-    }
-
-    if (ctx->teardown_suite_fn) {
-        e$except (err, ctx->teardown_suite_fn()) {
-            fprintf(
-                stderr,
-                "[%s] test$teardown_suite() failed with %s (suite %s stopped)\n",
-                ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL",
-                err,
-                __FILE__
-            );
-            return 1;
-        }
-    }
-
-    if (!ctx->quiet_mode) {
-        fprintf(stderr, "\n-------------------------------------\n");
-        fprintf(
-            stderr,
-            "Total: %d Passed: %d Failed: %d\n",
-            ctx->tests_run,
-            ctx->tests_run - ctx->tests_failed,
-            ctx->tests_failed
-        );
-        fprintf(stderr, "-------------------------------------\n");
-    } else {
-        fprintf(stderr, "\n");
-
-        if (ctx->tests_failed) {
-            fprintf(
-                stderr,
-                "\n[%s] %s %d tests failed\n",
-                (ctx->has_ansi ? io$ansi("FAIL", "31") : "FAIL"),
-                ctx->suite_file,
-                ctx->tests_failed
-            );
-        }
-    }
-
-    if (ctx->out_stream) {
-        fclose(ctx->out_stream);
-        ctx->out_stream = NULL;
-    }
-    return ctx->tests_run == 0 || ctx->tests_failed > 0;
-}
-#endif // ifdef CEX_TEST
 
 
 

@@ -123,11 +123,11 @@ cex_bundle(void)
         arr$(char*) src = os.fs.find("src/*.[hc]", false, _);
         if (!cexy.src_changed("cex.h", src, arr$len(src))) { return; }
         char* bundle[] = {
-            "src/cex_base.h",  "src/mem.h",          "src/AllocatorHeap.h", "src/AllocatorArena.h",
-            "src/ds.h",        "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
-            "src/io.h",        "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
-            "src/test.h",      "src/cex_code_gen.h", "src/cexy.h",          "src/CexParser.h",
-            "src/cex_maker.h", "src/fuzz.h"
+            "src/cex_base.h",  "src/mem.h",       "src/AllocatorHeap.h", "src/AllocatorArena.h",
+            "src/ds.h",        "src/_sprintf.h",  "src/str.h",           "src/sbuf.h",
+            "src/io.h",        "src/argparse.h",  "src/_subprocess.h",   "src/os.h",
+            "src/test.h",      "src/test.c",      "src/cex_code_gen.h",  "src/cexy.h",
+            "src/CexParser.h", "src/cex_maker.h", "src/fuzz.h"
 
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
@@ -195,6 +195,9 @@ cex_bundle(void)
         embed_code(&hbuf, "src/cex_boilerplate.c");
 
         for$each (hdr, bundle) {
+            if (str.ends_with(hdr, "test.h")) { continue; }
+            if (str.ends_with(hdr, "test.c")) { continue; }
+
             char* cfile = str.replace(hdr, ".h", ".c", _);
             cg$pn("\n");
             cg$pn("/*");
@@ -268,7 +271,7 @@ cmd_build_docs(int argc, char** argv, void* user_ctx)
     ));
     e$ret(os.fs.chdir(".."));
 
-    if(os.path.exists("_include")){
+    if (os.path.exists("_include")) {
         // weird bug in quarto tool (_include copied)
         e$ret(os.fs.remove_tree("_include/"));
     }
