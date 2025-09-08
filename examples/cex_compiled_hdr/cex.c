@@ -18,6 +18,8 @@ Exception cmd_build_lib(int argc, char** argv, void* user_ctx);
 Exception
 prebuild_cex(void)
 {
+    e$ret(os.fs.mkdir(cexy$build_dir));
+
     char* src[] = { "./cex.h" };
     if (cexy.src_changed(cexy$build_dir "/cex.obj", src, arr$len(src))) {
         log$info("Pre-Building cex.h -> cex.obj\n"); 
