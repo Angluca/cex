@@ -6,6 +6,7 @@
 #    include "windows.h"
 #    include <direct.h>
 #    include <io.h>
+#    include <fcntl.h>
 #else
 #    include <dirent.h>
 #    include <fcntl.h>
