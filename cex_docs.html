@@ -7884,21 +7884,17 @@ Note
 <span id="cb120-24"><a href="#cb120-24" aria-hidden="true" tabindex="-1"></a>    sbuf_c          <span class="op">(*</span>create_static<span class="op">)(</span><span class="dt">char</span><span class="op">*</span> buf<span class="op">,</span> usize buf_size<span class="op">);</span></span>
 <span id="cb120-25"><a href="#cb120-25" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Destroys the string, deallocates the memory, or nullify static buffer.</span></span>
 <span id="cb120-26"><a href="#cb120-26" aria-hidden="true" tabindex="-1"></a>    sbuf_c          <span class="op">(*</span>destroy<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">);</span></span>
-<span id="cb120-27"><a href="#cb120-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Ensures if string has capacity &gt;= new_capacity, reallocates is necessary</span></span>
-<span id="cb120-28"><a href="#cb120-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Exception</span>       <span class="op">(*</span>grow<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">,</span> usize new_capacity<span class="op">);</span></span>
-<span id="cb120-29"><a href="#cb120-29" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Returns false if string invalid</span></span>
-<span id="cb120-30"><a href="#cb120-30" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span>            <span class="op">(*</span>isvalid<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">);</span></span>
-<span id="cb120-31"><a href="#cb120-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Returns string length from its metadata</span></span>
-<span id="cb120-32"><a href="#cb120-32" aria-hidden="true" tabindex="-1"></a>    u32             <span class="op">(*</span>len<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">);</span></span>
-<span id="cb120-33"><a href="#cb120-33" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Shrinks string length to new_length</span></span>
-<span id="cb120-34"><a href="#cb120-34" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span>            <span class="op">(*</span>shrink<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">,</span> usize new_length<span class="op">);</span></span>
-<span id="cb120-35"><a href="#cb120-35" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Recalculate full string length using strlen() if it was externally changed</span></span>
-<span id="cb120-36"><a href="#cb120-36" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span>            <span class="op">(*</span>update_len<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">);</span></span>
-<span id="cb120-37"><a href="#cb120-37" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Validate dynamic string state, with detailed Exception</span></span>
-<span id="cb120-38"><a href="#cb120-38" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Exception</span>       <span class="op">(*</span>validate<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">);</span></span>
-<span id="cb120-39"><a href="#cb120-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb120-40"><a href="#cb120-40" aria-hidden="true" tabindex="-1"></a>    <span class="co">// clang-format on</span></span>
-<span id="cb120-41"><a href="#cb120-41" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb120-27"><a href="#cb120-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Returns false if string invalid</span></span>
+<span id="cb120-28"><a href="#cb120-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span>            <span class="op">(*</span>isvalid<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">);</span></span>
+<span id="cb120-29"><a href="#cb120-29" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Returns string length from its metadata</span></span>
+<span id="cb120-30"><a href="#cb120-30" aria-hidden="true" tabindex="-1"></a>    u32             <span class="op">(*</span>len<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">);</span></span>
+<span id="cb120-31"><a href="#cb120-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Shrinks string length to new_length</span></span>
+<span id="cb120-32"><a href="#cb120-32" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Exc</span>             <span class="op">(*</span>shrink<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">,</span> usize new_length<span class="op">);</span></span>
+<span id="cb120-33"><a href="#cb120-33" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Validate dynamic string state, with detailed Exception</span></span>
+<span id="cb120-34"><a href="#cb120-34" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Exception</span>       <span class="op">(*</span>validate<span class="op">)(</span>sbuf_c<span class="op">*</span> self<span class="op">);</span></span>
+<span id="cb120-35"><a href="#cb120-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-36"><a href="#cb120-36" aria-hidden="true" tabindex="-1"></a>    <span class="co">// clang-format on</span></span>
+<span id="cb120-37"><a href="#cb120-37" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="str" class="level3">
 <h3 class="anchored" data-anchor-id="str"><code>str</code></h3>
