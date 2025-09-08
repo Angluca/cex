@@ -4960,6 +4960,7 @@ CEX_NAMESPACE struct __cex_namespace__fuzz fuzz;
 #    include "windows.h"
 #    include <direct.h>
 #    include <io.h>
+#    include <fcntl.h>
 #else
 #    include <dirent.h>
 #    include <fcntl.h>
