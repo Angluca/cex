@@ -3889,7 +3889,11 @@ cex_test_main_fn(int argc, char** argv)
         }
     }
 
+#    ifdef _WIN32
+    ctx->orig_stdout_fd = _dup(fileno(stdout));
+#    else
     ctx->orig_stdout_fd = dup(fileno(stdout));
+#    endif
 
     mem$scope(tmem$, _)
     {
