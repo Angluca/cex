@@ -2,6 +2,11 @@
 #ifdef CEX_TEST
 #    include <math.h>
 
+#ifdef _WIN32
+#    include <io.h>
+#    include <fcntl.h>
+#endif
+
 enum _cex_test_eq_op_e
 {
     _cex_test_eq_op__na,
