@@ -356,6 +356,7 @@ __cex__fprintf_dummy(void)
 #ifndef mem$asan_enabled
 #    if defined(__has_feature)
 #        if __has_feature(address_sanitizer)
+/// true - if program was compiled with address sanitizer support
 #            define mem$asan_enabled() 1
 #        else
 #            define mem$asan_enabled() 0
