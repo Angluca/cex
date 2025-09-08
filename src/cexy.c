@@ -800,7 +800,8 @@ _cexy__fn_match(str_s fn_name, str_s ns_prefix)
         char* fn_private = str.fmt(_, "%S__*", ns_prefix);
         char* fn_private_cex = str.fmt(_, "cex_%S__*", ns_prefix);
 
-        if (str.slice.starts_with(fn_name, str$s("_"))) { continue; }
+        if (str.slice.starts_with(fn_name, str$s("_"))) { return false; }
+
         if (str.slice.match(fn_name, fn_sub_pattern) ||
             str.slice.match(fn_name, fn_sub_pattern_cex)) {
             return true;
