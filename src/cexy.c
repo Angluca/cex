@@ -624,7 +624,22 @@ _cexy__process_gen_struct(str_s ns_prefix, arr$(cex_decl_s*) decls, sbuf_c* out_
                 clean_name = str.slice.sub(clean_name, 1 + subn.len + 2, 0);
             }
             str_s brief_str = _cexy__process_make_brief_docs(it);
-            if (brief_str.len) { cg$pf("/// %S", brief_str); }
+            if (brief_str.len) { 
+                // Handling comments + special multi-line treatment
+                for$iter(str_s, it, str.slice.iter_split(brief_str, "\n", &it.iterator)) {
+                    str_s _line = str.slice.strip(it.val);
+                    if (str.slice.starts_with(_line, str$s("///"))) {
+                        _line = str.slice.sub(_line, 3, 0);
+                    }
+                    if (str.slice.starts_with(_line, str$s("* "))) {
+                        _line = str.slice.sub(_line, 2, 0);
+                    }
+                    _line = str.slice.strip(_line);
+                    if (_line.len) {
+                        cg$pf("/// %S", _line); 
+                    }
+                }
+            }
             cg$pf("%-15s (*%S)(%s);", it->ret_type, clean_name, it->args);
         }
 
