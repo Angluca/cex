@@ -1,7 +1,10 @@
 #pragma once
 #include "_sprintf.h"
 #include "all.h"
+#include "examples/libs_vcpkg/cex.h"
+#include "src/cex_base.c"
 #include <stdarg.h>
+#include <unistd.h>
 
 struct _sbuf__sprintf_ctx
 {
@@ -16,7 +19,7 @@ struct _sbuf__sprintf_ctx
 static inline sbuf_head_s*
 _sbuf__head(sbuf_c self)
 {
-    uassert(self != NULL);
+    if (unlikely(!self)) { return NULL; }
     sbuf_head_s* head = (sbuf_head_s*)(self - sizeof(sbuf_head_s));
 
     uassert(head->header.magic == 0xf00e && "not a sbuf_head_s / bad pointer");
@@ -155,6 +158,7 @@ static Exception
 cex_sbuf_grow(sbuf_c* self, usize new_capacity)
 {
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(head == NULL)) { return Error.runtime; }
     if (new_capacity <= head->capacity) {
         // capacity is enough, no need to grow
         return Error.ok;
@@ -167,6 +171,7 @@ cex_sbuf_update_len(sbuf_c* self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (head == NULL) { return; }
     if (head->err) { return; }
 
     uassert((*self)[head->capacity] == '\0' && "capacity null term smashed!");
@@ -180,7 +185,8 @@ cex_sbuf_clear(sbuf_c* self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
-    if (head->err) { return; }
+    if (unlikely(head == NULL)) { return; }
+    if (unlikely(head->err)) { return; }
     head->length = 0;
     (*self)[head->length] = '\0';
 }
@@ -190,7 +196,8 @@ cex_sbuf_shrink(sbuf_c* self, usize new_length)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
-    if (head->err) { return; }
+    if (unlikely(!head)) { return; }
+    if (unlikely(head->err)) { return; }
     uassert(new_length <= head->length);
     uassert(new_length <= head->capacity);
     head->length = new_length;
@@ -201,8 +208,8 @@ static u32
 cex_sbuf_len(sbuf_c* self)
 {
     uassert(self != NULL);
-    if (*self == NULL) { return 0; }
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(head == NULL)) { return 0; }
     return head->length;
 }
 
@@ -211,6 +218,7 @@ cex_sbuf_capacity(sbuf_c* self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(head == NULL)) { return 0; }
     return head->capacity;
 }
 
@@ -219,8 +227,8 @@ cex_sbuf_destroy(sbuf_c* self)
 {
     uassert(self != NULL);
 
-    if (*self != NULL) {
-        sbuf_head_s* head = _sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
+    if (head != NULL) {
 
         // NOTE: null-terminate string to avoid future usage,
         // it will appear as empty string if references anywhere else
@@ -288,7 +296,8 @@ cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
 {
     if (unlikely(self == NULL)) { return Error.argument; }
     sbuf_head_s* head = _sbuf__head(*self);
-    if (head->err) { return head->err; }
+    if (unlikely(head == NULL)) { return Error.runtime; }
+    if (unlikely(head->err)) { return head->err; }
 
     struct _sbuf__sprintf_ctx ctx = {
         .head = head,
@@ -332,6 +341,7 @@ cex_sbuf_append(sbuf_c* self, char* s)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(head == NULL)) { return Error.runtime; }
 
     if (unlikely(s == NULL)) { return Error.argument; }
     if (head->err) { return head->err; }

@@ -1,4 +1,5 @@
 #include "src/all.c"
+#include "src/sbuf.c"
 #include "src/test.h"
 
 Exception
@@ -470,8 +471,22 @@ test$case(test_sbuf_appendf_error_resilience)
     tassert_eq(0, strlen(s));
 
     tassert_eq("NULL argument", sbuf.validate(NULL));
+    sbuf.update_len(&s);
 
     s = NULL;
+    tassert_eq("Memory error or already free'd", sbuf.validate(&s));
+
+    // NULL resilience check
+    sbuf.appendf(&s, "%s", "456");
+    sbuf.append(&s, "456");
+    tassert_eq(0, sbuf.len(&s));
+    tassert_eq(0, sbuf.capacity(&s));
+    tassert_er(Error.runtime, sbuf.grow(&s, 31921));
+    sbuf.update_len(&s);
+    sbuf.clear(&s);
+    sbuf.shrink(&s, 0);
+
+    tassert_eq(false, sbuf.isvalid(&s));
     tassert_eq("Memory error or already free'd", sbuf.validate(&s));
 
     sbuf.destroy(&s);
