@@ -2,7 +2,7 @@
 #include "all.h"
 
 /// Fuzz case: ``int fuzz$case(const u8* data, usize size) { return 0;}
-#define fuzz$case test$NOOPT LLVMFuzzerTestOneInput
+#define fuzz$case test$noopt LLVMFuzzerTestOneInput
 
 /// Fuzz test constructor (for building corpus seeds programmatically)
 #define fuzz$setup __attribute__((constructor)) void _cex_fuzzer_setup_constructor
@@ -44,7 +44,7 @@ void __AFL_INIT(void);
 int __AFL_LOOP(unsigned int N);
 #    endif
 #    define fuzz$main()                                                                            \
-        test$NOOPT int main(int argc, char** argv)                                                 \
+        test$noopt int main(int argc, char** argv)                                                 \
         {                                                                                          \
             (void)argc;                                                                            \
             (void)argv;                                                                            \

@@ -3640,31 +3640,31 @@ Note
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href>CEX</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href>C</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-122"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><span id="annotated-cell-122-1"><a href="#annotated-cell-122-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Exception</span> read_file<span class="op">(</span><span class="dt">char</span><span class="op">*</span> filename<span class="op">,</span> <span class="dt">char</span><span class="op">*</span> buf<span class="op">,</span> isize<span class="op">*</span> out_buf_size<span class="op">)</span> <span class="op">{</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-122" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-122-2" class="code-annotation-target"><a href="#annotated-cell-122-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">e$assert</span><span class="op">(</span>buff <span class="op">!=</span> NULL<span class="op">);</span></span>
-<span id="annotated-cell-122-3"><a href="#annotated-cell-122-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">e$assert</span><span class="op">(</span>filename <span class="op">!=</span> NULL <span class="op">&amp;&amp;</span> <span class="st">&quot;invalid filename&quot;</span><span class="op">);</span></span>
-<span id="annotated-cell-122-4"><a href="#annotated-cell-122-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-122-5"><a href="#annotated-cell-122-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> fd <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-122" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-122-6" class="code-annotation-target"><a href="#annotated-cell-122-6" aria-hidden="true" tabindex="-1"></a>    e$except_errno<span class="op">(</span>fd <span class="op">=</span> open<span class="op">(</span>filename<span class="op">,</span> O_RDONLY<span class="op">))</span> <span class="op">{</span> <span class="cf">return</span> Error<span class="op">.</span>os<span class="op">;</span> <span class="op">}</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-122" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-122-7" class="code-annotation-target"><a href="#annotated-cell-122-7" aria-hidden="true" tabindex="-1"></a>    e$except_errno<span class="op">(*</span>out_buf_size <span class="op">=</span> read<span class="op">(</span>fd<span class="op">,</span> buf<span class="op">,</span> <span class="op">*</span>out_buf_size<span class="op">))</span> <span class="op">{</span> <span class="cf">return</span> Error<span class="op">.</span>io<span class="op">;</span> <span class="op">}</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-122" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-122-8" class="code-annotation-target"><a href="#annotated-cell-122-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span></span>
-<span id="annotated-cell-122-9"><a href="#annotated-cell-122-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-125"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><span id="annotated-cell-125-1"><a href="#annotated-cell-125-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Exception</span> read_file<span class="op">(</span><span class="dt">char</span><span class="op">*</span> filename<span class="op">,</span> <span class="dt">char</span><span class="op">*</span> buf<span class="op">,</span> isize<span class="op">*</span> out_buf_size<span class="op">)</span> <span class="op">{</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-125" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-125-2" class="code-annotation-target"><a href="#annotated-cell-125-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">e$assert</span><span class="op">(</span>buff <span class="op">!=</span> NULL<span class="op">);</span></span>
+<span id="annotated-cell-125-3"><a href="#annotated-cell-125-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">e$assert</span><span class="op">(</span>filename <span class="op">!=</span> NULL <span class="op">&amp;&amp;</span> <span class="st">&quot;invalid filename&quot;</span><span class="op">);</span></span>
+<span id="annotated-cell-125-4"><a href="#annotated-cell-125-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-125-5"><a href="#annotated-cell-125-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> fd <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-125" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-125-6" class="code-annotation-target"><a href="#annotated-cell-125-6" aria-hidden="true" tabindex="-1"></a>    e$except_errno<span class="op">(</span>fd <span class="op">=</span> open<span class="op">(</span>filename<span class="op">,</span> O_RDONLY<span class="op">))</span> <span class="op">{</span> <span class="cf">return</span> Error<span class="op">.</span>os<span class="op">;</span> <span class="op">}</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-125" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-125-7" class="code-annotation-target"><a href="#annotated-cell-125-7" aria-hidden="true" tabindex="-1"></a>    e$except_errno<span class="op">(*</span>out_buf_size <span class="op">=</span> read<span class="op">(</span>fd<span class="op">,</span> buf<span class="op">,</span> <span class="op">*</span>out_buf_size<span class="op">))</span> <span class="op">{</span> <span class="cf">return</span> Error<span class="op">.</span>io<span class="op">;</span> <span class="op">}</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-125" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-125-8" class="code-annotation-target"><a href="#annotated-cell-125-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span></span>
+<span id="annotated-cell-125-9"><a href="#annotated-cell-125-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl class="code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-122" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-125" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-122" data-code-lines="2" data-code-annotation="1">Returns error with printing out internal expression: <code>[ASSERT]  ( main.c:26 read_file() ) buff != NULL</code>. <code>e$assert</code> is an Exception returning assert, it doesn’t abort your program, and these asserts are not stripped in release builds.</span>
+<span data-code-cell="annotated-cell-125" data-code-lines="2" data-code-annotation="1">Returns error with printing out internal expression: <code>[ASSERT]  ( main.c:26 read_file() ) buff != NULL</code>. <code>e$assert</code> is an Exception returning assert, it doesn’t abort your program, and these asserts are not stripped in release builds.</span>
 </dd>
-<dt data-target-cell="annotated-cell-122" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-125" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-122" data-code-lines="6" data-code-annotation="2">Handles typical <code>-1 + errno</code> check with print: <code>[ERROR]   ( main.c:27 read_file() ) fd = open(&quot;foo.txt&quot;, O_RDONLY) failed errno: 2, msg: No such file or directory</code></span>
+<span data-code-cell="annotated-cell-125" data-code-lines="6" data-code-annotation="2">Handles typical <code>-1 + errno</code> check with print: <code>[ERROR]   ( main.c:27 read_file() ) fd = open(&quot;foo.txt&quot;, O_RDONLY) failed errno: 2, msg: No such file or directory</code></span>
 </dd>
-<dt data-target-cell="annotated-cell-122" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-125" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-122" data-code-lines="7" data-code-annotation="3">Result of a function returned by reference to the <code>out</code> parameter.</span>
+<span data-code-cell="annotated-cell-125" data-code-lines="7" data-code-annotation="3">Result of a function returned by reference to the <code>out</code> parameter.</span>
 </dd>
-<dt data-target-cell="annotated-cell-122" data-target-annotation="4">4</dt>
+<dt data-target-cell="annotated-cell-125" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-122" data-code-lines="8" data-code-annotation="4">Unambiguous return code for success.</span>
+<span data-code-cell="annotated-cell-125" data-code-lines="8" data-code-annotation="4">Unambiguous return code for success.</span>
 </dd>
 </dl>
 </div>
@@ -4253,48 +4253,48 @@ Note
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true" href>Direct initialization</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false" href>Arena scope</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-3" role="tab" aria-controls="tabset-4-3" aria-selected="false" href>Temp allocator</a></li></ul>
 <div class="tab-content">
 <div id="tabset-4-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-4-1-tab">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-128"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><a class="code-annotation-anchor" data-target-cell="annotated-cell-128" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-128-1" class="code-annotation-target"><a href="#annotated-cell-128-1" aria-hidden="true" tabindex="-1"></a>IAllocator arena <span class="op">=</span> AllocatorArena<span class="op">.</span>create<span class="op">(</span><span class="dv">4096</span><span class="op">);</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-128" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-128-2" class="code-annotation-target"><a href="#annotated-cell-128-2" aria-hidden="true" tabindex="-1"></a><span class="dt">u8</span><span class="op">*</span> p <span class="op">=</span> mem$malloc<span class="op">(</span>arena<span class="op">,</span> <span class="dv">100</span><span class="op">);</span></span>
-<span id="annotated-cell-128-3"><a href="#annotated-cell-128-3" aria-hidden="true" tabindex="-1"></a></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-128" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-128-4" class="code-annotation-target"><a href="#annotated-cell-128-4" aria-hidden="true" tabindex="-1"></a><span class="cf">mem$scope</span><span class="op">(</span>arena<span class="op">,</span> tal<span class="op">)</span></span>
-<span id="annotated-cell-128-5"><a href="#annotated-cell-128-5" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-128" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-128-6" class="code-annotation-target"><a href="#annotated-cell-128-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">u8</span><span class="op">*</span> p2 <span class="op">=</span> mem$malloc<span class="op">(</span>tal<span class="op">,</span> <span class="dv">100000</span><span class="op">);</span></span>
-<span id="annotated-cell-128-7"><a href="#annotated-cell-128-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-128-8"><a href="#annotated-cell-128-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">mem$scope</span><span class="op">(</span>arena<span class="op">,</span> tal<span class="op">)</span></span>
-<span id="annotated-cell-128-9"><a href="#annotated-cell-128-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="annotated-cell-128-10"><a href="#annotated-cell-128-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u8</span><span class="op">*</span> p3 <span class="op">=</span> mem$malloc<span class="op">(</span>tal<span class="op">,</span> <span class="dv">100</span><span class="op">);</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-128" data-target-annotation="5" onclick="event.preventDefault();" href>5</a><span id="annotated-cell-128-11" class="code-annotation-target"><a href="#annotated-cell-128-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-128" data-target-annotation="6" onclick="event.preventDefault();" href>6</a><span id="annotated-cell-128-12" class="code-annotation-target"><a href="#annotated-cell-128-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="annotated-cell-128-13"><a href="#annotated-cell-128-13" aria-hidden="true" tabindex="-1"></a></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-128" data-target-annotation="7" onclick="event.preventDefault();" href>7</a><span id="annotated-cell-128-14" class="code-annotation-target"><a href="#annotated-cell-128-14" aria-hidden="true" tabindex="-1"></a>AllocatorArena<span class="op">.</span>destroy<span class="op">(</span>arena<span class="op">);</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-131"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-131-1" class="code-annotation-target"><a href="#annotated-cell-131-1" aria-hidden="true" tabindex="-1"></a>IAllocator arena <span class="op">=</span> AllocatorArena<span class="op">.</span>create<span class="op">(</span><span class="dv">4096</span><span class="op">);</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-131-2" class="code-annotation-target"><a href="#annotated-cell-131-2" aria-hidden="true" tabindex="-1"></a><span class="dt">u8</span><span class="op">*</span> p <span class="op">=</span> mem$malloc<span class="op">(</span>arena<span class="op">,</span> <span class="dv">100</span><span class="op">);</span></span>
+<span id="annotated-cell-131-3"><a href="#annotated-cell-131-3" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-131-4" class="code-annotation-target"><a href="#annotated-cell-131-4" aria-hidden="true" tabindex="-1"></a><span class="cf">mem$scope</span><span class="op">(</span>arena<span class="op">,</span> tal<span class="op">)</span></span>
+<span id="annotated-cell-131-5"><a href="#annotated-cell-131-5" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-131-6" class="code-annotation-target"><a href="#annotated-cell-131-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">u8</span><span class="op">*</span> p2 <span class="op">=</span> mem$malloc<span class="op">(</span>tal<span class="op">,</span> <span class="dv">100000</span><span class="op">);</span></span>
+<span id="annotated-cell-131-7"><a href="#annotated-cell-131-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-131-8"><a href="#annotated-cell-131-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">mem$scope</span><span class="op">(</span>arena<span class="op">,</span> tal<span class="op">)</span></span>
+<span id="annotated-cell-131-9"><a href="#annotated-cell-131-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="annotated-cell-131-10"><a href="#annotated-cell-131-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u8</span><span class="op">*</span> p3 <span class="op">=</span> mem$malloc<span class="op">(</span>tal<span class="op">,</span> <span class="dv">100</span><span class="op">);</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="5" onclick="event.preventDefault();" href>5</a><span id="annotated-cell-131-11" class="code-annotation-target"><a href="#annotated-cell-131-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="6" onclick="event.preventDefault();" href>6</a><span id="annotated-cell-131-12" class="code-annotation-target"><a href="#annotated-cell-131-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="annotated-cell-131-13"><a href="#annotated-cell-131-13" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="7" onclick="event.preventDefault();" href>7</a><span id="annotated-cell-131-14" class="code-annotation-target"><a href="#annotated-cell-131-14" aria-hidden="true" tabindex="-1"></a>AllocatorArena<span class="op">.</span>destroy<span class="op">(</span>arena<span class="op">);</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl class="code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-128" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-131" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-128" data-code-lines="1" data-code-annotation="1">New arena with 4096 byte page</span>
+<span data-code-cell="annotated-cell-131" data-code-lines="1" data-code-annotation="1">New arena with 4096 byte page</span>
 </dd>
-<dt data-target-cell="annotated-cell-128" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-131" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-128" data-code-lines="2" data-code-annotation="2">Allocating some memory from arena</span>
+<span data-code-cell="annotated-cell-131" data-code-lines="2" data-code-annotation="2">Allocating some memory from arena</span>
 </dd>
-<dt data-target-cell="annotated-cell-128" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-131" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-128" data-code-lines="4" data-code-annotation="3">Entering new memory scope</span>
+<span data-code-cell="annotated-cell-131" data-code-lines="4" data-code-annotation="3">Entering new memory scope</span>
 </dd>
-<dt data-target-cell="annotated-cell-128" data-target-annotation="4">4</dt>
+<dt data-target-cell="annotated-cell-131" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-128" data-code-lines="6" data-code-annotation="4">Allocation size exceeds page size, new page will be allocated then. <code>p</code> address remain the same!</span>
+<span data-code-cell="annotated-cell-131" data-code-lines="6" data-code-annotation="4">Allocation size exceeds page size, new page will be allocated then. <code>p</code> address remain the same!</span>
 </dd>
-<dt data-target-cell="annotated-cell-128" data-target-annotation="5">5</dt>
+<dt data-target-cell="annotated-cell-131" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-128" data-code-lines="11" data-code-annotation="5">At scope exit <code>p3</code> will be freed, <code>p2</code> and <code>p</code> remain</span>
+<span data-code-cell="annotated-cell-131" data-code-lines="11" data-code-annotation="5">At scope exit <code>p3</code> will be freed, <code>p2</code> and <code>p</code> remain</span>
 </dd>
-<dt data-target-cell="annotated-cell-128" data-target-annotation="6">6</dt>
+<dt data-target-cell="annotated-cell-131" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-cell="annotated-cell-128" data-code-lines="12" data-code-annotation="6">At scope exit <code>p2</code> will be freed, excess pages will be freed, <code>p</code> remains</span>
+<span data-code-cell="annotated-cell-131" data-code-lines="12" data-code-annotation="6">At scope exit <code>p2</code> will be freed, excess pages will be freed, <code>p</code> remains</span>
 </dd>
-<dt data-target-cell="annotated-cell-128" data-target-annotation="7">7</dt>
+<dt data-target-cell="annotated-cell-131" data-target-annotation="7">7</dt>
 <dd>
-<span data-code-cell="annotated-cell-128" data-code-lines="14" data-code-annotation="7">Arena destruction, all pages are freed, <code>p</code> is invalid now.</span>
+<span data-code-cell="annotated-cell-131" data-code-lines="14" data-code-annotation="7">Arena destruction, all pages are freed, <code>p</code> is invalid now.</span>
 </dd>
 </dl>
 </div>
@@ -4310,35 +4310,35 @@ Note
 <span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="tabset-4-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-3-tab">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-130"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><a class="code-annotation-anchor" data-target-cell="annotated-cell-130" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-130-1" class="code-annotation-target"><a href="#annotated-cell-130-1" aria-hidden="true" tabindex="-1"></a><span class="cf">mem$scope</span><span class="op">(</span>tmem$<span class="op">,</span> _<span class="op">)</span></span>
-<span id="annotated-cell-130-2"><a href="#annotated-cell-130-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-130" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-130-3" class="code-annotation-target"><a href="#annotated-cell-130-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">u8</span><span class="op">*</span> p2 <span class="op">=</span> mem$malloc<span class="op">(</span>_<span class="op">,</span> <span class="dv">110241024</span><span class="op">);</span></span>
-<span id="annotated-cell-130-4"><a href="#annotated-cell-130-4" aria-hidden="true" tabindex="-1"></a></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-130" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-130-5" class="code-annotation-target"><a href="#annotated-cell-130-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">mem$scope</span><span class="op">(</span>tmem$<span class="op">,</span> _<span class="op">)</span></span>
-<span id="annotated-cell-130-6"><a href="#annotated-cell-130-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="annotated-cell-130-7"><a href="#annotated-cell-130-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u8</span><span class="op">*</span> p3 <span class="op">=</span> mem$malloc<span class="op">(</span>_<span class="op">,</span> <span class="dv">100</span><span class="op">);</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-130" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-130-8" class="code-annotation-target"><a href="#annotated-cell-130-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-130" data-target-annotation="5" onclick="event.preventDefault();" href>5</a><span id="annotated-cell-130-9" class="code-annotation-target"><a href="#annotated-cell-130-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-133"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><a class="code-annotation-anchor" data-target-cell="annotated-cell-133" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-133-1" class="code-annotation-target"><a href="#annotated-cell-133-1" aria-hidden="true" tabindex="-1"></a><span class="cf">mem$scope</span><span class="op">(</span>tmem$<span class="op">,</span> _<span class="op">)</span></span>
+<span id="annotated-cell-133-2"><a href="#annotated-cell-133-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-133" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-133-3" class="code-annotation-target"><a href="#annotated-cell-133-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">u8</span><span class="op">*</span> p2 <span class="op">=</span> mem$malloc<span class="op">(</span>_<span class="op">,</span> <span class="dv">110241024</span><span class="op">);</span></span>
+<span id="annotated-cell-133-4"><a href="#annotated-cell-133-4" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-133" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-133-5" class="code-annotation-target"><a href="#annotated-cell-133-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">mem$scope</span><span class="op">(</span>tmem$<span class="op">,</span> _<span class="op">)</span></span>
+<span id="annotated-cell-133-6"><a href="#annotated-cell-133-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="annotated-cell-133-7"><a href="#annotated-cell-133-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u8</span><span class="op">*</span> p3 <span class="op">=</span> mem$malloc<span class="op">(</span>_<span class="op">,</span> <span class="dv">100</span><span class="op">);</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-133" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-133-8" class="code-annotation-target"><a href="#annotated-cell-133-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-133" data-target-annotation="5" onclick="event.preventDefault();" href>5</a><span id="annotated-cell-133-9" class="code-annotation-target"><a href="#annotated-cell-133-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl class="code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-130" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-133" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-130" data-code-lines="1" data-code-annotation="1">Initializes a temporary allocator (<code>tmem$</code>) scope in <code>mem$scope(tmem$, _) {...}</code> and assigns it as a variable <code>_</code> (you can use any name). <code>_</code> is a pattern for temp allocator in CEX.</span>
+<span data-code-cell="annotated-cell-133" data-code-lines="1" data-code-annotation="1">Initializes a temporary allocator (<code>tmem$</code>) scope in <code>mem$scope(tmem$, _) {...}</code> and assigns it as a variable <code>_</code> (you can use any name). <code>_</code> is a pattern for temp allocator in CEX.</span>
 </dd>
-<dt data-target-cell="annotated-cell-130" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-133" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-130" data-code-lines="3" data-code-annotation="2">New page for temp allocator created, because size exceeds existing page size</span>
+<span data-code-cell="annotated-cell-133" data-code-lines="3" data-code-annotation="2">New page for temp allocator created, because size exceeds existing page size</span>
 </dd>
-<dt data-target-cell="annotated-cell-130" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-133" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-130" data-code-lines="5" data-code-annotation="3">Nested scope is allowed</span>
+<span data-code-cell="annotated-cell-133" data-code-lines="5" data-code-annotation="3">Nested scope is allowed</span>
 </dd>
-<dt data-target-cell="annotated-cell-130" data-target-annotation="4">4</dt>
+<dt data-target-cell="annotated-cell-133" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-130" data-code-lines="8" data-code-annotation="4">Scope exit <code>p3</code> automatically cleaned up</span>
+<span data-code-cell="annotated-cell-133" data-code-lines="8" data-code-annotation="4">Scope exit <code>p3</code> automatically cleaned up</span>
 </dd>
-<dt data-target-cell="annotated-cell-130" data-target-annotation="5">5</dt>
+<dt data-target-cell="annotated-cell-133" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-130" data-code-lines="9" data-code-annotation="5">Scope exit <code>p2</code> cleaned up + extra page freed.</span>
+<span data-code-cell="annotated-cell-133" data-code-lines="9" data-code-annotation="5">Scope exit <code>p2</code> cleaned up + extra page freed.</span>
 </dd>
 </dl>
 </div>
@@ -4929,44 +4929,44 @@ Tip
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" role="tab" aria-controls="tabset-5-1" aria-selected="true" href>Initialization</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" role="tab" aria-controls="tabset-5-2" aria-selected="false" href>Overaligned structs</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-3" role="tab" aria-controls="tabset-5-3" aria-selected="false" href>Array of strings</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-4" role="tab" aria-controls="tabset-5-4" aria-selected="false" href>Array inside <code>tmem$</code></a></li></ul>
 <div class="tab-content">
 <div id="tabset-5-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-5-1-tab">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-131"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-131-1" class="code-annotation-target"><a href="#annotated-cell-131-1" aria-hidden="true" tabindex="-1"></a><span class="dt">arr$</span><span class="op">(</span><span class="dt">int</span><span class="op">)</span> arr <span class="op">=</span> arr$new<span class="op">(</span>arr<span class="op">,</span> mem$<span class="op">);</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-131-2" class="code-annotation-target"><a href="#annotated-cell-131-2" aria-hidden="true" tabindex="-1"></a>arr$push<span class="op">(</span>arr<span class="op">,</span> <span class="dv">1</span><span class="op">);</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-131-3" class="code-annotation-target"><a href="#annotated-cell-131-3" aria-hidden="true" tabindex="-1"></a>arr$pushm<span class="op">(</span>arr<span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span><span class="op">);</span></span>
-<span id="annotated-cell-131-4"><a href="#annotated-cell-131-4" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> static_arr<span class="op">[]</span> <span class="op">=</span> <span class="op">{</span> <span class="dv">5</span><span class="op">,</span> <span class="dv">6</span> <span class="op">};</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-131-5" class="code-annotation-target"><a href="#annotated-cell-131-5" aria-hidden="true" tabindex="-1"></a>arr$pusha<span class="op">(</span>arr<span class="op">,</span> static_arr <span class="co">/*, array_len (optional) */</span><span class="op">);</span></span>
-<span id="annotated-cell-131-6"><a href="#annotated-cell-131-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-131-7"><a href="#annotated-cell-131-7" aria-hidden="true" tabindex="-1"></a>io<span class="op">.</span>printf<span class="op">(</span><span class="st">&quot;arr[0]=</span><span class="sc">%d\n</span><span class="st">&quot;</span><span class="op">,</span> arr<span class="op">[</span><span class="dv">0</span><span class="op">]);</span> <span class="co">// prints arr[0]=1</span></span>
-<span id="annotated-cell-131-8"><a href="#annotated-cell-131-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-131-9"><a href="#annotated-cell-131-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Iterate over array: prints lines 1 ... 6</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="5" onclick="event.preventDefault();" href>5</a><span id="annotated-cell-131-10" class="code-annotation-target"><a href="#annotated-cell-131-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for$each</span> <span class="op">(</span>v<span class="op">,</span> arr<span class="op">)</span> <span class="op">{</span></span>
-<span id="annotated-cell-131-11"><a href="#annotated-cell-131-11" aria-hidden="true" tabindex="-1"></a>    io<span class="op">.</span>printf<span class="op">(</span><span class="st">&quot;</span><span class="sc">%d\n</span><span class="st">&quot;</span><span class="op">,</span> v<span class="op">);</span> </span>
-<span id="annotated-cell-131-12"><a href="#annotated-cell-131-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="annotated-cell-131-13"><a href="#annotated-cell-131-13" aria-hidden="true" tabindex="-1"></a></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-131" data-target-annotation="6" onclick="event.preventDefault();" href>6</a><span id="annotated-cell-131-14" class="code-annotation-target"><a href="#annotated-cell-131-14" aria-hidden="true" tabindex="-1"></a>arr$free<span class="op">(</span>arr<span class="op">);</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-134"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-134-1" class="code-annotation-target"><a href="#annotated-cell-134-1" aria-hidden="true" tabindex="-1"></a><span class="dt">arr$</span><span class="op">(</span><span class="dt">int</span><span class="op">)</span> arr <span class="op">=</span> arr$new<span class="op">(</span>arr<span class="op">,</span> mem$<span class="op">);</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-134-2" class="code-annotation-target"><a href="#annotated-cell-134-2" aria-hidden="true" tabindex="-1"></a>arr$push<span class="op">(</span>arr<span class="op">,</span> <span class="dv">1</span><span class="op">);</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-134-3" class="code-annotation-target"><a href="#annotated-cell-134-3" aria-hidden="true" tabindex="-1"></a>arr$pushm<span class="op">(</span>arr<span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span><span class="op">);</span></span>
+<span id="annotated-cell-134-4"><a href="#annotated-cell-134-4" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> static_arr<span class="op">[]</span> <span class="op">=</span> <span class="op">{</span> <span class="dv">5</span><span class="op">,</span> <span class="dv">6</span> <span class="op">};</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-134-5" class="code-annotation-target"><a href="#annotated-cell-134-5" aria-hidden="true" tabindex="-1"></a>arr$pusha<span class="op">(</span>arr<span class="op">,</span> static_arr <span class="co">/*, array_len (optional) */</span><span class="op">);</span></span>
+<span id="annotated-cell-134-6"><a href="#annotated-cell-134-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-134-7"><a href="#annotated-cell-134-7" aria-hidden="true" tabindex="-1"></a>io<span class="op">.</span>printf<span class="op">(</span><span class="st">&quot;arr[0]=</span><span class="sc">%d\n</span><span class="st">&quot;</span><span class="op">,</span> arr<span class="op">[</span><span class="dv">0</span><span class="op">]);</span> <span class="co">// prints arr[0]=1</span></span>
+<span id="annotated-cell-134-8"><a href="#annotated-cell-134-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-134-9"><a href="#annotated-cell-134-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Iterate over array: prints lines 1 ... 6</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="5" onclick="event.preventDefault();" href>5</a><span id="annotated-cell-134-10" class="code-annotation-target"><a href="#annotated-cell-134-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for$each</span> <span class="op">(</span>v<span class="op">,</span> arr<span class="op">)</span> <span class="op">{</span></span>
+<span id="annotated-cell-134-11"><a href="#annotated-cell-134-11" aria-hidden="true" tabindex="-1"></a>    io<span class="op">.</span>printf<span class="op">(</span><span class="st">&quot;</span><span class="sc">%d\n</span><span class="st">&quot;</span><span class="op">,</span> v<span class="op">);</span> </span>
+<span id="annotated-cell-134-12"><a href="#annotated-cell-134-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="annotated-cell-134-13"><a href="#annotated-cell-134-13" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="6" onclick="event.preventDefault();" href>6</a><span id="annotated-cell-134-14" class="code-annotation-target"><a href="#annotated-cell-134-14" aria-hidden="true" tabindex="-1"></a>arr$free<span class="op">(</span>arr<span class="op">);</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl class="code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-131" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-134" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-131" data-code-lines="1" data-code-annotation="1">Initialization and allocator</span>
+<span data-code-cell="annotated-cell-134" data-code-lines="1" data-code-annotation="1">Initialization and allocator</span>
 </dd>
-<dt data-target-cell="annotated-cell-131" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-134" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-131" data-code-lines="2" data-code-annotation="2">Adding single element</span>
+<span data-code-cell="annotated-cell-134" data-code-lines="2" data-code-annotation="2">Adding single element</span>
 </dd>
-<dt data-target-cell="annotated-cell-131" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-134" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-131" data-code-lines="3" data-code-annotation="3">Adding multiple elements via vargs.</span>
+<span data-code-cell="annotated-cell-134" data-code-lines="3" data-code-annotation="3">Adding multiple elements via vargs.</span>
 </dd>
-<dt data-target-cell="annotated-cell-131" data-target-annotation="4">4</dt>
+<dt data-target-cell="annotated-cell-134" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-131" data-code-lines="5" data-code-annotation="4">Adding arbitrary array, supports static arrays, dynamic CEX arrays or <code>int*</code>+arr_len</span>
+<span data-code-cell="annotated-cell-134" data-code-lines="5" data-code-annotation="4">Adding arbitrary array, supports static arrays, dynamic CEX arrays or <code>int*</code>+arr_len</span>
 </dd>
-<dt data-target-cell="annotated-cell-131" data-target-annotation="5">5</dt>
+<dt data-target-cell="annotated-cell-134" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-131" data-code-lines="10" data-code-annotation="5">Array iteration via <code>for$each</code> is common and compatible with all arrays in Cex (dynamic, static, pointer+len)</span>
+<span data-code-cell="annotated-cell-134" data-code-lines="10" data-code-annotation="5">Array iteration via <code>for$each</code> is common and compatible with all arrays in Cex (dynamic, static, pointer+len)</span>
 </dd>
-<dt data-target-cell="annotated-cell-131" data-target-annotation="6">6</dt>
+<dt data-target-cell="annotated-cell-134" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-cell="annotated-cell-131" data-code-lines="14" data-code-annotation="6">Deallocating memory (only needed when HeapAllocator is used)</span>
+<span data-code-cell="annotated-cell-134" data-code-lines="14" data-code-annotation="6">Deallocating memory (only needed when HeapAllocator is used)</span>
 </dd>
 </dl>
 </div>
@@ -5014,30 +5014,30 @@ Tip
 <span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="tabset-5-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-4-tab">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-134"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-134-1" class="code-annotation-target"><a href="#annotated-cell-134-1" aria-hidden="true" tabindex="-1"></a><span class="cf">mem$scope</span><span class="op">(</span>tmem$<span class="op">,</span> _<span class="op">)</span></span>
-<span id="annotated-cell-134-2"><a href="#annotated-cell-134-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-134-3" class="code-annotation-target"><a href="#annotated-cell-134-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">arr$</span><span class="op">(</span><span class="dt">char</span><span class="op">*)</span> incl_path <span class="op">=</span> arr$new<span class="op">(</span>incl_path<span class="op">,</span> _<span class="op">,</span> <span class="op">.</span>capacity <span class="op">=</span> <span class="dv">128</span><span class="op">);</span></span>
-<span id="annotated-cell-134-4"><a href="#annotated-cell-134-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for$each</span> <span class="op">(</span>p<span class="op">,</span> alt_include_path<span class="op">)</span> <span class="op">{</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-134-5" class="code-annotation-target"><a href="#annotated-cell-134-5" aria-hidden="true" tabindex="-1"></a>        arr$push<span class="op">(</span>incl_path<span class="op">,</span> p<span class="op">);</span></span>
-<span id="annotated-cell-134-6"><a href="#annotated-cell-134-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="op">(!</span>os<span class="op">.</span>path<span class="op">.</span>exists<span class="op">(</span>p<span class="op">))</span> <span class="op">{</span> log$warn<span class="op">(</span><span class="st">&quot;alt_include_path not exists: </span><span class="sc">%s\n</span><span class="st">&quot;</span><span class="op">,</span> p<span class="op">);</span> <span class="op">}</span></span>
-<span id="annotated-cell-134-7"><a href="#annotated-cell-134-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-134" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-134-8" class="code-annotation-target"><a href="#annotated-cell-134-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-137"><pre class="sourceCode c code-annotation-code code-with-copy code-annotated"><code class="sourceCode cexsyntax"><a class="code-annotation-anchor" data-target-cell="annotated-cell-137" data-target-annotation="1" onclick="event.preventDefault();" href>1</a><span id="annotated-cell-137-1" class="code-annotation-target"><a href="#annotated-cell-137-1" aria-hidden="true" tabindex="-1"></a><span class="cf">mem$scope</span><span class="op">(</span>tmem$<span class="op">,</span> _<span class="op">)</span></span>
+<span id="annotated-cell-137-2"><a href="#annotated-cell-137-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-137" data-target-annotation="2" onclick="event.preventDefault();" href>2</a><span id="annotated-cell-137-3" class="code-annotation-target"><a href="#annotated-cell-137-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">arr$</span><span class="op">(</span><span class="dt">char</span><span class="op">*)</span> incl_path <span class="op">=</span> arr$new<span class="op">(</span>incl_path<span class="op">,</span> _<span class="op">,</span> <span class="op">.</span>capacity <span class="op">=</span> <span class="dv">128</span><span class="op">);</span></span>
+<span id="annotated-cell-137-4"><a href="#annotated-cell-137-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for$each</span> <span class="op">(</span>p<span class="op">,</span> alt_include_path<span class="op">)</span> <span class="op">{</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-137" data-target-annotation="3" onclick="event.preventDefault();" href>3</a><span id="annotated-cell-137-5" class="code-annotation-target"><a href="#annotated-cell-137-5" aria-hidden="true" tabindex="-1"></a>        arr$push<span class="op">(</span>incl_path<span class="op">,</span> p<span class="op">);</span></span>
+<span id="annotated-cell-137-6"><a href="#annotated-cell-137-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="op">(!</span>os<span class="op">.</span>path<span class="op">.</span>exists<span class="op">(</span>p<span class="op">))</span> <span class="op">{</span> log$warn<span class="op">(</span><span class="st">&quot;alt_include_path not exists: </span><span class="sc">%s\n</span><span class="st">&quot;</span><span class="op">,</span> p<span class="op">);</span> <span class="op">}</span></span>
+<span id="annotated-cell-137-7"><a href="#annotated-cell-137-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-137" data-target-annotation="4" onclick="event.preventDefault();" href>4</a><span id="annotated-cell-137-8" class="code-annotation-target"><a href="#annotated-cell-137-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl class="code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-134" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-137" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-134" data-code-lines="1" data-code-annotation="1">Initializes a temporary allocator (<code>tmem$</code>) scope in <code>mem$scope(tmem$, _) {...}</code> and assigns it as a variable <code>_</code> (you can use any name).</span>
+<span data-code-cell="annotated-cell-137" data-code-lines="1" data-code-annotation="1">Initializes a temporary allocator (<code>tmem$</code>) scope in <code>mem$scope(tmem$, _) {...}</code> and assigns it as a variable <code>_</code> (you can use any name).</span>
 </dd>
-<dt data-target-cell="annotated-cell-134" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-137" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-134" data-code-lines="3" data-code-annotation="2">Initializes dynamic array with the scoped allocator variable <code>_</code>, allocates with specific capacity argument.</span>
+<span data-code-cell="annotated-cell-137" data-code-lines="3" data-code-annotation="2">Initializes dynamic array with the scoped allocator variable <code>_</code>, allocates with specific capacity argument.</span>
 </dd>
-<dt data-target-cell="annotated-cell-134" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-137" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-134" data-code-lines="5" data-code-annotation="3">May allocate memory</span>
+<span data-code-cell="annotated-cell-137" data-code-lines="5" data-code-annotation="3">May allocate memory</span>
 </dd>
-<dt data-target-cell="annotated-cell-134" data-target-annotation="4">4</dt>
+<dt data-target-cell="annotated-cell-137" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-134" data-code-lines="8" data-code-annotation="4">All memory will be freed at exit from this scope</span>
+<span data-code-cell="annotated-cell-137" data-code-lines="8" data-code-annotation="4">All memory will be freed at exit from this scope</span>
 </dd>
 </dl>
 </div>
@@ -8432,25 +8432,105 @@ Note
 </section>
 <section id="test" class="level3">
 <h3 class="anchored" data-anchor-id="test"><code>test$</code></h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb136"><pre class="sourceCode c code-with-copy"><code class="sourceCode cexsyntax"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$NOOPT</span></span>
-<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$case</span><span class="op">(</span><span class="pp">NAME</span><span class="op">)</span></span>
-<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$env_check</span><span class="op">()</span></span>
-<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-7"><a href="#cb136-7" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$main</span><span class="op">()</span></span>
-<span id="cb136-8"><a href="#cb136-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-9"><a href="#cb136-9" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$setup_case</span><span class="op">()</span></span>
-<span id="cb136-10"><a href="#cb136-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-11"><a href="#cb136-11" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$setup_suite</span><span class="op">()</span></span>
-<span id="cb136-12"><a href="#cb136-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-13"><a href="#cb136-13" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$teardown_case</span><span class="op">()</span></span>
-<span id="cb136-14"><a href="#cb136-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-15"><a href="#cb136-15" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$teardown_suite</span><span class="op">()</span></span>
-<span id="cb136-16"><a href="#cb136-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-17"><a href="#cb136-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-18"><a href="#cb136-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-19"><a href="#cb136-19" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$NOOPT  __attribute__</span><span class="op">((</span><span class="pp">optnone</span><span class="op">));</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Unit Testing engine:</p>
+<ul>
+<li>Running/building tests</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb136"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./cex</span> test create tests/test_mytest.c</span>
+<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./cex</span> test run tests/test_mytest.c</span>
+<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a><span class="ex">./cex</span> test run all</span>
+<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a><span class="ex">./cex</span> test debug tests/test_mytest.c</span>
+<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./cex</span> test clean all</span>
+<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a><span class="ex">./cex</span> test <span class="at">--help</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<ul>
+<li>Unit Test structure</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb137"><pre class="sourceCode c code-with-copy"><code class="sourceCode cexsyntax"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a>test$setup_case<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Optional: runs before each test case</span></span>
+<span id="cb137-3"><a href="#cb137-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span></span>
+<span id="cb137-4"><a href="#cb137-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb137-5"><a href="#cb137-5" aria-hidden="true" tabindex="-1"></a>test$teardown_case<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb137-6"><a href="#cb137-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Optional: runs after each test case</span></span>
+<span id="cb137-7"><a href="#cb137-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span></span>
+<span id="cb137-8"><a href="#cb137-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb137-9"><a href="#cb137-9" aria-hidden="true" tabindex="-1"></a>test$setup_suite<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb137-10"><a href="#cb137-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Optional: runs once before full test suite initialized</span></span>
+<span id="cb137-11"><a href="#cb137-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span></span>
+<span id="cb137-12"><a href="#cb137-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb137-13"><a href="#cb137-13" aria-hidden="true" tabindex="-1"></a>test$teardown_suite<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb137-14"><a href="#cb137-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Optional: runs once after full test suite ended</span></span>
+<span id="cb137-15"><a href="#cb137-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span></span>
+<span id="cb137-16"><a href="#cb137-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb137-17"><a href="#cb137-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-18"><a href="#cb137-18" aria-hidden="true" tabindex="-1"></a>test$case<span class="op">(</span>my_test_case<span class="op">){</span></span>
+<span id="cb137-19"><a href="#cb137-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">e$ret</span><span class="op">(</span>foo<span class="op">(</span><span class="st">&quot;raise&quot;</span><span class="op">));</span> <span class="co">// this test will fail if `foo()` raises Exception </span></span>
+<span id="cb137-20"><a href="#cb137-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span> <span class="co">// Must return EOK for passed</span></span>
+<span id="cb137-21"><a href="#cb137-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb137-22"><a href="#cb137-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-23"><a href="#cb137-23" aria-hidden="true" tabindex="-1"></a>test$case<span class="op">(</span>my_test_another_case<span class="op">){</span></span>
+<span id="cb137-24"><a href="#cb137-24" aria-hidden="true" tabindex="-1"></a>    tassert_eq<span class="op">(</span><span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">);</span> <span class="co">//  tassert_ fails test, but not abort the program</span></span>
+<span id="cb137-25"><a href="#cb137-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span> <span class="co">// Must return EOK for passed</span></span>
+<span id="cb137-26"><a href="#cb137-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb137-27"><a href="#cb137-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-28"><a href="#cb137-28" aria-hidden="true" tabindex="-1"></a>test$main<span class="op">();</span> <span class="co">// mandatory at the end of each test</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<ul>
+<li>Test checks</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb138"><pre class="sourceCode c code-with-copy"><code class="sourceCode cexsyntax"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-2"><a href="#cb138-2" aria-hidden="true" tabindex="-1"></a>test$case<span class="op">(</span>my_test_case<span class="op">){</span></span>
+<span id="cb138-3"><a href="#cb138-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Generic type assertions, fails and print values of both arguments</span></span>
+<span id="cb138-4"><a href="#cb138-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-5"><a href="#cb138-5" aria-hidden="true" tabindex="-1"></a>    tassert_eq<span class="op">(</span><span class="dv">1</span><span class="op">,</span> <span class="dv">1</span><span class="op">);</span></span>
+<span id="cb138-6"><a href="#cb138-6" aria-hidden="true" tabindex="-1"></a>    tassert_eq<span class="op">(</span>str<span class="op">,</span> <span class="st">&quot;foo&quot;</span><span class="op">);</span></span>
+<span id="cb138-7"><a href="#cb138-7" aria-hidden="true" tabindex="-1"></a>    tassert_eq<span class="op">(</span>num<span class="op">,</span> <span class="fl">3.14</span><span class="op">);</span></span>
+<span id="cb138-8"><a href="#cb138-8" aria-hidden="true" tabindex="-1"></a>    tassert_eq<span class="op">(</span>str_slice<span class="op">,</span> str$s<span class="op">(</span><span class="st">&quot;expected&quot;</span><span class="op">)</span> <span class="op">);</span></span>
+<span id="cb138-9"><a href="#cb138-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-10"><a href="#cb138-10" aria-hidden="true" tabindex="-1"></a>    tassert<span class="op">(</span>condition <span class="op">&amp;&amp;</span> <span class="st">&quot;oops&quot;</span><span class="op">);</span></span>
+<span id="cb138-11"><a href="#cb138-11" aria-hidden="true" tabindex="-1"></a>    tassertf<span class="op">(</span>condition<span class="op">,</span> <span class="st">&quot;oops: </span><span class="sc">%s</span><span class="st">&quot;</span><span class="op">,</span> s<span class="op">);</span></span>
+<span id="cb138-12"><a href="#cb138-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-13"><a href="#cb138-13" aria-hidden="true" tabindex="-1"></a>    tassert_er<span class="op">(</span>EOK<span class="op">,</span> raising_exc_foo<span class="op">(</span><span class="dv">0</span><span class="op">));</span></span>
+<span id="cb138-14"><a href="#cb138-14" aria-hidden="true" tabindex="-1"></a>    tassert_er<span class="op">(</span>Error<span class="op">.</span>argument<span class="op">,</span> raising_exc_foo<span class="op">(-</span><span class="dv">1</span><span class="op">));</span></span>
+<span id="cb138-15"><a href="#cb138-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-16"><a href="#cb138-16" aria-hidden="true" tabindex="-1"></a>    tassert_eq_almost<span class="op">(</span>PI<span class="op">,</span> <span class="fl">3.14</span><span class="op">,</span> <span class="fl">0.01</span><span class="op">);</span> <span class="co">// 0.01 is float tolerance</span></span>
+<span id="cb138-17"><a href="#cb138-17" aria-hidden="true" tabindex="-1"></a>    tassert_eq<span class="op">(</span><span class="fl">3.4</span> <span class="op">*</span> NAN<span class="op">,</span> NAN<span class="op">);</span> <span class="co">// NAN equality also works</span></span>
+<span id="cb138-18"><a href="#cb138-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-19"><a href="#cb138-19" aria-hidden="true" tabindex="-1"></a>    tassert_eq_ptr<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="co">// raw pointer comparison</span></span>
+<span id="cb138-20"><a href="#cb138-20" aria-hidden="true" tabindex="-1"></a>    tassert_eq_mem<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="co">// raw buffer content comparison (a and b expected to be same size)</span></span>
+<span id="cb138-21"><a href="#cb138-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-22"><a href="#cb138-22" aria-hidden="true" tabindex="-1"></a>    tassert_eq_arr<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="co">// compare two arrays (static or dynamic)</span></span>
+<span id="cb138-23"><a href="#cb138-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-24"><a href="#cb138-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-25"><a href="#cb138-25" aria-hidden="true" tabindex="-1"></a>    tassert_ne<span class="op">(</span><span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">);</span> <span class="co">// not equal</span></span>
+<span id="cb138-26"><a href="#cb138-26" aria-hidden="true" tabindex="-1"></a>    tassert_le<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="co">// a &lt;= b</span></span>
+<span id="cb138-27"><a href="#cb138-27" aria-hidden="true" tabindex="-1"></a>    tassert_lt<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="co">// a &lt; b</span></span>
+<span id="cb138-28"><a href="#cb138-28" aria-hidden="true" tabindex="-1"></a>    tassert_gt<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="co">// a &gt; b</span></span>
+<span id="cb138-29"><a href="#cb138-29" aria-hidden="true" tabindex="-1"></a>    tassert_ge<span class="op">(</span>a<span class="op">,</span> b<span class="op">);</span> <span class="co">// a &gt;= b</span></span>
+<span id="cb138-30"><a href="#cb138-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-31"><a href="#cb138-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> EOK<span class="op">;</span></span>
+<span id="cb138-32"><a href="#cb138-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb139"><pre class="sourceCode c code-with-copy"><code class="sourceCode cexsyntax"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="co">/// Unit-test test case</span></span>
+<span id="cb139-2"><a href="#cb139-2" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$case</span><span class="op">(</span><span class="pp">NAME</span><span class="op">)</span></span>
+<span id="cb139-3"><a href="#cb139-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-4"><a href="#cb139-4" aria-hidden="true" tabindex="-1"></a><span class="co">/// main() function for test suite, you must place it into test file at the end</span></span>
+<span id="cb139-5"><a href="#cb139-5" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$main</span><span class="op">()</span></span>
+<span id="cb139-6"><a href="#cb139-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-7"><a href="#cb139-7" aria-hidden="true" tabindex="-1"></a><span class="co">/// Attribute for function which disables optimization for test cases or other functions</span></span>
+<span id="cb139-8"><a href="#cb139-8" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$noopt</span></span>
+<span id="cb139-9"><a href="#cb139-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-10"><a href="#cb139-10" aria-hidden="true" tabindex="-1"></a><span class="co">/// Optional: called before each test$case() starts</span></span>
+<span id="cb139-11"><a href="#cb139-11" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$setup_case</span><span class="op">()</span></span>
+<span id="cb139-12"><a href="#cb139-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-13"><a href="#cb139-13" aria-hidden="true" tabindex="-1"></a><span class="co">/// Optional: initializes at test suite once at start</span></span>
+<span id="cb139-14"><a href="#cb139-14" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$setup_suite</span><span class="op">()</span></span>
+<span id="cb139-15"><a href="#cb139-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-16"><a href="#cb139-16" aria-hidden="true" tabindex="-1"></a><span class="co">/// Optional: called after each test$case() ends</span></span>
+<span id="cb139-17"><a href="#cb139-17" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$teardown_case</span><span class="op">()</span></span>
+<span id="cb139-18"><a href="#cb139-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-19"><a href="#cb139-19" aria-hidden="true" tabindex="-1"></a><span class="co">/// Optional: shut down test suite once at the end</span></span>
+<span id="cb139-20"><a href="#cb139-20" aria-hidden="true" tabindex="-1"></a><span class="pp">#define test$teardown_suite</span><span class="op">()</span></span>
+<span id="cb139-21"><a href="#cb139-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-22"><a href="#cb139-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-23"><a href="#cb139-23" aria-hidden="true" tabindex="-1"></a></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 
