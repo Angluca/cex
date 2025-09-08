@@ -115,6 +115,7 @@ cex_sbuf_create(usize capacity, IAllocator allocator)
 }
 
 
+/// Creates dynamic string backed by static array
 static sbuf_c
 cex_sbuf_create_static(char* buf, usize buf_size)
 {
@@ -147,6 +148,7 @@ cex_sbuf_create_static(char* buf, usize buf_size)
     return self;
 }
 
+/// Ensures if string has capacity >= new_capacity, reallocates is necessary
 static Exception
 cex_sbuf_grow(sbuf_c* self, usize new_capacity)
 {
@@ -159,6 +161,7 @@ cex_sbuf_grow(sbuf_c* self, usize new_capacity)
     return _sbuf__grow_buffer(self, new_capacity);
 }
 
+/// Recalculate full string length using strlen() if it was externally changed
 static void
 cex_sbuf_update_len(sbuf_c* self)
 {
@@ -173,6 +176,7 @@ cex_sbuf_update_len(sbuf_c* self)
     (*self)[head->length] = '\0';
 }
 
+/// Clears string
 static void
 cex_sbuf_clear(sbuf_c* self)
 {
@@ -184,6 +188,7 @@ cex_sbuf_clear(sbuf_c* self)
     (*self)[head->length] = '\0';
 }
 
+/// Shrinks string length to new_length
 static void
 cex_sbuf_shrink(sbuf_c* self, usize new_length)
 {
@@ -191,12 +196,19 @@ cex_sbuf_shrink(sbuf_c* self, usize new_length)
     sbuf_head_s* head = _sbuf__head(*self);
     if (unlikely(!head)) { return; }
     if (unlikely(head->err)) { return; }
-    uassert(new_length <= head->length);
-    uassert(new_length <= head->capacity);
+    if (unlikely(new_length > head->length)) {
+        uassert(new_length <= head->length);
+        return;
+    }
+    if (unlikely(new_length >= head->capacity)) {
+        uassert(new_length <= head->capacity);
+        return;
+    }
     head->length = new_length;
     (*self)[head->length] = '\0';
 }
 
+/// Returns string length from its metadata
 static u32
 cex_sbuf_len(sbuf_c* self)
 {
@@ -206,6 +218,8 @@ cex_sbuf_len(sbuf_c* self)
     return head->length;
 }
 
+
+/// Returns string capacity from its metadata
 static u32
 cex_sbuf_capacity(sbuf_c* self)
 {
@@ -215,6 +229,7 @@ cex_sbuf_capacity(sbuf_c* self)
     return head->capacity;
 }
 
+/// Destroys the string, deallocates the memory, or nullify static buffer.
 static sbuf_c
 cex_sbuf_destroy(sbuf_c* self)
 {
@@ -284,6 +299,7 @@ _cex_sbuf_sprintf_callback(char* buf, void* user, u32 len)
     return ((ctx->count - ctx->length) >= CEX_SPRINTF_MIN) ? ctx->buf : ctx->tmp;
 }
 
+/// Append format va (using CEX formatting engine), always null-terminating
 static Exc
 cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
 {
@@ -318,6 +334,8 @@ cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
     return ctx.err;
 }
 
+
+/// Append format (using CEX formatting engine)
 static Exc
 cex_sbuf_appendf(sbuf_c* self, char* format, ...)
 {
@@ -329,6 +347,7 @@ cex_sbuf_appendf(sbuf_c* self, char* format, ...)
     return result;
 }
 
+/// Append string to the builder
 static Exc
 cex_sbuf_append(sbuf_c* self, char* s)
 {
@@ -336,7 +355,10 @@ cex_sbuf_append(sbuf_c* self, char* s)
     sbuf_head_s* head = _sbuf__head(*self);
     if (unlikely(head == NULL)) { return Error.runtime; }
 
-    if (unlikely(s == NULL)) { return Error.argument; }
+    if (unlikely(s == NULL)) {
+        _sbuf__set_error(head, "sbuf.append s=NULL");
+        return Error.argument;
+    }
     if (head->err) { return head->err; }
 
     u32 length = head->length;
@@ -362,6 +384,7 @@ cex_sbuf_append(sbuf_c* self, char* s)
     return Error.ok;
 }
 
+/// Validate dynamic string state, with detailed Exception 
 static Exception
 cex_sbuf_validate(sbuf_c* self)
 {
@@ -379,6 +402,8 @@ cex_sbuf_validate(sbuf_c* self)
     return EOK;
 }
 
+
+/// Returns false if string invalid
 static bool
 cex_sbuf_isvalid(sbuf_c* self)
 {
