@@ -8,8 +8,8 @@ struct _sbuf__sprintf_ctx
     sbuf_head_s* head;
     char* buf;
     Exc err;
-    u32 count;
-    u32 length;
+    usize count;
+    usize length;
     char tmp[CEX_SPRINTF_MIN];
 };
 
@@ -20,12 +20,26 @@ _sbuf__head(sbuf_c self)
     sbuf_head_s* head = (sbuf_head_s*)(self - sizeof(sbuf_head_s));
 
     uassert(head->header.magic == 0xf00e && "not a sbuf_head_s / bad pointer");
-    uassert(head->capacity > 0 && "zero capacity or memory corruption");
     uassert(head->length <= head->capacity && "count > capacity");
     uassert(head->header.nullterm == 0 && "nullterm != 0");
 
     return head;
 }
+
+static inline void
+_sbuf__set_error(sbuf_head_s* head, Exc err)
+{
+    if (!head) { return; }
+    if (head->err) { return; }
+
+    head->err = err;
+    head->length = 0;
+    head->capacity = 0;
+
+    // nullterm string contents
+    *((char*)head + sizeof(sbuf_head_s)) = '\0';
+}
+
 static inline usize
 _sbuf__alloc_capacity(usize capacity)
 {
@@ -37,7 +51,7 @@ _sbuf__alloc_capacity(usize capacity)
         return capacity * 1.2;
     } else {
         // Round up to closest pow*2 int
-        u64 p = 4;
+        u64 p = 64;
         while (p < capacity) { p *= 2; }
         return p;
     }
@@ -49,6 +63,7 @@ _sbuf__grow_buffer(sbuf_c* self, u32 length)
 
     if (unlikely(head->allocator == NULL)) {
         // sbuf is static, bad luck, overflow
+        _sbuf__set_error(head, Error.overflow);
         return Error.overflow;
     }
 
@@ -137,7 +152,7 @@ cex_sbuf_create_static(char* buf, usize buf_size)
 }
 
 static Exception
-cex_sbuf_grow(sbuf_c* self, u32 new_capacity)
+cex_sbuf_grow(sbuf_c* self, usize new_capacity)
 {
     sbuf_head_s* head = _sbuf__head(*self);
     if (new_capacity <= head->capacity) {
@@ -152,6 +167,7 @@ cex_sbuf_update_len(sbuf_c* self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (head->err) { return; }
 
     uassert((*self)[head->capacity] == '\0' && "capacity null term smashed!");
 
@@ -164,15 +180,17 @@ cex_sbuf_clear(sbuf_c* self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (head->err) { return; }
     head->length = 0;
     (*self)[head->length] = '\0';
 }
 
 static void
-cex_sbuf_shrink(sbuf_c* self, u32 new_length)
+cex_sbuf_shrink(sbuf_c* self, usize new_length)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (head->err) { return; }
     uassert(new_length <= head->length);
     uassert(new_length <= head->capacity);
     head->length = new_length;
@@ -213,14 +231,16 @@ cex_sbuf_destroy(sbuf_c* self)
         if (head->allocator != NULL) {
             // allocator is NULL for static sbuf
             mem$free(head->allocator, head);
+        } else {
+            // static buffer
+            memset(self, 0, sizeof(*self));
         }
-        memset(self, 0, sizeof(*self));
     }
     return NULL;
 }
 
 static char*
-_sbuf__sprintf_callback(char* buf, void* user, u32 len)
+_cex_sbuf_sprintf_callback(char* buf, void* user, u32 len)
 {
     struct _sbuf__sprintf_ctx* ctx = (struct _sbuf__sprintf_ctx*)user;
     sbuf_c sbuf = ((char*)ctx->head + sizeof(sbuf_head_s));
@@ -263,11 +283,12 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
     return ((ctx->count - ctx->length) >= CEX_SPRINTF_MIN) ? ctx->buf : ctx->tmp;
 }
 
-static Exception
+static Exc
 cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
 {
     if (unlikely(self == NULL)) { return Error.argument; }
     sbuf_head_s* head = _sbuf__head(*self);
+    if (head->err) { return head->err; }
 
     struct _sbuf__sprintf_ctx ctx = {
         .head = head,
@@ -278,9 +299,9 @@ cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
     };
 
     cexsp__vsprintfcb(
-        _sbuf__sprintf_callback,
+        _cex_sbuf_sprintf_callback,
         &ctx,
-        _sbuf__sprintf_callback(NULL, &ctx, 0),
+        _cex_sbuf_sprintf_callback(NULL, &ctx, 0),
         format,
         va
     );
@@ -295,7 +316,7 @@ cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
     return ctx.err;
 }
 
-static Exception
+static Exc
 cex_sbuf_appendf(sbuf_c* self, char* format, ...)
 {
 
@@ -306,13 +327,14 @@ cex_sbuf_appendf(sbuf_c* self, char* format, ...)
     return result;
 }
 
-static Exception
+static Exc
 cex_sbuf_append(sbuf_c* self, char* s)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
 
     if (unlikely(s == NULL)) { return Error.argument; }
+    if (head->err) { return head->err; }
 
     u32 length = head->length;
     u32 capacity = head->capacity;
@@ -337,20 +359,31 @@ cex_sbuf_append(sbuf_c* self, char* s)
     return Error.ok;
 }
 
-static bool
-cex_sbuf_isvalid(sbuf_c* self)
+static Exception
+cex_sbuf_validate(sbuf_c* self)
 {
-    if (self == NULL) { return false; }
-    if (*self == NULL) { return false; }
+    if (unlikely(self == NULL)) { return "NULL argument"; }
+    if (unlikely(*self == NULL)) { return "Memory error or already free'd"; }
 
     sbuf_head_s* head = (sbuf_head_s*)((char*)(*self) - sizeof(sbuf_head_s));
 
-    if (head->header.magic != 0xf00e) { return false; }
-    if (head->capacity == 0) { return false; }
-    if (head->length > head->capacity) { return false; }
-    if (head->header.nullterm != 0) { return false; }
+    if (unlikely(head->err)) { return head->err; }
+    if (unlikely(head->header.magic != 0xf00e)) { return "Bad magic or non sbuf_c* pointer type"; }
+    if (unlikely(head->capacity == 0)) { return "Zero capacity"; }
+    if (head->length > head->capacity) { return "Length > capacity"; }
+    if (head->header.nullterm != 0) { return "Missing null term in header"; }
 
-    return true;
+    return EOK;
+}
+
+static bool
+cex_sbuf_isvalid(sbuf_c* self)
+{
+    if (cex_sbuf_validate(self)) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 const struct __cex_namespace__sbuf sbuf = {
@@ -371,6 +404,7 @@ const struct __cex_namespace__sbuf sbuf = {
     .len = cex_sbuf_len,
     .shrink = cex_sbuf_shrink,
     .update_len = cex_sbuf_update_len,
+    .validate = cex_sbuf_validate,
 
     // clang-format on
 };
