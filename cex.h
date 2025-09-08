@@ -3278,6 +3278,12 @@ struct _cex_test_context_s
 #    define test$env_check() (void)0
 #endif
 
+#ifdef _WIN32
+#    define _cex_test_file_close$ _close
+#else
+#    define _cex_test_file_close$ close
+#endif
+
 #define test$main()                                                                                \
     _Pragma("GCC diagnostic push"); /* Mingw64:  warning: visibility attribute not supported */    \
     _Pragma("GCC diagnostic ignored \"-Wattributes\"");                                            \
@@ -3289,10 +3295,10 @@ struct _cex_test_context_s
         int ret_code = cex_test_main_fn(argc, argv);                                               \
         if (_cex_test__mainfn_state.test_cases) { arr$free(_cex_test__mainfn_state.test_cases); }  \
         if (_cex_test__mainfn_state.orig_stdout_fd) {                                              \
-            close(_cex_test__mainfn_state.orig_stdout_fd);                                         \
+            _cex_test_file_close$(_cex_test__mainfn_state.orig_stdout_fd);                         \
         }                                                                                          \
         if (_cex_test__mainfn_state.orig_stderr_fd) {                                              \
-            close(_cex_test__mainfn_state.orig_stderr_fd);                                         \
+            _cex_test_file_close$(_cex_test__mainfn_state.orig_stderr_fd);                         \
         }                                                                                          \
         return ret_code;                                                                           \
     }
@@ -3388,7 +3394,7 @@ struct _cex_test_context_s
 #define tassert_eq(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        auto genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                    \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__eq))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -3422,13 +3428,13 @@ struct _cex_test_context_s
     })
 #define tassert_eq_mem(a, b...)                                                                    \
     ({                                                                                             \
-        auto _a = (a);                                                                              \
-        auto _b = (b);                                                                              \
-        static_assert(                                                                            \
+        auto _a = (a);                                                                             \
+        auto _b = (b);                                                                             \
+        static_assert(                                                                             \
             __builtin_types_compatible_p(__typeof__(_a), __typeof__(_b)),                          \
             "incompatible"                                                                         \
         );                                                                                         \
-        static_assert(sizeof(_a) == sizeof(_b), "different size");                                \
+        static_assert(sizeof(_a) == sizeof(_b), "different size");                                 \
         if (memcmp(&_a, &_b, sizeof(_a)) != 0) {                                                   \
             _test$tassert_breakpoint();                                                            \
             if (str.sprintf(                                                                       \
@@ -3442,13 +3448,13 @@ struct _cex_test_context_s
 
 #define tassert_eq_arr(a, b...)                                                                    \
     ({                                                                                             \
-        auto _a = (a);                                                                              \
-        auto _b = (b);                                                                              \
-        static_assert(                                                                            \
+        auto _a = (a);                                                                             \
+        auto _b = (b);                                                                             \
+        static_assert(                                                                             \
             __builtin_types_compatible_p(__typeof__(*a), __typeof__(*b)),                          \
             "incompatible"                                                                         \
         );                                                                                         \
-        static_assert(sizeof(*_a) == sizeof(*_b), "different size");                              \
+        static_assert(sizeof(*_a) == sizeof(*_b), "different size");                               \
         usize _alen = arr$len(a);                                                                  \
         usize _blen = arr$len(b);                                                                  \
         usize _itsize = sizeof(*_a);                                                               \
@@ -3481,7 +3487,7 @@ struct _cex_test_context_s
 #define tassert_ne(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        auto genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                    \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ne))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -3491,7 +3497,7 @@ struct _cex_test_context_s
 #define tassert_le(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        auto genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                    \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__le))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -3501,7 +3507,7 @@ struct _cex_test_context_s
 #define tassert_lt(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        auto genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                    \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__lt))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -3511,7 +3517,7 @@ struct _cex_test_context_s
 #define tassert_ge(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        auto genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                    \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__ge))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -3521,7 +3527,7 @@ struct _cex_test_context_s
 #define tassert_gt(a, b)                                                                           \
     ({                                                                                             \
         Exc cex$tmpname(err) = NULL;                                                               \
-        auto genf = _test$tassert_fn((a), (b));                                                     \
+        auto genf = _test$tassert_fn((a), (b));                                                    \
         if ((cex$tmpname(err) = genf((a), (b), __LINE__, _cex_test_eq_op__gt))) {                  \
             _test$tassert_breakpoint();                                                            \
             return cex$tmpname(err);                                                               \
@@ -3810,7 +3816,13 @@ cex_test_mute()
         fflush(stdout);
         io.rewind(ctx->out_stream);
         fflush(ctx->out_stream);
+
+#    ifdef _WIN32
+        _dup2(_fileno(ctx->out_stream), STDOUT_FILENO);
+#    else
         dup2(fileno(ctx->out_stream), STDOUT_FILENO);
+#    endif
+
     }
 }
 static void __attribute__((noinline))
@@ -3825,7 +3837,11 @@ cex_test_unmute(Exc test_result)
         fflush(stdout);
         isize flen = io.file.size(ctx->out_stream);
         io.rewind(ctx->out_stream);
+#    ifdef _WIN32
+        _dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
+#    else
         dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
+#    endif
 
         if (test_result != EOK && flen > 1) {
             fflush(stdout);
@@ -3890,7 +3906,7 @@ cex_test_main_fn(int argc, char** argv)
     }
 
 #    ifdef _WIN32
-    ctx->orig_stdout_fd = _dup(fileno(stdout));
+    ctx->orig_stdout_fd = _dup(_fileno(stdout));
 #    else
     ctx->orig_stdout_fd = dup(fileno(stdout));
 #    endif
@@ -4943,6 +4959,7 @@ CEX_NAMESPACE struct __cex_namespace__fuzz fuzz;
 #    define WIN32_LEAN_AND_MEAN
 #    include "windows.h"
 #    include <direct.h>
+#    include <io.h>
 #else
 #    include <dirent.h>
 #    include <fcntl.h>
