@@ -114,14 +114,6 @@ cex_sbuf_create(usize capacity, IAllocator allocator)
     return self;
 }
 
-static sbuf_c
-cex_sbuf_create_temp(void)
-{
-    uassert(
-        tmem$->scope_depth(tmem$) > 0 && "trying create tmem$ allocator outside mem$scope(tmem$)"
-    );
-    return cex_sbuf_create(100, tmem$);
-}
 
 static sbuf_c
 cex_sbuf_create_static(char* buf, usize buf_size)
@@ -408,7 +400,6 @@ const struct __cex_namespace__sbuf sbuf = {
     .clear = cex_sbuf_clear,
     .create = cex_sbuf_create,
     .create_static = cex_sbuf_create_static,
-    .create_temp = cex_sbuf_create_temp,
     .destroy = cex_sbuf_destroy,
     .grow = cex_sbuf_grow,
     .isvalid = cex_sbuf_isvalid,

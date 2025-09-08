@@ -90,7 +90,6 @@ struct __cex_namespace__sbuf {
     /// Creates new dynamic string builder backed by allocator
     sbuf_c          (*create)(usize capacity, IAllocator allocator);
     sbuf_c          (*create_static)(char* buf, usize buf_size);
-    sbuf_c          (*create_temp)(void);
     sbuf_c          (*destroy)(sbuf_c* self);
     Exception       (*grow)(sbuf_c* self, usize new_capacity);
     bool            (*isvalid)(sbuf_c* self);
