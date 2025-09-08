@@ -1,10 +1,7 @@
 #pragma once
 #include "_sprintf.h"
 #include "all.h"
-#include "examples/libs_vcpkg/cex.h"
-#include "src/cex_base.c"
 #include <stdarg.h>
-#include <unistd.h>
 
 struct _sbuf__sprintf_ctx
 {
@@ -148,64 +145,32 @@ cex_sbuf_create_static(char* buf, usize buf_size)
     return self;
 }
 
-/// Ensures if string has capacity >= new_capacity, reallocates is necessary
-static Exception
-cex_sbuf_grow(sbuf_c* self, usize new_capacity)
-{
-    sbuf_head_s* head = _sbuf__head(*self);
-    if (unlikely(head == NULL)) { return Error.runtime; }
-    if (new_capacity <= head->capacity) {
-        // capacity is enough, no need to grow
-        return Error.ok;
-    }
-    return _sbuf__grow_buffer(self, new_capacity);
-}
 
-/// Recalculate full string length using strlen() if it was externally changed
-static void
-cex_sbuf_update_len(sbuf_c* self)
+
+/// Shrinks string length to new_length (fails when new_length > existing length)
+static Exc
+cex_sbuf_shrink(sbuf_c* self, usize new_length)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
-    if (head == NULL) { return; }
-    if (head->err) { return; }
+    if (unlikely(!head)) { return Error.runtime; }
+    if (unlikely(head->err)) { return head->err; }
 
-    uassert((*self)[head->capacity] == '\0' && "capacity null term smashed!");
+    if (unlikely(new_length > head->length)) {
+        _sbuf__set_error(head, Error.argument);
+        return Error.argument;
+    }
 
-    head->length = strlen(*self);
+    head->length = new_length;
     (*self)[head->length] = '\0';
+    return EOK;
 }
 
 /// Clears string
 static void
 cex_sbuf_clear(sbuf_c* self)
 {
-    uassert(self != NULL);
-    sbuf_head_s* head = _sbuf__head(*self);
-    if (unlikely(head == NULL)) { return; }
-    if (unlikely(head->err)) { return; }
-    head->length = 0;
-    (*self)[head->length] = '\0';
-}
-
-/// Shrinks string length to new_length
-static void
-cex_sbuf_shrink(sbuf_c* self, usize new_length)
-{
-    uassert(self != NULL);
-    sbuf_head_s* head = _sbuf__head(*self);
-    if (unlikely(!head)) { return; }
-    if (unlikely(head->err)) { return; }
-    if (unlikely(new_length > head->length)) {
-        uassert(new_length <= head->length);
-        return;
-    }
-    if (unlikely(new_length >= head->capacity)) {
-        uassert(new_length <= head->capacity);
-        return;
-    }
-    head->length = new_length;
-    (*self)[head->length] = '\0';
+    cex_sbuf_shrink(self, 0);
 }
 
 /// Returns string length from its metadata
@@ -426,11 +391,9 @@ const struct __cex_namespace__sbuf sbuf = {
     .create = cex_sbuf_create,
     .create_static = cex_sbuf_create_static,
     .destroy = cex_sbuf_destroy,
-    .grow = cex_sbuf_grow,
     .isvalid = cex_sbuf_isvalid,
     .len = cex_sbuf_len,
     .shrink = cex_sbuf_shrink,
-    .update_len = cex_sbuf_update_len,
     .validate = cex_sbuf_validate,
 
     // clang-format on

@@ -464,13 +464,12 @@ test$case(test_sbuf_appendf_error_resilience)
     sbuf.appendf(&s, "%s", "456");
     tassert_eq(false, sbuf.isvalid(&s));
 
-    tassert_eq(Error.overflow, sbuf.grow(&s, 2999999));
     tassert_eq(Error.overflow, sbuf.validate(&s));
+    tassert_er(Error.overflow, sbuf.shrink(&s, 31921)); // NOTE: uses hear->err
 
     tassert_eq(0, strlen(s));
 
     tassert_eq("NULL argument", sbuf.validate(NULL));
-    sbuf.update_len(&s);
 
     s = NULL;
     tassert_eq("Memory error or already free'd", sbuf.validate(&s));
@@ -480,13 +479,43 @@ test$case(test_sbuf_appendf_error_resilience)
     sbuf.append(&s, "456");
     tassert_eq(0, sbuf.len(&s));
     tassert_eq(0, sbuf.capacity(&s));
-    tassert_er(Error.runtime, sbuf.grow(&s, 31921));
-    sbuf.update_len(&s);
+    tassert_er(Error.runtime, sbuf.shrink(&s, 31921));
     sbuf.clear(&s);
     sbuf.shrink(&s, 0);
 
     tassert_eq(false, sbuf.isvalid(&s));
     tassert_eq("Memory error or already free'd", sbuf.validate(&s));
+
+    sbuf.destroy(&s);
+    return EOK;
+}
+
+test$case(test_sbuf_shrink_test)
+{
+    char buf[64];
+    sbuf_c s = sbuf.create_static(buf, arr$len(buf));
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
+
+    // wipe all nullterm
+    memset(s, 0xff, sbuf.capacity(&s) + 1);
+    tassert_eq((u8)s[sbuf.len(&s)], 0xff);
+    tassert_eq((u8)s[sbuf.capacity(&s)], 0xff);
+
+
+    tassert_eq(EOK, sbuf.appendf(&s, "%s", "123"));
+    tassert_eq("123", s);
+    tassert_eq(sbuf.len(&s), 3);
+
+    sbuf.shrink(&s, 2);
+    tassert_eq(sbuf.len(&s), 2);
+    tassert_eq(s[2], '\0');
+    tassert_er(EOK, sbuf.validate(&s));
+
+
+    tassert_eq(Error.argument, sbuf.shrink(&s, 3));
+    tassert_eq(sbuf.len(&s), 0);
+    tassert_er(Error.argument, sbuf.validate(&s));
+
 
     sbuf.destroy(&s);
     return EOK;

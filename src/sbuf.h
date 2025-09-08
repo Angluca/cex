@@ -21,7 +21,6 @@ typedef struct
 static_assert(alignof(sbuf_head_s) == 1, "align");
 static_assert(alignof(sbuf_head_s) == alignof(char), "align");
 //static_assert(sizeof(sbuf_head_s) == 36, "size");
-
 /**
 
 Dynamic string builder class
@@ -101,16 +100,12 @@ struct __cex_namespace__sbuf {
     sbuf_c          (*create_static)(char* buf, usize buf_size);
     /// Destroys the string, deallocates the memory, or nullify static buffer.
     sbuf_c          (*destroy)(sbuf_c* self);
-    /// Ensures if string has capacity >= new_capacity, reallocates is necessary
-    Exception       (*grow)(sbuf_c* self, usize new_capacity);
     /// Returns false if string invalid
     bool            (*isvalid)(sbuf_c* self);
     /// Returns string length from its metadata
     u32             (*len)(sbuf_c* self);
     /// Shrinks string length to new_length
-    void            (*shrink)(sbuf_c* self, usize new_length);
-    /// Recalculate full string length using strlen() if it was externally changed
-    void            (*update_len)(sbuf_c* self);
+    Exc             (*shrink)(sbuf_c* self, usize new_length);
     /// Validate dynamic string state, with detailed Exception
     Exception       (*validate)(sbuf_c* self);
 
