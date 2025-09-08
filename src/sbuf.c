@@ -83,8 +83,9 @@ _sbuf__grow_buffer(sbuf_c* self, u32 length)
     return Error.ok;
 }
 
+/// Creates new dynamic string builder backed by allocator
 static sbuf_c
-cex_sbuf_create(u32 capacity, IAllocator allocator)
+cex_sbuf_create(usize capacity, IAllocator allocator)
 {
     if (unlikely(allocator == NULL)) {
         uassert(allocator != NULL);

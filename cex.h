@@ -2115,7 +2115,6 @@ typedef struct
 static_assert(alignof(sbuf_head_s) == 1, "align");
 static_assert(alignof(sbuf_head_s) == alignof(char), "align");
 //static_assert(sizeof(sbuf_head_s) == 36, "size");
-
 /**
 
 Dynamic string builder class
@@ -2125,7 +2124,52 @@ Key features:
 - Dynamically grown strings 
 - Supports CEX specific formats 
 - Can be backed by allocator or static buffer
-- Error resilient
+- Error resilient - allows self as NULL
+- `sbuf_c` - is an alias of `char*`, always null terminated, compatible with any C strings 
+
+- Allocator driven dynamic string
+```c
+sbuf_c s = sbuf.create(20, mem$);
+
+// These may fail (you may use them with e$* checks or add final check)
+sbuf.appendf(&s, "%s, CEX slice: %S\n", "456", str$s("slice"));
+sbuf.append(&s, "some string");
+
+e$except(err, sbuf.validate(&s)) {
+    // Error handling
+}
+
+if (!sbuf.isvalid(&s)) {
+    // Error, just a boolean flag
+}
+
+// Some other stuff
+strlen(s); // C strings work, because sbuf_c is vanilla char*
+sbuf.len(&s); // faster way of getting length (uses metadata)
+sbuf.grow(&s, new_capacity); // increase capacity
+sbuf.capacity(&s); // current capacity, 0 if error occurred
+sbuf.clear(&s); // reset dynamic string + null term
+
+
+
+// Frees the memory and sets s to NULL
+sbuf.destroy(&s);
+```
+
+- Static buffer backed string
+```c
+
+// NOTE: `s` address is different, because `buf` will contain header and metadata, use only `s`
+char buf[64];
+sbuf_c s = sbuf.create_static(buf, arr$len(buf));
+
+// You may check every operation if needed, but this more verbose
+e$ret(sbuf.appendf(&s, "%s, CEX slice: %S\n", "456", str$s("slice")));
+e$ret(sbuf.append(&s, "some string"));
+
+// It's not mandatory, but will clean up buffer data at the end
+sbuf.destroy(&s);
+```
 
 */
 struct __cex_namespace__sbuf {
@@ -2137,7 +2181,8 @@ struct __cex_namespace__sbuf {
     Exc             (*appendfva)(sbuf_c* self, char* format, va_list va);
     u32             (*capacity)(sbuf_c* self);
     void            (*clear)(sbuf_c* self);
-    sbuf_c          (*create)(u32 capacity, IAllocator allocator);
+    /// Creates new dynamic string builder backed by allocator
+    sbuf_c          (*create)(usize capacity, IAllocator allocator);
     sbuf_c          (*create_static)(char* buf, usize buf_size);
     sbuf_c          (*create_temp)(void);
     sbuf_c          (*destroy)(sbuf_c* self);
@@ -10340,8 +10385,9 @@ _sbuf__grow_buffer(sbuf_c* self, u32 length)
     return Error.ok;
 }
 
+/// Creates new dynamic string builder backed by allocator
 static sbuf_c
-cex_sbuf_create(u32 capacity, IAllocator allocator)
+cex_sbuf_create(usize capacity, IAllocator allocator)
 {
     if (unlikely(allocator == NULL)) {
         uassert(allocator != NULL);
