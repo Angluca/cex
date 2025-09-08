@@ -2115,6 +2115,7 @@ typedef struct
 static_assert(alignof(sbuf_head_s) == 1, "align");
 static_assert(alignof(sbuf_head_s) == alignof(char), "align");
 //static_assert(sizeof(sbuf_head_s) == 36, "size");
+
 /**
 
 Dynamic string builder class
