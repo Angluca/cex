@@ -236,7 +236,7 @@ cmd_build_docs(int argc, char** argv, void* user_ctx)
     (void)user_ctx;
 
     char* namespaces[] = { "mem", "str", "test", "os",       "fuzz", "arr", "hm",
-                           "for", "io",  "sbuf", "argparse", "cg",   "e",   "cexy" };
+                           "for", "io",  "sbuf", "argparse", "cg",   "e",   "cexy", "log" };
 
     for$each (it, namespaces) {
         mem$scope(tmem$, _)

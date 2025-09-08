@@ -3168,6 +3168,9 @@ Just type:
 ### `io`
 {{< include _include/io.md >}}
 
+### `log$`
+{{< include _include/log.md >}}
+
 ### `mem$`
 {{< include _include/mem.md >}}
 

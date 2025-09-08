@@ -14,7 +14,7 @@ Memory management hints:
 `break`)
 - consider `mem$malloc/mem$calloc/mem$realloc/mem$free/mem$new`
 - You can init arena scope with `mem$arena(page_size, arena_var_name)`
-- AllocatorArena grow dynamically if there is no room in existing page, but be careful when you use
+- AllocatorArena grows dynamically if there is no room in existing page, but be careful when you use
 many `realloc()`, it can grow arenas unexpectedly large.
 - Use temp allocator as `mem$scope(tmem$, _) {}` it's a common CEX pattern, `_` is `tmem$`
 short-alias
