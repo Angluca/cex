@@ -725,6 +725,8 @@ Memory management hints:
 `break`)
 - consider `mem$malloc/mem$calloc/mem$realloc/mem$free/mem$new`
 - You can init arena scope with `mem$arena(page_size, arena_var_name)`
+- AllocatorArena grow dynamically if there is no room in existing page, but be careful when you use
+many `realloc()`, it can grow arenas unexpectedly large.
 - Use temp allocator as `mem$scope(tmem$, _) {}` it's a common CEX pattern, `_` is `tmem$`
 short-alias
 - Nested `mem$scope` are allowed, but memory freed at nested scope exit. NOTE: don't share pointers
@@ -951,7 +953,7 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
                 __asan_poison_memory_region(_addr, _size);                                         \
             })
 
-/// Unpoisons memory region with ASAN, or fill it with 0x00 byte pattern (no ASAN) 
+/// Unpoisons memory region with ASAN, or fill it with 0x00 byte pattern (no ASAN)
 #        define mem$asan_unpoison(addr, size)                                                      \
             ({                                                                                     \
                 void* _addr = (addr);                                                              \

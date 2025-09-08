@@ -7696,6 +7696,7 @@ Note
 <li><code>mem$scope()</code> - automatically free memory at scope exit by any reason (<code>return</code>, <code>goto</code> out, <code>break</code>)</li>
 <li>consider <code>mem$malloc/mem$calloc/mem$realloc/mem$free/mem$new</code></li>
 <li>You can init arena scope with <code>mem$arena(page_size, arena_var_name)</code></li>
+<li>AllocatorArena grow dynamically if there is no room in existing page, but be careful when you use many <code>realloc()</code>, it can grow arenas unexpectedly large.</li>
 <li>Use temp allocator as <code>mem$scope(tmem$, _) {}</code> it’s a common CEX pattern, <code>_</code> is <code>tmem$</code> short-alias</li>
 <li>Nested <code>mem$scope</code> are allowed, but memory freed at nested scope exit. NOTE: don’t share pointers across scopes.</li>
 <li>Use address sanitizers as often as possible</li>
