@@ -28,12 +28,7 @@ _cex_str__index(str_s* s, char* c, u8 clen)
     return result;
 }
 
-/**
- * @brief Creates string slice of input C string (NULL tolerant, (str_s){0} on error)
- *
- * @param ccharptr pointer to a string
- * @return
- */
+/// Creates string slice of input C string (NULL tolerant, (str_s){0} on error)
 static str_s
 cex_str_sstr(char* ccharptr)
 {
@@ -45,7 +40,7 @@ cex_str_sstr(char* ccharptr)
     };
 }
 
-
+/// Creates string slice from a buf+len
 static str_s
 cex_str_sbuf(char* s, usize length)
 {
@@ -57,6 +52,7 @@ cex_str_sbuf(char* s, usize length)
     };
 }
 
+/// Compares two null-terminated strings (null tolerant)
 static bool
 cex_str_eq(char* a, char* b)
 {
@@ -64,6 +60,7 @@ cex_str_eq(char* a, char* b)
     return strcmp(a, b) == 0;
 }
 
+/// Compares two strings, case insensitive, null tolerant
 bool
 cex_str_eqi(char* a, char* b)
 {
@@ -76,6 +73,7 @@ cex_str_eqi(char* a, char* b)
     return (*a == '\0' && *b == '\0');
 }
 
+/// Compares two string slices, null tolerant
 static bool
 cex_str__slice__eq(str_s a, str_s b)
 {
@@ -83,6 +81,7 @@ cex_str__slice__eq(str_s a, str_s b)
     return str.slice.qscmp(&a, &b) == 0;
 }
 
+/// Compares two string slices, null tolerant, case insensitive
 static bool
 cex_str__slice__eqi(str_s a, str_s b)
 {
@@ -90,10 +89,13 @@ cex_str__slice__eqi(str_s a, str_s b)
     return str.slice.qscmpi(&a, &b) == 0;
 }
 
+/// Makes slices of `s` slice, start/end are indexes, can be negative from the end, if end=0 mean
+/// full length of the string. `s` may be not null-terminated. function is NULL tolerant, return
+/// (str_s){0} on error
 static str_s
 cex_str__slice__sub(str_s s, isize start, isize end)
 {
-    str_s result = {0};
+    str_s result = { 0 };
 
     if (s.buf != NULL) {
         isize _len = s.len;
@@ -115,6 +117,9 @@ cex_str__slice__sub(str_s s, isize start, isize end)
     return result;
 }
 
+/// Makes slices of `s` char* string, start/end are indexes, can be negative from the end, if end=0
+/// mean full length of the string. `s` may be not null-terminated. function is NULL tolerant,
+/// return (str_s){0} on error
 static str_s
 cex_str_sub(char* s, isize start, isize end)
 {
@@ -122,6 +127,8 @@ cex_str_sub(char* s, isize start, isize end)
     return cex_str__slice__sub(slice, start, end);
 }
 
+/// Makes a copy of initial `src`, into `dest` buffer constrained by `destlen`. NULL tolerant,
+/// always null-terminated, overflow checked.
 static Exception
 cex_str_copy(char* dest, char* src, usize destlen)
 {
@@ -146,6 +153,7 @@ cex_str_copy(char* dest, char* src, usize destlen)
     return Error.ok;
 }
 
+/// Replaces substring occurrence in a string
 char*
 cex_str_replace(char* s, char* old_sub, char* new_sub, IAllocator allc)
 {
@@ -183,6 +191,8 @@ cex_str_replace(char* s, char* old_sub, char* new_sub, IAllocator allc)
     return new_str;
 }
 
+/// Makes a copy of initial `src` slice, into `dest` buffer constrained by `destlen`. NULL tolerant,
+/// always null-terminated, overflow checked.
 static Exception
 cex_str__slice__copy(char* dest, str_s src, usize destlen)
 {
@@ -197,6 +207,7 @@ cex_str__slice__copy(char* dest, str_s src, usize destlen)
     return Error.ok;
 }
 
+/// Analog of vsprintf() uses CEX sprintf engine. NULL tolerant, overflow safe.
 static Exception
 cex_str_vsprintf(char* dest, usize dest_len, char* format, va_list va)
 {
@@ -216,6 +227,7 @@ cex_str_vsprintf(char* dest, usize dest_len, char* format, va_list va)
     return EOK;
 }
 
+/// Analog of sprintf() uses CEX sprintf engine. NULL tolerant, overflow safe.
 static Exc
 cex_str_sprintf(char* dest, usize dest_len, char* format, ...)
 {
@@ -227,6 +239,7 @@ cex_str_sprintf(char* dest, usize dest_len, char* format, ...)
 }
 
 
+/// Calculates string length, NULL tolerant.
 static usize
 cex_str_len(char* s)
 {
@@ -234,6 +247,7 @@ cex_str_len(char* s)
     return strlen(s);
 }
 
+/// Find a substring in a string, returns pointer to first element. NULL tolerant, and NULL on err.
 static char*
 cex_str_find(char* haystack, char* needle)
 {
@@ -241,6 +255,7 @@ cex_str_find(char* haystack, char* needle)
     return strstr(haystack, needle);
 }
 
+/// Find substring from the end , NULL tolerant, returns NULL on error.
 char*
 cex_str_findr(char* haystack, char* needle)
 {
@@ -258,6 +273,7 @@ cex_str_findr(char* haystack, char* needle)
     return NULL;
 }
 
+/// Get index of first occurrence of `needle`, returns -1 on error.
 static isize
 cex_str__slice__index_of(str_s s, str_s needle)
 {
@@ -275,12 +291,15 @@ cex_str__slice__index_of(str_s s, str_s needle)
     return -1;
 }
 
+/// Checks if slice starts with prefix, returns (str_s){0} on error, NULL tolerant
 static bool
 cex_str__slice__starts_with(str_s s, str_s prefix)
 {
     if (unlikely(!s.buf || !prefix.buf || prefix.len == 0 || prefix.len > s.len)) { return false; }
     return memcmp(s.buf, prefix.buf, prefix.len) == 0;
 }
+
+/// Checks if slice ends with prefix, returns (str_s){0} on error, NULL tolerant
 static bool
 cex_str__slice__ends_with(str_s s, str_s suffix)
 {
@@ -288,6 +307,7 @@ cex_str__slice__ends_with(str_s s, str_s suffix)
     return s.len >= suffix.len && !memcmp(s.buf + s.len - suffix.len, suffix.buf, suffix.len);
 }
 
+/// Checks if string starts with prefix, returns false on error, NULL tolerant
 static bool
 cex_str_starts_with(char* s, char* prefix)
 {
@@ -297,6 +317,7 @@ cex_str_starts_with(char* s, char* prefix)
     return *prefix == 0;
 }
 
+/// Checks if string ends with prefix, returns false on error, NULL tolerant
 static bool
 cex_str_ends_with(char* s, char* suffix)
 {
@@ -307,6 +328,7 @@ cex_str_ends_with(char* s, char* suffix)
     return slen >= sufflen && !memcmp(s + slen - sufflen, suffix, sufflen);
 }
 
+/// Replaces slice prefix (start part), or returns the same slice if it's not found
 static str_s
 cex_str__slice__remove_prefix(str_s s, str_s prefix)
 {
@@ -318,6 +340,7 @@ cex_str__slice__remove_prefix(str_s s, str_s prefix)
     };
 }
 
+/// Replaces slice suffix (end part), or returns the same slice if it's not found
 static str_s
 cex_str__slice__remove_suffix(str_s s, str_s suffix)
 {
@@ -366,6 +389,7 @@ cex_str__strip_right(str_s* s)
 }
 
 
+/// Removes white spaces from the beginning of slice
 static str_s
 cex_str__slice__lstrip(str_s s)
 {
@@ -391,6 +415,7 @@ cex_str__slice__lstrip(str_s s)
     return result;
 }
 
+/// Removes white spaces from the end of slice
 static str_s
 cex_str__slice__rstrip(str_s s)
 {
@@ -416,6 +441,8 @@ cex_str__slice__rstrip(str_s s)
     return result;
 }
 
+
+/// Removes white spaces from both ends of slice
 static str_s
 cex_str__slice__strip(str_s s)
 {
@@ -442,6 +469,7 @@ cex_str__slice__strip(str_s s)
     return result;
 }
 
+/// libc `qsort()` comparator function for alphabetical sorting of str_s arrays
 static int
 cex_str__slice__qscmp(const void* a, const void* b)
 {
@@ -464,6 +492,7 @@ cex_str__slice__qscmp(const void* a, const void* b)
     return cmp;
 }
 
+/// libc `qsort()` comparator function for alphabetical case insensitive sorting of str_s arrays
 static int
 cex_str__slice__qscmpi(const void* a, const void* b)
 {
@@ -496,6 +525,7 @@ cex_str__slice__qscmpi(const void* a, const void* b)
     return cmp;
 }
 
+/// iterator over slice splits:  for$iter (str_s, it, str.slice.iter_split(s, ",", &it.iterator)) {}
 static str_s
 cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
 {
@@ -1101,6 +1131,7 @@ _cex_str__fmt_callback(char* buf, void* user, u32 len)
     return (ctx->buf != NULL) ? &ctx->buf[ctx->length] : ctx->tmp;
 }
 
+/// Formats string and allocates it dynamically using allocator, supports CEX format engine
 static char*
 cex_str_fmt(IAllocator allc, char* format, ...)
 {
@@ -1134,6 +1165,7 @@ cex_str_fmt(IAllocator allc, char* format, ...)
     return ctx.buf;
 }
 
+/// Clone slice into new char* allocated by `allc`, null tolerant, returns NULL on error.
 static char*
 cex_str__slice__clone(str_s s, IAllocator allc)
 {
@@ -1146,6 +1178,7 @@ cex_str__slice__clone(str_s s, IAllocator allc)
     return result;
 }
 
+/// Clones string using allocator, null tolerant, returns NULL on error.
 static char*
 cex_str_clone(char* s, IAllocator allc)
 {
@@ -1161,6 +1194,7 @@ cex_str_clone(char* s, IAllocator allc)
     return result;
 }
 
+/// Returns new lower case string, returns NULL on error, null tolerant
 static char*
 cex_str_lower(char* s, IAllocator allc)
 {
@@ -1176,6 +1210,7 @@ cex_str_lower(char* s, IAllocator allc)
     return result;
 }
 
+/// Returns new upper case string, returns NULL on error, null tolerant
 static char*
 cex_str_upper(char* s, IAllocator allc)
 {
@@ -1191,6 +1226,9 @@ cex_str_upper(char* s, IAllocator allc)
     return result;
 }
 
+/// Splits string using split_by (allows many) chars, returns new dynamic array of split char*
+/// tokens, allocates memory with allc, returns NULL on error. NULL tolerant. Items of array are
+/// cloned, so you need free them independently or better use arena or tmem$.
 static arr$(char*) cex_str_split(char* s, char* split_by, IAllocator allc)
 {
     str_s src = cex_str_sstr(s);
@@ -1206,6 +1244,9 @@ static arr$(char*) cex_str_split(char* s, char* split_by, IAllocator allc)
     return result;
 }
 
+/// Splits string by lines, result allocated by allc, as dynamic array of cloned lines, Returns NULL
+/// on error, NULL tolerant. Items of array are cloned, so you need free them independently or
+/// better use arena or tmem$. Supports \n or \r\n.
 static arr$(char*) cex_str_split_lines(char* s, IAllocator allc)
 {
     uassert(allc != NULL);
@@ -1238,6 +1279,7 @@ static arr$(char*) cex_str_split_lines(char* s, IAllocator allc)
     return result;
 }
 
+/// Joins string using a separator (join_by), NULL tolerant, returns NULL on error.
 static char*
 cex_str_join(char** str_arr, usize str_arr_len, char* join_by, IAllocator allc)
 {
@@ -1468,17 +1510,21 @@ _cex_str_match(char* str, isize str_len, char* pattern)
     return str_len == 0;
 }
 
+/// Slice pattern matching check (see ./cex help str$ for examples)
 static bool
 cex_str__slice__match(str_s s, char* pattern)
 {
     return _cex_str_match(s.buf, s.len, pattern);
 }
+
+/// String pattern matching check (see ./cex help str$ for examples)
 static bool
 cex_str_match(char* s, char* pattern)
 {
     return _cex_str_match(s, str.len(s), pattern);
 }
 
+/// libc `qsort()` comparator functions, for arrays of `char*`, sorting alphabetical
 static int
 cex_str_qscmp(const void* a, const void* b)
 {
@@ -1489,6 +1535,7 @@ cex_str_qscmp(const void* a, const void* b)
     return strcmp(_a, _b);
 }
 
+/// libc `qsort()` comparator functions, for arrays of `char*`, sorting alphabetical case insensitive
 static int
 cex_str_qscmpi(const void* a, const void* b)
 {
