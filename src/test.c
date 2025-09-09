@@ -2,6 +2,11 @@
 #ifdef CEX_TEST
 #    include <math.h>
 
+#ifdef _WIN32
+#    include <io.h>
+#    include <fcntl.h>
+#endif
+
 enum _cex_test_eq_op_e
 {
     _cex_test_eq_op__na,
@@ -21,7 +26,7 @@ _check_eq_int(i64 a, i64 b, int line, enum _cex_test_eq_op_e op)
     char* ops = "?";
     switch (op) {
         case _cex_test_eq_op__na:
-            unreachable("bad op");
+            unreachable();
             break;
         case _cex_test_eq_op__eq:
             passed = a == b;
@@ -113,7 +118,7 @@ _check_eq_f32(f64 a, f64 b, int line, enum _cex_test_eq_op_e op)
     }
     switch (op) {
         case _cex_test_eq_op__na:
-            unreachable("bad op");
+            unreachable();
             break;
         case _cex_test_eq_op__eq:
             passed = is_equal;
@@ -172,7 +177,7 @@ _check_eq_str(char* a, char* b, int line, enum _cex_test_eq_op_e op)
             ops = "==";
             break;
         default:
-            unreachable("bad op or unsupported for strings");
+            unreachable();
     }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!passed) {
@@ -248,7 +253,7 @@ _check_eqs_slice(str_s a, str_s b, int line, enum _cex_test_eq_op_e op)
             ops = "==";
             break;
         default:
-            unreachable("bad op or unsupported for strings");
+            unreachable();
     }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!passed) {
@@ -276,7 +281,13 @@ cex_test_mute()
         fflush(stdout);
         io.rewind(ctx->out_stream);
         fflush(ctx->out_stream);
+
+#    ifdef _WIN32
+        _dup2(_fileno(ctx->out_stream), STDOUT_FILENO);
+#    else
         dup2(fileno(ctx->out_stream), STDOUT_FILENO);
+#    endif
+
     }
 }
 static void __attribute__((noinline))
@@ -291,7 +302,11 @@ cex_test_unmute(Exc test_result)
         fflush(stdout);
         isize flen = io.file.size(ctx->out_stream);
         io.rewind(ctx->out_stream);
+#    ifdef _WIN32
+        _dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
+#    else
         dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
+#    endif
 
         if (test_result != EOK && flen > 1) {
             fflush(stdout);
@@ -355,7 +370,11 @@ cex_test_main_fn(int argc, char** argv)
         }
     }
 
+#    ifdef _WIN32
+    ctx->orig_stdout_fd = _dup(_fileno(stdout));
+#    else
     ctx->orig_stdout_fd = dup(fileno(stdout));
+#    endif
 
     mem$scope(tmem$, _)
     {

@@ -59,9 +59,7 @@ jobs:
         compiler: ["gcc-12", "gcc-13", "gcc-14", "clang-16", "clang-17", "clang-18"]
         cex_preset: ["CEX_DEBUG", "CEX_RELEASE", "CEX_NDEBUG"]
         include:
-          - cex_preset: CEX_VALGRIND
-            compiler: "gcc-14"
-          - cex_preset: CEX_VALGRIND
+          - cex_preset: CEX_C23
             compiler: "clang-18"
 
     steps:
@@ -93,6 +91,52 @@ jobs:
       - uses: ./.github/actions/cex_test
         name: cex test suite
 
+  linux-valgrind:
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Don't abort runners if a single one fails
+      fail-fast: false
+
+      matrix:
+        include:
+          - cex_preset: CEX_VALGRIND
+            compiler: "gcc-14"
+          - cex_preset: CEX_VALGRIND
+            compiler: "clang-18"
+
+    steps:
+      - name: Checkout cex
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/env_setup
+        name: Setup env
+
+      - name: cc setup
+        run: |
+          #sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          #sudo apt-get update
+          sudo apt-get install ${{ matrix.compiler }}
+          sudo apt-get install valgrind
+          echo "Replacing: cc to ${{ matrix.compiler }}"
+          sudo rm /usr/bin/cc
+          sudo ln -s /usr/bin/${{ matrix.compiler }} /usr/bin/cc 
+          echo "cc --version"
+          cc --version
+
+      - name: cex initial build
+        run: |
+          ulimit -c unlimited 
+          ls -la
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex 
+          ./cex -D${{ matrix.cex_preset }} config
+
+      - name: cex valgrind
+        run: |
+          ulimit -c unlimited 
+          ./cex -DCEX_VALGRIND config
+          ./cex test debug all
 
   tests-windows:
     name: ${{ matrix.runs-on }}-${{ matrix.msys }}-${{ matrix.cex_preset }}

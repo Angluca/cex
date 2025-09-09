@@ -584,7 +584,7 @@ cex_argparse_next(argparse_c* self)
     uassert(self != NULL);
     uassert(self->argv != NULL && "forgot argparse.parse() call?");
 
-    var result = self->argv[0];
+    auto result = self->argv[0];
     if (self->argc > 0) {
 
         if (self->_ctx.cpidx > 0) {

@@ -13,8 +13,8 @@ typedef struct
     char* buf;
 } str_s;
 
-_Static_assert(alignof(str_s) == alignof(usize), "align");
-_Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
+static_assert(alignof(str_s) == alignof(usize), "align");
+static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
 
 
 /**
@@ -26,16 +26,6 @@ _Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
 #define str$s(string)                                                                              \
     (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
-
-/**
- * @brief creates slice of str_s instance
- */
-#define str$sslice(str_self, ...)                                                                  \
-    ({                                                                                             \
-        slice$define(*(str_self.buf)) __slice = { .arr = NULL, .len = 0 };                         \
-        _arr$slice_get(__slice, str_self.buf, str_self.len, __VA_ARGS__);                          \
-        __slice;                                                                                   \
-    })
 
 /// Joins parts of strings using a separator str$join(allc, ",", "a", "b", "c") -> "a,b,c"
 #define str$join(allocator, str_join_by, str_parts...)                                             \
@@ -74,34 +64,189 @@ _Static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
     ) \
 )(str_or_slice, out_var_ptr)
 
-struct __cex_namespace__str {
+/**
+
+CEX string principles:
+
+- `str` namespace is build for compatibility with C strings
+- all string functions are NULL resilient
+- all string functions can return NULL on error
+- you don't have to check every operation for NULL every time, just at the end
+- all string format operations support CEX specific specificators (see below)
+
+String slices:
+
+- Slices are backed by `(str_s){.buf = s, .len = NNN}` struct
+- Slices are passed by value and allocated on stack
+- Slices can be made from null-terminated strings, or buffers, or literals
+- str$s("hello") - use this for compile time defined slices/constants
+- Slices are not guaranteed to be null-terminated
+- Slices support operations which allowed by read-only string view representation
+- CEX formatting uses `%S` for slices: `io.print("Hello %S\n", str$s("world"))`
+
+
+- Working with slices:
+```c
+
+test$case(test_cstr)
+{
+    char* cstr = "hello";
+    str_s s = str.sstr(cstr);
+    tassert_eq(s.buf, cstr);
+    tassert_eq(s.len, 5);
+    tassert(s.buf == cstr);
+    tassert_eq(str.len(s.buf), 5);
+}
+
+```
+
+- Getting substring as slices
+```c
+
+str.sub("123456", 0, 0); // slice: 123456
+str.sub("123456", 1, 0); // slice: 23456
+str.sub("123456", 1, -1); // slice: 2345
+str.sub("123456", -3, -1); // slice: 345
+str.sub("123456", -30, 2000); // slice: (str_s){.buf = NULL, .len = 0} (error, but no crash)
+
+// works with slices too
+str_s s = str.sstr("123456");
+str_s sub = str.slice.sub(s, 1, 2);
+
+```
+
+- Splitting / iterating via tokens
+
+```c
+
+// Working without mem allocation
+s = str.sstr("123,456");
+for$iter (str_s, it, str.slice.iter_split(s, ",", &it.iterator)) {
+    io.printf("%S\n", it.val); // NOTE: it.val is non null-terminated slice
+}
+
+
+// Mem allocating split
+mem$scope(tmem$, _)
+{
+
+    // NOTE: each `res` item will be allocated C-string, use tmem$ or deallocate independently
+    arr$(char*) res = str.split("123,456,789", ",", _);
+    tassert(res != NULL); // NULL on error
+
+    for$each (v, res) {
+        io.printf("%s\n", v); // NOTE: strings now cloned and null-terminated
+    }
+}
+
+```
+
+- Chaining string operations
+```c
+
+mem$scope(tmem$, _)
+{
+    char* s = str.fmt(_, "hi there"); // NULL on error
+    s = str.replace(s, "hi", "hello", _); // NULL tolerant, NULL on error
+    s = str.fmt(_, "result is: %s", s); // NULL tolerant, NULL on error
+    if (s == NULL) {
+        // TODO: oops error occurred, in one of three operations, but we don't need to check each one
+    }
+
+    tassert_eq(s, "result is: hello there");
+}
+```
+
+- Pattern matching
+
+```c
+// Pattern matching 101
+// * - one or more characters
+// ? - one character
+// [abc] - one character a or b or c
+// [!abc] - one character, but not a or b or c
+// [abc+] - one or more characters a or b or c
+// [a-cA-C0-9] - one character in a range of characters
+// \\* - escaping literal '*'
+// (abc|def|xyz) - matching combination of words abc or def or xyz
+
+tassert(str.match("test.txt", "*?txt"));
+tassert(str.match("image.png", "image.[jp][pn]g"));
+tassert(str.match("backup.txt", "[!a]*.txt"));
+tassert(!str.match("D", "[a-cA-C0-9]"));
+tassert(str.match("1234567890abcdefABCDEF", "[0-9a-fA-F+]"));
+tassert(str.match("create", "(run|build|create|clean)"));
+
+
+// Works with slices
+str_s src = str$s("my_test __String.txt");
+tassert(str.slice.match(src, "*"));
+tassert(str.slice.match(src, "*.txt*"));
+tassert(str.slice.match(src, "my_test*.txt"));
+
+```
+
+*/
+
+struct __cex_namespace__str
+{
     // Autogenerated by CEX
     // clang-format off
 
+    /// Clones string using allocator, null tolerant, returns NULL on error.
     char*           (*clone)(char* s, IAllocator allc);
+    /// Makes a copy of initial `src`, into `dest` buffer constrained by `destlen`. NULL tolerant,
+    /// always null-terminated, overflow checked.
     Exception       (*copy)(char* dest, char* src, usize destlen);
+    /// Checks if string ends with prefix, returns false on error, NULL tolerant
     bool            (*ends_with)(char* s, char* suffix);
+    /// Compares two null-terminated strings (null tolerant)
     bool            (*eq)(char* a, char* b);
+    /// Compares two strings, case insensitive, null tolerant
     bool            (*eqi)(char* a, char* b);
+    /// Find a substring in a string, returns pointer to first element. NULL tolerant, and NULL on err.
     char*           (*find)(char* haystack, char* needle);
+    /// Find substring from the end , NULL tolerant, returns NULL on error.
     char*           (*findr)(char* haystack, char* needle);
+    /// Formats string and allocates it dynamically using allocator, supports CEX format engine
     char*           (*fmt)(IAllocator allc, char* format,...);
+    /// Joins string using a separator (join_by), NULL tolerant, returns NULL on error.
     char*           (*join)(char** str_arr, usize str_arr_len, char* join_by, IAllocator allc);
+    /// Calculates string length, NULL tolerant.
     usize           (*len)(char* s);
+    /// Returns new lower case string, returns NULL on error, null tolerant
     char*           (*lower)(char* s, IAllocator allc);
+    /// String pattern matching check (see ./cex help str$ for examples)
     bool            (*match)(char* s, char* pattern);
+    /// libc `qsort()` comparator functions, for arrays of `char*`, sorting alphabetical
     int             (*qscmp)(const void* a, const void* b);
+    /// libc `qsort()` comparator functions, for arrays of `char*`, sorting alphabetical case insensitive
     int             (*qscmpi)(const void* a, const void* b);
+    /// Replaces substring occurrence in a string
     char*           (*replace)(char* s, char* old_sub, char* new_sub, IAllocator allc);
+    /// Creates string slice from a buf+len
     str_s           (*sbuf)(char* s, usize length);
+    /// Splits string using split_by (allows many) chars, returns new dynamic array of split char*
+    /// tokens, allocates memory with allc, returns NULL on error. NULL tolerant. Items of array are
+    /// cloned, so you need free them independently or better use arena or tmem$.
     arr$(char*)     (*split)(char* s, char* split_by, IAllocator allc);
+    /// Splits string by lines, result allocated by allc, as dynamic array of cloned lines, Returns NULL
+    /// on error, NULL tolerant. Items of array are cloned, so you need free them independently or
+    /// better use arena or tmem$. Supports \n or \r\n.
     arr$(char*)     (*split_lines)(char* s, IAllocator allc);
+    /// Analog of sprintf() uses CEX sprintf engine. NULL tolerant, overflow safe.
     Exc             (*sprintf)(char* dest, usize dest_len, char* format,...);
     /// Creates string slice of input C string (NULL tolerant, (str_s){0} on error)
     str_s           (*sstr)(char* ccharptr);
+    /// Checks if string starts with prefix, returns false on error, NULL tolerant
     bool            (*starts_with)(char* s, char* prefix);
+    /// Makes slices of `s` char* string, start/end are indexes, can be negative from the end, if end=0
+    /// mean full length of the string. `s` may be not null-terminated. function is NULL tolerant,
+    /// return (str_s){0} on error
     str_s           (*sub)(char* s, isize start, isize end);
+    /// Returns new upper case string, returns NULL on error, null tolerant
     char*           (*upper)(char* s, IAllocator allc);
+    /// Analog of vsprintf() uses CEX sprintf engine. NULL tolerant, overflow safe.
     Exception       (*vsprintf)(char* dest, usize dest_len, char* format, va_list va);
 
     struct {
@@ -128,26 +273,45 @@ struct __cex_namespace__str {
     } convert;
 
     struct {
+        /// Clone slice into new char* allocated by `allc`, null tolerant, returns NULL on error.
         char*           (*clone)(str_s s, IAllocator allc);
+        /// Makes a copy of initial `src` slice, into `dest` buffer constrained by `destlen`. NULL tolerant,
+        /// always null-terminated, overflow checked.
         Exception       (*copy)(char* dest, str_s src, usize destlen);
+        /// Checks if slice ends with prefix, returns (str_s){0} on error, NULL tolerant
         bool            (*ends_with)(str_s s, str_s suffix);
+        /// Compares two string slices, null tolerant
         bool            (*eq)(str_s a, str_s b);
+        /// Compares two string slices, null tolerant, case insensitive
         bool            (*eqi)(str_s a, str_s b);
+        /// Get index of first occurrence of `needle`, returns -1 on error.
         isize           (*index_of)(str_s s, str_s needle);
+        /// iterator over slice splits:  for$iter (str_s, it, str.slice.iter_split(s, ",", &it.iterator)) {}
         str_s           (*iter_split)(str_s s, char* split_by, cex_iterator_s* iterator);
+        /// Removes white spaces from the beginning of slice
         str_s           (*lstrip)(str_s s);
+        /// Slice pattern matching check (see ./cex help str$ for examples)
         bool            (*match)(str_s s, char* pattern);
+        /// libc `qsort()` comparator function for alphabetical sorting of str_s arrays
         int             (*qscmp)(const void* a, const void* b);
+        /// libc `qsort()` comparator function for alphabetical case insensitive sorting of str_s arrays
         int             (*qscmpi)(const void* a, const void* b);
+        /// Replaces slice prefix (start part), or returns the same slice if it's not found
         str_s           (*remove_prefix)(str_s s, str_s prefix);
+        /// Replaces slice suffix (end part), or returns the same slice if it's not found
         str_s           (*remove_suffix)(str_s s, str_s suffix);
+        /// Removes white spaces from the end of slice
         str_s           (*rstrip)(str_s s);
+        /// Checks if slice starts with prefix, returns (str_s){0} on error, NULL tolerant
         bool            (*starts_with)(str_s s, str_s prefix);
+        /// Removes white spaces from both ends of slice
         str_s           (*strip)(str_s s);
+        /// Makes slices of `s` slice, start/end are indexes, can be negative from the end, if end=0 mean
+        /// full length of the string. `s` may be not null-terminated. function is NULL tolerant, return
+        /// (str_s){0} on error
         str_s           (*sub)(str_s s, isize start, isize end);
     } slice;
 
     // clang-format on
 };
 CEX_NAMESPACE struct __cex_namespace__str str;
-

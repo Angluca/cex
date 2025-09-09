@@ -21,7 +21,7 @@ _cex_global_allocators_destructor()
     AllocatorArena_c* allc = (AllocatorArena_c*)tmem$;
     allocator_arena_page_s* page = allc->last_page;
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         mem$free(mem$, page);
         page = tpage;
     }

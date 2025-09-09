@@ -90,7 +90,7 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
 #endif
 
     if (alignment < 8) {
-        _Static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
+        static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
         alignment = 8;
     } else {
         uassert(mem$is_power_of2(alignment) && "must be pow2");

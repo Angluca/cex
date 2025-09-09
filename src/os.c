@@ -125,6 +125,7 @@ closedir(DIR* dirp)
 }
 #endif // _WIN32
 
+/// Sleep for `period_millisec` duration
 static void
 cex_os_sleep(u32 period_millisec)
 {
@@ -135,8 +136,9 @@ cex_os_sleep(u32 period_millisec)
 #endif
 }
 
+/// Get high performance monotonic timer value in seconds
 static f64
-cex_os_timer()
+cex_os_timer(void)
 {
 #ifdef _WIN32
     static LARGE_INTEGER frequency = { 0 };
@@ -151,6 +153,8 @@ cex_os_timer()
 #endif
 }
 
+/// Get last system API error as string representation (Exception compatible). Result content may be
+/// affected by OS locale settings.
 static Exc
 cex_os_get_last_error(void)
 {
@@ -218,6 +222,7 @@ cex_os_get_last_error(void)
 #endif
 }
 
+/// Renames file or directory
 static Exception
 cex_os__fs__rename(char* old_path, char* new_path)
 {
@@ -233,6 +238,7 @@ cex_os__fs__rename(char* old_path, char* new_path)
 #endif // _WIN32
 }
 
+/// Makes directory (no error if exists)
 static Exception
 cex_os__fs__mkdir(char* path)
 {
@@ -250,6 +256,7 @@ cex_os__fs__mkdir(char* path)
     return EOK;
 }
 
+/// Makes all directories in a path
 static Exception
 cex_os__fs__mkpath(char* path)
 {
@@ -274,6 +281,7 @@ cex_os__fs__mkpath(char* path)
     return EOK;
 }
 
+/// Returns cross-platform path stats information (see os_fs_stat_s)
 static os_fs_stat_s
 cex_os__fs__stat(char* path)
 {
@@ -366,6 +374,7 @@ cex_os__fs__stat(char* path)
 #endif
 }
 
+/// Removes file or empty directory (also see os.fs.remove_tree)
 static Exception
 cex_os__fs__remove(char* path)
 {
@@ -388,6 +397,7 @@ cex_os__fs__remove(char* path)
 #endif
 }
 
+/// Iterates over directory (can be recursive) using callback function
 Exception
 cex_os__fs__dir_walk(char* path, bool is_recursive, os_fs_dir_walk_f callback_fn, void* user_ctx)
 {
@@ -435,7 +445,7 @@ cex_os__fs__dir_walk(char* path, bool is_recursive, os_fs_dir_walk_f callback_fn
             goto end;
         }
 
-        var ftype = os.fs.stat(path_buf);
+        auto ftype = os.fs.stat(path_buf);
         if (!ftype.is_valid) {
             result = ftype.error;
             goto end;
@@ -482,6 +492,7 @@ _os__fs__remove_tree_walker(char* path, os_fs_stat_s ftype, void* user_ctx)
     return EOK;
 }
 
+/// Removes directory and all its contents recursively
 static Exception
 cex_os__fs__remove_tree(char* path)
 {
@@ -525,6 +536,8 @@ _os__fs__copy_tree_walker(char* path, os_fs_stat_s ftype, void* user_ctx)
     return EOK;
 }
 
+
+/// Copy directory recursively
 static Exception
 cex_os__fs__copy_tree(char* src_dir, char* dst_dir)
 {
@@ -577,25 +590,27 @@ _os__fs__find_walker(char* path, os_fs_stat_s ftype, void* user_ctx)
     return EOK;
 }
 
-static arr$(char*) cex_os__fs__find(char* path, bool is_recursive, IAllocator allc)
+/// Finds files in `dir/pattern`, for example "./mydir/*.c" (all c files), if is_recursive=true, all
+/// *.c files found in sub-directories.
+static arr$(char*) cex_os__fs__find(char* path_pattern, bool is_recursive, IAllocator allc)
 {
 
     if (unlikely(allc == NULL)) { return NULL; }
 
-    str_s dir_part = os.path.split(path, true);
+    str_s dir_part = os.path.split(path_pattern, true);
     if (dir_part.buf == NULL) {
 #if defined(CEX_TEST) || defined(CEX_BUILD)
-        (void)e$raise(Error.argument, "Bad path: os.fn.find('%s')", path);
+        (void)e$raise(Error.argument, "Bad path: os.fn.find('%s')", path_pattern);
 #endif
         return NULL;
     }
 
     if (!is_recursive) {
-        var f = os.fs.stat(path);
+        auto f = os.fs.stat(path_pattern);
         if (f.is_valid && f.is_file) {
             // Find used with exact file path, we still have to return array + allocated path copy
             arr$(char*) result = arr$new(result, allc);
-            char* it = str.clone(path, allc);
+            char* it = str.clone(path_pattern, allc);
             arr$push(result, it);
             return result;
         }
@@ -608,7 +623,7 @@ static arr$(char*) cex_os__fs__find(char* path, bool is_recursive, IAllocator al
     }
     if (str.copy(
             path_buf + dir_part.len + 1,
-            path + dir_part.len,
+            path_pattern + dir_part.len,
             sizeof(path_buf) - dir_part.len - 1
         )) {
         uassert(dir_part.len < PATH_MAX);
@@ -634,6 +649,8 @@ static arr$(char*) cex_os__fs__find(char* path, bool is_recursive, IAllocator al
     return ctx.result;
 }
 
+
+/// Get current working directory
 static char*
 cex_os__fs__getcwd(IAllocator allc)
 {
@@ -650,6 +667,7 @@ cex_os__fs__getcwd(IAllocator allc)
     return result;
 }
 
+/// Change current working directory
 static Exception
 cex_os__fs__chdir(char* path)
 {
@@ -674,6 +692,7 @@ cex_os__fs__chdir(char* path)
 }
 
 
+/// Copy file
 static Exception
 cex_os__fs__copy(char* src_path, char* dst_path)
 {
@@ -740,6 +759,7 @@ defer:
 #endif
 }
 
+/// Get environment variable, with `deflt` if not found
 static char*
 cex_os__env__get(char* name, char* deflt)
 {
@@ -750,6 +770,7 @@ cex_os__env__get(char* name, char* deflt)
     return result;
 }
 
+/// Set environment variable
 static Exception
 cex_os__env__set(char* name, char* value)
 {
@@ -762,13 +783,15 @@ cex_os__env__set(char* name, char* value)
     return EOK;
 }
 
+/// Check if file/directory path exists
 static bool
 cex_os__path__exists(char* file_path)
 {
-    var ftype = os.fs.stat(file_path);
+    auto ftype = os.fs.stat(file_path);
     return ftype.is_valid;
 }
 
+/// Returns absolute path from relative
 static char*
 cex_os__path__abs(char* path, IAllocator allc)
 {
@@ -787,6 +810,7 @@ cex_os__path__abs(char* path, IAllocator allc)
     return str.clone(buffer, allc);
 }
 
+/// Join path with OS specific path separator
 static char*
 cex_os__path__join(char** parts, u32 parts_len, IAllocator allc)
 {
@@ -794,6 +818,8 @@ cex_os__path__join(char** parts, u32 parts_len, IAllocator allc)
     return str.join(parts, parts_len, sep, allc);
 }
 
+/// Splits path by `dir` and `file` parts, when return_dir=true - returns `dir` part, otherwise
+/// `file` part
 static str_s
 cex_os__path__split(char* path, bool return_dir)
 {
@@ -829,6 +855,7 @@ cex_os__path__split(char* path, bool return_dir)
     }
 }
 
+/// Get file name of a path
 static char*
 cex_os__path__basename(char* path, IAllocator allc)
 {
@@ -837,6 +864,7 @@ cex_os__path__basename(char* path, IAllocator allc)
     return str.slice.clone(fname, allc);
 }
 
+/// Get directory name of a path
 static char*
 cex_os__path__dirname(char* path, IAllocator allc)
 {
@@ -845,6 +873,8 @@ cex_os__path__dirname(char* path, IAllocator allc)
     return str.slice.clone(fname, allc);
 }
 
+
+/// Creates new os command (use os$cmd() and os$cmd() for easy cases). flags can be NULL.
 static Exception
 cex_os__cmd__create(os_cmd_c* self, char** args, usize args_len, os_cmd_flags_s* flags)
 {
@@ -874,12 +904,14 @@ cex_os__cmd__create(os_cmd_c* self, char** args, usize args_len, os_cmd_flags_s*
     return EOK;
 }
 
+/// Checks if process is running
 static bool
 cex_os__cmd__is_alive(os_cmd_c* self)
 {
     return subprocess_alive(&self->_subpr);
 }
 
+/// Terminates the running process
 static Exception
 cex_os__cmd__kill(os_cmd_c* self)
 {
@@ -889,6 +921,8 @@ cex_os__cmd__kill(os_cmd_c* self)
     return EOK;
 }
 
+/// Waits process to end, and get `out_ret_code`, if timeout_sec=0 - infinite wait, raises
+/// Error.runtime if out_ret_code != 0
 static Exception
 cex_os__cmd__join(os_cmd_c* self, u32 timeout_sec, i32* out_ret_code)
 {
@@ -942,24 +976,28 @@ end:
     return result;
 }
 
+/// Get running command stdout stream
 static FILE*
 cex_os__cmd__fstdout(os_cmd_c* self)
 {
     return self->_subpr.stdout_file;
 }
 
+/// Get running command stderr stream
 static FILE*
 cex_os__cmd__fstderr(os_cmd_c* self)
 {
     return self->_subpr.stderr_file;
 }
 
+/// Get running command stdin stream
 static FILE*
 cex_os__cmd__fstdin(os_cmd_c* self)
 {
     return self->_subpr.stdin_file;
 }
 
+/// Read all output from process stdout, NULL if stdout is not available
 static char*
 cex_os__cmd__read_all(os_cmd_c* self, IAllocator allc)
 {
@@ -973,6 +1011,7 @@ cex_os__cmd__read_all(os_cmd_c* self, IAllocator allc)
     return NULL;
 }
 
+/// Read line from process stdout, NULL if stdout is not available
 static char*
 cex_os__cmd__read_line(os_cmd_c* self, IAllocator allc)
 {
@@ -986,6 +1025,7 @@ cex_os__cmd__read_line(os_cmd_c* self, IAllocator allc)
     return NULL;
 }
 
+/// Writes line to the process stdin
 static Exception
 cex_os__cmd__write_line(os_cmd_c* self, char* line)
 {
@@ -1000,6 +1040,8 @@ cex_os__cmd__write_line(os_cmd_c* self, char* line)
     return EOK;
 }
 
+/// Check if `cmd_exe` program name exists in PATH. cmd_exe can be absolute, or simple command name,
+/// e.g. `cat`
 static bool
 cex_os__cmd__exists(char* cmd_exe)
 {
@@ -1061,6 +1103,7 @@ cex_os__cmd__exists(char* cmd_exe)
     return false;
 }
 
+/// Run command using arguments array and resulting os_cmd_c
 static Exception
 cex_os__cmd__run(char** args, usize args_len, os_cmd_c* out_cmd)
 {
@@ -1163,6 +1206,8 @@ end:
 #endif
 }
 
+/// Returns current OS platform, returns enum of OSPlatform__*, e.g. OSPlatform__win,
+/// OSPlatform__linux, OSPlatform__macos, etc..
 static OSPlatform_e
 cex_os__platform__current(void)
 {
@@ -1191,12 +1236,14 @@ cex_os__platform__current(void)
 #endif
 }
 
+/// Returns string name of current platform
 static char*
 cex_os__platform__current_str(void)
 {
     return os.platform.to_str(os.platform.current());
 }
 
+/// Converts platform name to enum
 static OSPlatform_e
 cex_os__platform__from_str(char* name)
 {
@@ -1208,6 +1255,7 @@ cex_os__platform__from_str(char* name)
     ;
 }
 
+/// Converts platform enum to name
 static char*
 cex_os__platform__to_str(OSPlatform_e platform)
 {
@@ -1215,6 +1263,7 @@ cex_os__platform__to_str(OSPlatform_e platform)
     return (char*)OSPlatform_str[platform];
 }
 
+/// Returns OSArch from string
 static OSArch_e
 cex_os__platform__arch_from_str(char* name)
 {
@@ -1226,6 +1275,7 @@ cex_os__platform__arch_from_str(char* name)
     ;
 }
 
+/// Converts arch to string
 static char*
 cex_os__platform__arch_to_str(OSArch_e platform)
 {

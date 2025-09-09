@@ -8,70 +8,70 @@ test$case(test_codegen_test)
     tassert(cg$var->buf == &b);
     tassert(cg$var->indent == 0);
 
-    $pn("printf(\"hello world\");");
-    $pn("#define GOO");
-    $pn("// this is empty scope");
-    $scope("", "")
+    cg$pn("printf(\"hello world\");");
+    cg$pn("#define GOO");
+    cg$pn("// this is empty scope");
+    cg$scope("", "")
     {
-        $pf("printf(\"hello world: %d\");", 2);
+        cg$pf("printf(\"hello world: %d\");", 2);
     }
 
-    $func("void my_func(int arg_%d)", 2)
+    cg$func("void my_func(int arg_%d)", 2)
     {
-        $scope("var my_var = (mytype)", "")
+        cg$scope("var my_var = (mytype)", "")
         {
-            $pf(".arg1 = %d,", 1);
-            $pf(".arg2 = %d,", 2);
+            cg$pf(".arg1 = %d,", 1);
+            cg$pf(".arg2 = %d,", 2);
         }
-        $pa(";\n", "");
+        cg$pa(";\n", "");
 
-        $if("foo == %d", 312)
+        cg$if("foo == %d", 312)
         {
-            $pn("printf(\"Hello: %d\", foo);");
+            cg$pn("printf(\"Hello: %d\", foo);");
         }
-        $elseif("bar == foo + %d", 7)
+        cg$elseif("bar == foo + %d", 7)
         {
-            $pn("// else if scope");
+            cg$pn("// else if scope");
         }
-        $else()
+        cg$else()
         {
-            $pn("// else scope");
-        }
-
-        $while("foo == %d", 312)
-        {
-            $pn("printf(\"Hello: %d\", foo);");
+            cg$pn("// else scope");
         }
 
-        $for("u32 i = 0; i < %d; i++", 312)
+        cg$while("foo == %d", 312)
         {
-            $pn("printf(\"Hello: %d\", foo);");
-            $foreach("it, my_var", "")
+            cg$pn("printf(\"Hello: %d\", foo);");
+        }
+
+        cg$for("u32 i = 0; i < %d; i++", 312)
+        {
+            cg$pn("printf(\"Hello: %d\", foo);");
+            cg$foreach("it, my_var", "")
             {
-                $pn("printf(\"Hello: %d\", foo);");
+                cg$pn("printf(\"Hello: %d\", foo);");
             }
         }
 
-        $scope("do ", "")
+        cg$scope("do ", "")
         {
-            $pf("// do while", 1);
+            cg$pf("// do while", 1);
         }
-        $pa(" while(0);\n", "");
+        cg$pa(" while(0);\n", "");
     }
 
-    $switch("foo", "")
+    cg$switch("foo", "")
     {
-        $case("'%c'", 'a')
+        cg$case("'%c'", 'a')
         {
-            $pn("// case scope");
+            cg$pn("// case scope");
         }
-        $scope("case '%c': ", 'b')
+        cg$scope("case '%c': ", 'b')
         {
-            $pn("fallthrough();");
+            cg$pn("fallthrough();");
         }
-        $default()
+        cg$default()
         {
-            $pn("// default scope");
+            cg$pn("// default scope");
         }
     }
 

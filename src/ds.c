@@ -188,7 +188,7 @@ typedef struct
     usize hash[_CEXDS_BUCKET_LENGTH];
     ptrdiff_t index[_CEXDS_BUCKET_LENGTH];
 } _cexds__hash_bucket;
-_Static_assert(sizeof(_cexds__hash_bucket) % 64 == 0, "cacheline aligned");
+static_assert(sizeof(_cexds__hash_bucket) % 64 == 0, "cacheline aligned");
 
 typedef struct _cexds__hash_index
 {
@@ -604,7 +604,7 @@ _cexds__hmkey_ptr(void* a, usize elemsize, usize index, usize keyoffset)
             break;
         }
         default:
-            unreachable("Not implemented");
+            unreachable();
     }
     return key_data_p;
 }

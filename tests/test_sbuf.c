@@ -1,4 +1,6 @@
 #include "src/all.c"
+#include "src/sbuf.c"
+#include "src/test.h"
 
 Exception
 append_to_cap(sbuf_c* s)
@@ -82,18 +84,18 @@ test$case(test_sbuf_append_char_grow)
 {
     sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s));
 
     tassert_er(append_to_cap(&s), EOK);
 
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
     tassert_eq(sbuf.len(&s), sbuf.capacity(&s));
 
     tassert_eq(EOK, sbuf.append(&s, "B"));
-    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);
 
     // check null term
     tassert_eq(s[sbuf.len(&s)], 0);
@@ -108,18 +110,17 @@ test$case(test_sbuf_append_char_grow_temp)
 {
     mem$scope(tmem$, _)
     {
-        (void)(_);
-        sbuf_c s = sbuf.create_temp();
+        sbuf_c s = sbuf.create(128, _);
 
-        tassert_eq(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);
+        tassert_eq(sbuf.capacity(&s), 256 - sizeof(sbuf_head_s) - 1);
 
         // wipe all nullterm
         memset(s, 0xff, sbuf.capacity(&s));
 
         tassert_er(append_to_cap(&s), EOK);
 
-        tassert_eq(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);
-        tassert_eq(sbuf.len(&s), sbuf.capacity(&s));
+        tassert_eq(sbuf.capacity(&s), 256 - sizeof(sbuf_head_s) - 1);
+        tassert_eq(sbuf.len(&s), sbuf.capacity(&s)-1);
 
         tassert_eq(EOK, sbuf.append(&s, "B"));
         tassert_eq(sbuf.capacity(&s), 256 - sizeof(sbuf_head_s) - 1);
@@ -138,17 +139,17 @@ test$case(test_sbuf_append_str_grow)
 {
     sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s));
 
     tassert_er(append_to_cap(&s), EOK);
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
     tassert_eq(sbuf.len(&s), sbuf.capacity(&s));
 
     tassert_eq(EOK, sbuf.append(&s, "B"));
-    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);
 
     // check null term
     tassert_eq(s[sbuf.len(&s)], 0);
@@ -208,7 +209,7 @@ test$case(test_sbuf_sprintf)
 {
     sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s) + 1);
@@ -220,30 +221,30 @@ test$case(test_sbuf_sprintf)
     tassert_eq(sbuf.len(&s), 3);
     tassert_eq(s[sbuf.len(&s)], '\0');
     tassert_eq(s[sbuf.capacity(&s)], '\0');
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     tassert_eq(EOK, sbuf.appendf(&s, "%s", "456"));
     tassert_eq("123456", s);
     tassert_eq(sbuf.len(&s), 6);
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     tassert_eq(EOK, sbuf.appendf(&s, "%s", "7890A"));
     tassert_eq("1234567890A", s);
     tassert_eq(sbuf.len(&s), 11);
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     sbuf.clear(&s);
     usize prev_cap = sbuf.capacity(&s);
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
     tassert_er(EOK, append_to_cap(&s));
     tassert_eq(EOK, sbuf.appendf(&s, "%s", "B"));
     tassert_eq(sbuf.len(&s), prev_cap + 1);
     tassert_eq(s[prev_cap], 'B');
-    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);
 
     tassert_eq(EOK, sbuf.appendf(&s, "%s", "CDE"));
     tassert_eq(sbuf.len(&s), prev_cap + 4);
-    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 128 - sizeof(sbuf_head_s) - 1);
     tassert_eq(s[sbuf.len(&s)], '\0');
     tassert_eq(s[sbuf.capacity(&s)], '\0');
 
@@ -255,7 +256,7 @@ test$case(test_sbuf_appendf_long_growth)
 {
     sbuf_c s = sbuf.create(5, mem$);
 
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     char buf[16];
     char svbuf[16];
@@ -302,7 +303,7 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
     }
     tassert_eq(n_max * 4, sbuf.len(&s));
 
-    var sv2 = str.sstr(s);
+    auto sv2 = str.sstr(s);
     str_s sv = str.sstr(s);
     tassert_eq(str.slice.eq(sv2, sv), 1);
     tassert_eq(sv2.len, sv.len);
@@ -321,9 +322,9 @@ test$case(test_sbuf_appendf_long_growth_prebuild_buffer)
 }
 test$case(test_sbuf_appendf_static)
 {
-    char buf[32];
+    char buf[64];
     sbuf_c s = sbuf.create_static(buf, arr$len(buf));
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     // wipe all nullterm
     memset(s, 0xff, sbuf.capacity(&s) + 1);
@@ -336,23 +337,23 @@ test$case(test_sbuf_appendf_static)
     tassert_eq(sbuf.len(&s), 3);
     tassert_eq(s[sbuf.len(&s)], '\0');
     tassert_eq(s[sbuf.capacity(&s)], '\0');
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     tassert_eq(EOK, sbuf.appendf(&s, "%s", "456"));
     tassert_eq("123456", s);
     tassert_eq(sbuf.len(&s), 6);
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
 
     tassert_er(EOK, sprintf_to_cap(&s));
     tassert_eq(s[sbuf.len(&s)], '\0');
     tassert_eq(s[sbuf.capacity(&s)], '\0');
     tassert_eq(sbuf.len(&s), sbuf.capacity(&s));
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
 
     tassert_eq(Error.overflow, sbuf.appendf(&s, "%s", "7"));
+    tassert_eq(sbuf.capacity(&s), 0);
     tassert_eq(sbuf.len(&s), sbuf.capacity(&s));
-    tassert_eq(sbuf.capacity(&s), 32 - sizeof(sbuf_head_s) - 1);
 
 
     sbuf.destroy(&s);
@@ -439,6 +440,84 @@ test$case(test_sbuf__is_valid__null_pointer)
     // tassert_eq(sbuf.isvalid(&s2), false);
 
 
+    return EOK;
+}
+
+test$case(test_sbuf_appendf_error_resilience)
+{
+    char buf[64];
+    sbuf_c s = sbuf.create_static(buf, arr$len(buf));
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
+
+    sbuf.appendf(&s, "%s", "123");
+    tassert_eq(3, strlen(s));
+
+    sbuf.appendf(&s, "%s", "456");
+
+    tassert_er(EOK, sprintf_to_cap(&s));
+
+    tassert_eq(Error.overflow, sbuf.appendf(&s, "%s", "7"));
+    tassert_eq(sbuf.capacity(&s), 0);
+    tassert_eq(sbuf.len(&s), sbuf.capacity(&s));
+    tassert_eq(Error.overflow, sbuf.validate(&s));
+
+    sbuf.appendf(&s, "%s", "456");
+    tassert_eq(false, sbuf.isvalid(&s));
+
+    tassert_eq(Error.overflow, sbuf.validate(&s));
+    tassert_er(Error.overflow, sbuf.shrink(&s, 31921)); // NOTE: uses hear->err
+
+    tassert_eq(0, strlen(s));
+
+    tassert_eq("NULL argument", sbuf.validate(NULL));
+
+    s = NULL;
+    tassert_eq("Memory error or already free'd", sbuf.validate(&s));
+
+    // NULL resilience check
+    sbuf.appendf(&s, "%s", "456");
+    sbuf.append(&s, "456");
+    tassert_eq(0, sbuf.len(&s));
+    tassert_eq(0, sbuf.capacity(&s));
+    tassert_er(Error.runtime, sbuf.shrink(&s, 31921));
+    sbuf.clear(&s);
+    sbuf.shrink(&s, 0);
+
+    tassert_eq(false, sbuf.isvalid(&s));
+    tassert_eq("Memory error or already free'd", sbuf.validate(&s));
+
+    sbuf.destroy(&s);
+    return EOK;
+}
+
+test$case(test_sbuf_shrink_test)
+{
+    char buf[64];
+    sbuf_c s = sbuf.create_static(buf, arr$len(buf));
+    tassert_eq(sbuf.capacity(&s), 64 - sizeof(sbuf_head_s) - 1);
+
+    // wipe all nullterm
+    memset(s, 0xff, sbuf.capacity(&s) + 1);
+    tassert_eq((u8)s[sbuf.len(&s)], 0xff);
+    tassert_eq((u8)s[sbuf.capacity(&s)], 0xff);
+
+
+    tassert_eq(EOK, sbuf.appendf(&s, "%s", "123"));
+    tassert_eq("123", s);
+    tassert_eq(sbuf.len(&s), 3);
+
+    sbuf.shrink(&s, 2);
+    tassert_eq(sbuf.len(&s), 2);
+    tassert_eq(s[2], '\0');
+    tassert_er(EOK, sbuf.validate(&s));
+
+
+    tassert_eq(Error.argument, sbuf.shrink(&s, 3));
+    tassert_eq(sbuf.len(&s), 0);
+    tassert_er(Error.argument, sbuf.validate(&s));
+
+
+    sbuf.destroy(&s);
     return EOK;
 }
 

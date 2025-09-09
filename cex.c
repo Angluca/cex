@@ -9,6 +9,8 @@
 
 
 Exception cmd_custom_test(int argc, char** argv, void* user_ctx);
+Exception cmd_build_docs(int argc, char** argv, void* user_ctx);
+
 void cex_bundle(void);
 
 int
@@ -30,6 +32,7 @@ main(int argc, char** argv)
         argparse$cmd_list(
             cexy$cmd_all,
             { .name = "test", .func = cmd_custom_test, .help = "Test running" },
+            { .name = "build-docs", .func = cmd_build_docs, .help = "Build CEX documentation" },
             cexy$cmd_fuzz,  /* feel free to make your own if needed */
             cexy$cmd_app,   /* feel free to make your own if needed */
         ),
@@ -120,11 +123,11 @@ cex_bundle(void)
         arr$(char*) src = os.fs.find("src/*.[hc]", false, _);
         if (!cexy.src_changed("cex.h", src, arr$len(src))) { return; }
         char* bundle[] = {
-            "src/cex_base.h", "src/mem.h",          "src/AllocatorHeap.h", "src/AllocatorArena.h",
-            "src/ds.h",       "src/_sprintf.h",     "src/str.h",           "src/sbuf.h",
-            "src/io.h",       "src/argparse.h",     "src/_subprocess.h",   "src/os.h",
-            "src/test.h",     "src/cex_code_gen.h", "src/cexy.h",          "src/CexParser.h",
-            "src/json.h",     "src/cex_maker.h", "src/fuzz.h"
+            "src/cex_base.h",  "src/mem.h",       "src/AllocatorHeap.h", "src/AllocatorArena.h",
+            "src/ds.h",        "src/_sprintf.h",  "src/str.h",           "src/sbuf.h",
+            "src/io.h",        "src/argparse.h",  "src/_subprocess.h",   "src/os.h",
+            "src/test.h",      "src/test.c",      "src/cex_code_gen.h",  "src/cexy.h",
+            "src/CexParser.h", "src/cex_maker.h", "src/fuzz.h",          "src/cex_footer.h"
 
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
@@ -132,9 +135,9 @@ cex_bundle(void)
         // Using CEX code generation engine for bundling
         sbuf_c hbuf = sbuf.create(1024 * 1024, _);
         cg$init(&hbuf);
-        $pn("#pragma once");
-        $pn("#ifndef CEX_HEADER_H");
-        $pn("#define CEX_HEADER_H");
+        cg$pn("#pragma once");
+        cg$pn("#ifndef CEX_HEADER_H");
+        cg$pn("#define CEX_HEADER_H");
 
         time_t t = time(NULL);
         struct tm tm = *localtime(&t);
@@ -159,13 +162,13 @@ cex_bundle(void)
         cex_header = str.replace(cex_header, "{date}", date, _);
         uassert(cex_header != NULL);
 
-        $pn(cex_header);
+        cg$pn(cex_header);
 
         for$each (hdr, bundle) {
-            $pn("\n");
-            $pn("/*");
-            $pf("*                          %s", hdr);
-            $pn("*/");
+            cg$pn("\n");
+            cg$pn("/*");
+            cg$pf("*                          %s", hdr);
+            cg$pn("*/");
             FILE* fh;
             e$except (err, io.fopen(&fh, hdr, "r")) { exit(1); }
             str_s content;
@@ -173,30 +176,33 @@ cex_bundle(void)
             for$iter (str_s, it, str.slice.iter_split(content, "\n", &it.iterator)) {
                 if (str.slice.match(it.val, "#pragma once*")) { continue; }
                 if (str.slice.match(it.val, "#include \"*\"")) { continue; }
-                $pf("%S", it.val);
+                cg$pf("%S", it.val);
             }
         }
 
 
-        $pn("\n");
-        $pn("/*");
-        $pn("*                   CEX IMPLEMENTATION ");
-        $pn("*/");
-        $pn("\n\n");
-        $pn("#if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)\n");
+        cg$pn("\n");
+        cg$pn("/*");
+        cg$pn("*                   CEX IMPLEMENTATION ");
+        cg$pn("*/");
+        cg$pn("\n\n");
+        cg$pn("#if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)\n");
 
         e$except_null (cex_header = io.file.load("src/cex_header.c", _)) { exit(1); }
-        $pn(cex_header);
+        cg$pn(cex_header);
 
-        $pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
+        cg$pa("\n\n#define _cex_main_boilerplate %s\n", "\\");
         embed_code(&hbuf, "src/cex_boilerplate.c");
 
         for$each (hdr, bundle) {
+            if (str.ends_with(hdr, "test.h")) { continue; }
+            if (str.ends_with(hdr, "test.c")) { continue; }
+
             char* cfile = str.replace(hdr, ".h", ".c", _);
-            $pn("\n");
-            $pn("/*");
-            $pf("*                          %s", cfile);
-            $pn("*/");
+            cg$pn("\n");
+            cg$pn("/*");
+            cg$pf("*                          %s", cfile);
+            cg$pn("*/");
             FILE* fh;
             e$except (err, io.fopen(&fh, cfile, "r")) { exit(1); }
             str_s content;
@@ -204,13 +210,13 @@ cex_bundle(void)
             for$iter (str_s, it, str.slice.iter_split(content, "\n", &it.iterator)) {
                 if (str.slice.match(it.val, "#pragma once*")) { continue; }
                 if (str.slice.match(it.val, "#include \"*\"")) { continue; }
-                $pf("%S", it.val);
+                cg$pf("%S", it.val);
             }
         }
 
 
-        $pn("\n\n#endif // ifndef CEX_IMPLEMENTATION");
-        $pn("\n\n#endif // ifndef CEX_HEADER_H");
+        cg$pn("\n\n#endif // ifndef CEX_IMPLEMENTATION");
+        cg$pn("\n\n#endif // ifndef CEX_HEADER_H");
 
         u32 cex_lines = 0;
         (void)cex_lines;
@@ -220,4 +226,55 @@ cex_bundle(void)
         log$debug("Saving cex.h: new size: %dKB lines: %d\n", sbuf.len(&hbuf) / 1024, cex_lines);
         e$except (err, io.file.save("cex.h", hbuf)) { exit(1); }
     }
+}
+
+Exception
+cmd_build_docs(int argc, char** argv, void* user_ctx)
+{
+    (void)argc;
+    (void)argv;
+    (void)user_ctx;
+
+    char* namespaces[] = { "mem", "str",  "test",     "os", "fuzz", "arr",  "hm", "for",
+                           "io",  "sbuf", "argparse", "cg", "e",    "cexy", "log" };
+
+    for$each (it, namespaces) {
+        mem$scope(tmem$, _)
+        {
+            arr$(char*) args = arr$new(args, _);
+            arr$pushm(
+                args,
+                "help",
+                "--filter",
+                "./cex.h",
+                "--out",
+                str.fmt(_, "./docs/_include/%s.md", it),
+                str.fmt(_, "%s$", it)
+            );
+            _os$args_print("Parse help: ", args, arr$len(args));
+            e$ret(cexy.cmd.help(arr$len(args), args, NULL));
+        }
+    }
+    e$assert(!os.path.exists("_include/") && "should not exist, remove if it's quarto remainder");
+
+    e$ret(os.fs.chdir("docs/"));
+    e$ret(os$cmd(
+        "quarto",
+        "render",
+        "README.md",
+        "--to",
+        "html",
+        "-o",
+        "cex_docs.html",
+        "--output-dir",
+        "../"
+    ));
+    e$ret(os.fs.chdir(".."));
+
+    if (os.path.exists("_include")) {
+        // weird bug in quarto tool (_include copied)
+        e$ret(os.fs.remove_tree("_include/"));
+    }
+
+    return EOK;
 }

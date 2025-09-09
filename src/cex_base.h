@@ -21,8 +21,10 @@ typedef double f64;
 typedef size_t usize;
 typedef ptrdiff_t isize;
 
-/// automatic variable type, supported by GCC/Clang
-#define var __auto_type
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ < 202311L
+/// automatic variable type, supported by GCC/Clang or C23
+#    define auto __auto_type
+#endif
 
 /*
  *                 BRANCH MANAGEMENT
@@ -45,6 +47,104 @@ typedef ptrdiff_t isize;
 /*
  *                 ERRORS
  */
+
+/**
+CEX Error handling cheat sheet:
+
+1. Errors can be any `char*`, or string literals.
+2. EOK / Error.ok - is NULL, means no error
+3. Exception return type forced to be checked by compiler
+4. Error is built-in generic error type
+5. Errors should be checked by pointer comparison, not string contents.
+6. `e$` are helper macros for error handling
+7.  DO NOT USE break/continue inside e\$except/e\$except_* scopes (these macros are for loops too)!
+
+
+Generic errors:
+
+```c
+Error.ok = EOK;                       // Success
+Error.memory = "MemoryError";         // memory allocation error
+Error.io = "IOError";                 // IO error
+Error.overflow = "OverflowError";     // buffer overflow
+Error.argument = "ArgumentError";     // function argument error
+Error.integrity = "IntegrityError";   // data integrity error
+Error.exists = "ExistsError";         // entity or key already exists
+Error.not_found = "NotFoundError";    // entity or key already exists
+Error.skip = "ShouldBeSkipped";       // NOT an error, function result must be skipped
+Error.empty = "EmptyError";           // resource is empty
+Error.eof = "EOF";                    // end of file reached
+Error.argsparse = "ProgramArgsError"; // program arguments empty or incorrect
+Error.runtime = "RuntimeError";       // generic runtime error
+Error.assert = "AssertError";         // generic runtime check
+Error.os = "OSError";                 // generic OS check
+Error.timeout = "TimeoutError";       // await interval timeout
+Error.permission = "PermissionError"; // Permission denied
+Error.try_again = "TryAgainError";    // EAGAIN / EWOULDBLOCK errno analog for async operations
+```
+
+```c
+
+Exception
+remove_file(char* path)
+{
+    if (path == NULL || path[0] == '\0') { 
+        return Error.argument;  // Empty of null file
+    }
+    if (!os.path.exists(path)) {
+        return "Not exists" // literal error are allowed, but must be handled as strcmp()
+    }
+    if (str.eq(path, "magic.file")) {
+        // Returns an Error.integrity and logs error at current line to stdout
+        return e$raise(Error.integrity, "Removing magic file is not allowed!");
+    }
+    if (remove(path) < 0) { 
+        return strerror(errno); // using system error text (arbitrary!)
+    }
+    return EOK;
+}
+
+Exception read_file(char* filename) {
+    e$assert(buff != NULL);
+
+    int fd = 0;
+    e$except_errno(fd = open(filename, O_RDONLY)) { return Error.os; }
+    return EOK;
+}
+
+Exception do_stuff(char* filename) {
+    // return immediately with error + prints traceback
+    e$ret(read_file("foo.txt"));
+
+    // jumps to label if read_file() fails + prints traceback
+    e$goto(read_file(NULL), fail);
+
+    // silent error handing without tracebacks
+    e$except_silent (err, foo(0)) {
+
+        // Nesting of error handlers is allowed
+        e$except_silent (err, foo(2)) {
+            return err;
+        }
+
+        // NOTE: `err` is address of char* compared with address Error.os (not by string contents!)
+        if (err == Error.os) {
+            // Special handing
+            io.print("Ooops OS problem\n");
+        } else {
+            // propagate
+            return err;
+        }
+    }
+    return EOK;
+
+fail:
+    // TODO: cleanup here
+    return Error.io;
+}
+```
+*/
+#define __e$
 
 /// Generic CEX error is a char*, where NULL means success(no error)
 typedef char* Exc;
@@ -103,11 +203,30 @@ __cex__fprintf_dummy(void)
 #endif
 
 #ifndef _WIN32
-#define CEX_NAMESPACE __attribute__((visibility("hidden"))) extern const
+#    define CEX_NAMESPACE __attribute__((visibility("hidden"))) extern const
 #else
-#define CEX_NAMESPACE extern const
+#    define CEX_NAMESPACE extern const
 #endif
 
+/**
+Simple console logging engine:
+
+- Prints file:line + log type: `[INFO]    ( file.c:14 cexy_fun() ) Message format: ./cex`
+- Supports CEX formatting engine
+- Can be regulated using compile time level, e.g. `#define CEX_LOG_LVL 4`
+
+
+Log levels (CEX_LOG_LVL value):
+
+- 0 - mute all including assert messages, tracebacks, errors
+- 1 - allow log$error + assert messages, tracebacks
+- 2 - allow log$warn
+- 3 - allow log$info
+- 4 - allow log$debug (default level if CEX_LOG_LVL is not set)
+- 5 - allow log$trace
+
+*/
+#define __log$
 
 #ifndef CEX_LOG_LVL
 // LVL Value
@@ -115,13 +234,14 @@ __cex__fprintf_dummy(void)
 // 1 - allow log$error + assert messages, tracebacks
 // 2 - allow log$warn
 // 3 - allow log$info
-// 4 - allow log$debug
+// 4 - allow log$debug  (default level if CEX_LOG_LVL is not set)
 // 5 - allow log$trace
 // NOTE: you may override this level to manage log$* verbosity
 #    define CEX_LOG_LVL 4
 #endif
 
 #if CEX_LOG_LVL > 0
+/// Log error (when CEX_LOG_LVL > 0)
 #    define log$error(format, ...)                                                                 \
         (__cex__fprintf(                                                                           \
             stdout,                                                                                \
@@ -137,6 +257,7 @@ __cex__fprintf_dummy(void)
 #endif
 
 #if CEX_LOG_LVL > 1
+/// Log warning  (when CEX_LOG_LVL > 1)
 #    define log$warn(format, ...)                                                                  \
         (__cex__fprintf(                                                                           \
             stdout,                                                                                \
@@ -152,6 +273,7 @@ __cex__fprintf_dummy(void)
 #endif
 
 #if CEX_LOG_LVL > 2
+/// Log info  (when CEX_LOG_LVL > 2)
 #    define log$info(format, ...)                                                                  \
         (__cex__fprintf(                                                                           \
             stdout,                                                                                \
@@ -167,6 +289,7 @@ __cex__fprintf_dummy(void)
 #endif
 
 #if CEX_LOG_LVL > 3
+/// Log debug (when CEX_LOG_LVL > 3)
 #    define log$debug(format, ...)                                                                 \
         (__cex__fprintf(                                                                           \
             stdout,                                                                                \
@@ -182,6 +305,7 @@ __cex__fprintf_dummy(void)
 #endif
 
 #if CEX_LOG_LVL > 4
+/// Log tace (when CEX_LOG_LVL > 4)
 #    define log$trace(format, ...)                                                                 \
         (__cex__fprintf(                                                                           \
             stdout,                                                                                \
@@ -209,9 +333,7 @@ __cex__fprintf_dummy(void)
             fail_func                                                                              \
         ))
 
-/**
- * @brief Non disposable assert, returns Error.assert CEX exception when failed
- */
+/// Non disposable assert, returns Error.assert CEX exception when failed
 #    define e$assert(A)                                                                             \
         ({                                                                                          \
             if (unlikely(!((A)))) {                                                                 \
@@ -221,6 +343,7 @@ __cex__fprintf_dummy(void)
         })
 
 
+/// Non disposable assert, returns Error.assert CEX exception when failed (supports formatting)
 #    define e$assertf(A, format, ...)                                                              \
         ({                                                                                         \
             if (unlikely(!((A)))) {                                                                \
@@ -257,6 +380,7 @@ __cex__fprintf_dummy(void)
 #ifndef mem$asan_enabled
 #    if defined(__has_feature)
 #        if __has_feature(address_sanitizer)
+/// true - if program was compiled with address sanitizer support
 #            define mem$asan_enabled() 1
 #        else
 #            define mem$asan_enabled() 0
@@ -294,7 +418,7 @@ int __cex_test_uassert_enabled = 1;
 #        define uassert_is_enabled() (__cex_test_uassert_enabled)
 #    else
 #        define uassert_disable()                                                                  \
-            _Static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
+            static_assert(false, "uassert_disable() allowed only when compiled with -DCEX_TEST")
 #        define uassert_enable() (void)0
 #        define uassert_is_enabled() true
 #        define __cex_test_postmortem_ctx NULL
@@ -320,8 +444,8 @@ int __cex_test_uassert_enabled = 1;
                     #A                                                                             \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();\
-                    __builtin_trap();                                                       \
+                    sanitizer_stack_trace();                                                       \
+                    __builtin_trap();                                                              \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -339,8 +463,8 @@ int __cex_test_uassert_enabled = 1;
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();\
-                    __builtin_trap();                                                       \
+                    sanitizer_stack_trace();                                                       \
+                    __builtin_trap();                                                              \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -348,20 +472,20 @@ int __cex_test_uassert_enabled = 1;
 
 __attribute__((noinline)) void __cex__panic(void);
 
-#define unreachable(format, ...)                                                                   \
-    ({                                                                                             \
-        __cex__fprintf(                                                                            \
-            stderr,                                                                                \
-            "[UNREACHABLE] ",                                                                      \
-            __FILE_NAME__,                                                                         \
-            __LINE__,                                                                              \
-            __func__,                                                                              \
-            format "\n",                                                                           \
-            ##__VA_ARGS__                                                                          \
-        );                                                                                         \
-        __cex__panic();                                                                            \
-        __builtin_unreachable();                                                                   \
-    })
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+#    undef unreachable
+#endif
+
+#ifdef NDEBUG
+#    define unreachable() __builtin_unreachable()
+#else
+#    define unreachable()                                                                          \
+        ({                                                                                         \
+            __cex__fprintf(stderr, "[UNREACHABLE] ", __FILE_NAME__, __LINE__, __func__, "\n");     \
+            __cex__panic();                                                                        \
+            __builtin_unreachable();                                                               \
+        })
+#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 #    define breakpoint() __debugbreak()
@@ -382,10 +506,11 @@ __attribute__((noinline)) void __cex__panic(void);
 #define cex$varname(a, b) cex$concat3(__cex__, a, b)
 #define cex$tmpname(base) cex$varname(base, __LINE__)
 
+/// raises an error, code: `return e$raise(Error.integrity, "ooops: %d", i);`
 #define e$raise(return_uerr, error_msg, ...)                                                       \
     (log$error("[%s] " error_msg "\n", return_uerr, ##__VA_ARGS__), (return_uerr))
 
-// WARNING: DO NOT USE break/continue inside e$except/e$except_silent {scope!}
+/// catches the error of function inside scope + prints traceback
 #define e$except(_var_name, _func)                                                                 \
     for (Exc _var_name = _func;                                                                    \
          unlikely((_var_name != EOK) && (__cex__traceback(_var_name, #_func), 1));                 \
@@ -394,13 +519,15 @@ __attribute__((noinline)) void __cex__panic(void);
 #if defined(CEX_TEST) || defined(CEX_BUILD)
 #    define e$except_silent(_var_name, _func) e$except (_var_name, _func)
 #else
+/// catches the error of function inside scope (without traceback)
 #    define e$except_silent(_var_name, _func)                                                      \
         for (Exc _var_name = _func; unlikely(_var_name != EOK); _var_name = EOK)
 #endif
 
+/// catches the error of system function (if negative value + errno), prints errno error
 #define e$except_errno(_expression)                                                                \
     for (int _tmp_errno = 0; unlikely(                                                             \
-             ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&           \
+             ((_tmp_errno == 0) && ((_expression) < 0) && ((_tmp_errno = errno), 1) &&             \
               (log$error(                                                                          \
                    "`%s` failed errno: %d, msg: %s\n",                                             \
                    #_expression,                                                                   \
@@ -412,12 +539,15 @@ __attribute__((noinline)) void __cex__panic(void);
          );                                                                                        \
          _tmp_errno = 1)
 
+/// catches the error is expression returned null
 #define e$except_null(_expression)                                                                 \
     if (unlikely(((_expression) == NULL) && (log$error("`%s` returned NULL\n", #_expression), 1)))
 
+/// catches the error is expression returned true
 #define e$except_true(_expression)                                                                 \
     if (unlikely(((_expression)) && (log$error("`%s` returned non zero\n", #_expression), 1)))
 
+/// immediately returns from function with _func error + prints traceback 
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
@@ -426,6 +556,7 @@ __attribute__((noinline)) void __cex__panic(void);
          cex$tmpname(__cex_err_traceback_) = EOK)                                                  \
     return cex$tmpname(__cex_err_traceback_)
 
+/// `goto _label` when _func returned error + prints traceback
 #define e$goto(_func, _label)                                                                      \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
@@ -435,119 +566,6 @@ __attribute__((noinline)) void __cex__panic(void);
     goto _label
 
 
-/*
- *                  ARRAYS / SLICES / ITERATORS INTERFACE
- */
-#define slice$define(eltype)                                                                       \
-    struct                                                                                         \
-    {                                                                                              \
-        typeof(eltype)* arr;                                                                       \
-        usize len;                                                                                 \
-    }
-
-struct _cex_arr_slice
-{
-    isize start;
-    isize end;
-    isize __placeholder;
-};
-
-#define _arr$slice_get(slice, array, array_len, ...)                                               \
-    {                                                                                              \
-        struct _cex_arr_slice _slice = { __VA_ARGS__, .__placeholder = 0 };                        \
-        isize _len = array_len;                                                                    \
-        if (unlikely(_slice.start < 0)) _slice.start += _len;                                      \
-        if (_slice.end == 0) /* _end=0 equivalent of python's arr[_star:] */                       \
-            _slice.end = _len;                                                                     \
-        else if (unlikely(_slice.end < 0)) _slice.end += _len;                                     \
-        _slice.end = _slice.end < _len ? _slice.end : _len;                                        \
-        _slice.start = _slice.start > 0 ? _slice.start : 0;                                        \
-        /*log$debug("instart: %d, inend: %d, start: %ld, end: %ld\n", start, end, _start, _end); */                                                                                                \
-        if (_slice.start < _slice.end && array != NULL) {                                          \
-            slice.arr = &((array)[_slice.start]);                                                  \
-            slice.len = (usize)(_slice.end - _slice.start);                                        \
-        }                                                                                          \
-    }
-
-
-/**
- * @brief Gets array generic slice (typed as array)
- *
- * Example:
- * var s = arr$slice(arr, .start = 1, .end = -2);
- * var s = arr$slice(arr, 1, -2);
- * var s = arr$slice(arr, .start = -2);
- * var s = arr$slice(arr, .end = 3);
- *
- * Note: arr$slice creates a temporary type, and it's preferable to use var keyword
- *
- * @param array - generic array
- * @param .start - start index, may be negative to get item from the end of array
- * @param .end - end index, 0 - means all, or may be negative to get item from the end of array
- * @return struct {eltype* arr, usize len}, or {NULL, 0} if bad slice index/not found/NULL array
- *
- * @warning returns {.arr = NULL, .len = 0} if bad indexes or array
- */
-#define arr$slice(array, ...)                                                                      \
-    ({                                                                                             \
-        slice$define(*array) s = { .arr = NULL, .len = 0 };                                        \
-        _arr$slice_get(s, array, arr$len(array), __VA_ARGS__);                                     \
-        s;                                                                                         \
-    })
-
-
-/**
- * @brief cex_iterator_s - CEX iterator interface
- */
-typedef struct
-{
-    struct
-    {
-        union
-        {
-            usize i;
-            char* skey;
-            void* pkey;
-        };
-    } idx;
-    char _ctx[47];
-    u8 stopped;
-    u8 initialized;
-} cex_iterator_s;
-_Static_assert(sizeof(usize) == sizeof(void*), "usize expected as sizeof ptr");
-_Static_assert(alignof(usize) == alignof(void*), "alignof pointer != alignof usize");
-_Static_assert(alignof(cex_iterator_s) == alignof(void*), "alignof");
-_Static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
-
-/**
- * @brief Iterates via iterator function (see usage below)
- *
- * Iterator function signature:
- * u32* array_iterator(u32 array[], u32 len, cex_iterator_s* iter)
- *
- * for$iter(u32, it, array_iterator(arr2, arr$len(arr2), &it.iterator))
- */
-#define for$iter(it_val_type, it, iter_func)                                                       \
-    struct cex$tmpname(__cex_iter_)                                                                \
-    {                                                                                              \
-        it_val_type val;                                                                           \
-        union /* NOTE:  iterator above and this struct shadow each other */                        \
-        {                                                                                          \
-            cex_iterator_s iterator;                                                               \
-            struct                                                                                 \
-            {                                                                                      \
-                union                                                                              \
-                {                                                                                  \
-                    usize i;                                                                       \
-                    char* skey;                                                                    \
-                    void* pkey;                                                                    \
-                };                                                                                 \
-            } idx;                                                                                 \
-        };                                                                                         \
-    };                                                                                             \
-                                                                                                   \
-    for (struct cex$tmpname(__cex_iter_) it = { .val = (iter_func) }; !it.iterator.stopped;        \
-         it.val = (iter_func))
 
 
 #if defined(__GNUC__) && !defined(__clang__)

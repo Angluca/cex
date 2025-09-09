@@ -56,7 +56,7 @@ test$case(test_cex_argparse_init_long)
     argparse_opt_s options[] = {
         argparse$opt_help(),
         argparse$opt_group("Basic options"),
-        argparse$opt(&force, 'f', "force", "force to do"),
+        argparse$opt(&force, 'f', "force", .help = "force to do"),
         argparse$opt(&test, 't', "test", "test only", NULL, 0, 0),
         argparse$opt(&path, 'p', "path", "path to read", .callback = NULL, 0),
         argparse$opt(&int_num, 'i', "int", .help = "selected integer", 0),

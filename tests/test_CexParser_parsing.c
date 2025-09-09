@@ -17,6 +17,7 @@ test$case(test_token_next_entity)
         "#define BAR 2\n"
         "#define ca$ma(a, b, c) 2\n"
         "#define ca$ma() 2\n"
+        "#define __test$ 2\n"
         "";
     CexParser_c lx = CexParser_create(code, 0, true);
     cex_token_s t;
@@ -40,6 +41,11 @@ test$case(test_token_next_entity)
         t = CexParser_next_entity(&lx, &items);
         log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__macro_func);
+        tassert_eq(arr$len(items), 1);
+
+        t = CexParser_next_entity(&lx, &items);
+        log$debug("Entity:  type: %d children: %zu\n%S\n", t.type, arr$len(items), t.value);
+        tassert_eq(t.type, CexTkn__macro_const);
         tassert_eq(arr$len(items), 1);
 
         t = CexParser_next_entity(&lx, &items);
@@ -220,7 +226,7 @@ test$case(test_cex_struct_def)
 {
     // clang-format off
     char* code = 
-        "__attribute__ ((visibility(\"hidden\"))) extern const struct __cex_namespace__io io;\n"
+        "CEX_NAMESPACE struct __cex_namespace__io io;\n"
         "const struct __cex_namespace__io io = { };"
         "struct __cex_namespace__io { void            (*fclose)(FILE** file); };\n"
         "";
@@ -232,7 +238,7 @@ test$case(test_cex_struct_def)
         t = CexParser_next_entity(&lx, &items);
         log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_decl);
-        tassert_eq(arr$len(items), 8);
+        tassert_eq(arr$len(items), 5);
 
         t = CexParser_next_entity(&lx, &items);
         log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
@@ -576,6 +582,7 @@ test$case(test_funcs_decl_parse_macros)
         "// some comment\n#define my$CONST 220981\n"
         "/* some comment */\n#define my$CONST 220981\n"
         "/*! some comment */  \n#define my$CONST 220981\n"
+        "  #  define __my$ asd\n"
         "";
     CexParser_c lx = CexParser_create(code, 0, true);
     cex_token_s t;
@@ -645,6 +652,16 @@ test$case(test_funcs_decl_parse_macros)
         tassert_eq(d->args, "");
         tassert_eq(d->body, str$s(" 220981"));
         tassert_eq(d->docs, str$s("/*! some comment */"));
+
+        t = CexParser_next_entity(&lx, &items);
+        tassert_eq(t.type, CexTkn__macro_const);
+        d = CexParser.decl_parse(&lx, t, items, NULL, _);
+        tassert(d != NULL);
+        tassert_eq(d->type, CexTkn__macro_const);
+        tassert_eq(d->name, str$s("__my$"));
+        tassert_eq(d->args, "");
+        tassert_eq(d->body, str$s(" asd"));
+        tassert_eq(d->docs.buf, NULL);
 
     }
     tassert_eq(CexParser_next_token(&lx).type, CexTkn__eof);
@@ -774,7 +791,7 @@ test$case(test_cex_struct_def_decl)
 {
     // clang-format off
     char* code = 
-        "__attribute__ ((visibility(\"hidden\"))) extern const struct __cex_namespace__io io;\n"
+        "CEX_NAMESPACE struct __cex_namespace__io io;\n"
         "const struct __cex_namespace__io io = { };"
         "struct __cex_namespace__io { void            (*fclose)(FILE** file); };\n"
         "";
@@ -788,7 +805,7 @@ test$case(test_cex_struct_def_decl)
         d = CexParser.decl_parse(&lx, t, items, NULL, _);
         log$debug("Entity:  type: %d type_str: '%s' children: %zu\n%S\n", t.type, CexTkn_str[t.type], arr$len(items), t.value);
         tassert_eq(t.type, CexTkn__cex_module_decl);
-        tassert_eq(arr$len(items), 8);
+        tassert_eq(arr$len(items), 5);
         tassert(d == NULL);
 
         t = CexParser_next_entity(&lx, &items);

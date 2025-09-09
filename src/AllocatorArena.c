@@ -59,8 +59,8 @@ _cex_alloc_estimate_alloc_size(usize alloc_size, usize alignment)
     usize size = alloc_size;
 
     if (alignment < 8) {
-        _Static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
-        _Static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
+        static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
+        static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
         alignment = 8;
         size = mem$aligned_round(alloc_size, 8);
     } else {
@@ -104,7 +104,7 @@ _cex_allocator_arena__check_pointer_valid(AllocatorArena_c* self, void* old_ptr)
     allocator_arena_page_s* page = self->last_page;
     allocator_arena_rec_s* rec = _cex_alloc_arena__get_rec(old_ptr);
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         if ((char*)rec > (char*)page &&
             (char*)rec < (((char*)page) + sizeof(allocator_arena_page_s) + page->capacity)) {
             uassert((char*)rec >= (char*)page + sizeof(allocator_arena_page_s));
@@ -146,7 +146,7 @@ _cex_allocator_arena__request_page_size(
         if (page_size == 0 || page_size > CEX_ARENA_MAX_ALLOC) {
             uassert(page_size > 0 && "page_size is zero");
             uassert(page_size <= CEX_ARENA_MAX_ALLOC && "page_size is to big");
-            return false;
+            return NULL;
         }
         allocator_arena_page_s*
             page = mem$->calloc(mem$, 1, page_size, alignof(allocator_arena_page_s));
@@ -190,8 +190,8 @@ _cex_allocator_arena__malloc(IAllocator allc, usize size, usize alignment)
 
     allocator_arena_rec_s* page_rec = (allocator_arena_rec_s*)&page->data[page->cursor];
     uassert((((usize)(page_rec) & ((8) - 1)) == 0) && "unaligned pointer");
-    _Static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
-    _Static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
+    static_assert(sizeof(allocator_arena_rec_s) == 8, "unexpected size");
+    static_assert(alignof(allocator_arena_rec_s) <= 8, "unexpected alignment");
 
     mem$asan_unpoison(page_rec, sizeof(allocator_arena_rec_s));
     *page_rec = rec;
@@ -384,7 +384,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
 
     allocator_arena_page_s* page = self->last_page;
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         if (page->used_start == 0 || page->used_start < used_mark) {
             // last page, just set mark and poison
             usize free_offset = (used_mark - page->used_start);
@@ -534,7 +534,7 @@ AllocatorArena_destroy(IAllocator self)
 
     allocator_arena_page_s* page = allc->last_page;
     while (page) {
-        var tpage = page->prev_page;
+        auto tpage = page->prev_page;
         mem$free(mem$, page);
         page = tpage;
     }

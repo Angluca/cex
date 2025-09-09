@@ -493,7 +493,7 @@ _cex__jsonbuf_print_scope_enter(json_buf_c* jb, JsonType_e scope_type)
             jb->error = "Scope overflow";
         }
     } else {
-        unreachable("Only JsonType__obj or JsonType__arr expected");
+        unreachable();
     }
     jb->indent += jb->indent_width;
     return jb;

@@ -71,3 +71,15 @@ runs:
         ./build/sqlite3 build/hello.db "SELECT * FROM Messages;"
 
 
+    - name: Cex Pre-Built
+      shell: ${{ inputs.shell }}
+      run: |
+        echo ""
+        echo "---------------------------------------------------------------------"
+        echo "           STEP: example cex-prebuilt"
+        echo "---------------------------------------------------------------------"
+        cd examples/cex_compiled_hdr/
+        cc -g ./cex.c -o ./cex 
+        ./cex config
+        ./cex app run myapp
+        ./cex test run tests/test_myapp.c

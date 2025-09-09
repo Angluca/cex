@@ -73,3 +73,8 @@ archive/
 *.fuzz.exe
 *.out/
 *.afl/
+
+docs/README.html
+
+/.quarto/
+**/*.quarto_ipynb

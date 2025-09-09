@@ -27,33 +27,33 @@ test$case(test_src_namespace_gen)
         char* ns = "src";
 
         cg$init(&buf);
-        $pn("#include \"cex.h\"");
-        $pn("");
-        $func("Exception %s_fn2(void)", ns)
+        cg$pn("#include \"cex.h\"");
+        cg$pn("");
+        cg$func("Exception %s_fn2(void)", ns)
         {
-            $pn("return EOK;");
+            cg$pn("return EOK;");
         }
-        $func("arr$(char*) %s_fn1(char* foo)", ns)
+        cg$func("arr$(char*) %s_fn1(char* foo)", ns)
         {
-            $pn("return NULL;");
+            cg$pn("return NULL;");
         }
-        $func("int %s__fn1_Private(char* foo)", ns)
+        cg$func("int %s__fn1_Private(char* foo)", ns)
         {
-            $pn("return NULL;");
+            cg$pn("return NULL;");
         }
-        $func("int %s__subname__fn_Sub1(char* foo)", ns)
+        cg$func("int %s__subname__fn_Sub1(char* foo)", ns)
         {
-            $pn("return NULL;");
+            cg$pn("return NULL;");
         }
-        $func("arr$(char*) %s__subname__fnsub2(char* foo)", ns)
+        cg$func("arr$(char*) %s__subname__fnsub2(char* foo)", ns)
         {
-            $pn("return NULL;");
+            cg$pn("return NULL;");
         }
-        $func("int %s__aubName2__fnsub1(char bar)", ns)
+        cg$func("int %s__aubName2__fnsub1(char bar)", ns)
         {
-            $pn("return NULL;");
+            cg$pn("return NULL;");
         }
-        $pn("");
+        cg$pn("");
 
         e$ret(io.file.save(src, buf));
         e$ret(io.file.save(hdr, "// header"));
@@ -88,13 +88,13 @@ test$case(test_src_namespace_update)
         char* ns = "src";
 
         cg$init(&buf);
-        $pn("#include \"cex.h\"");
-        $pn("");
-        $func("Exception %s_fn2(void)", ns)
+        cg$pn("#include \"cex.h\"");
+        cg$pn("");
+        cg$func("Exception %s_fn2(void)", ns)
         {
-            $pn("return EOK;");
+            cg$pn("return EOK;");
         }
-        $pn("");
+        cg$pn("");
 
         e$ret(io.file.save(src, buf));
         e$ret(io.file.save(hdr, "#define FOO"));
@@ -130,13 +130,13 @@ test$case(test_src_namespace_update_duplicate_code)
         char* ns = "src";
 
         cg$init(&buf);
-        $pn("#include \"cex.h\"");
-        $pn("");
-        $func("Exception %s_fn2(void)", ns)
+        cg$pn("#include \"cex.h\"");
+        cg$pn("");
+        cg$func("Exception %s_fn2(void)", ns)
         {
-            $pn("return EOK;");
+            cg$pn("return EOK;");
         }
-        $pn("");
+        cg$pn("");
 
         char* hdr_code =
             "__attribute__((visibility(\"hidden\"))) extern const struct __cex_namespace__cexy cexy;\n"

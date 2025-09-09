@@ -8,24 +8,38 @@ struct _sbuf__sprintf_ctx
     sbuf_head_s* head;
     char* buf;
     Exc err;
-    u32 count;
-    u32 length;
+    usize count;
+    usize length;
     char tmp[CEX_SPRINTF_MIN];
 };
 
 static inline sbuf_head_s*
 _sbuf__head(sbuf_c self)
 {
-    uassert(self != NULL);
+    if (unlikely(!self)) { return NULL; }
     sbuf_head_s* head = (sbuf_head_s*)(self - sizeof(sbuf_head_s));
 
     uassert(head->header.magic == 0xf00e && "not a sbuf_head_s / bad pointer");
-    uassert(head->capacity > 0 && "zero capacity or memory corruption");
     uassert(head->length <= head->capacity && "count > capacity");
     uassert(head->header.nullterm == 0 && "nullterm != 0");
 
     return head;
 }
+
+static inline void
+_sbuf__set_error(sbuf_head_s* head, Exc err)
+{
+    if (!head) { return; }
+    if (head->err) { return; }
+
+    head->err = err;
+    head->length = 0;
+    head->capacity = 0;
+
+    // nullterm string contents
+    *((char*)head + sizeof(sbuf_head_s)) = '\0';
+}
+
 static inline usize
 _sbuf__alloc_capacity(usize capacity)
 {
@@ -37,7 +51,7 @@ _sbuf__alloc_capacity(usize capacity)
         return capacity * 1.2;
     } else {
         // Round up to closest pow*2 int
-        u64 p = 4;
+        u64 p = 64;
         while (p < capacity) { p *= 2; }
         return p;
     }
@@ -49,6 +63,7 @@ _sbuf__grow_buffer(sbuf_c* self, u32 length)
 
     if (unlikely(head->allocator == NULL)) {
         // sbuf is static, bad luck, overflow
+        _sbuf__set_error(head, Error.overflow);
         return Error.overflow;
     }
 
@@ -65,8 +80,9 @@ _sbuf__grow_buffer(sbuf_c* self, u32 length)
     return Error.ok;
 }
 
+/// Creates new dynamic string builder backed by allocator
 static sbuf_c
-cex_sbuf_create(u32 capacity, IAllocator allocator)
+cex_sbuf_create(usize capacity, IAllocator allocator)
 {
     if (unlikely(allocator == NULL)) {
         uassert(allocator != NULL);
@@ -95,15 +111,8 @@ cex_sbuf_create(u32 capacity, IAllocator allocator)
     return self;
 }
 
-static sbuf_c
-cex_sbuf_create_temp(void)
-{
-    uassert(
-        tmem$->scope_depth(tmem$) > 0 && "trying create tmem$ allocator outside mem$scope(tmem$)"
-    );
-    return cex_sbuf_create(100, tmem$);
-}
 
+/// Creates dynamic string backed by static array
 static sbuf_c
 cex_sbuf_create_static(char* buf, usize buf_size)
 {
@@ -136,73 +145,63 @@ cex_sbuf_create_static(char* buf, usize buf_size)
     return self;
 }
 
-static Exception
-cex_sbuf_grow(sbuf_c* self, u32 new_capacity)
-{
-    sbuf_head_s* head = _sbuf__head(*self);
-    if (new_capacity <= head->capacity) {
-        // capacity is enough, no need to grow
-        return Error.ok;
-    }
-    return _sbuf__grow_buffer(self, new_capacity);
-}
 
-static void
-cex_sbuf_update_len(sbuf_c* self)
+
+/// Shrinks string length to new_length (fails when new_length > existing length)
+static Exc
+cex_sbuf_shrink(sbuf_c* self, usize new_length)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(!head)) { return Error.runtime; }
+    if (unlikely(head->err)) { return head->err; }
 
-    uassert((*self)[head->capacity] == '\0' && "capacity null term smashed!");
+    if (unlikely(new_length > head->length)) {
+        _sbuf__set_error(head, Error.argument);
+        return Error.argument;
+    }
 
-    head->length = strlen(*self);
+    head->length = new_length;
     (*self)[head->length] = '\0';
+    return EOK;
 }
 
+/// Clears string
 static void
 cex_sbuf_clear(sbuf_c* self)
 {
-    uassert(self != NULL);
-    sbuf_head_s* head = _sbuf__head(*self);
-    head->length = 0;
-    (*self)[head->length] = '\0';
+    cex_sbuf_shrink(self, 0);
 }
 
-static void
-cex_sbuf_shrink(sbuf_c* self, u32 new_length)
-{
-    uassert(self != NULL);
-    sbuf_head_s* head = _sbuf__head(*self);
-    uassert(new_length <= head->length);
-    uassert(new_length <= head->capacity);
-    head->length = new_length;
-    (*self)[head->length] = '\0';
-}
-
+/// Returns string length from its metadata
 static u32
 cex_sbuf_len(sbuf_c* self)
 {
     uassert(self != NULL);
-    if (*self == NULL) { return 0; }
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(head == NULL)) { return 0; }
     return head->length;
 }
 
+
+/// Returns string capacity from its metadata
 static u32
 cex_sbuf_capacity(sbuf_c* self)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(head == NULL)) { return 0; }
     return head->capacity;
 }
 
+/// Destroys the string, deallocates the memory, or nullify static buffer.
 static sbuf_c
 cex_sbuf_destroy(sbuf_c* self)
 {
     uassert(self != NULL);
 
-    if (*self != NULL) {
-        sbuf_head_s* head = _sbuf__head(*self);
+    sbuf_head_s* head = _sbuf__head(*self);
+    if (head != NULL) {
 
         // NOTE: null-terminate string to avoid future usage,
         // it will appear as empty string if references anywhere else
@@ -213,14 +212,16 @@ cex_sbuf_destroy(sbuf_c* self)
         if (head->allocator != NULL) {
             // allocator is NULL for static sbuf
             mem$free(head->allocator, head);
+        } else {
+            // static buffer
+            memset(self, 0, sizeof(*self));
         }
-        memset(self, 0, sizeof(*self));
     }
     return NULL;
 }
 
 static char*
-_sbuf__sprintf_callback(char* buf, void* user, u32 len)
+_cex_sbuf_sprintf_callback(char* buf, void* user, u32 len)
 {
     struct _sbuf__sprintf_ctx* ctx = (struct _sbuf__sprintf_ctx*)user;
     sbuf_c sbuf = ((char*)ctx->head + sizeof(sbuf_head_s));
@@ -263,11 +264,14 @@ _sbuf__sprintf_callback(char* buf, void* user, u32 len)
     return ((ctx->count - ctx->length) >= CEX_SPRINTF_MIN) ? ctx->buf : ctx->tmp;
 }
 
-static Exception
+/// Append format va (using CEX formatting engine), always null-terminating
+static Exc
 cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
 {
     if (unlikely(self == NULL)) { return Error.argument; }
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(head == NULL)) { return Error.runtime; }
+    if (unlikely(head->err)) { return head->err; }
 
     struct _sbuf__sprintf_ctx ctx = {
         .head = head,
@@ -278,9 +282,9 @@ cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
     };
 
     cexsp__vsprintfcb(
-        _sbuf__sprintf_callback,
+        _cex_sbuf_sprintf_callback,
         &ctx,
-        _sbuf__sprintf_callback(NULL, &ctx, 0),
+        _cex_sbuf_sprintf_callback(NULL, &ctx, 0),
         format,
         va
     );
@@ -295,7 +299,9 @@ cex_sbuf_appendfva(sbuf_c* self, char* format, va_list va)
     return ctx.err;
 }
 
-static Exception
+
+/// Append format (using CEX formatting engine)
+static Exc
 cex_sbuf_appendf(sbuf_c* self, char* format, ...)
 {
 
@@ -306,13 +312,19 @@ cex_sbuf_appendf(sbuf_c* self, char* format, ...)
     return result;
 }
 
-static Exception
+/// Append string to the builder
+static Exc
 cex_sbuf_append(sbuf_c* self, char* s)
 {
     uassert(self != NULL);
     sbuf_head_s* head = _sbuf__head(*self);
+    if (unlikely(head == NULL)) { return Error.runtime; }
 
-    if (unlikely(s == NULL)) { return Error.argument; }
+    if (unlikely(s == NULL)) {
+        _sbuf__set_error(head, "sbuf.append s=NULL");
+        return Error.argument;
+    }
+    if (head->err) { return head->err; }
 
     u32 length = head->length;
     u32 capacity = head->capacity;
@@ -337,20 +349,34 @@ cex_sbuf_append(sbuf_c* self, char* s)
     return Error.ok;
 }
 
-static bool
-cex_sbuf_isvalid(sbuf_c* self)
+/// Validate dynamic string state, with detailed Exception 
+static Exception
+cex_sbuf_validate(sbuf_c* self)
 {
-    if (self == NULL) { return false; }
-    if (*self == NULL) { return false; }
+    if (unlikely(self == NULL)) { return "NULL argument"; }
+    if (unlikely(*self == NULL)) { return "Memory error or already free'd"; }
 
     sbuf_head_s* head = (sbuf_head_s*)((char*)(*self) - sizeof(sbuf_head_s));
 
-    if (head->header.magic != 0xf00e) { return false; }
-    if (head->capacity == 0) { return false; }
-    if (head->length > head->capacity) { return false; }
-    if (head->header.nullterm != 0) { return false; }
+    if (unlikely(head->err)) { return head->err; }
+    if (unlikely(head->header.magic != 0xf00e)) { return "Bad magic or non sbuf_c* pointer type"; }
+    if (unlikely(head->capacity == 0)) { return "Zero capacity"; }
+    if (head->length > head->capacity) { return "Length > capacity"; }
+    if (head->header.nullterm != 0) { return "Missing null term in header"; }
 
-    return true;
+    return EOK;
+}
+
+
+/// Returns false if string invalid
+static bool
+cex_sbuf_isvalid(sbuf_c* self)
+{
+    if (cex_sbuf_validate(self)) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 const struct __cex_namespace__sbuf sbuf = {
@@ -364,13 +390,11 @@ const struct __cex_namespace__sbuf sbuf = {
     .clear = cex_sbuf_clear,
     .create = cex_sbuf_create,
     .create_static = cex_sbuf_create_static,
-    .create_temp = cex_sbuf_create_temp,
     .destroy = cex_sbuf_destroy,
-    .grow = cex_sbuf_grow,
     .isvalid = cex_sbuf_isvalid,
     .len = cex_sbuf_len,
     .shrink = cex_sbuf_shrink,
-    .update_len = cex_sbuf_update_len,
+    .validate = cex_sbuf_validate,
 
     // clang-format on
 };

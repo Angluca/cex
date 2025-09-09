@@ -456,12 +456,12 @@ test$case(test_for_arr)
     // }
     typeof((&buf)[0])* pbuf_ptr = &((&buf)[0]);
     // typeof((&buf)[0]) p = pbuf_ptr[0];
-    var p = pbuf_ptr[0];
+    auto p = pbuf_ptr[0];
     tassert_eq(*p, 'a');
 
     typeof((array)[0])* array_ptr = &((array)[0]);
     // typeof((&array)[0]) p_array = array_ptr[0];
-    var p_array = array_ptr;
+    auto p_array = array_ptr;
     // tassert_eq(*p_array, "foo");
     io.printf("p_array: %p\n", p_array);
 
@@ -476,26 +476,6 @@ test$case(test_for_each_null)
         (void)v;
         tassert(false && "must not happen!");
     }
-    return EOK;
-}
-
-test$case(test_slice)
-{
-    char buf[] = { 'a', 'b', 'c' };
-
-    var b = arr$slice(buf, 1);
-    tassert_eq(b.arr[0], 'b');
-    tassert_eq(b.len, 2);
-
-    arr$(int) array = arr$new(array, mem$);
-    arr$push(array, 1);
-    arr$push(array, 2);
-    arr$push(array, 3);
-
-    var i = arr$slice(array, 1);
-    tassert_eq(i.arr[0], 2);
-    tassert_eq(i.len, 2);
-    arr$free(array);
     return EOK;
 }
 
@@ -736,7 +716,7 @@ test$case(test_hashmap_basic)
     hm$del(intmap, 100);
     tassert_eq(hm$len(intmap), 0);
 
-    var h = _cexds__header(intmap);
+    auto h = _cexds__header(intmap);
     tassert(h->_hash_table->seed != 0);
 
     hm$free(intmap);
@@ -763,7 +743,7 @@ test$case(test_hashmap_basic_struct)
     tassert(hm$set(intmap, 2, s2));
     // tassert(hm$set(intmap, 3, (struct test64_s){3, 4}));
 
-    var s3 = hm$setp(intmap, 3);
+    auto s3 = hm$setp(intmap, 3);
     tassert(s3 != NULL);
     s3->foo = 3;
     s3->bar = 4;
@@ -823,7 +803,7 @@ test$case(test_hashmap_struct_full_setget)
     hm$s(struct test64_s) smap = hm$new(smap, mem$);
     tassert(smap != NULL);
 
-    _Static_assert(offsetof(struct test64_s, key) == sizeof(usize), "unexp");
+    static_assert(offsetof(struct test64_s, key) == sizeof(usize), "unexp");
 
     tassert_eq(hm$len(smap), 0);
 
@@ -1261,7 +1241,7 @@ test$case(test_hashmap_string_copy_del_cleanup)
     tassert_eq(hm$get(smap, "foo"), 0);
 
     // Fool hm$free() make it not to cleanup the allocated copy_keys
-    var h = _cexds__header(smap);
+    auto h = _cexds__header(smap);
     h->_hash_table->copy_keys = false;
 
     hm$free(smap);
@@ -1293,7 +1273,7 @@ test$case(test_hashmap_string_copy_clear_cleanup)
     tassert_eq(hm$get(hs.hm, "foo"), 0);
 
     // Fool hm$free() make it not to cleanup the allocated copy_keys
-    var h = _cexds__header(hs.hm);
+    auto h = _cexds__header(hs.hm);
     h->_hash_table->copy_keys = false;
 
     hm$free(hs.hm);
@@ -1324,7 +1304,7 @@ test$case(test_hashmap_string_copy_arena)
 test$case(test_hashmap_string_copy_clear_cleanup_arena)
 {
     MyHashmap smap = hm$new(smap, mem$, .copy_keys = true, .copy_keys_arena_pgsize = 1024);
-    var h = _cexds__header(smap);
+    auto h = _cexds__header(smap);
     AllocatorArena_c* arena = (AllocatorArena_c*)h->_hash_table->key_arena;
     tassert_eq(arena->used, 0);
 

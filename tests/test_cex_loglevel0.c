@@ -2,7 +2,7 @@
 #include "src/all.c"
 
 
-test$NOOPT Exception
+test$noopt Exception
 foo(int condition)
 {
     if (condition == 0) { return e$raise(Error.io, "condition == 0\n"); }
@@ -11,14 +11,14 @@ foo(int condition)
     return EOK;
 }
 
-test$NOOPT int
+test$noopt int
 sys_func(int condition)
 {
     if (condition == -1) { errno = 999; }
     return condition;
 }
 
-test$NOOPT void*
+test$noopt void*
 void_ptr_func(int condition)
 {
     if (condition == -1) { return NULL; }

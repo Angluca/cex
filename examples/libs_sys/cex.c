@@ -102,6 +102,12 @@ cmd_build_unzip(int argc, char** argv, void* user_ctx)
             e$ret(cexy$pkgconf(_, &args, "--cflags", "libzip"));
             arr$pushm(args, (char*)app_src, "-o", app_exe);
             e$ret(cexy$pkgconf(_, &args, "--libs", "libzip"));
+
+            // Platform specific case win32 depends on BCrypt* 
+            if (os.platform.current() == OSPlatform__win) {
+                arr$pushm(args, "-lbcrypt");
+            }
+
             arr$pushm(args, NULL);
             e$ret(os$cmda(args));
 

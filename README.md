@@ -64,11 +64,12 @@ You may try to get help for commands as well, try `cex process --help`
 Use `cex -DFOO -DBAR config` to set project config flags
 Use `cex -D config` to reset all project config flags to defaults
 ```
+
 ## About CEX
 ### What is CEX
 CEX is designed as a standalone, single-header programming language with no dependencies other than the GCC/Clang compiler and libc.
 
-Written as a single-header C11 (GNU C) library, CEX is specifically tailored for GCC/Clang compilers. Its mission is to improve C without reinventing a new compiler stack. CEX incorporates modern programming trends while remaining fully compatible with all C tooling.
+Written as a single-header C11 (GNU C) library (C23 compatible), CEX is specifically tailored for GCC/Clang compilers. Its mission is to improve C without reinventing a new compiler stack. CEX incorporates modern programming trends while remaining fully compatible with all C tooling.
 
 Though CEX remains unsafe, modern compilers and tools (such as address sanitizers combined with unit tests) help mitigate risks. The language draws inspiration from modern languages, blending their best ideas into a C-compatible form.
 
@@ -90,7 +91,6 @@ The philosophy of CEX revolves around independence and self-containment, minimiz
     * `io` namespace - cross platform IO support, including helper functions, e.g. `io.file.load/save()`
     * `argparse` - convenient argument parsing for CLI tools with built-in commands support
     * `cexy` - fancy project management tool and build system.
-    * `json` - `json.iter` - single pass, non allocating JSON parser, `json.buf` - single pass, single buffer JSON writer.
 
 ## Code example
 ```c
@@ -107,7 +107,7 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
         e$assert(os.path.exists("tests/build/")); // evergreen assertion or error with traceback
 
         // auto type variables
-        var search_pattern = "tests/os_test/*.c";
+        auto search_pattern = "tests/os_test/*.c";
 
         // Trace with file:<line> + formatting
         log$trace("Finding/building simple os apps in %s\n", search_pattern);
@@ -196,13 +196,52 @@ CEX is tested on various platforms, compiler versions, sanitizers, and optimizat
 | MacOS 14 arm64 |  |  ✅ | ✅ |✅ |✅ |
 | MacOS 15 arm64 | |  ✅ | ✅ |✅ |✅ |
 
+
 ## Examples
 * [Building Lua + Lua Module in CEX](https://github.com/alexveden/cex/tree/master/examples/lua_module)
 * [Building SQLite Program From Source](https://github.com/alexveden/cex/tree/master/examples/sqlite)
 * [Building with system libraries](https://github.com/alexveden/cex/tree/master/examples/libs_sys)
 * [Building with vcpkg local repo](https://github.com/alexveden/cex/tree/master/examples/libs_vcpkg)
+* [Pre-built CEX for faster build times](https://github.com/alexveden/cex/tree/master/examples/cex_compiled_hdr)
 
-## Licence
->    MIT License 2023-2025 (c) Alex Veden
->
->    https://github.com/alexveden/cex/
+
+## Credits
+
+CEX contains some code and ideas from the following projects, all of them licensed under MIT license (or Public Domain):
+
+1. [nob.h](https://github.com/tsoding/nob.h) - by Tsoding / Alexey Kutepov, MIT/Public domain, great idea of making self-contained build system, great youtube channel btw
+2. [stb_ds.h](https://github.com/nothings/stb/blob/master/stb_ds.h) - MIT/Public domain, by Sean Barrett, CEX arr$/hm$ are refactored versions of STB data structures, great idea 
+3. [stb_sprintf.h](https://github.com/nothings/stb/blob/master/stb_sprintf.h) - MIT/Public domain, by Sean Barrett, I refactored it, fixed all UB warnings from UBSAN, added CEX specific formatting
+4. [minirent.h](https://github.com/tsoding/minirent) - Alexey Kutepov, MIT license, WIN32 compatibility lib 
+5. [subprocess.h](https://github.com/sheredom/subprocess.h) - by Neil Henning, public domain, used in CEX as a daily driver for `os$cmd` and process communication
+6. [utest.h](https://github.com/sheredom/utest.h) - by Neil Henning, public domain, CEX test$ runner borrowed some ideas of macro magic for making declarative test cases
+7. [c3-lang](https://github.com/c3lang/c3c) - I borrowed some ideas about language features from C3, especially `mem$scope`, `mem$`/`tmem$` global allocators, scoped macros too.
+
+
+## License
+
+```
+
+MIT License
+
+Copyright (c) 2024-2025 Aleksandr Vedeneev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+```
