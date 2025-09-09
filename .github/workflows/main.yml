@@ -322,6 +322,7 @@ jobs:
           cp docs.html ./public/
           cp ./docs/index.html ./public/
           cp ./docs/install.sh ./public/
+          echo "cex-c.org" > ./public/CNAME
 
       - name: Release latest
         uses: softprops/action-gh-release@v2
