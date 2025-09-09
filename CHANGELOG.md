@@ -1,9 +1,38 @@
 # CEX Release Notes
 
 ## 0.16.0
-2025-09-04
+2025-09-09
+
+> [!NOTE]
+>
+> This release contains many breaking changes, however I've probably polished core namespaces enough and expect them to be more stable in the future.
+
 ### Changes / improvements
-- (fix) ./cex stats - cex.h still included in LOC stats for side projects
+- refactor: (breaking) renamed test$NOOPT to test$noopt
+- refactor: (breaking) sbuf - removed redundant code grow() and update_len(), shrink() refactored
+- refactor: (breaking) - removed sbuf.create_temp() - just use sbuf.create(128, tmem$)
+- refactor: (breaking) refactored sbuf - made exc checking optional + added sbuf.validate() + sizes now are usize (size_t)
+- example: added CEX pre-compilation example
+- refactor: (breaking) io.fread/io.fwrite - changed API for convenience
+- refactor: (breaking) C23 compatible unreachable() + C23 tests passed
+- refactor: (breaking) moved json namespace to lib/json/ - currently it's never used in CEX core
+- refactor: _Static_asserts are renamed to static_asserts for C23 compatibility
+- refactor: (breaking) renamed `var` into `auto` for C23 compatibility
+- refactor: (breaking) retired arr$slice functionality
+- refactor: (breaking) made all macros for code generation with cg$ prefix
+- doc: added ./cex build-docs command + full documentation in a single HTML
+- feat: ./cex help -o file.txt foo$ - export full output to file
+- feat: ./cex help foo$ - added __foo$ document placeholder if there is no `foo` namespace struct
+- ci: windows 2019 retired
+
+### Fixes
+- fix: cexy process fixed multiline docstrings
+- fix: dup() function case on windows in test$ running module
+- fix: sbuf added more NULL resilience checks
+- fix: CexParser - broken CEX_NAMESPACE handling after refactoring + incorrect skipping of private entities with `_`
+- fix: ./cex help --filter - always using default
+- fix: ./cex stats still use cex.h for statistics outside cex.h project
+- fix: ./cex stats - cex.h still included in LOC stats for side projects
 
 ## 0.15.0
 2025-08-03
@@ -130,3 +159,4 @@
 ### Fixes
 - `str.copy()` - reimplemented in safer (simpler BSD style) `strlcpy()`
 - `AllocatorHeap` - fixed aligned realloc
+
