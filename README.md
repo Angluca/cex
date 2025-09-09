@@ -64,11 +64,12 @@ You may try to get help for commands as well, try `cex process --help`
 Use `cex -DFOO -DBAR config` to set project config flags
 Use `cex -D config` to reset all project config flags to defaults
 ```
+
 ## About CEX
 ### What is CEX
 CEX is designed as a standalone, single-header programming language with no dependencies other than the GCC/Clang compiler and libc.
 
-Written as a single-header C11 (GNU C) library, CEX is specifically tailored for GCC/Clang compilers. Its mission is to improve C without reinventing a new compiler stack. CEX incorporates modern programming trends while remaining fully compatible with all C tooling.
+Written as a single-header C11 (GNU C) library (C23 compatible), CEX is specifically tailored for GCC/Clang compilers. Its mission is to improve C without reinventing a new compiler stack. CEX incorporates modern programming trends while remaining fully compatible with all C tooling.
 
 Though CEX remains unsafe, modern compilers and tools (such as address sanitizers combined with unit tests) help mitigate risks. The language draws inspiration from modern languages, blending their best ideas into a C-compatible form.
 
@@ -90,7 +91,6 @@ The philosophy of CEX revolves around independence and self-containment, minimiz
     * `io` namespace - cross platform IO support, including helper functions, e.g. `io.file.load/save()`
     * `argparse` - convenient argument parsing for CLI tools with built-in commands support
     * `cexy` - fancy project management tool and build system.
-    * `json` - `json.iter` - single pass, non allocating JSON parser, `json.buf` - single pass, single buffer JSON writer.
 
 ## Code example
 ```c
@@ -201,6 +201,7 @@ CEX is tested on various platforms, compiler versions, sanitizers, and optimizat
 * [Building SQLite Program From Source](https://github.com/alexveden/cex/tree/master/examples/sqlite)
 * [Building with system libraries](https://github.com/alexveden/cex/tree/master/examples/libs_sys)
 * [Building with vcpkg local repo](https://github.com/alexveden/cex/tree/master/examples/libs_vcpkg)
+* [Pre-built CEX for faster build times](https://github.com/alexveden/cex/tree/master/examples/cex_compiled_hdr)
 
 ## Licence
 >    MIT License 2023-2025 (c) Alex Veden
