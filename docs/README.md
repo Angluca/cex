@@ -15,11 +15,17 @@ format:
       - _quarto/cex_syntax.xml 
     filters:
       - _quarto/callouts.lua
+
+    other-links:
+      - text: cex-c.org
+        href: https://cex-c.org/
+      - text: GitHub Repo
+        href: https://github.com/alexveden/cex
 ---
 
 ## Getting started with CEX.C
 ### What is CEX
-Cex is Comprehensively EXtended C Language. CEX was born as alternative answer to a plethora of brand new LLVM based languages which strive to replace old C. CEX still remains C language itself, with small but important tweaks that makes CEX a completely different development experience.
+Cex.C (pronounced as cexy) is Comprehensively EXtended C Language . CEX was born as alternative answer to a plethora of brand new LLVM based languages which strive to replace old C. CEX still remains C language itself, with small but important tweaks that makes CEX a completely different development experience.
 
 I tried to bring best ideas from the modern languages while maintaining smooth developer experience for writing C code. The main goal of CEX is to provide tools for developers and helping them writing high quality C code in general.
 

@@ -29,8 +29,8 @@ cd project_dir
 ```
 3. Make a seed program (NOTE: passing header file is ok)
 ```
-gcc -D CEX_NEW -x c ./cex.h
-clang -D CEX_NEW -x c ./cex.h
+gcc -D CEX_NEW -x c ./cex.h -o cex
+clang -D CEX_NEW -x c ./cex.h -o cex
 ```
 4. Run cex program for project initilization
 ```

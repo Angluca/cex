@@ -284,3 +284,89 @@ jobs:
         with:
           shell: 'alpine.sh {0}'
 
+  deploy-release:
+    runs-on: ubuntu-latest
+    needs: [tests-macos, tests-windows, linux-ubuntu2404]
+    permissions:
+      contents: write  # This allows creating releases and uploading assets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup environment
+        run: |
+          echo "BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+          cc -g ./cex.c -o ./cex 
+          echo "Compiled cex executable"
+
+          wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.7.34/quarto-1.7.34-linux-amd64.deb -O quarto.deb
+          sudo dpkg -i quarto.deb
+          sudo apt install zip
+
+          quarto
+          zip
+
+      - name: cex initial build
+        run: |
+          ./cex build-docs
+          cp docs/docs.html docs.html
+          zip cex.zip cex.h docs.html README.md
+
+      - name: prepare web site
+        run: |
+          mkdir ./public
+          cp cex.zip ./public/
+          cp cex.h ./public/
+          cp docs.html ./public/
+          cp ./docs/index.html ./public/
+          cp ./docs/install.sh ./public/
+
+      - name: Release latest
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          body: |
+            Latest automated build from main branch
+            - Commit: ${{ env.SHORT_SHA }}
+            - Build date: ${{ env.BUILD_DATE }}
+            - Triggered by: ${{ github.actor }}
+          files: |
+            cex.h
+            docs.html
+            cex.zip
+          draft: false
+          prerelease: true
+          generate_release_notes: false
+          overwrite_files: true
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            cex.h
+            docs.html
+            cex.zip
+          draft: true
+          generate_release_notes: false
+          overwrite_files: true
+
+      - name: Generate Release Notes
+        uses: release-drafter/release-drafter@v5
+        with:
+          config-name: release-drafter.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy web site 🚀
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          # Personal Access Token (PAT) with write permissions
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages  # default: gh-pages
+          # The folder where your built static files are located
+          publish_dir: ./public
+          # Forcefully orphan the gh-pages branch to avoid history conflicts
+          force_orphan: true

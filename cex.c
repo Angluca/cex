@@ -265,9 +265,7 @@ cmd_build_docs(int argc, char** argv, void* user_ctx)
         "--to",
         "html",
         "-o",
-        "cex_docs.html",
-        "--output-dir",
-        "../"
+        "docs.html"
     ));
     e$ret(os.fs.chdir(".."));
 
