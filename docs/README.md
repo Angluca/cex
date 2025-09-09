@@ -2251,7 +2251,111 @@ test$case(test_array_iteration)
 ```
 
 ### Making custom collection iterators
-TODO: for$iter()...
+It's possible to make custom iterator, specifically for unbounded collections or sparse data structures. However, this iteration has higher overhead than simple `for$each` loop, but sometimes it's necessary.
+
+> [!NOTE]
+>
+> Consider using `iter_` prefix of the function name, by convention, it's a good indicator of using `for$iter()`
+
+Example, of how `str.slice.iter_split()` was implemented:
+
+```c
+
+
+typedef struct
+{
+    struct
+    {
+        union
+        {
+            usize i;
+            char* skey;
+            void* pkey;
+        };
+    } idx;
+    char _ctx[47]; // <<< use this buffer to store iterator state, it's usize aligned
+    u8 stopped;
+    u8 initialized;
+} cex_iterator_s;
+static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
+
+static str_s
+cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
+{
+    uassert(iterator != NULL && "null iterator");
+    uassert(split_by != NULL && "null split_by");
+
+    // temporary struct based on _ctxbuffer
+    struct iter_ctx
+    {
+        usize cursor;
+        usize split_by_len;
+        usize str_len;
+    }* ctx = (struct iter_ctx*)iterator->_ctx;
+    static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
+    static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
+
+    if (unlikely(!iterator->initialized)) {
+        // First run handling
+
+        iterator->initialized = 1;
+        if (unlikely(!_cex_str__isvalid(&s) || s.len == 0)) {
+            iterator->stopped = 1;
+            return (str_s){ 0 };
+        }
+        ctx->split_by_len = strlen(split_by);
+        uassert(ctx->split_by_len < UINT8_MAX && "split_by is suspiciously long!");
+
+        if (ctx->split_by_len == 0) {
+            iterator->stopped = 1;
+            return (str_s){ 0 };
+        }
+
+        isize idx = _cex_str__index(&s, split_by, ctx->split_by_len);
+        if (idx < 0) { idx = s.len; }
+        ctx->cursor = idx;
+        ctx->str_len = s.len; // this prevents s being changed in a loop
+        iterator->idx.i = 0;
+        if (idx == 0) {
+            // first line is \n
+            return (str_s){ .buf = "", .len = 0 };
+        } else {
+            return str.slice.sub(s, 0, idx);
+        }
+    } else {
+        if (unlikely(ctx->cursor >= ctx->str_len)) {
+            iterator->stopped = 1;
+            return (str_s){ 0 };
+        }
+        ctx->cursor++;
+        if (unlikely(ctx->cursor == ctx->str_len)) {
+            // edge case, we have separator at last col
+            // it's not an error, return empty split token
+            iterator->idx.i++;
+            return (str_s){ .buf = "", .len = 0 };
+        }
+
+        // Get remaining string after prev split_by char
+        str_s tok = str.slice.sub(s, ctx->cursor, 0);
+        isize idx = _cex_str__index(&tok, split_by, ctx->split_by_len);
+
+        iterator->idx.i++;
+
+        if (idx < 0) {
+            // No more splits, return remaining part
+            ctx->cursor = s.len;
+            // iterator->stopped = 1;
+            return tok;
+        } else if (idx == 0) {
+            return (str_s){ .buf = "", .len = 0 };
+        } else {
+            // Sub from prev cursor to idx (excluding split char)
+            ctx->cursor += idx;
+            return str.slice.sub(tok, 0, idx);
+        }
+    }
+}
+```
 
 ## Namespaces
 Naming collisions will always remain a problem of C language. However, we could try our best to reduce surface of conflict, by aggregating functions with prefixes to nice-looking namespace symbols. But the primary role of CEX namespacing approach is to keep project structure organized, easier to navigate and understand. Another beneficial effect of using namespaces is reduction of cognitive work when we try to recall the function name when typing with LSP, we'll see this effect below. At last, using namespacing we can add OOP-ish flavor to our structures, which could behave as classes.
