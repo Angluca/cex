@@ -429,6 +429,7 @@ CEX provides several short aliases for primitive types and some extra types for 
 | -------------- | --------------- |
 | e$ | CEX Exception handling |
 | for$ | CEX array looping (for\$each, etc.) |
+| log$ | Logging system |
 | mem\$\* | Memory management and allocators |
 | mem$ | Global variable for general purpose heap allocator |
 | tmem$ | Global variable for temporary arena allocator |
@@ -1503,7 +1504,7 @@ Cex strings follow these principles:
 
 > [!TIP] 
 >
-> To get brief cheat sheet on functions list via Cex CLI type `./cex help str` or `./cex help sbuf`
+> To get brief cheat sheet on functions list via Cex CLI type `./cex help str$` or `./cex help sbuf$`
 
 ### General purpose strings
 
@@ -1682,28 +1683,40 @@ sbuf.destroy(&s);
 #### `sbuf` namespace
 
 ```c
-    Exception       sbuf.append(sbuf_c* self, char* s);
-    Exception       sbuf.appendf(sbuf_c* self, char* format,...);
-    Exception       sbuf.appendfva(sbuf_c* self, char* format, va_list va);
+    /// Append string to the builder
+    Exc             sbuf.append(sbuf_c* self, char* s);
+    /// Append format (using CEX formatting engine)
+    Exc             sbuf.appendf(sbuf_c* self, char* format,...);
+    /// Append format va (using CEX formatting engine), always null-terminating
+    Exc             sbuf.appendfva(sbuf_c* self, char* format, va_list va);
+    /// Returns string capacity from its metadata
     u32             sbuf.capacity(sbuf_c* self);
+    /// Clears string
     void            sbuf.clear(sbuf_c* self);
-    sbuf_c          sbuf.create(u32 capacity, IAllocator allocator);
+    /// Creates new dynamic string builder backed by allocator
+    sbuf_c          sbuf.create(usize capacity, IAllocator allocator);
+    /// Creates dynamic string backed by static array
     sbuf_c          sbuf.create_static(char* buf, usize buf_size);
-    sbuf_c          sbuf.create_temp(void);
+    /// Destroys the string, deallocates the memory, or nullify static buffer.
     sbuf_c          sbuf.destroy(sbuf_c* self);
-    Exception       sbuf.grow(sbuf_c* self, u32 new_capacity);
+    /// Returns false if string invalid
     bool            sbuf.isvalid(sbuf_c* self);
+    /// Returns string length from its metadata
     u32             sbuf.len(sbuf_c* self);
-    void            sbuf.shrink(sbuf_c* self, u32 new_length);
-    void            sbuf.update_len(sbuf_c* self);
+    /// Shrinks string length to new_length
+    Exc             sbuf.shrink(sbuf_c* self, usize new_length);
+    /// Validate dynamic string state, with detailed Exception
+    Exception       sbuf.validate(sbuf_c* self);
 ```
 
 ### String formatting in CEX
-All CEX routines  with format strings (e.g. `io.printf()`/`log$error()`/`str.fmt()`) use special formatting function with extended features:
+All CEX routines  with format strings (e.g. `io.printf()`/`log$error()`/`str.fmt()`) use CEX special formatting engine with extended features:
 
 * `%S` format specifier is used for printing string slices of `str_s` type
 * `%S` format has a sanity checks in the case if simple string is passed to its place, it will print `(%S-bad/overflow)` in the text. However, it's not guaranteed behavior, and depends on platform.
 * `%lu`/`%ld` - formats are dedicated for printing 64-bit integers, they are not platform specific
+* `%u`/`%d` - formats are dedicated for printing 32-bit integers, they are not platform specific
+* Other formats should be compatible with vanilla libC.
 
 
 <a id="lang-data-structures"></a>
@@ -2331,7 +2344,7 @@ LSP For sub-namespaces
 
 > [!NOTE]
 >
-> Check full `str` namespace options with `./cex help str`
+> Check full `str` namespace options with `./cex help str$`
 
 ### How to make a namespace
 
@@ -2432,7 +2445,7 @@ Now you can launch a sample program or run its unit tests.
 > [!TIP] Getting cexy$ help about config variables
 > ```sh
 > # full list of cexy API namespace and cexy$ variables
-> ./cex help cexy
+> ./cex help cexy$
 > # list of actual values for cexy$ vars in current project
 > ./cex config
 > ```
@@ -3186,3 +3199,64 @@ Just type:
 ### `test$`
 {{< include _include/test.md >}}
 
+
+
+## CEX lib
+
+### Role of CEX lib
+CEX lib (see `lib/` folder in repo) is designed to be a collection of random tools and libraries that are not so frequently used. Currently it's in early alpha stage, API stability is not guaranteed, backward compatibility is not guaranteed. Feel free to contribute your ideas, if you think it could be useful.
+
+### Installing libraries
+Installing and updating libs from the main CEX repo is pretty straightforward, and you can use:
+
+```sh
+cex libfetch lib/test/fff.h                            - fetch signle header lib from CEX repo
+cex libfetch -U cex.h                                  - update cex.h to most recent version
+cex libfetch lib/random/                               - fetch whole directory recursively from CEX lib
+cex libfetch lib/                                      - fetch everything available in CEX lib
+cex libfetch --git-label=v2.0 file.h                   - fetch using specific label or commit
+cex libfetch -u https://github.com/m/lib.git file.h    - fetch from arbitrary repo
+cex help --example cexy.utils.git_lib_fetch            - you can call it from your cex.c
+cex libfetch --help                                    - more help
+```
+
+## Credits
+
+CEX contains some code and ideas from the following projects, all of them licensed under MIT license (or Public Domain):
+
+1. [nob.h](https://github.com/tsoding/nob.h) - by Tsoding / Alexey Kutepov, MIT/Public domain, great idea of making self-contained build system, great youtube channel btw
+2. [stb_ds.h](https://github.com/nothings/stb/blob/master/stb_ds.h) - MIT/Public domain, by Sean Barrett, CEX arr$/hm$ are refactored versions of STB data structures, great idea 
+3. [stb_sprintf.h](https://github.com/nothings/stb/blob/master/stb_sprintf.h) - MIT/Public domain, by Sean Barrett, I refactored it, fixed all UB warnings from UBSAN, added CEX specific formatting
+4. [minirent.h](https://github.com/tsoding/minirent) - Alexey Kutepov, MIT license, WIN32 compatibility lib 
+5. [subprocess.h](https://github.com/sheredom/subprocess.h) - by Neil Henning, public domain, used in CEX as a daily driver for `os$cmd` and process communication
+6. [utest.h](https://github.com/sheredom/utest.h) - by Neil Henning, public domain, CEX test$ runner borrowed some ideas of macro magic for making declarative test cases
+7. [c3-lang](https://github.com/c3lang/c3c) - I borrowed some ideas about language features from C3, especially `mem$scope`, `mem$`/`tmem$` global allocators, scoped macros too.
+
+
+## License
+
+```
+
+MIT License
+
+Copyright (c) 2024-2025 Aleksandr Vedeneev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+```

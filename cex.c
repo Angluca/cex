@@ -127,7 +127,7 @@ cex_bundle(void)
             "src/ds.h",        "src/_sprintf.h",  "src/str.h",           "src/sbuf.h",
             "src/io.h",        "src/argparse.h",  "src/_subprocess.h",   "src/os.h",
             "src/test.h",      "src/test.c",      "src/cex_code_gen.h",  "src/cexy.h",
-            "src/CexParser.h", "src/cex_maker.h", "src/fuzz.h"
+            "src/CexParser.h", "src/cex_maker.h", "src/fuzz.h",          "src/cex_footer.h"
 
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
@@ -235,8 +235,8 @@ cmd_build_docs(int argc, char** argv, void* user_ctx)
     (void)argv;
     (void)user_ctx;
 
-    char* namespaces[] = { "mem", "str", "test", "os",       "fuzz", "arr", "hm",
-                           "for", "io",  "sbuf", "argparse", "cg",   "e",   "cexy", "log" };
+    char* namespaces[] = { "mem", "str",  "test",     "os", "fuzz", "arr",  "hm", "for",
+                           "io",  "sbuf", "argparse", "cg", "e",    "cexy", "log" };
 
     for$each (it, namespaces) {
         mem$scope(tmem$, _)
