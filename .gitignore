@@ -78,3 +78,4 @@ docs/README.html
 
 /.quarto/
 **/*.quarto_ipynb
+docs/docs.html
