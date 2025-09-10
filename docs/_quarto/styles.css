@@ -3,6 +3,19 @@
    padding: 0; 
 }
 
+/* Override for TOC-body only */
+@media (max-width: 767.98px) {
+    #TOC-body {
+        display: block !important;
+    }
+
+    body:not(.floating):not(.docked) .page-columns.toc-left {
+        display: grid;
+        gap: 0;
+        grid-template-columns: [screen-start] 1.5em [screen-start-inset] 5fr [page-start] 35px [page-start-inset] minmax(0px, 145px) [body-start-outset] 35px [body-start] 1.5em [body-content-start] minmax(450px, calc(800px - 3em)) [body-content-end] 1.5em [body-end body-end-outset page-end-inset page-end] 5fr [screen-end-inset] 1.5em [screen-end] !important;
+    }
+}
+
 code:not(.sourceCode) {
     background-color:  #2e363e !important;
    color: #c6d7e0 !important;
