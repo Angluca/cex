@@ -1,4 +1,4 @@
-# CEX.C - Comprehensively EXtended C Language
+# Cex.C - Comprehensively EXtended C Language
 **MOCCA - Make Old C Cexy Again!**
 
 ![Test suite](https://github.com/alexveden/cex/actions/workflows/main.yml/badge.svg)
@@ -7,10 +7,16 @@
 ![Examples](https://github.com/alexveden/cex/actions/workflows/examples.yml/badge.svg)
 
 
-CEX is self-contained C language extension, the only dependency is one of gcc/clang compilers.
-cex.h contains build system, unit test runner, fuzz tester, small standard lib and help system.
+Cex.C (pronounced as cexy) was born as alternative answer to a plethora of brand new LLVM based languages which strive to replace old C. Cex.C still remains C language itself, with small, but important tweaks that bring a completely different development experience.
+
 
 ## GETTING STARTED
+
+### Website and documentation
+
+[cex-c.org](https://cex-c.org/)
+
+[Documentation](https://cex-c.org/docs.html)
 
 ### Existing project (when cex.c exists in the project root directory)
 ```
@@ -65,8 +71,8 @@ Use `cex -DFOO -DBAR config` to set project config flags
 Use `cex -D config` to reset all project config flags to defaults
 ```
 
-## About CEX
-### What is CEX
+## About Cex.C
+### What is Cex.C
 CEX is designed as a standalone, single-header programming language with no dependencies other than the GCC/Clang compiler and libc.
 
 Written as a single-header C11 (GNU C) library (C23 compatible), CEX is specifically tailored for GCC/Clang compilers. Its mission is to improve C without reinventing a new compiler stack. CEX incorporates modern programming trends while remaining fully compatible with all C tooling.
