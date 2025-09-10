@@ -19,8 +19,15 @@ format:
     other-links:
       - text: cex-c.org
         href: https://cex-c.org/
+      - text: Download cex
+        icon: download
+        href: https://cex-c.org/cex.zip
       - text: GitHub Repo
+        icon: github
         href: https://github.com/alexveden/cex
+      - text: Found an error (please propose edit)?
+        icon: pencil
+        href: https://github.com/alexveden/cex/edit/master/docs/README.md
 ---
 
 ## Getting started with CEX.C
