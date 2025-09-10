@@ -116,7 +116,7 @@
                 </div>
                 
                 <div class="flex items-center space-x-4">
-                    <a href="#download" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-md font-medium transition-colors">Download</a>
+                    <a href="cex.zip" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-md font-medium transition-colors">Download</a>
                     <a href="https://github.com/alexveden/cex" class="text-2xl hover:text-indigo-400 transition-colors">
                         <i class="fab fa-github"></i>
                     </a>
@@ -348,11 +348,17 @@
                         <div class="terminal-button bg-yellow-500"></div>
                         <div class="terminal-button bg-green-500"></div>
                     </div>
-                    <div class="terminal-content">
-                        <p class="text-gray-400 mb-1"># run from an empty dir</p>
-                        <pre class="command text-green-400">curl -fsSL https://cex-c.org/install.sh | bash</pre>
-                        <p class="text-gray-400 mb-1"># or</p>
-                        <pre class="command text-green-400">wget https://cex-c.org/install.sh -O - | bash</pre>
+                    <div class="terminal-content space-y-4">
+                        <div>
+                            <p class="text-gray-400 mb-1"># 1. Make new project directory</p>
+                            <pre class="command text-green-400">mkdir myproj && cd myproj</pre>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 mb-1"># 2. Run automatic project initialization</p>
+                            <pre class="command text-green-400">curl -fsSL https://cex-c.org/install.sh | bash</pre>
+                            <p class="text-gray-400 mb-1"># or</p>
+                            <pre class="command text-green-400">wget https://cex-c.org/install.sh -O - | bash</pre>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -367,20 +373,24 @@
                     </div>
                     <div class="terminal-content space-y-4">
                         <div>
-                            <p class="text-gray-400 mb-1"># 1. Download the latest release</p>
-                            <pre class="command text-green-400">wget https://github.com/cexlang/nexus/releases/latest/download/nexus-linux-x86_64.tar.gz</pre>
+                            <p class="text-gray-400 mb-1"># 1. Make new project directory</p>
+                            <pre class="command text-green-400">mkdir myproj && cd myproj</pre>
                         </div>
                         <div>
-                            <p class="text-gray-400 mb-1"># 2. Extract the archive</p>
-                            <pre class="command text-green-400">tar -xzf cex-linux-x86_64.tar.gz</pre>
+                            <p class="text-gray-400 mb-1"># 2. Download CEX</p>
+                            <pre class="command text-green-400">curl -O https://cex-c.org/cex.h</pre>
+                            <p class="text-gray-400 mb-1"># or</p>
+                            <pre class="command text-green-400">wget https://cex-c.org/cex.h</pre>
                         </div>
                         <div>
-                            <p class="text-gray-400 mb-1"># 3. Move to bin directory</p>
-                            <pre class="command text-green-400">sudo mv cex /usr/local/bin/</pre>
+                            <p class="text-gray-400 mb-1"># 3. Prime build system</p>
+                            <pre class="command text-green-400">gcc -D CEX_NEW -x c ./cex.h -o cex</pre>
+                            <p class="text-gray-400 mb-1"># or</p>
+                            <pre class="command text-green-400">clang -D CEX_NEW -x c ./cex.h -o cex</pre>
                         </div>
                         <div>
-                            <p class="text-gray-400 mb-1"># 4. Verify installation</p>
-                            <pre class="command text-green-400">cex --version</pre>
+                            <p class="text-gray-400 mb-1"># 4. Create boilerplate project</p>
+                            <pre class="command text-green-400">./cex</pre>
                         </div>
                     </div>
                 </div>
