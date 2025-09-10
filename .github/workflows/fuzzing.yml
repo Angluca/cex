@@ -48,6 +48,7 @@ jobs:
           ./cex fuzz run all
 
       - uses: actions/upload-artifact@master # capture all binaries
+        if: failure()
         with:
           name: ${{ github.job }}_fuzz_${{ matrix.compiler }}-${{ matrix.cex_preset }}
           path: fuzz/
