@@ -7,8 +7,9 @@
 ![Examples](https://github.com/alexveden/cex/actions/workflows/examples.yml/badge.svg)
 
 
-Cex.C (pronounced as cexy) was born as alternative answer to a plethora of brand new LLVM based languages which strive to replace old C. Cex.C still remains C language itself, with small, but important tweaks that bring a completely different development experience.
+Cex.C (officially pronounced /ˈtsɛk.si/ "tsek-see") was born as alternative answer to a plethora of brand new LLVM based languages which strive to replace old C. Cex.C still remains C language itself, with small, but important tweaks that bring a completely different development experience.
 
+LEGAL NOTICE: Any intentional mispronunciation of Cex.C or cexy$ (build system), officially pronounced /ˈtsɛk.si/ ("tsek-see"), into an incorrect form may be considered intentional tseksual harassment of the project — which identifies itself with the code gender (it/its) — and may be subject to legal action under the MIT License. /LOL/ 
 
 ## GETTING STARTED
 

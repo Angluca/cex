@@ -32,7 +32,7 @@ format:
 
 ## Getting started with CEX.C
 ### What is CEX
-Cex.C (pronounced as cexy) is Comprehensively EXtended C Language . CEX was born as alternative answer to a plethora of brand new LLVM based languages which strive to replace old C. CEX still remains C language itself, with small but important tweaks that makes CEX a completely different development experience.
+Cex.C (officially pronounced /ˈtsɛk.si/ "tsek-see") is Comprehensively EXtended C Language . CEX was born as alternative answer to a plethora of brand new LLVM based languages which strive to replace old C. CEX still remains C language itself, with small but important tweaks that makes CEX a completely different development experience.
 
 I tried to bring best ideas from the modern languages while maintaining smooth developer experience for writing C code. The main goal of CEX is to provide tools for developers and helping them writing high quality C code in general.
 
