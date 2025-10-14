@@ -256,7 +256,12 @@ AllocatorArena.destroy(arena);
 #    define _mem$asan_poison_check_mark(addr, len) (1)
 #endif
 
-#if !CEX_DISABLE_POISON
+// NOTE: mem poisoning for arenas breaking WASM memory integrity cookies, and segfaults
+#if CEX_DISABLE_POISON
+#    define mem$asan_poison(addr, len)
+#    define mem$asan_unpoison(addr, len)
+#    define mem$asan_poison_check(addr, len) (1)
+#else
 void __asan_poison_memory_region(void const volatile* addr, size_t size);
 void __asan_unpoison_memory_region(void const volatile* addr, size_t size);
 void* __asan_region_is_poisoned(void* beg, size_t size);
@@ -312,8 +317,4 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
 
 #    endif // #if defined(__SANITIZE_ADDRESS__)
 
-#else // #if !CEX_DISABLE_POISON
-#    define mem$asan_poison(addr, len)
-#    define mem$asan_unpoison(addr, len)
-#    define mem$asan_poison_check(addr, len) (1)
-#endif // #if !CEX_DISABLE_POISON
+#endif // #if CEX_DISABLE_POISON

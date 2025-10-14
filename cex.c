@@ -123,11 +123,28 @@ cex_bundle(void)
         arr$(char*) src = os.fs.find("src/*.[hc]", false, _);
         if (!cexy.src_changed("cex.h", src, arr$len(src))) { return; }
         char* bundle[] = {
-            "src/cex_base.h",  "src/mem.h",       "src/AllocatorHeap.h", "src/AllocatorArena.h",
-            "src/ds.h",        "src/_sprintf.h",  "src/str.h",           "src/sbuf.h",
-            "src/io.h",        "src/argparse.h",  "src/_subprocess.h",   "src/os.h",
-            "src/test.h",      "src/test.c",      "src/cex_code_gen.h",  "src/cexy.h",
-            "src/CexParser.h", "src/cex_maker.h", "src/fuzz.h",          "src/cex_footer.h"
+
+            "src/cex_base.h",
+            "src/cex_platform.h",
+            "src/mem.h",
+            "src/AllocatorHeap.h",
+            "src/AllocatorArena.h",
+            "src/ds.h",
+            "src/_sprintf.h",
+            "src/str.h",
+            "src/sbuf.h",
+            "src/io.h",
+            "src/argparse.h",
+            "src/_subprocess.h",
+            "src/os.h",
+            "src/test.h",
+            "src/test.c",
+            "src/cex_code_gen.h",
+            "src/cexy.h",
+            "src/CexParser.h",
+            "src/cex_maker.h",
+            "src/fuzz.h",
+            "src/cex_footer.h"
 
         };
         log$debug("Bundling cex.h: [%s]\n", str.join(bundle, arr$len(bundle), ", ", _));
@@ -258,15 +275,7 @@ cmd_build_docs(int argc, char** argv, void* user_ctx)
     e$assert(!os.path.exists("_include/") && "should not exist, remove if it's quarto remainder");
 
     e$ret(os.fs.chdir("docs/"));
-    e$ret(os$cmd(
-        "quarto",
-        "render",
-        "README.md",
-        "--to",
-        "html",
-        "-o",
-        "docs.html"
-    ));
+    e$ret(os$cmd("quarto", "render", "README.md", "--to", "html", "-o", "docs.html"));
     e$ret(os.fs.chdir(".."));
 
     if (os.path.exists("_include")) {

@@ -7,7 +7,7 @@ test$case(test_poison_by_cex)
 
     for$each (v, buf) { tassert(v == 0); }
 
-#ifndef NDEBUG
+#if !defined(NDEBUG)
     // Poisoning only working when NDEBUG is not set
     mem$asan_poison(buf, arr$len(buf));
     for$each (v, buf) { tassert(v == 0xf7); }

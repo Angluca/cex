@@ -136,9 +136,8 @@ test$case(test_allocator_heap_malloc_random_align)
 
         for$each (v, a, size) { tassert(v == 0xf7); }
 
-        memset(a, 'Z', size);
+        memset(a, 0xaf, size);
 
-        // printf("size: %ld align: %ld p: %p\n", size, al, a);
         mem$free(mem$, a);
     }
 

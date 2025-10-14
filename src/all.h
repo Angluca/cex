@@ -6,6 +6,7 @@
 #pragma once
 #include "src/cex_header.h"
 #include "src/cex_base.h"
+#include "src/cex_platform.h"
 #include "src/mem.h"
 #include "src/AllocatorHeap.h"
 #include "src/AllocatorArena.h"

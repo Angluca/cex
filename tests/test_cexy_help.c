@@ -17,6 +17,8 @@ test$teardown_case()
     return EOK;
 }
 
+#if !defined(__EMSCRIPTEN__)
+
 test$case(test_namespace_entities)
 {
 #define $file "src/str"
@@ -66,5 +68,12 @@ test$case(test_namespace_entities)
 #undef $file
     return EOK;
 }
+
+#else
+test$case(not_supported_by_platform)
+{
+    return EOK;
+}
+#endif  // #if !defined(__EMSCRIPTEN__)
 
 test$main();

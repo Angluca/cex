@@ -149,7 +149,7 @@ _cex_allocator_arena__request_page_size(
             return NULL;
         }
         allocator_arena_page_s*
-            page = mem$->calloc(mem$, 1, page_size, alignof(allocator_arena_page_s));
+            page = mem$calloc(mem$, 1, page_size, alignof(allocator_arena_page_s));
         if (page == NULL) {
             return NULL; // memory error
         }
@@ -419,7 +419,7 @@ _cex_allocator_arena__scope_depth(IAllocator allc)
     return self->scope_depth;
 }
 
-const Allocator_i*
+IAllocator
 AllocatorArena_create(usize page_size)
 {
     if (page_size < 1024 || page_size >= UINT32_MAX) {

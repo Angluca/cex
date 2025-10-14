@@ -9,6 +9,7 @@ Copyright (c) 2017 Sean Barrett
 */
 #include "_sprintf.h"
 #include "all.h"
+#include <assert.h> // NOTE: using LibC asserts here to avoid infinite callback stack overflow
 #include <ctype.h>
 
 
@@ -78,11 +79,6 @@ cexsp__lead_sign(u32 fl, char* sign)
 static u32
 cexsp__format_s_check_va_item_string_len(char const* s, u32 limit)
 {
-    uassertf((usize)s > UINT16_MAX, "%%s va_arg pointer looks too low, wrong va type? s:%p\n", s);
-#if UINTPTR_MAX > 0xFFFFFFFFU
-    // Only for 64-bit
-    uassertf((isize)s > 0, "%%s va_arg pointer looks too high/negative, wrong va type? s: %p\n", s);
-#endif
     char const* sn = s;
     while (limit && *sn) { // WARNING: if getting segfault here, typically %s format messes with int
         ++sn;
@@ -297,13 +293,15 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
             case 's':
                 // get the string
                 s = va_arg(va, char*);
-                if ((void*)s <= (void*)(UINT16_MAX)) {
+                if (unlikely((void*)s <= (void*)(UINT16_MAX))) {
                     if (s == 0) {
                         s = "(null)";
                     } else {
+#if !defined(__EMSCRIPTEN__)
                         // NOTE: cex is str_s passed as %s, s will be length
-                        // try to double check sensible value of pointer
+                        // try to double check sensible value of pointer (only on OS-like platforms)
                         s = "(%s-bad)";
+#endif
                     }
                 }
 #if defined(CEX_TEST) && defined(_WIN32)
@@ -1150,7 +1148,7 @@ cexsp__vsnprintf(char* buf, int count, char const* fmt, va_list va)
             l = count - 1;
         }
         buf[l] = 0;
-        uassert(c.length <= INT32_MAX && "length overflow");
+        assert(c.length <= INT32_MAX);
     }
 
     return c.length;
@@ -1186,7 +1184,7 @@ cexsp__vfprintf(FILE* stream, const char* format, va_list va)
     cexsp__context c = { .file = stream, .length = 0 };
 
     cexsp__vsprintfcb(cexsp__fprintf_callback, &c, cexsp__fprintf_callback(0, &c, 0), format, va);
-    uassert(c.length <= INT32_MAX && "length overflow");
+    assert(c.length <= INT32_MAX);
 
     return c.has_error == 0 ? (i32)c.length : -1;
 }

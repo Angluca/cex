@@ -45,6 +45,30 @@
             "--error-exitcode=1", "--track-fds=yes", "--track-origins=yes"
 #endif
 
+#ifdef CEX_WASM_DEBUG
+#    define cexy$build_dir "./build/wasm"
+
+#    define cexy$cc_args                                                                           \
+        "-O0", "-Wall", "-Wextra", "-Werror", "-g", "-gsource-map", "-fsanitize=address",          \
+            "-sASSERTIONS", "-sINITIAL_MEMORY=1073741824", "--embed-file=tests",                   \
+            "--embed-file=src"
+#    define cexy$cc "emcc"
+#    define cexy$debug_cmd "node", "--stack-trace-limit=500"
+#    define cexy$build_ext_exe ".js"
+#endif
+
+#ifdef CEX_WASM_RELEASE
+#    define cexy$build_dir "./build/wasm"
+
+#    define cexy$cc_args                                                                           \
+        "-O3", "-Wall", "-Wextra", "-sINITIAL_MEMORY=1073741824", "--embed-file=tests",            \
+         "--embed-file=src", "-sASSERTIONS=2", "-sSAFE_HEAP=2", \
+            "-sSTACK_OVERFLOW_CHECK=2", "-sMALLOC=emmalloc-debug"
+#    define cexy$cc "emcc"
+#    define cexy$debug_cmd "node"
+#    define cexy$build_ext_exe ".js"
+#endif
+
 #ifdef CEX_WINE
 #    define cexy$cc "x86_64-w64-mingw32-gcc"
 #    define cexy$cc_args_sanitizer "-g3"

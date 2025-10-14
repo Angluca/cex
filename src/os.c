@@ -1226,10 +1226,14 @@ cex_os__platform__current(void)
     return OSPlatform__openbsd;
 #    elif defined(__ANDROID__)
     return OSPlatform__android;
+#    elif defined(__EMSCRIPTEN__)
+    return OSPlatform__wasm;
 #    else
 #        error "Untested platform. Need more?"
 #    endif
 #elif defined(__wasm__)
+    return OSPlatform__wasm;
+#elif defined(__EMSCRIPTEN__)
     return OSPlatform__wasm;
 #else
 #    error "Untested platform. Need more?"

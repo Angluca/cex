@@ -14,6 +14,7 @@ test$teardown_case()
     return EOK;
 }
 
+#if !defined(__EMSCRIPTEN__)
 char*
 test_app(char* app_name, IAllocator allc)
 {
@@ -451,5 +452,12 @@ test$case(os_cmd_env_inheritance_cmd_run_not_found)
     }
     return EOK;
 }
+
+#else
+test$case(os_cmd_not_supported_by_platform)
+{
+    return EOK;
+}
+#endif  // #if !defined(__EMSCRIPTEN__)
 
 test$main();

@@ -60,8 +60,8 @@ test$case(test_os_dir_walk_print)
         log$debug("Walking: %s\n", path);
         tassert_er(EOK, os.fs.dir_walk(path, true, test_dir_walk, &ncalls));
 
-        if (os.platform.current() == OSPlatform__win) {
-            tassert_ge(ncalls, 8); // windows walks symlinks (no such thing as symlink!)
+        if (os.platform.current() == OSPlatform__wasm) {
+            tassert_ge(ncalls, 7); // emscripten doesn't walk symlink dirs
         } else {
             tassert_eq(8, ncalls);
         }
@@ -69,8 +69,8 @@ test$case(test_os_dir_walk_print)
         // non-recursive
         ncalls = 0;
         tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", false, test_dir_walk, &ncalls));
-        if (os.platform.current() == OSPlatform__win) {
-            tassert_ge(ncalls, 5);
+        if (os.platform.current() == OSPlatform__wasm) {
+            tassert_ge(ncalls, 4);
         } else {
             tassert_eq(5, ncalls);
         }
@@ -91,8 +91,8 @@ test$case(test_os_find)
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
         hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
         hm$set(exp_files, p("tests/data/dir1/file3.txt", _), true);
-        if (os.platform.current() == OSPlatform__win) {
-            // Windows doesn't support symlinks
+        if (os.platform.current() == OSPlatform__win || os.platform.current() == OSPlatform__wasm) {
+            // Windows/WASM doesn't support symlinks - treat them as files
             hm$set(exp_files, p("tests/data/dir1/file1_symlink.csv", _), true);
         }
 
@@ -116,7 +116,7 @@ test$case(test_os_find_inside_foreach)
         hm$(char*, bool) exp_files = hm$new(exp_files, _);
         hm$set(exp_files, p("tests/data/dir1/file1.csv", _), true);
         hm$set(exp_files, p("tests/data/dir1/file3.txt", _), true);
-        if (os.platform.current() == OSPlatform__win) {
+        if (os.platform.current() == OSPlatform__win || os.platform.current() == OSPlatform__wasm) {
             // Windows doesn't support symlinks
             hm$set(exp_files, p("tests/data/dir1/file1_symlink.csv", _), true);
         }
@@ -286,6 +286,8 @@ test$case(test_os_find_recursive)
             // hm$set(exp_files, p("tests/data/dir1/dir2_symlink/dir3", _), true);
             hm$set(exp_files, p("tests/data/dir1/dir2_symlink/file2.csv", _), true);
             hm$set(exp_files, p("tests/data/dir1/file1_symlink.csv", _), true);
+        } else if (os.platform.current() == OSPlatform__wasm) {
+            hm$set(exp_files, p("tests/data/dir1/file1_symlink.csv", _), true);
         }
 
         u32 nit = 0;
@@ -330,7 +332,11 @@ test$case(test_os_getcwd)
     {
         auto p = os.fs.getcwd(_);
         tassert(p != NULL);
-        tassert_eq(true, str.ends_with(p, "cex"));
+        if (os.platform.current() == OSPlatform__wasm) {
+            tassert_eq(true, str.ends_with(p, "/"));
+        } else {
+            tassert_eq(true, str.ends_with(p, "cex"));
+        }
 
         tassert_er(EOK, os.fs.chdir("tests"));
         p = os.fs.getcwd(_);
@@ -338,7 +344,11 @@ test$case(test_os_getcwd)
         tassert_er(EOK, os.fs.chdir(".."));
 
         p = os.fs.getcwd(_);
-        tassert_eq(true, str.ends_with(p, "cex"));
+        if (os.platform.current() == OSPlatform__wasm) {
+            tassert_eq(true, str.ends_with(p, "/"));
+        } else {
+            tassert_eq(true, str.ends_with(p, "cex"));
+        }
     }
 
     return EOK;
@@ -457,13 +467,18 @@ test$case(test_os_mkdir)
     tassert_eq(0, os.path.exists(TBUILDDIR "mytestdir"));
 
     ftype = os.fs.stat("tests/data/dir1/dir2_symlink");
-    tassert_eq(ftype.is_valid, 1);
-    tassert_eq(ftype.is_directory, 1);
-    tassert_eq(ftype.is_file, 0);
-    tassert_eq(ftype.is_symlink, (os.platform.current() == OSPlatform__win) ? 0 : 1);
-    tassert_eq(ftype.is_other, 0);
-    tassert_eq(ftype.is_other, 0);
-    tassert_ne(ftype.mtime, 0);
+    if (os.platform.current() == OSPlatform__wasm) {
+        tassert_eq(ftype.is_valid, 0);
+        tassert_eq(0, os.path.exists("tests/data/dir1/dir2_symlink"));
+    } else {
+        tassert_eq(ftype.is_valid, 1);
+        tassert_eq(ftype.is_directory, 1);
+        tassert_eq(ftype.is_file, 0);
+        tassert_eq(ftype.is_symlink, (os.platform.current() == OSPlatform__win) ? 0 : 1);
+        tassert_eq(ftype.is_other, 0);
+        tassert_eq(ftype.is_other, 0);
+        tassert_ne(ftype.mtime, 0);
+    }
 
     return EOK;
 }
@@ -793,17 +808,19 @@ test$case(test_os_path_abs)
     {
         auto p = os.fs.getcwd(_);
         tassert(p != NULL);
-        tassert_eq(true, str.ends_with(p, "cex"));
+        if (os.platform.current() == OSPlatform__wasm) {
+            tassert_eq(p, "/");
+        } else {
+            tassert_eq(true, str.ends_with(p, "cex"));
+        }
 
         auto abs_cwd = os.path.abs(".", _);
         tassert(abs_cwd != NULL);
         tassert(str.starts_with(abs_cwd, p));
-        tassert_eq(true, str.ends_with(abs_cwd, "cex"));
 
         abs_cwd = os.path.abs("tests/..", _);
         tassert(abs_cwd != NULL);
         tassert(str.starts_with(abs_cwd, p));
-        tassert_eq(true, str.ends_with(abs_cwd, "cex"));
         tassert(os.path.exists(abs_cwd));
 
         if (os.platform.current() == OSPlatform__win) {

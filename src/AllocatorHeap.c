@@ -5,7 +5,7 @@ static void* _cex_allocator_heap__malloc(IAllocator self,usize size, usize align
 static void* _cex_allocator_heap__calloc(IAllocator self,usize nmemb, usize size, usize alignment);
 static void* _cex_allocator_heap__realloc(IAllocator self,void* ptr, usize size, usize alignment);
 static void* _cex_allocator_heap__free(IAllocator self,void* ptr);
-static const struct Allocator_i*  _cex_allocator_heap__scope_enter(IAllocator self);
+static IAllocator  _cex_allocator_heap__scope_enter(IAllocator self);
 static void _cex_allocator_heap__scope_exit(IAllocator self);
 static u32 _cex_allocator_heap__scope_depth(IAllocator self);
 
@@ -91,6 +91,7 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
 
     if (alignment < 8) {
         static_assert(alignof(void*) <= 8, "unexpected ptr alignment");
+        // We don't need to reserve extra room for base alignment
         alignment = 8;
     } else {
         uassert(mem$is_power_of2(alignment) && "must be pow2");
@@ -99,7 +100,11 @@ _cex_allocator_heap__hdr_make(usize alloc_size, usize alignment)
             uassert(alloc_size % alignment == 0 && "requested size is not aligned");
             return 0;
         }
+        // Adding extra alignment chunk because system malloc() may return misaligned pointer
+        //   and we will need to offset it in order to return truly aligned address 
+        size += alignment;
     }
+    // room for header
     size += sizeof(u64);
 
     // extra area for poisoning
@@ -118,7 +123,7 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
     (void)a;
 
     u64 hdr = _cex_allocator_heap__hdr_make(size, alignment);
-    if (hdr == 0) { return NULL; }
+    if (unlikely(hdr == 0)) { return NULL; }
 
     usize full_size = _cex_allocator_heap__hdr_get_size(hdr);
     alignment = _cex_allocator_heap__hdr_get_alignment(hdr);
@@ -128,9 +133,9 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
     // ^---malloc()
     u8* raw_result = NULL;
     if (fill_val != 0) {
-        raw_result = malloc(full_size);
+        raw_result = cex$platform_malloc(full_size);
     } else {
-        raw_result = calloc(1, full_size);
+        raw_result = cex$platform_calloc(1, full_size);
     }
     u8* result = raw_result;
 
@@ -148,6 +153,8 @@ _cex_allocator_heap__alloc(IAllocator self, u8 fill_val, usize size, usize align
         uassert(ptr_offset >= sizeof(u64) * 2);
         uassert(ptr_offset <= 64 + 16);
         uassert(ptr_offset <= alignment + sizeof(u64) * 2);
+        uassert(result + size <= raw_result + full_size);
+
         // poison area after header and before allocated pointer
         mem$asan_poison(result - sizeof(u64), sizeof(u64));
         ((u64*)result)[-2] = _cex_allocator_heap__hdr_set(size, ptr_offset, alignment);
@@ -226,16 +233,16 @@ _cex_allocator_heap__realloc(IAllocator self, void* ptr, usize size, usize align
 
     if (alignment <= _Alignof(max_align_t)) {
         uassert(new_full_size > size);
-        raw_result = realloc(p - old_offset, new_full_size);
+        raw_result = cex$platform_realloc(p - old_offset, new_full_size);
         if (unlikely(raw_result == NULL)) { goto fail; }
         result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
     } else {
         // fallback to malloc + memcpy because realloc doesn't guarantee alignment
-        raw_result = malloc(new_full_size);
+        raw_result = cex$platform_malloc(new_full_size);
         if (unlikely(raw_result == NULL)) { goto fail; }
         result = mem$aligned_pointer(raw_result + sizeof(u64) * 2, old_alignment);
         memcpy(result, ptr, size > old_size ? old_size : size);
-        free(ptr - old_offset);
+        cex$platform_free(ptr - old_offset);
     }
     uassert(mem$aligned_pointer(result, 8) == result);
     uassert(mem$aligned_pointer(result, old_alignment) == result);
@@ -281,13 +288,13 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
             "corrupted pointer or unallocated by mem$"
         );
         u64 hdr = *(u64*)(p - sizeof(u64) * 2);
-        uassert(hdr > 0 && "bad poitner or corrupted malloced header?");
+        uassert(hdr > 0 && "bad pointner or corrupted malloced header?");
         u8 offset = _cex_allocator_heap__hdr_get_offset(hdr);
         u8 alignment = _cex_allocator_heap__hdr_get_alignment(hdr);
         uassert(alignment >= 8 && "corrupted header?");
         uassert(alignment <= 64 && "corrupted header?");
         uassert(offset >= 16 && "corrupted header?");
-        uassert(offset <= 64 && "corrupted header?");
+        uassert(offset <= 64+16 && "corrupted header?");
 
 #ifdef CEX_TEST
         a->stats.n_free++;
@@ -301,7 +308,7 @@ _cex_allocator_heap__free(IAllocator self, void* ptr)
         }
 #endif
 
-        free(p - offset);
+        cex$platform_free(p - offset);
     }
     return NULL;
 }

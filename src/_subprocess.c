@@ -348,6 +348,13 @@ int subprocess_create_ex(const char *const commandLine[], int options,
   out_process->alive = 1;
 
   return 0;
+#    elif defined(__EMSCRIPTEN__)
+  (void)commandLine;
+  (void)environment;
+  (void)out_process;
+  (void)options;
+  uassert(false && "This functionality is not supported by WASM" );
+  return -1;
 #else
   int stdinfd[2];
   int stdoutfd[2];

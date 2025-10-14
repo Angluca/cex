@@ -15,6 +15,7 @@ test$teardown_case()
     return EOK;
 }
 
+#if !defined(__EMSCRIPTEN__)
 test$case(test_make_new_project)
 {
     tassert_er(EOK, cexy.utils.make_new_project(TBUILDDIR));
@@ -26,5 +27,12 @@ test$case(test_make_new_project)
 
     return EOK;
 }
+
+#else
+test$case(not_supported_by_platform)
+{
+    return EOK;
+}
+#endif  // #if !defined(__EMSCRIPTEN__)
 
 test$main();

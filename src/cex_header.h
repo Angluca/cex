@@ -106,6 +106,6 @@ Use `cex -D config` to reset all project config flags to defaults
 #endif
 
 #define cex$version_major 0
-#define cex$version_minor 16
+#define cex$version_minor 17
 #define cex$version_patch 0
 #define cex$version_date "{date}"

@@ -18,6 +18,8 @@ test$teardown_case()
     return EOK;
 }
 
+#if !defined(__EMSCRIPTEN__)
+
 test$case(test_target_make)
 {
     mem$scope(tmem$, _)
@@ -536,5 +538,12 @@ test$case(test_git_lib_fetch_update)
     }
     return EOK;
 }
+
+#else
+test$case(not_supported_by_platform)
+{
+    return EOK;
+}
+#endif  // #if !defined(__EMSCRIPTEN__)
 
 test$main();

@@ -71,8 +71,11 @@ test$case(os_platform_current)
     tassert_ne(os.platform.current(), OSArch__unknown);
     tassert_ne(os.platform.current_str(), NULL);
     tassert_eq(os.platform.current_str(), os.platform.to_str(os.platform.current()));
-#ifdef _WIN32
+
+#if defined(_WIN32)
     tassert_eq(os.platform.current(), OSPlatform__win);
+#elif defined(__EMPSTRIPTEN__)
+    tassert_eq(os.platform.current(), OSPlatform__wasm);
 #endif
 
     return EOK;

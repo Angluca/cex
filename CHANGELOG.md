@@ -1,5 +1,15 @@
 # CEX Release Notes
 
+## 0.17.0
+2025-10-14
+
+
+### Changes / improvements
+- Added WASM support via emscripten compiler 
+
+### Fixes
+- Fixed memory alignment for HeapAllocator bug when system malloc() returns non 16-byte aligned ptr
+
 ## 0.16.0
 2025-09-09
 
