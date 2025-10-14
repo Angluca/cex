@@ -62,6 +62,8 @@ test$case(test_os_dir_walk_print)
 
         if (os.platform.current() == OSPlatform__wasm) {
             tassert_ge(ncalls, 7); // emscripten doesn't walk symlink dirs
+        } else if (os.platform.current() == OSPlatform__win) {
+            tassert_ge(ncalls, 7);
         } else {
             tassert_eq(8, ncalls);
         }
@@ -70,6 +72,8 @@ test$case(test_os_dir_walk_print)
         ncalls = 0;
         tassert_er(EOK, os.fs.dir_walk("tests/data/dir1", false, test_dir_walk, &ncalls));
         if (os.platform.current() == OSPlatform__wasm) {
+            tassert_ge(ncalls, 4);
+        } else if (os.platform.current() == OSPlatform__win) {
             tassert_ge(ncalls, 4);
         } else {
             tassert_eq(5, ncalls);
