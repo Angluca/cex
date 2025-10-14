@@ -250,12 +250,14 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 * Clang - 13, 14, 15, 16, 17, 18, 19, 20
 * MSVC - unsupported, probably never will
 * LibC tested - glibc (linux), musl (linux), ucrt/mingw (windows), macos
+- Emscripten - for wasm
 
 #### Tested platforms / architectures
 * Linux - x32 / x64 (glibc, gcc + clang),
 * Alpine linux - (libc musl, gcc) on architectures x86_64, x86, aarch64, armhf, armv7, loongarch64, ppc64le, riscv64, and s390x (big-endian)
 * Windows (via MSYS2 build) - x64 (mingw64 + clang), libc mscrt/ucrt
 * Macos - x64 / arm64 (clang)
+- WASM - emscripten compiler 
 
 ### Resources
 * [GitHub Repo](https://github.com/alexveden/cex)

@@ -172,12 +172,14 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 - Clang - 13, 14, 15, 16, 17, 18, 19, 20
 - MSVC - unsupported, probably never will
 - LibC tested - glibc (linux), musl (linux), ucrt/mingw (windows), macos
+- Emscripten - for wasm
 
 ### Tested platforms / architectures
 - Linux - x32 / x64 (glibc, gcc + clang), 
 - Alpine linux - (libc musl, gcc) on architectures x86_64, x86, aarch64, armhf, armv7, loongarch64, ppc64le, riscv64, and s390x (big-endian) 
 - Windows (via MSYS2 build) - x64 (mingw64 + clang), libc mscrt/ucrt
 - Macos - x64 / arm64 (clang)
+- WASM - emscripten compiler 
 
 ### Test suite
 CEX is tested on various platforms, compiler versions, sanitizers, and optimization flags, ensuring future compatibility and stability. Sanitizers and Valgrind verify the absence of memory leaks, buffer overflows, and undefined behavior. Additionally, tests with release flags confirm that compiler optimizations do not interfere with the code logic.
@@ -202,6 +204,7 @@ CEX is tested on various platforms, compiler versions, sanitizers, and optimizat
 | MacOS 13 x64 |  |  ✅ | ✅ |✅ |✅ |
 | MacOS 14 arm64 |  |  ✅ | ✅ |✅ |✅ |
 | MacOS 15 arm64 | |  ✅ | ✅ |✅ |✅ |
+| WASM | |  ✅ | ✅ |✅ |✅ |
 
 
 ## Examples
@@ -223,6 +226,7 @@ CEX contains some code and ideas from the following projects, all of them licens
 5. [subprocess.h](https://github.com/sheredom/subprocess.h) - by Neil Henning, public domain, used in CEX as a daily driver for `os$cmd` and process communication
 6. [utest.h](https://github.com/sheredom/utest.h) - by Neil Henning, public domain, CEX test$ runner borrowed some ideas of macro magic for making declarative test cases
 7. [c3-lang](https://github.com/c3lang/c3c) - I borrowed some ideas about language features from C3, especially `mem$scope`, `mem$`/`tmem$` global allocators, scoped macros too.
+8. [argparse](https://github.com/cofyc/argparse) - initial CEX `argparse` implementation was a port from this project, both projects have similar approach for argument parsing.
 
 
 ## License
