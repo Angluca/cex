@@ -373,7 +373,7 @@ jobs:
           force_orphan: true
 
 
-wasm-enscripten:
+  wasm-enscripten:
     runs-on: ubuntu-latest
 
     strategy:
