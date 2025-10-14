@@ -179,7 +179,7 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 - Alpine linux - (libc musl, gcc) on architectures x86_64, x86, aarch64, armhf, armv7, loongarch64, ppc64le, riscv64, and s390x (big-endian) 
 - Windows (via MSYS2 build) - x64 (mingw64 + clang), libc mscrt/ucrt
 - Macos - x64 / arm64 (clang)
-- WASM - emscripten compiler 
+- WASM - emscripten compiler ( due to platform limitations, `os.cmd.` related features are not available )
 
 ### Test suite
 CEX is tested on various platforms, compiler versions, sanitizers, and optimization flags, ensuring future compatibility and stability. Sanitizers and Valgrind verify the absence of memory leaks, buffer overflows, and undefined behavior. Additionally, tests with release flags confirm that compiler optimizations do not interfere with the code logic.
