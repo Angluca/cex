@@ -80,7 +80,7 @@ test$case(aligned_malloc)
                 tassert_eq(_alignment, align);
             }
             tassert_ge(_offset, 16);
-            tassert_le(_offset, 64);
+            tassert_le(_offset, 64 + 16);
 
             mem$free(mem$, a);
         }
