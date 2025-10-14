@@ -413,4 +413,5 @@ jobs:
 
       - name: cex wasm test suite
         run: |
+          source ./emsdk/emsdk_env.sh
           ./cex test debug all
