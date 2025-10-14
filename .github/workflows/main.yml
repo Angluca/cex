@@ -371,3 +371,46 @@ jobs:
           publish_dir: ./public
           # Forcefully orphan the gh-pages branch to avoid history conflicts
           force_orphan: true
+
+
+wasm-enscripten:
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Don't abort runners if a single one fails
+      fail-fast: false
+
+      matrix:
+        cex_preset: ["CEX_WASM_DEBUG", "CEX_WASM_RELEASE"]
+
+    steps:
+      - name: Checkout cex
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/env_setup
+        name: Setup env
+
+      - name: cc setup
+        run: |
+          echo "cc --version"
+          cc --version
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+
+      - name: cex initial build
+        run: |
+          source ./emsdk/emsdk_env.sh
+          echo "EMCC / Node.js version"
+          emcc --version
+          node --version
+          ulimit -c unlimited 
+          ls -la
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex 
+          ./cex -D${{ matrix.cex_preset }} config
+
+      - name: cex wasm test suite
+        run: |
+          ./cex test debug all
