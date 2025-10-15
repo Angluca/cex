@@ -173,6 +173,7 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 - MSVC - unsupported, probably never will
 - LibC tested - glibc (linux), musl (linux), ucrt/mingw (windows), macos
 - Emscripten - for wasm
+- Freestanding/embedded - CEX supports optional feature disabling for constrained environments, even without LIBC (see [example](https://github.com/alexveden/cex/tree/master/examples/freestanding))
 
 ### Tested platforms / architectures
 - Linux - x32 / x64 (glibc, gcc + clang), 
@@ -213,6 +214,7 @@ CEX is tested on various platforms, compiler versions, sanitizers, and optimizat
 * [Building with system libraries](https://github.com/alexveden/cex/tree/master/examples/libs_sys)
 * [Building with vcpkg local repo](https://github.com/alexveden/cex/tree/master/examples/libs_vcpkg)
 * [Pre-built CEX for faster build times](https://github.com/alexveden/cex/tree/master/examples/cex_compiled_hdr)
+* [Freestanding / embedded concept](https://github.com/alexveden/cex/tree/master/examples/freestanding)
 
 
 ## Credits

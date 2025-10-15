@@ -1,11 +1,14 @@
 # CEX Release Notes
 
 ## 0.17.0
-2025-10-14
+2025-10-15
 
 
 ### Changes / improvements
 - Added WASM support via emscripten compiler 
+* Added - `#define cex$enable_minimal` allowing to use only bare minimum on CEX functionality, and selectively re-enable some of the parts. This opens opportunities for CEX embedded portability: [freestanding example](https://github.com/alexveden/cex/tree/master/examples/freestanding).
+- Removed: (breaking) `io.fileno` - removed, it's non-standard and platform specific function
+- Added `cex$is_freestanding` macro
 
 ### Fixes
 - Fixed memory alignment for HeapAllocator bug when system malloc() returns non 16-byte aligned ptr
