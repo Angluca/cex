@@ -540,12 +540,21 @@ int __cex_test_uassert_enabled = 1;
 #    define breakpoint()
 #endif
 
-// cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
+/// Concatenate textually c##a##b
 #define cex$concat3(c, a, b) c##a##b
+
+/// Concatenate textually a##b
 #define cex$concat(a, b) a##b
+
 #define _cex$stringize(...) #__VA_ARGS__
+
+/// Produces a literal string of any text inside the (...)
 #define cex$stringize(...) _cex$stringize(__VA_ARGS__)
+
+/// makes a new variable with __cex__ prefix 
 #define cex$varname(a, b) cex$concat3(__cex__, a, b)
+
+/// cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
 #define cex$tmpname(base) cex$varname(base, __LINE__)
 
 /// raises an error, code: `return e$raise(Error.integrity, "ooops: %d", i);`
@@ -618,6 +627,7 @@ int __cex_test_uassert_enabled = 1;
 
 #if defined(__STDC_HOSTED__)
     #if __STDC_HOSTED__ == 0
+/// Set to 1 if current platform is freestanding (no OS, or libc)
         #define cex$is_freestanding 1
     #else
         #define cex$is_freestanding 0

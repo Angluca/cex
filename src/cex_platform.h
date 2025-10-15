@@ -1,21 +1,27 @@
 
+
 #ifndef cex$platform_malloc
+///  Macro for redefining default platform malloc()
 #    define cex$platform_malloc malloc
 #endif
 
 #ifndef cex$platform_calloc
+///  Macro for redefining default platform calloc()
 #    define cex$platform_calloc calloc
 #endif
 
 #ifndef cex$platform_free
+///  Macro for redefining default platform free()
 #    define cex$platform_free free
 #endif
 
 #ifndef cex$platform_realloc
+///  Macro for redefining default platform realloc()
 #    define cex$platform_realloc realloc
 #endif
 
 #ifndef cex$platform_panic
+///  Macro for redefining panic function (used in assertions, and other CEX stuff)
 #    define cex$platform_panic __cex__panic
 #    define _cex$platform_panic_builtin
 __attribute__((noinline)) void __cex__panic(void);
