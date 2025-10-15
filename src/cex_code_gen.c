@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal)
+
 #include "cex_code_gen.h"
 #include "all.h"
 
@@ -86,3 +88,5 @@ _cex__codegen_print_case_exit(_cex__codegen_s** cgptr)
 }
 
 #    undef cg$printva
+
+#endif

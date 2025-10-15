@@ -4,27 +4,8 @@
  */
 
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_str)
 #include "all.h"
-
-/// Represents char* slice (string view) + may not be null-term at len!
-typedef struct
-{
-    usize len;
-    char* buf;
-} str_s;
-
-static_assert(alignof(str_s) == alignof(usize), "align");
-static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
-
-
-/**
- * @brief creates str_s, instance from string literals/constants: str$s("my string")
- *
- * Uses compile time string length calculation, only literals
- *
- */
-#define str$s(string)                                                                              \
-    (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
 
 /// Joins parts of strings using a separator str$join(allc, ",", "a", "b", "c") -> "a,b,c"
@@ -315,3 +296,4 @@ struct __cex_namespace__str
     // clang-format on
 };
 CEX_NAMESPACE struct __cex_namespace__str str;
+#endif

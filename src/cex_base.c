@@ -23,6 +23,8 @@ const struct _CEX_Error_struct Error = {
     .try_again = "TryAgainError",    // EAGAIN / EWOULDBLOCK errno analog for async operations
 };
 
+#ifdef _cex$platform_panic_builtin
+
 void
 __cex__panic(void)
 {
@@ -37,3 +39,5 @@ __cex__panic(void)
 #endif
     return;
 }
+
+#endif

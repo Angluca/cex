@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal)
+
 #if __has_include("cex_config.h")
 // Custom config file
 #    include "cex_config.h"
@@ -46,3 +48,5 @@ cmd_build_lib(int argc, char** argv, void* user_ctx)
     log$info("Launching custom command\n");
     return EOK;
 }
+
+#endif

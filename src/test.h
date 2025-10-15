@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal)
 #include "all.h"
 #include "argparse.h"
 
@@ -444,3 +445,4 @@ test$case(my_test_case){
             return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
+#endif

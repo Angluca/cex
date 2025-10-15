@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_io)
 #include "all.h"
 
 /// Makes string literal with ansi colored test
@@ -124,8 +125,6 @@ struct __cex_namespace__io {
     void            (*fclose)(FILE** file);
     /// Flush changes to file
     Exception       (*fflush)(FILE* file);
-    /// Obtain file descriptor from FILE*
-    int             (*fileno)(FILE* file);
     /// Opens new file: io.fopen(&file, "file.txt", "r+")
     Exception       (*fopen)(FILE** file, char* filename, char* mode);
     /// Prints formatted string to the file. Uses CEX printf() engine with special formatting.
@@ -167,3 +166,4 @@ struct __cex_namespace__io {
 };
 CEX_NAMESPACE struct __cex_namespace__io io;
 
+#endif

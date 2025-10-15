@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
 #include "all.h"
 
 /// Additional flags for os.cmd.create()
@@ -368,3 +369,4 @@ struct __cex_namespace__os
     // clang-format on
 };
 CEX_NAMESPACE struct __cex_namespace__os os;
+#endif

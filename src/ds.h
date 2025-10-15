@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_ds)
 #include "all.h"
 
 /**
@@ -845,3 +846,4 @@ enum
 };
 
 #define _cexds__shmode_func_wrapper(t, e, m) _cexds__shmode_func(e, m)
+#endif

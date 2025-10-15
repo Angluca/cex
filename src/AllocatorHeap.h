@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
 #pragma once
 #include "mem.h"
 
@@ -18,3 +20,5 @@ static_assert(offsetof(AllocatorHeap_c, alloc) == 0, "base must be the 1st struc
 
 extern AllocatorHeap_c _cex__default_global__allocator_heap;
 extern IAllocator const _cex__default_global__allocator_heap__allc;
+
+#endif

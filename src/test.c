@@ -1,4 +1,5 @@
 #include "all.h"
+#if !defined(cex$enable_minimal)
 #ifdef CEX_TEST
 #    include <math.h>
 
@@ -538,3 +539,4 @@ cex_test_main_fn(int argc, char** argv)
     return ctx->tests_run == 0 || ctx->tests_failed > 0;
 }
 #endif // ifdef CEX_TEST
+#endif

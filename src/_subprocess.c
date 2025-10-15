@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
+
 #include "_subprocess.h"
 
 #if defined(__clang__)
@@ -783,3 +785,4 @@ int subprocess_alive(struct subprocess_s *const process) {
 #endif
 #endif
 
+#endif

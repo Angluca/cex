@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
 #include "all.h"
 
 #define CEX_ALLOCATOR_HEAP_MAGIC 0xF00dBa01
@@ -6,29 +7,6 @@
 #define CEX_ALLOCATOR_ARENA_MAGIC 0xFeedF001
 #define CEX_ALLOCATOR_TEMP_PAGE_SIZE 1024 * 256
 
-// clang-format off
-#define IAllocator const struct Allocator_i* 
-typedef struct Allocator_i
-{
-    // >>> cacheline
-    alignas(64) void* (*const malloc)(IAllocator self, usize size, usize alignment);
-    void* (*const calloc)(IAllocator self, usize nmemb, usize size, usize alignment);
-    void* (*const realloc)(IAllocator self, void* ptr, usize new_size, usize alignment);
-    void* (*const free)(IAllocator self, void* ptr);
-    const struct Allocator_i* (*const scope_enter)(IAllocator self);   /* Only for arenas/temp alloc! */
-    void (*const scope_exit)(IAllocator self);    /* Only for arenas/temp alloc! */
-    u32 (*const scope_depth)(IAllocator self);  /* Current mem$scope depth */
-    struct {
-        u32 magic_id;
-        bool is_arena;
-        bool is_temp;
-    } meta;
-    //<<< 64 byte cacheline
-} Allocator_i;
-// clang-format on
-static_assert(alignof(Allocator_i) == 64, "size");
-static_assert(sizeof(Allocator_i) == 64, "size");
-static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
 
 
 void _cex_allocator_memscope_cleanup(IAllocator* allc);
@@ -318,3 +296,4 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
 #    endif // #if defined(__SANITIZE_ADDRESS__)
 
 #endif // #if CEX_DISABLE_POISON
+#endif

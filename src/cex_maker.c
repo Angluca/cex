@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal)
+
 #if defined(CEX_NEW)
 #    if __has_include("cex.c")
 #        error                                                                                     \
@@ -20,4 +22,6 @@ main(int argc, char** argv)
     io.printf("- `./cex help --help` for searching projec symbols and examples\n");
     return 0;
 }
+#endif
+
 #endif

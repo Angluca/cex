@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal)
+
 #pragma once
 #include "all.h"
 
@@ -209,3 +211,4 @@ _cex__codegen_s* _cex__codegen_print_case_enter(_cex__codegen_s* cg, char* forma
 void _cex__codegen_print_case_exit(_cex__codegen_s** cgptr);
 void _cex__codegen_indent(_cex__codegen_s* cg);
 
+#endif

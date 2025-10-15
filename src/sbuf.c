@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_str)
 #include "_sprintf.h"
 #include "all.h"
 #include <stdarg.h>
@@ -398,3 +399,4 @@ const struct __cex_namespace__sbuf sbuf = {
 
     // clang-format on
 };
+#endif

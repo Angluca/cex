@@ -1,4 +1,6 @@
 #pragma once
+
+#if !defined(cex$enable_minimal)
 #include "all.h"
 
 #define _CexTknList                                                                                \
@@ -97,3 +99,5 @@ struct __cex_namespace__CexParser {
 
     // clang-format on
 };
+
+#endif

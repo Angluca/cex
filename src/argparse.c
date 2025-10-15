@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
 #include "argparse.h"
 #include "cex_base.h"
 #include <math.h>
@@ -15,9 +16,9 @@ _cex_argparse__error(argparse_c* self, argparse_opt_s* opt, char* reason, bool i
 {
     (void)self;
     if (is_long) {
-        fprintf(stdout, "error: option `--%s` %s\n", opt->long_name, reason);
+        cexsp__fprintf(stdout, "error: option `--%s` %s\n", opt->long_name, reason);
     } else {
-        fprintf(stdout, "error: option `-%c` %s\n", opt->short_name, reason);
+        cexsp__fprintf(stdout, "error: option `-%c` %s\n", opt->short_name, reason);
     }
 
     return Error.argument;
@@ -34,16 +35,17 @@ cex_argparse_usage(argparse_c* self)
         for$iter (str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator)) {
             if (it.val.len == 0) { break; }
 
-            char* fn = strrchr(self->program_name, '/');
+            char* fn = str.findr(self->program_name, "/");
+
             if (fn != NULL) {
                 io.printf("%s ", fn + 1);
             } else {
                 io.printf("%s ", self->program_name);
             }
 
-            if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) { ; }
+            if (io.fwrite(stdout, it.val.buf, it.val.len)) { /* error ignored */ }
 
-            fputc('\n', stdout);
+            io.printf("\n");
         }
     } else {
         if (self->commands) {
@@ -67,7 +69,7 @@ cex_argparse_usage(argparse_c* self)
     // print description
     if (self->description) { io.printf("%s\n", self->description); }
 
-    fputc('\n', stdout);
+    io.printf("\n");
 
 
     // figure out best width
@@ -112,9 +114,7 @@ cex_argparse_usage(argparse_c* self)
         usize pos = 0;
         usize pad = 0;
         if (opt->type == CexArgParseType__group) {
-            fputc('\n', stdout);
-            io.printf("%s", opt->help);
-            fputc('\n', stdout);
+            io.printf("\n%s\n", opt->help);
             continue;
         }
         pos = io.printf("    ");
@@ -125,7 +125,7 @@ cex_argparse_usage(argparse_c* self)
         if (pos <= usage_opts_width) {
             pad = usage_opts_width - pos;
         } else {
-            fputc('\n', stdout);
+            io.printf("\n");
             pad = usage_opts_width;
         }
         if (!str.find(opt->help, "\n")) {
@@ -328,7 +328,7 @@ _cex_argparse__options_check(argparse_c* self, bool reset)
                 }
             } else {
                 if (opt->required && !opt->is_present) {
-                    fprintf(
+                    cexsp__fprintf(
                         stdout,
                         "Error: missing required option: -%c/--%s\n",
                         opt->short_name,
@@ -417,7 +417,7 @@ _cex_argparse__report_error(argparse_c* self, Exc err)
         if (self->options != NULL) {
             io.printf("error: unknown option `%s`\n", self->argv[0]);
         } else {
-            fprintf(
+            cexsp__fprintf(
                 stdout,
                 "error: command name expected, got option `%s`, try --help\n",
                 self->argv[0]
@@ -643,3 +643,5 @@ const struct __cex_namespace__argparse argparse = {
 
     // clang-format on
 };
+
+#endif

@@ -124,8 +124,8 @@ cex_bundle(void)
         if (!cexy.src_changed("cex.h", src, arr$len(src))) { return; }
         char* bundle[] = {
 
-            "src/cex_base.h",
             "src/cex_platform.h",
+            "src/cex_base.h",
             "src/mem.h",
             "src/AllocatorHeap.h",
             "src/AllocatorArena.h",

@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
 #include "all.h"
 
 void
@@ -26,3 +28,5 @@ _cex_global_allocators_destructor()
         page = tpage;
     }
 }
+
+#endif

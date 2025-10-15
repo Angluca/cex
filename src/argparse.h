@@ -1,4 +1,6 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
+
 #include "all.h"
 #include "src/cexy.h"
 
@@ -242,3 +244,4 @@ struct __cex_namespace__argparse {
 */
 CEX_NAMESPACE struct __cex_namespace__argparse argparse;
 
+#endif

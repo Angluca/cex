@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal)
 #include "all.h"
 
 #if defined(CEX_BUILD) || defined(CEX_NEW)
@@ -324,3 +325,4 @@ struct __cex_namespace__cexy {
 #endif // #if defined(CEX_BUILD)
 CEX_NAMESPACE struct __cex_namespace__cexy cexy;
 
+#endif

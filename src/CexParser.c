@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal)
+
 #include "CexParser.h"
 #include <ctype.h>
 
@@ -889,3 +891,5 @@ const struct __cex_namespace__CexParser CexParser = {
 
     // clang-format on
 };
+
+#endif

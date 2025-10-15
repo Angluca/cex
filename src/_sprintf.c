@@ -7,9 +7,10 @@ ALTERNATIVE A - MIT License
 stb_sprintf - v1.10 - public domain snprintf() implementation
 Copyright (c) 2017 Sean Barrett
 */
+
 #include "_sprintf.h"
 #include "all.h"
-#include <assert.h> // NOTE: using LibC asserts here to avoid infinite callback stack overflow
+// #include <assert.h> // NOTE: using LibC asserts here to avoid infinite callback stack overflow
 #include <ctype.h>
 
 
@@ -379,7 +380,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 tail[0] = 0;
                 pr = 0;
                 cs = 0;
-                CEXSP__NOTUSED(dp);
+                (void)(dp);
                 goto scopy;
 #else
             case 'A': // hex float
@@ -1148,7 +1149,7 @@ cexsp__vsnprintf(char* buf, int count, char const* fmt, va_list va)
             l = count - 1;
         }
         buf[l] = 0;
-        assert(c.length <= INT32_MAX);
+        // assert(c.length <= INT32_MAX);
     }
 
     return c.length;
@@ -1184,7 +1185,7 @@ cexsp__vfprintf(FILE* stream, const char* format, va_list va)
     cexsp__context c = { .file = stream, .length = 0 };
 
     cexsp__vsprintfcb(cexsp__fprintf_callback, &c, cexsp__fprintf_callback(0, &c, 0), format, va);
-    assert(c.length <= INT32_MAX);
+    // assert(c.length <= INT32_MAX);
 
     return c.has_error == 0 ? (i32)c.length : -1;
 }

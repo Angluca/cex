@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal) || defined(cex$enable_ds)
+
 #include "all.h"
 
 
@@ -88,9 +90,7 @@ _cexds__arrgrowf(
     } else {
         _cexds__arr_integrity(arr, 0);
     }
-    _cexds__array_header temp = { 0 }; // force debugging
     usize min_len = (arr ? _cexds__header(arr)->length : 0) + addlen;
-    (void)sizeof(temp);
 
     // compute the minimum capacity needed
     if (min_len > min_cap) { min_cap = min_len; }
@@ -954,11 +954,22 @@ process_key:
         uassert(key_type == _CexDsKeyType__charptr);
         uassert(keysize == sizeof(usize) && "expected pointer size");
         char** key_data_p = (char**)(*out_result + keyoffset);
-        if (table->key_arena) {
-            *key_data_p = str.clone(*key_data_p, table->key_arena);
-        } else {
-            *key_data_p = str.clone(*key_data_p, _cexds__header(a)->allocator);
+
+        // Naive reimplementation of str.close() for optional isolation
+        if (*key_data_p) {
+            usize slen = strlen(*key_data_p);
+            uassert(slen < PTRDIFF_MAX);
+            IAllocator _allc = (table->key_arena) ? table->key_arena : _cexds__header(a)->allocator;
+
+            char* result = mem$malloc(_allc, slen + 1);
+            if (result) {
+                memcpy(result, *key_data_p, slen);
+                result[slen] = '\0';
+            }
+            *key_data_p = result;
         }
+        
+
     }
 
 end:
@@ -1051,3 +1062,5 @@ _cexds__hmdel_key(void* a, usize elemsize, void* key, usize keysize, usize keyof
 
     return a;
 }
+
+#endif

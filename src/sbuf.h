@@ -1,4 +1,6 @@
 #pragma once
+
+#if !defined(cex$enable_minimal) || defined(cex$enable_str)
 #include "all.h"
 #include <assert.h>
 
@@ -113,3 +115,4 @@ struct __cex_namespace__sbuf {
 };
 CEX_NAMESPACE struct __cex_namespace__sbuf sbuf;
 
+#endif

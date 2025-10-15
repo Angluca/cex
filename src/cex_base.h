@@ -26,6 +26,51 @@ typedef ptrdiff_t isize;
 #    define auto __auto_type
 #endif
 
+// clang-format off
+#define IAllocator const struct Allocator_i* 
+typedef struct Allocator_i
+{
+    // >>> cacheline
+    alignas(64) void* (*const malloc)(IAllocator self, usize size, usize alignment);
+    void* (*const calloc)(IAllocator self, usize nmemb, usize size, usize alignment);
+    void* (*const realloc)(IAllocator self, void* ptr, usize new_size, usize alignment);
+    void* (*const free)(IAllocator self, void* ptr);
+    const struct Allocator_i* (*const scope_enter)(IAllocator self);   /* Only for arenas/temp alloc! */
+    void (*const scope_exit)(IAllocator self);    /* Only for arenas/temp alloc! */
+    u32 (*const scope_depth)(IAllocator self);  /* Current mem$scope depth */
+    struct {
+        u32 magic_id;
+        bool is_arena;
+        bool is_temp;
+    } meta;
+    //<<< 64 byte cacheline
+} Allocator_i;
+// clang-format on
+static_assert(alignof(Allocator_i) == 64, "size");
+static_assert(sizeof(Allocator_i) == 64, "size");
+static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
+
+
+/// Represents char* slice (string view) + may not be null-term at len!
+typedef struct
+{
+    usize len;
+    char* buf;
+} str_s;
+
+static_assert(alignof(str_s) == alignof(usize), "align");
+static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
+
+
+/**
+ * @brief creates str_s, instance from string literals/constants: str$s("my string")
+ *
+ * Uses compile time string length calculation, only literals
+ *
+ */
+#define str$s(string)                                                                              \
+    (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
+
 /*
  *                 BRANCH MANAGEMENT
  * `if(unlikely(condition)) {...}` is helpful for error management, to let compiler
@@ -88,7 +133,7 @@ Error.try_again = "TryAgainError";    // EAGAIN / EWOULDBLOCK errno analog for a
 Exception
 remove_file(char* path)
 {
-    if (path == NULL || path[0] == '\0') { 
+    if (path == NULL || path[0] == '\0') {
         return Error.argument;  // Empty of null file
     }
     if (!os.path.exists(path)) {
@@ -98,7 +143,7 @@ remove_file(char* path)
         // Returns an Error.integrity and logs error at current line to stdout
         return e$raise(Error.integrity, "Removing magic file is not allowed!");
     }
-    if (remove(path) < 0) { 
+    if (remove(path) < 0) {
         return strerror(errno); // using system error text (arbitrary!)
     }
     return EOK;
@@ -187,7 +232,7 @@ extern const struct _CEX_Error_struct
 
 // NOTE: you may try to define our own fprintf
 #    define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                      \
-        io.fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
+        cexsp__fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
 
 static inline bool
 __cex__fprintf_dummy(void)
@@ -444,8 +489,7 @@ int __cex_test_uassert_enabled = 1;
                     #A                                                                             \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();                                                       \
-                    __builtin_trap();                                                              \
+                    cex$platform_panic();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -463,14 +507,12 @@ int __cex_test_uassert_enabled = 1;
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();                                                       \
-                    __builtin_trap();                                                              \
+                    cex$platform_panic();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
 #endif
 
-__attribute__((noinline)) void __cex__panic(void);
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
 #    undef unreachable
@@ -482,7 +524,7 @@ __attribute__((noinline)) void __cex__panic(void);
 #    define unreachable()                                                                          \
         ({                                                                                         \
             __cex__fprintf(stderr, "[UNREACHABLE] ", __FILE_NAME__, __LINE__, __func__, "\n");     \
-            __cex__panic();                                                                        \
+            cex$platform_panic();                                                                  \
             __builtin_unreachable();                                                               \
         })
 #endif
@@ -494,8 +536,8 @@ __attribute__((noinline)) void __cex__panic(void);
 #elif defined(__linux__) || defined(__unix__)
 #    define breakpoint() __builtin_trap()
 #else
-#    include <signal.h>
-#    define breakpoint() raise(SIGTRAP)
+#    warning "breakpoint() is not supported by this arch"
+#    define breakpoint()
 #endif
 
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
@@ -547,7 +589,7 @@ __attribute__((noinline)) void __cex__panic(void);
 #define e$except_true(_expression)                                                                 \
     if (unlikely(((_expression)) && (log$error("`%s` returned non zero\n", #_expression), 1)))
 
-/// immediately returns from function with _func error + prints traceback 
+/// immediately returns from function with _func error + prints traceback
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
@@ -566,12 +608,21 @@ __attribute__((noinline)) void __cex__panic(void);
     goto _label
 
 
-
-
 #if defined(__GNUC__) && !defined(__clang__)
 // NOTE: GCC < 12, has some weird warnings for arr$len temp pragma push + missing-field-initializers
 #    if (__GNUC__ < 12)
 #        pragma GCC diagnostic ignored "-Wsizeof-pointer-div"
 #        pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #    endif
+#endif
+
+#if defined(__STDC_HOSTED__)
+    #if __STDC_HOSTED__ == 0
+        #define cex$is_freestanding 1
+    #else
+        #define cex$is_freestanding 0
+    #endif
+#else
+    // If __STDC_HOSTED__ is not defined, we're likely freestanding
+    #define cex$is_freestanding 1
 #endif

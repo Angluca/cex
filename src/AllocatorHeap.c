@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
 #include "AllocatorHeap.h"
 
 // clang-format off
@@ -335,3 +337,5 @@ _cex_allocator_heap__scope_depth(IAllocator self)
     _cex_allocator_heap__validate(self);
     return 1; // always 1
 }
+
+#endif

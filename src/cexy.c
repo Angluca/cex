@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal)
+
 #include "all.h"
 #include "cex.h"
 #include "src/cex_base.h"
@@ -3154,3 +3156,5 @@ const struct __cex_namespace__cexy cexy = {
     // clang-format on
 };
 #endif // defined(CEX_BUILD)
+
+#endif

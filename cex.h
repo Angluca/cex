@@ -88,6 +88,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #include <errno.h>
 #include <stdalign.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -111,7 +112,59 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 17
 #define cex$version_patch 0
-#define cex$version_date "2025-10-14"
+#define cex$version_date "2025-10-15"
+
+
+
+/*
+*                          src/cex_platform.h
+*/
+
+#ifndef cex$platform_malloc
+#    define cex$platform_malloc malloc
+#endif
+
+#ifndef cex$platform_calloc
+#    define cex$platform_calloc calloc
+#endif
+
+#ifndef cex$platform_free
+#    define cex$platform_free free
+#endif
+
+#ifndef cex$platform_realloc
+#    define cex$platform_realloc realloc
+#endif
+
+#ifndef cex$platform_panic
+#    define cex$platform_panic __cex__panic
+#    define _cex$platform_panic_builtin
+__attribute__((noinline)) void __cex__panic(void);
+#endif
+
+#ifdef cex$enable_minimal
+#    undef cex$enable_minimal
+/// Disables all key CEX capabilities, except core types, and macros, other functionality must be
+/// re-enabled via `#define cex$enable_*`
+#    define cex$enable_minimal
+
+#else
+/// Enables CEX memory allocators: tmem$, mem$
+#    define cex$enable_mem
+
+/// Enables CEX data structures: dynamic arrays, hashmaps, arr$* macros, for$each
+#    define cex$enable_ds
+
+/// Enables CEX string operations
+#    define cex$enable_str
+
+/// Enables CEX IO operations
+#    define cex$enable_io
+
+/// Enables CEX os namespace + argparse
+#    define cex$enable_os
+
+#endif
 
 
 
@@ -143,6 +196,51 @@ typedef ptrdiff_t isize;
 /// automatic variable type, supported by GCC/Clang or C23
 #    define auto __auto_type
 #endif
+
+// clang-format off
+#define IAllocator const struct Allocator_i* 
+typedef struct Allocator_i
+{
+    // >>> cacheline
+    alignas(64) void* (*const malloc)(IAllocator self, usize size, usize alignment);
+    void* (*const calloc)(IAllocator self, usize nmemb, usize size, usize alignment);
+    void* (*const realloc)(IAllocator self, void* ptr, usize new_size, usize alignment);
+    void* (*const free)(IAllocator self, void* ptr);
+    const struct Allocator_i* (*const scope_enter)(IAllocator self);   /* Only for arenas/temp alloc! */
+    void (*const scope_exit)(IAllocator self);    /* Only for arenas/temp alloc! */
+    u32 (*const scope_depth)(IAllocator self);  /* Current mem$scope depth */
+    struct {
+        u32 magic_id;
+        bool is_arena;
+        bool is_temp;
+    } meta;
+    //<<< 64 byte cacheline
+} Allocator_i;
+// clang-format on
+static_assert(alignof(Allocator_i) == 64, "size");
+static_assert(sizeof(Allocator_i) == 64, "size");
+static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
+
+
+/// Represents char* slice (string view) + may not be null-term at len!
+typedef struct
+{
+    usize len;
+    char* buf;
+} str_s;
+
+static_assert(alignof(str_s) == alignof(usize), "align");
+static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
+
+
+/**
+ * @brief creates str_s, instance from string literals/constants: str$s("my string")
+ *
+ * Uses compile time string length calculation, only literals
+ *
+ */
+#define str$s(string)                                                                              \
+    (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
 
 /*
  *                 BRANCH MANAGEMENT
@@ -206,7 +304,7 @@ Error.try_again = "TryAgainError";    // EAGAIN / EWOULDBLOCK errno analog for a
 Exception
 remove_file(char* path)
 {
-    if (path == NULL || path[0] == '\0') { 
+    if (path == NULL || path[0] == '\0') {
         return Error.argument;  // Empty of null file
     }
     if (!os.path.exists(path)) {
@@ -216,7 +314,7 @@ remove_file(char* path)
         // Returns an Error.integrity and logs error at current line to stdout
         return e$raise(Error.integrity, "Removing magic file is not allowed!");
     }
-    if (remove(path) < 0) { 
+    if (remove(path) < 0) {
         return strerror(errno); // using system error text (arbitrary!)
     }
     return EOK;
@@ -305,7 +403,7 @@ extern const struct _CEX_Error_struct
 
 // NOTE: you may try to define our own fprintf
 #    define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                      \
-        io.fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
+        cexsp__fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
 
 static inline bool
 __cex__fprintf_dummy(void)
@@ -562,8 +660,7 @@ int __cex_test_uassert_enabled = 1;
                     #A                                                                             \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();                                                       \
-                    __builtin_trap();                                                              \
+                    cex$platform_panic();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
@@ -581,14 +678,12 @@ int __cex_test_uassert_enabled = 1;
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
                 if (uassert_is_enabled()) {                                                        \
-                    sanitizer_stack_trace();                                                       \
-                    __builtin_trap();                                                              \
+                    cex$platform_panic();                                                       \
                 }                                                                                  \
             }                                                                                      \
         })
 #endif
 
-__attribute__((noinline)) void __cex__panic(void);
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
 #    undef unreachable
@@ -600,7 +695,7 @@ __attribute__((noinline)) void __cex__panic(void);
 #    define unreachable()                                                                          \
         ({                                                                                         \
             __cex__fprintf(stderr, "[UNREACHABLE] ", __FILE_NAME__, __LINE__, __func__, "\n");     \
-            __cex__panic();                                                                        \
+            cex$platform_panic();                                                                  \
             __builtin_unreachable();                                                               \
         })
 #endif
@@ -612,8 +707,8 @@ __attribute__((noinline)) void __cex__panic(void);
 #elif defined(__linux__) || defined(__unix__)
 #    define breakpoint() __builtin_trap()
 #else
-#    include <signal.h>
-#    define breakpoint() raise(SIGTRAP)
+#    warning "breakpoint() is not supported by this arch"
+#    define breakpoint()
 #endif
 
 // cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
@@ -665,7 +760,7 @@ __attribute__((noinline)) void __cex__panic(void);
 #define e$except_true(_expression)                                                                 \
     if (unlikely(((_expression)) && (log$error("`%s` returned non zero\n", #_expression), 1)))
 
-/// immediately returns from function with _func error + prints traceback 
+/// immediately returns from function with _func error + prints traceback
 #define e$ret(_func)                                                                               \
     for (Exc cex$tmpname(__cex_err_traceback_) = _func; unlikely(                                  \
              (cex$tmpname(__cex_err_traceback_) != EOK) &&                                         \
@@ -684,14 +779,23 @@ __attribute__((noinline)) void __cex__panic(void);
     goto _label
 
 
-
-
 #if defined(__GNUC__) && !defined(__clang__)
 // NOTE: GCC < 12, has some weird warnings for arr$len temp pragma push + missing-field-initializers
 #    if (__GNUC__ < 12)
 #        pragma GCC diagnostic ignored "-Wsizeof-pointer-div"
 #        pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #    endif
+#endif
+
+#if defined(__STDC_HOSTED__)
+    #if __STDC_HOSTED__ == 0
+        #define cex$is_freestanding 1
+    #else
+        #define cex$is_freestanding 0
+    #endif
+#else
+    // If __STDC_HOSTED__ is not defined, we're likely freestanding
+    #define cex$is_freestanding 1
 #endif
 
 
@@ -721,35 +825,13 @@ __attribute__((noinline)) void __cex__panic(void);
 /*
 *                          src/mem.h
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
 
 #define CEX_ALLOCATOR_HEAP_MAGIC 0xF00dBa01
 #define CEX_ALLOCATOR_TEMP_MAGIC 0xF00dBeef
 #define CEX_ALLOCATOR_ARENA_MAGIC 0xFeedF001
 #define CEX_ALLOCATOR_TEMP_PAGE_SIZE 1024 * 256
 
-// clang-format off
-#define IAllocator const struct Allocator_i* 
-typedef struct Allocator_i
-{
-    // >>> cacheline
-    alignas(64) void* (*const malloc)(IAllocator self, usize size, usize alignment);
-    void* (*const calloc)(IAllocator self, usize nmemb, usize size, usize alignment);
-    void* (*const realloc)(IAllocator self, void* ptr, usize new_size, usize alignment);
-    void* (*const free)(IAllocator self, void* ptr);
-    const struct Allocator_i* (*const scope_enter)(IAllocator self);   /* Only for arenas/temp alloc! */
-    void (*const scope_exit)(IAllocator self);    /* Only for arenas/temp alloc! */
-    u32 (*const scope_depth)(IAllocator self);  /* Current mem$scope depth */
-    struct {
-        u32 magic_id;
-        bool is_arena;
-        bool is_temp;
-    } meta;
-    //<<< 64 byte cacheline
-} Allocator_i;
-// clang-format on
-static_assert(alignof(Allocator_i) == 64, "size");
-static_assert(sizeof(Allocator_i) == 64, "size");
-static_assert(sizeof((Allocator_i){ 0 }.meta) == 8, "size");
 
 
 void _cex_allocator_memscope_cleanup(IAllocator* allc);
@@ -1039,12 +1121,15 @@ void* __asan_region_is_poisoned(void* beg, size_t size);
 #    endif // #if defined(__SANITIZE_ADDRESS__)
 
 #endif // #if CEX_DISABLE_POISON
+#endif
 
 
 
 /*
 *                          src/AllocatorHeap.h
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
 
 typedef struct
 {
@@ -1064,14 +1149,17 @@ static_assert(offsetof(AllocatorHeap_c, alloc) == 0, "base must be the 1st struc
 extern AllocatorHeap_c _cex__default_global__allocator_heap;
 extern IAllocator const _cex__default_global__allocator_heap__allc;
 
+#endif
+
 
 
 /*
 *                          src/AllocatorArena.h
 */
-#include <stddef.h>
 
-#define CEX_ALLOCATOR_MAX_SCOPE_STACK 16
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
+#    define CEX_ALLOCATOR_MAX_SCOPE_STACK 16
 
 typedef struct allocator_arena_page_s allocator_arena_page_s;
 
@@ -1127,9 +1215,14 @@ typedef struct allocator_arena_rec_s
 static_assert(sizeof(allocator_arena_rec_s) == 8, "size!");
 static_assert(offsetof(allocator_arena_rec_s, ptr_offset) == 7, "ptr_offset must be last");
 
-extern _Thread_local AllocatorArena_c _cex__default_global__allocator_temp;
+extern
+#    if !cex$is_freestanding
+    _Thread_local
+#    endif
+    AllocatorArena_c _cex__default_global__allocator_temp;
 
-struct __cex_namespace__AllocatorArena {
+struct __cex_namespace__AllocatorArena
+{
     // Autogenerated by CEX
     // clang-format off
 
@@ -1141,12 +1234,14 @@ struct __cex_namespace__AllocatorArena {
 };
 CEX_NAMESPACE struct __cex_namespace__AllocatorArena AllocatorArena;
 
+#endif
 
 
 
 /*
 *                          src/ds.h
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_ds)
 
 /**
 
@@ -1992,6 +2087,7 @@ enum
 };
 
 #define _cexds__shmode_func_wrapper(t, e, m) _cexds__shmode_func(e, m)
+#endif
 
 
 
@@ -2127,26 +2223,7 @@ CEXSP__PUBLICDEC void cexsp__set_separators(char comma, char period);
  * @brief
  */
 
-
-/// Represents char* slice (string view) + may not be null-term at len!
-typedef struct
-{
-    usize len;
-    char* buf;
-} str_s;
-
-static_assert(alignof(str_s) == alignof(usize), "align");
-static_assert(sizeof(str_s) == sizeof(usize) * 2, "size");
-
-
-/**
- * @brief creates str_s, instance from string literals/constants: str$s("my string")
- *
- * Uses compile time string length calculation, only literals
- *
- */
-#define str$s(string)                                                                              \
-    (str_s){ .buf = /* WARNING: only literals!!!*/ "" string, .len = sizeof((string)) - 1 }
+#if !defined(cex$enable_minimal) || defined(cex$enable_str)
 
 
 /// Joins parts of strings using a separator str$join(allc, ",", "a", "b", "c") -> "a,b,c"
@@ -2437,12 +2514,15 @@ struct __cex_namespace__str
     // clang-format on
 };
 CEX_NAMESPACE struct __cex_namespace__str str;
+#endif
 
 
 
 /*
 *                          src/sbuf.h
 */
+
+#if !defined(cex$enable_minimal) || defined(cex$enable_str)
 #include <assert.h>
 
 typedef char* sbuf_c;
@@ -2556,12 +2636,14 @@ struct __cex_namespace__sbuf {
 };
 CEX_NAMESPACE struct __cex_namespace__sbuf sbuf;
 
+#endif
 
 
 
 /*
 *                          src/io.h
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_io)
 
 /// Makes string literal with ansi colored test
 #define io$ansi(text, ansi_col) "\033[" ansi_col "m" text "\033[0m"
@@ -2686,8 +2768,6 @@ struct __cex_namespace__io {
     void            (*fclose)(FILE** file);
     /// Flush changes to file
     Exception       (*fflush)(FILE* file);
-    /// Obtain file descriptor from FILE*
-    int             (*fileno)(FILE* file);
     /// Opens new file: io.fopen(&file, "file.txt", "r+")
     Exception       (*fopen)(FILE** file, char* filename, char* mode);
     /// Prints formatted string to the file. Uses CEX printf() engine with special formatting.
@@ -2729,12 +2809,15 @@ struct __cex_namespace__io {
 };
 CEX_NAMESPACE struct __cex_namespace__io io;
 
+#endif
 
 
 
 /*
 *                          src/argparse.h
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
+
 
 struct argparse_c;
 struct argparse_opt_s;
@@ -2976,12 +3059,15 @@ struct __cex_namespace__argparse {
 */
 CEX_NAMESPACE struct __cex_namespace__argparse argparse;
 
+#endif
 
 
 
 /*
 *                          src/_subprocess.h
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
+
 /*
    The latest version of this library is available on GitHub;
    https://github.com/sheredom/subprocess.h
@@ -3401,11 +3487,14 @@ struct subprocess_s {
 
 #endif /* SHEREDOM_SUBPROCESS_H_INCLUDED */
 
+#endif
+
 
 
 /*
 *                          src/os.h
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
 
 /// Additional flags for os.cmd.create()
 typedef struct os_cmd_flags_s
@@ -3774,12 +3863,14 @@ struct __cex_namespace__os
     // clang-format on
 };
 CEX_NAMESPACE struct __cex_namespace__os os;
+#endif
 
 
 
 /*
 *                          src/test.h
 */
+#if !defined(cex$enable_minimal)
 
 typedef Exception (*_cex_test_case_f)(void);
 
@@ -4223,12 +4314,14 @@ test$case(my_test_case){
             return cex$tmpname(err);                                                               \
         }                                                                                          \
     })
+#endif
 
 
 
 /*
 *                          src/test.c
 */
+#if !defined(cex$enable_minimal)
 #ifdef CEX_TEST
 #    include <math.h>
 
@@ -4768,12 +4861,15 @@ cex_test_main_fn(int argc, char** argv)
     return ctx->tests_run == 0 || ctx->tests_failed > 0;
 }
 #endif // ifdef CEX_TEST
+#endif
 
 
 
 /*
 *                          src/cex_code_gen.h
 */
+#if !defined(cex$enable_minimal)
+
 
 typedef struct _cex__codegen_s
 {
@@ -4983,12 +5079,14 @@ _cex__codegen_s* _cex__codegen_print_case_enter(_cex__codegen_s* cg, char* forma
 void _cex__codegen_print_case_exit(_cex__codegen_s** cgptr);
 void _cex__codegen_indent(_cex__codegen_s* cg);
 
+#endif
 
 
 
 /*
 *                          src/cexy.h
 */
+#if !defined(cex$enable_minimal)
 
 #if defined(CEX_BUILD) || defined(CEX_NEW)
 
@@ -5313,12 +5411,15 @@ struct __cex_namespace__cexy {
 #endif // #if defined(CEX_BUILD)
 CEX_NAMESPACE struct __cex_namespace__cexy cexy;
 
+#endif
 
 
 
 /*
 *                          src/CexParser.h
 */
+
+#if !defined(cex$enable_minimal)
 
 #define _CexTknList                                                                                \
     X(eof)                                                                                         \
@@ -5417,6 +5518,8 @@ struct __cex_namespace__CexParser {
     // clang-format on
 };
 
+#endif
+
 
 
 /*
@@ -5427,6 +5530,7 @@ struct __cex_namespace__CexParser {
 /*
 *                          src/fuzz.h
 */
+#if !defined(cex$enable_minimal)
 
 /// Fuzz case: ``int fuzz$case(const u8* data, usize size) { return 0;}
 #define fuzz$case test$noopt LLVMFuzzerTestOneInput
@@ -5636,6 +5740,7 @@ struct __cex_namespace__fuzz {
 };
 CEX_NAMESPACE struct __cex_namespace__fuzz fuzz;
 
+#endif
 
 
 
@@ -5670,6 +5775,8 @@ CEX_NAMESPACE struct __cex_namespace__fuzz fuzz;
 
 
 #define _cex_main_boilerplate \
+"#if !defined(cex$enable_minimal)\n"\
+"\n"\
 "#if __has_include(\"cex_config.h\")\n"\
 "// Custom config file\n"\
 "#    include \"cex_config.h\"\n"\
@@ -5718,7 +5825,15 @@ CEX_NAMESPACE struct __cex_namespace__fuzz fuzz;
 "    log$info(\"Launching custom command\\n\");\n"\
 "    return EOK;\n"\
 "}\n"\
+"\n"\
+"#endif\n"\
 ""
+
+/*
+*                          src/cex_platform.c
+*/
+
+
 
 /*
 *                          src/cex_base.c
@@ -5746,6 +5861,8 @@ const struct _CEX_Error_struct Error = {
     .try_again = "TryAgainError",    // EAGAIN / EWOULDBLOCK errno analog for async operations
 };
 
+#ifdef _cex$platform_panic_builtin
+
 void
 __cex__panic(void)
 {
@@ -5761,6 +5878,8 @@ __cex__panic(void)
     return;
 }
 
+#endif
+
 
 
 /*
@@ -5771,6 +5890,8 @@ __cex__panic(void)
 /*
 *                          src/mem.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
 
 void
 _cex_allocator_memscope_cleanup(IAllocator* allc)
@@ -5799,11 +5920,15 @@ _cex_global_allocators_destructor()
     }
 }
 
+#endif
+
 
 
 /*
 *                          src/AllocatorHeap.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
 
 // clang-format off
 static void* _cex_allocator_heap__malloc(IAllocator self,usize size, usize alignment);
@@ -6141,11 +6266,16 @@ _cex_allocator_heap__scope_depth(IAllocator self)
     return 1; // always 1
 }
 
+#endif
+
 
 
 /*
 *                          src/AllocatorArena.c
 */
+
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
 
 #define CEX_ARENA_MAX_ALLOC UINT32_MAX - 1000
 #define CEX_ARENA_MAX_ALIGN 64
@@ -6259,7 +6389,7 @@ _cex_allocator_arena__check_pointer_valid(AllocatorArena_c* self, void* old_ptr)
             u32 ptr_scope_mark =
                 (((char*)rec) - ((char*)page) - sizeof(allocator_arena_page_s) + page->used_start);
 
-            if (self->scope_depth < arr$len(self->scope_stack)) {
+            if (self->scope_depth < sizeof(self->scope_stack) / sizeof((self->scope_stack)[0])) {
                 if (ptr_scope_mark < self->scope_stack[self->scope_depth - 1]) {
                     uassert(
                         ptr_scope_mark >= self->scope_stack[self->scope_depth - 1] &&
@@ -6504,7 +6634,7 @@ _cex_allocator_arena__scope_enter(IAllocator allc)
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     // NOTE: If scope_depth is higher CEX_ALLOCATOR_MAX_SCOPE_STACK, we stop marking
     //  all memory will be released after exiting scope_depth == CEX_ALLOCATOR_MAX_SCOPE_STACK
-    if (self->scope_depth < arr$len(self->scope_stack)) {
+    if (self->scope_depth < sizeof(self->scope_stack) / sizeof((self->scope_stack)[0])) {
         self->scope_stack[self->scope_depth] = self->used;
     }
     self->scope_depth++;
@@ -6522,7 +6652,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
     uassert(AllocatorArena_sanitize(allc));
 #endif
     self->scope_depth--;
-    if (self->scope_depth >= arr$len(self->scope_stack)) {
+    if (self->scope_depth >= sizeof(self->scope_stack) / sizeof((self->scope_stack)[0])) {
         // Scope overflow, wait until we reach CEX_ALLOCATOR_MAX_SCOPE_STACK
         return;
     }
@@ -6688,7 +6818,10 @@ AllocatorArena_destroy(IAllocator self)
     mem$free(mem$, allc);
 }
 
-_Thread_local AllocatorArena_c _cex__default_global__allocator_temp = {
+#if !cex$is_freestanding
+_Thread_local 
+#endif
+AllocatorArena_c _cex__default_global__allocator_temp = {
     .alloc = {
         .malloc = _cex_allocator_arena__malloc,
         .realloc = _cex_allocator_arena__realloc,
@@ -6717,11 +6850,15 @@ const struct __cex_namespace__AllocatorArena AllocatorArena = {
     // clang-format on
 };
 
+#endif
+
 
 
 /*
 *                          src/ds.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_ds)
+
 
 
 #ifdef _CEXDS_STATISTICS
@@ -6811,9 +6948,7 @@ _cexds__arrgrowf(
     } else {
         _cexds__arr_integrity(arr, 0);
     }
-    _cexds__array_header temp = { 0 }; // force debugging
     usize min_len = (arr ? _cexds__header(arr)->length : 0) + addlen;
-    (void)sizeof(temp);
 
     // compute the minimum capacity needed
     if (min_len > min_cap) { min_cap = min_len; }
@@ -7677,11 +7812,22 @@ process_key:
         uassert(key_type == _CexDsKeyType__charptr);
         uassert(keysize == sizeof(usize) && "expected pointer size");
         char** key_data_p = (char**)(*out_result + keyoffset);
-        if (table->key_arena) {
-            *key_data_p = str.clone(*key_data_p, table->key_arena);
-        } else {
-            *key_data_p = str.clone(*key_data_p, _cexds__header(a)->allocator);
+
+        // Naive reimplementation of str.close() for optional isolation
+        if (*key_data_p) {
+            usize slen = strlen(*key_data_p);
+            uassert(slen < PTRDIFF_MAX);
+            IAllocator _allc = (table->key_arena) ? table->key_arena : _cexds__header(a)->allocator;
+
+            char* result = mem$malloc(_allc, slen + 1);
+            if (result) {
+                memcpy(result, *key_data_p, slen);
+                result[slen] = '\0';
+            }
+            *key_data_p = result;
         }
+        
+
     }
 
 end:
@@ -7775,6 +7921,8 @@ _cexds__hmdel_key(void* a, usize elemsize, void* key, usize keysize, usize keyof
     return a;
 }
 
+#endif
+
 
 
 /*
@@ -7789,7 +7937,8 @@ ALTERNATIVE A - MIT License
 stb_sprintf - v1.10 - public domain snprintf() implementation
 Copyright (c) 2017 Sean Barrett
 */
-#include <assert.h> // NOTE: using LibC asserts here to avoid infinite callback stack overflow
+
+// #include <assert.h> // NOTE: using LibC asserts here to avoid infinite callback stack overflow
 #include <ctype.h>
 
 
@@ -8159,7 +8308,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                 tail[0] = 0;
                 pr = 0;
                 cs = 0;
-                CEXSP__NOTUSED(dp);
+                (void)(dp);
                 goto scopy;
 #else
             case 'A': // hex float
@@ -8928,7 +9077,7 @@ cexsp__vsnprintf(char* buf, int count, char const* fmt, va_list va)
             l = count - 1;
         }
         buf[l] = 0;
-        assert(c.length <= INT32_MAX);
+        // assert(c.length <= INT32_MAX);
     }
 
     return c.length;
@@ -8964,7 +9113,7 @@ cexsp__vfprintf(FILE* stream, const char* format, va_list va)
     cexsp__context c = { .file = stream, .length = 0 };
 
     cexsp__vsprintfcb(cexsp__fprintf_callback, &c, cexsp__fprintf_callback(0, &c, 0), format, va);
-    assert(c.length <= INT32_MAX);
+    // assert(c.length <= INT32_MAX);
 
     return c.has_error == 0 ? (i32)c.length : -1;
 }
@@ -9364,6 +9513,17 @@ cexsp__real_to_str(
 /*
 *                          src/str.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_str)
+
+static inline int _cex_str__toupper(int c) {
+    if ((unsigned)c - 'a' < 26) return c & 0x5f;
+    return c;
+}
+
+static inline int _cex_str__tolower(int c) {
+    if ((unsigned)c - 'A' < 26) return c | 0x20;
+    return c;
+}
 
 static inline bool
 _cex_str__isvalid(str_s* s)
@@ -9429,7 +9589,7 @@ cex_str_eqi(char* a, char* b)
 {
     if (unlikely(a == NULL || b == NULL)) { return a == b; }
     while (*a && *b) {
-        if (tolower((u8)*a) != tolower((u8)*b)) { return false; }
+        if (_cex_str__tolower((u8)*a) != _cex_str__tolower((u8)*b)) { return false; }
         a++;
         b++;
     }
@@ -9872,7 +10032,7 @@ cex_str__slice__qscmpi(const void* a, const void* b)
     char* s = self.buf;
     char* o = other.buf;
     for (usize i = 0; i < min_len; i++) {
-        cmp = tolower(*s) - tolower(*o);
+        cmp = _cex_str__tolower(*s) - _cex_str__tolower(*o);
         if (cmp != 0) { return cmp; }
         s++;
         o++;
@@ -10567,7 +10727,7 @@ cex_str_lower(char* s, IAllocator allc)
 
     char* result = mem$malloc(allc, slen + 1);
     if (result) {
-        for (usize i = 0; i < slen; i++) { result[i] = tolower(s[i]); }
+        for (usize i = 0; i < slen; i++) { result[i] = _cex_str__tolower(s[i]); }
         result[slen] = '\0';
     }
     return result;
@@ -10583,7 +10743,7 @@ cex_str_upper(char* s, IAllocator allc)
 
     char* result = mem$malloc(allc, slen + 1);
     if (result) {
-        for (usize i = 0; i < slen; i++) { result[i] = toupper(s[i]); }
+        for (usize i = 0; i < slen; i++) { result[i] = _cex_str__toupper(s[i]); }
         result[slen] = '\0';
     }
     return result;
@@ -10908,12 +11068,12 @@ cex_str_qscmpi(const void* a, const void* b)
     if (_a == NULL || _b == NULL) { return (_a < _b) - (_a > _b); }
 
     while (*_a && *_b) {
-        int diff = tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
+        int diff = _cex_str__tolower((unsigned char)*_a) - _cex_str__tolower((unsigned char)*_b);
         if (diff != 0) { return diff; }
         _a++;
         _b++;
     }
-    return tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
+    return _cex_str__tolower((unsigned char)*_a) - _cex_str__tolower((unsigned char)*_b);
 }
 
 const struct __cex_namespace__str str = {
@@ -10990,12 +11150,14 @@ const struct __cex_namespace__str str = {
 
     // clang-format on
 };
+#endif
 
 
 
 /*
 *                          src/sbuf.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_str)
 #include <stdarg.h>
 
 struct _sbuf__sprintf_ctx
@@ -11393,12 +11555,14 @@ const struct __cex_namespace__sbuf sbuf = {
 
     // clang-format on
 };
+#endif
 
 
 
 /*
 *                          src/io.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_io)
 #include <errno.h>
 #include <stdio.h>
 
@@ -11406,6 +11570,8 @@ const struct __cex_namespace__sbuf sbuf = {
 #    include <io.h>
 #    include <sys/stat.h>
 #    include <windows.h>
+#elif cex$is_freestanding
+// does not support unistd.h
 #else
 #    include <sys/stat.h>
 #    include <unistd.h>
@@ -11441,14 +11607,6 @@ cex_io_fopen(FILE** file, char* filename, char* mode)
 }
 
 
-/// Obtain file descriptor from FILE*
-int
-cex_io_fileno(FILE* file)
-{
-    uassert(file != NULL);
-    return fileno(file);
-}
-
 /// Check if current file supports ANSI colors and in interactive terminal mode
 bool
 cex_io_isatty(FILE* file)
@@ -11458,6 +11616,8 @@ cex_io_isatty(FILE* file)
     if (unlikely(file == NULL)) { return false; }
 #ifdef _WIN32
     return _isatty(_fileno(file));
+#elif cex$is_freestanding
+    return false;
 #else
     return isatty(fileno(file));
 #endif
@@ -11537,6 +11697,8 @@ cex_io__file__size(FILE* file)
     } else {
         return 0;
     }
+#elif cex$is_freestanding
+    return 0;
 #else
     struct stat stat;
     int ret = fstat(fileno(file), &stat);
@@ -11813,7 +11975,22 @@ cex_io_fwrite(FILE* file, void* buff, usize buff_len)
     usize ret_count = fwrite(buff, 1, buff_len, file);
 
     if (ret_count != buff_len) {
-        return os.get_last_error();
+        // return os.get_last_error();
+        switch (errno) {
+            case 0:
+                uassert(errno != 0 && "errno is ok");
+                return "Error, but errno is not set";
+            case ENOENT:
+                return Error.not_found;
+            case EPERM:
+                return Error.permission;
+            case EIO:
+                return Error.io;
+            case EAGAIN:
+                return Error.try_again;
+            default:
+                return strerror(errno);
+        }
     } else {
         return Error.ok;
     }
@@ -11931,7 +12108,6 @@ const struct __cex_namespace__io io = {
 
     .fclose = cex_io_fclose,
     .fflush = cex_io_fflush,
-    .fileno = cex_io_fileno,
     .fopen = cex_io_fopen,
     .fprintf = cex_io_fprintf,
     .fread = cex_io_fread,
@@ -11955,11 +12131,14 @@ const struct __cex_namespace__io io = {
     // clang-format on
 };
 
+#endif
+
 
 
 /*
 *                          src/argparse.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
 #include <math.h>
 
 static char*
@@ -11974,9 +12153,9 @@ _cex_argparse__error(argparse_c* self, argparse_opt_s* opt, char* reason, bool i
 {
     (void)self;
     if (is_long) {
-        fprintf(stdout, "error: option `--%s` %s\n", opt->long_name, reason);
+        cexsp__fprintf(stdout, "error: option `--%s` %s\n", opt->long_name, reason);
     } else {
-        fprintf(stdout, "error: option `-%c` %s\n", opt->short_name, reason);
+        cexsp__fprintf(stdout, "error: option `-%c` %s\n", opt->short_name, reason);
     }
 
     return Error.argument;
@@ -11993,16 +12172,17 @@ cex_argparse_usage(argparse_c* self)
         for$iter (str_s, it, str.slice.iter_split(str.sstr(self->usage), "\n", &it.iterator)) {
             if (it.val.len == 0) { break; }
 
-            char* fn = strrchr(self->program_name, '/');
+            char* fn = str.findr(self->program_name, "/");
+
             if (fn != NULL) {
                 io.printf("%s ", fn + 1);
             } else {
                 io.printf("%s ", self->program_name);
             }
 
-            if (fwrite(it.val.buf, sizeof(char), it.val.len, stdout)) { ; }
+            if (io.fwrite(stdout, it.val.buf, it.val.len)) { /* error ignored */ }
 
-            fputc('\n', stdout);
+            io.printf("\n");
         }
     } else {
         if (self->commands) {
@@ -12026,7 +12206,7 @@ cex_argparse_usage(argparse_c* self)
     // print description
     if (self->description) { io.printf("%s\n", self->description); }
 
-    fputc('\n', stdout);
+    io.printf("\n");
 
 
     // figure out best width
@@ -12071,9 +12251,7 @@ cex_argparse_usage(argparse_c* self)
         usize pos = 0;
         usize pad = 0;
         if (opt->type == CexArgParseType__group) {
-            fputc('\n', stdout);
-            io.printf("%s", opt->help);
-            fputc('\n', stdout);
+            io.printf("\n%s\n", opt->help);
             continue;
         }
         pos = io.printf("    ");
@@ -12084,7 +12262,7 @@ cex_argparse_usage(argparse_c* self)
         if (pos <= usage_opts_width) {
             pad = usage_opts_width - pos;
         } else {
-            fputc('\n', stdout);
+            io.printf("\n");
             pad = usage_opts_width;
         }
         if (!str.find(opt->help, "\n")) {
@@ -12287,7 +12465,7 @@ _cex_argparse__options_check(argparse_c* self, bool reset)
                 }
             } else {
                 if (opt->required && !opt->is_present) {
-                    fprintf(
+                    cexsp__fprintf(
                         stdout,
                         "Error: missing required option: -%c/--%s\n",
                         opt->short_name,
@@ -12376,7 +12554,7 @@ _cex_argparse__report_error(argparse_c* self, Exc err)
         if (self->options != NULL) {
             io.printf("error: unknown option `%s`\n", self->argv[0]);
         } else {
-            fprintf(
+            cexsp__fprintf(
                 stdout,
                 "error: command name expected, got option `%s`, try --help\n",
                 self->argv[0]
@@ -12603,11 +12781,15 @@ const struct __cex_namespace__argparse argparse = {
     // clang-format on
 };
 
+#endif
+
 
 
 /*
 *                          src/_subprocess.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
+
 
 #if defined(__clang__)
 #if __has_warning("-Wunsafe-buffer-usage")
@@ -13392,12 +13574,14 @@ int subprocess_alive(struct subprocess_s *const process) {
 #endif
 #endif
 
+#endif
 
 
 
 /*
 *                          src/os.c
 */
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
 
 #ifndef _WIN32
 #    include <dirent.h>
@@ -14747,12 +14931,15 @@ const struct __cex_namespace__os os = {
 
     // clang-format on
 };
+#endif
 
 
 
 /*
 *                          src/cex_code_gen.c
 */
+#if !defined(cex$enable_minimal)
+
 
 void
 _cex__codegen_indent(_cex__codegen_s* cg)
@@ -14840,11 +15027,15 @@ _cex__codegen_print_case_exit(_cex__codegen_s** cgptr)
 
 #    undef cg$printva
 
+#endif
+
 
 
 /*
 *                          src/cexy.c
 */
+#if !defined(cex$enable_minimal)
+
 #include <stdbool.h>
 #include <stdio.h>
 #if defined(CEX_BUILD) || defined(CEX_NEW)
@@ -17999,11 +18190,15 @@ const struct __cex_namespace__cexy cexy = {
 };
 #endif // defined(CEX_BUILD)
 
+#endif
+
 
 
 /*
 *                          src/CexParser.c
 */
+#if !defined(cex$enable_minimal)
+
 #include <ctype.h>
 
 const char* CexTkn_str[] = {
@@ -18895,11 +19090,15 @@ const struct __cex_namespace__CexParser CexParser = {
     // clang-format on
 };
 
+#endif
+
 
 
 /*
 *                          src/cex_maker.c
 */
+#if !defined(cex$enable_minimal)
+
 #if defined(CEX_NEW)
 #    if __has_include("cex.c")
 #        error                                                                                     \
@@ -18924,11 +19123,15 @@ main(int argc, char** argv)
 }
 #endif
 
+#endif
+
 
 
 /*
 *                          src/fuzz.c
 */
+#if !defined(cex$enable_minimal)
+
 
 /// Creates new fuzz data generator, for fuzz-driven randomization
 cex_fuzz_s
@@ -19001,6 +19204,8 @@ const struct __cex_namespace__fuzz fuzz = {
 
     // clang-format on
 };
+
+#endif
 
 
 

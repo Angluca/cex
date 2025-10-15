@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal)
 #include "all.h"
 
 /// Fuzz case: ``int fuzz$case(const u8* data, usize size) { return 0;}
@@ -209,3 +210,4 @@ struct __cex_namespace__fuzz {
 };
 CEX_NAMESPACE struct __cex_namespace__fuzz fuzz;
 
+#endif

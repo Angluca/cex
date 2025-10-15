@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
 #include "all.c"
 #include "cex_base.h"
 
@@ -1350,3 +1351,4 @@ const struct __cex_namespace__os os = {
 
     // clang-format on
 };
+#endif

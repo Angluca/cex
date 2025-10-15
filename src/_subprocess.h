@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal) || defined(cex$enable_os)
+
 /*
    The latest version of this library is available on GitHub;
    https://github.com/sheredom/subprocess.h
@@ -418,3 +420,5 @@ struct subprocess_s {
 #endif
 
 #endif /* SHEREDOM_SUBPROCESS_H_INCLUDED */
+
+#endif

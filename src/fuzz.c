@@ -1,3 +1,5 @@
+#if !defined(cex$enable_minimal)
+
 #include "fuzz.h"
 
 /// Creates new fuzz data generator, for fuzz-driven randomization
@@ -71,3 +73,5 @@ const struct __cex_namespace__fuzz fuzz = {
 
     // clang-format on
 };
+
+#endif

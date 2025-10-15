@@ -1,6 +1,17 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_str)
 #include "_sprintf.h"
 #include "all.c"
+
+static inline int _cex_str__toupper(int c) {
+    if ((unsigned)c - 'a' < 26) return c & 0x5f;
+    return c;
+}
+
+static inline int _cex_str__tolower(int c) {
+    if ((unsigned)c - 'A' < 26) return c | 0x20;
+    return c;
+}
 
 static inline bool
 _cex_str__isvalid(str_s* s)
@@ -66,7 +77,7 @@ cex_str_eqi(char* a, char* b)
 {
     if (unlikely(a == NULL || b == NULL)) { return a == b; }
     while (*a && *b) {
-        if (tolower((u8)*a) != tolower((u8)*b)) { return false; }
+        if (_cex_str__tolower((u8)*a) != _cex_str__tolower((u8)*b)) { return false; }
         a++;
         b++;
     }
@@ -509,7 +520,7 @@ cex_str__slice__qscmpi(const void* a, const void* b)
     char* s = self.buf;
     char* o = other.buf;
     for (usize i = 0; i < min_len; i++) {
-        cmp = tolower(*s) - tolower(*o);
+        cmp = _cex_str__tolower(*s) - _cex_str__tolower(*o);
         if (cmp != 0) { return cmp; }
         s++;
         o++;
@@ -1204,7 +1215,7 @@ cex_str_lower(char* s, IAllocator allc)
 
     char* result = mem$malloc(allc, slen + 1);
     if (result) {
-        for (usize i = 0; i < slen; i++) { result[i] = tolower(s[i]); }
+        for (usize i = 0; i < slen; i++) { result[i] = _cex_str__tolower(s[i]); }
         result[slen] = '\0';
     }
     return result;
@@ -1220,7 +1231,7 @@ cex_str_upper(char* s, IAllocator allc)
 
     char* result = mem$malloc(allc, slen + 1);
     if (result) {
-        for (usize i = 0; i < slen; i++) { result[i] = toupper(s[i]); }
+        for (usize i = 0; i < slen; i++) { result[i] = _cex_str__toupper(s[i]); }
         result[slen] = '\0';
     }
     return result;
@@ -1545,12 +1556,12 @@ cex_str_qscmpi(const void* a, const void* b)
     if (_a == NULL || _b == NULL) { return (_a < _b) - (_a > _b); }
 
     while (*_a && *_b) {
-        int diff = tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
+        int diff = _cex_str__tolower((unsigned char)*_a) - _cex_str__tolower((unsigned char)*_b);
         if (diff != 0) { return diff; }
         _a++;
         _b++;
     }
-    return tolower((unsigned char)*_a) - tolower((unsigned char)*_b);
+    return _cex_str__tolower((unsigned char)*_a) - _cex_str__tolower((unsigned char)*_b);
 }
 
 const struct __cex_namespace__str str = {
@@ -1627,3 +1638,4 @@ const struct __cex_namespace__str str = {
 
     // clang-format on
 };
+#endif

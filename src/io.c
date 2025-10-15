@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(cex$enable_minimal) || defined(cex$enable_io)
 #include "all.h"
 #include "cex.h"
 #include "src/cex_base.h"
@@ -9,6 +10,8 @@
 #    include <io.h>
 #    include <sys/stat.h>
 #    include <windows.h>
+#elif cex$is_freestanding
+// does not support unistd.h
 #else
 #    include <sys/stat.h>
 #    include <unistd.h>
@@ -44,14 +47,6 @@ cex_io_fopen(FILE** file, char* filename, char* mode)
 }
 
 
-/// Obtain file descriptor from FILE*
-int
-cex_io_fileno(FILE* file)
-{
-    uassert(file != NULL);
-    return fileno(file);
-}
-
 /// Check if current file supports ANSI colors and in interactive terminal mode
 bool
 cex_io_isatty(FILE* file)
@@ -61,6 +56,8 @@ cex_io_isatty(FILE* file)
     if (unlikely(file == NULL)) { return false; }
 #ifdef _WIN32
     return _isatty(_fileno(file));
+#elif cex$is_freestanding
+    return false;
 #else
     return isatty(fileno(file));
 #endif
@@ -140,6 +137,8 @@ cex_io__file__size(FILE* file)
     } else {
         return 0;
     }
+#elif cex$is_freestanding
+    return 0;
 #else
     struct stat stat;
     int ret = fstat(fileno(file), &stat);
@@ -416,7 +415,22 @@ cex_io_fwrite(FILE* file, void* buff, usize buff_len)
     usize ret_count = fwrite(buff, 1, buff_len, file);
 
     if (ret_count != buff_len) {
-        return os.get_last_error();
+        // return os.get_last_error();
+        switch (errno) {
+            case 0:
+                uassert(errno != 0 && "errno is ok");
+                return "Error, but errno is not set";
+            case ENOENT:
+                return Error.not_found;
+            case EPERM:
+                return Error.permission;
+            case EIO:
+                return Error.io;
+            case EAGAIN:
+                return Error.try_again;
+            default:
+                return strerror(errno);
+        }
     } else {
         return Error.ok;
     }
@@ -534,7 +548,6 @@ const struct __cex_namespace__io io = {
 
     .fclose = cex_io_fclose,
     .fflush = cex_io_fflush,
-    .fileno = cex_io_fileno,
     .fopen = cex_io_fopen,
     .fprintf = cex_io_fprintf,
     .fread = cex_io_fread,
@@ -557,3 +570,5 @@ const struct __cex_namespace__io io = {
 
     // clang-format on
 };
+
+#endif

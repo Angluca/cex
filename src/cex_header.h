@@ -85,6 +85,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #include <errno.h>
 #include <stdalign.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

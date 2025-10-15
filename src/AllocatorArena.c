@@ -1,5 +1,8 @@
 #include "AllocatorArena.h"
 
+#if !defined(cex$enable_minimal) || defined(cex$enable_mem)
+
+
 #define CEX_ARENA_MAX_ALLOC UINT32_MAX - 1000
 #define CEX_ARENA_MAX_ALIGN 64
 
@@ -112,7 +115,7 @@ _cex_allocator_arena__check_pointer_valid(AllocatorArena_c* self, void* old_ptr)
             u32 ptr_scope_mark =
                 (((char*)rec) - ((char*)page) - sizeof(allocator_arena_page_s) + page->used_start);
 
-            if (self->scope_depth < arr$len(self->scope_stack)) {
+            if (self->scope_depth < sizeof(self->scope_stack) / sizeof((self->scope_stack)[0])) {
                 if (ptr_scope_mark < self->scope_stack[self->scope_depth - 1]) {
                     uassert(
                         ptr_scope_mark >= self->scope_stack[self->scope_depth - 1] &&
@@ -357,7 +360,7 @@ _cex_allocator_arena__scope_enter(IAllocator allc)
     AllocatorArena_c* self = (AllocatorArena_c*)allc;
     // NOTE: If scope_depth is higher CEX_ALLOCATOR_MAX_SCOPE_STACK, we stop marking
     //  all memory will be released after exiting scope_depth == CEX_ALLOCATOR_MAX_SCOPE_STACK
-    if (self->scope_depth < arr$len(self->scope_stack)) {
+    if (self->scope_depth < sizeof(self->scope_stack) / sizeof((self->scope_stack)[0])) {
         self->scope_stack[self->scope_depth] = self->used;
     }
     self->scope_depth++;
@@ -375,7 +378,7 @@ _cex_allocator_arena__scope_exit(IAllocator allc)
     uassert(AllocatorArena_sanitize(allc));
 #endif
     self->scope_depth--;
-    if (self->scope_depth >= arr$len(self->scope_stack)) {
+    if (self->scope_depth >= sizeof(self->scope_stack) / sizeof((self->scope_stack)[0])) {
         // Scope overflow, wait until we reach CEX_ALLOCATOR_MAX_SCOPE_STACK
         return;
     }
@@ -541,7 +544,10 @@ AllocatorArena_destroy(IAllocator self)
     mem$free(mem$, allc);
 }
 
-_Thread_local AllocatorArena_c _cex__default_global__allocator_temp = {
+#if !cex$is_freestanding
+_Thread_local 
+#endif
+AllocatorArena_c _cex__default_global__allocator_temp = {
     .alloc = {
         .malloc = _cex_allocator_arena__malloc,
         .realloc = _cex_allocator_arena__realloc,
@@ -569,3 +575,5 @@ const struct __cex_namespace__AllocatorArena AllocatorArena = {
 
     // clang-format on
 };
+
+#endif
