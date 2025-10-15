@@ -51,8 +51,23 @@ jobs:
           cc -g ./cex.c -o ./cex 
           ./cex -D${{ matrix.cex_preset }} config
 
+      - name: freestanding examples
+        run: |
+          ulimit -c unlimited 
+          cd examples/freestanding
+          ls -la
+          clang ./cex.c -o ./cex 
+          ./cex config
+          ./cex build src/freestanding_1minimal.c
+          ./cex build src/freestanding_2mem.c
+          ./cex build src/freestanding_3ds.c
+          ./cex build src/freestanding_4strings.c
+          ./cex build src/freestanding_5io.c
+          ./cex build src/freestanding_6os.c
+
       - uses: ./.github/actions/cex_examples
         name: cex examples suite
+
 
 
   tests-windows:
