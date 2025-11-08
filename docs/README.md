@@ -12,7 +12,7 @@ format:
     highlight-style: github-dark
     css: _quarto/styles.css
     syntax-definitions:
-      - _quarto/cex_syntax.xml 
+      - _quarto/cex_syntax.xml
     filters:
       - _quarto/callouts.lua
 
@@ -34,7 +34,7 @@ format:
 ### What is CEX
 Cex.C (officially pronounced /ˈtsɛk.si/ "tsek-see") is Comprehensively EXtended C Language . CEX was born as alternative answer to a plethora of brand new LLVM based languages which strive to replace old C. CEX still remains C language itself, with small but important tweaks that makes CEX a completely different development experience.
 
-I tried to bring best ideas from the modern languages while maintaining smooth developer experience for writing C code. The main goal of CEX is to provide tools for developers and helping them writing high quality C code in general.
+I tried to bring the best ideas from the modern languages while maintaining smooth developer experience for writing C code. The main goal of CEX is to provide tools for developers and help them write high quality C code in general.
 
 #### Core features
 
@@ -67,7 +67,7 @@ CEX is another attempt to make old C a little bit better. Unlike other new syste
 
 ### Making new CEX project
 
-You can initialize a working boiler plate project just using a C compiler and the `cex.h` file.
+You can initialize a working boilerplate project just using a C compiler and the `cex.h` file.
 
 > [!NOTE]
 >
@@ -87,11 +87,11 @@ cc -D CEX_NEW -x c ./cex.h -o ./cex
 ```
 4. Run cex program for project initialization
 
-Cex program automatically creating a project structure with sample app and unit tests. Also it recompiles itself to become universal build system for the project. You may change its logic inside `cex.c` file, this is your build script now.
+Cex program automatically creating a project structure with sample app and unit tests. It also recompiles itself to become universal build system for the project. You may change its logic inside `cex.c` file, this is your build script now.
 ```sh
 ./cex
 ```
-5. Now your project is ready to go 
+5. Now your project is ready to go
 
 Now you can launch a sample program or run its unit tests.
 ```sh
@@ -135,7 +135,7 @@ Global environment:
 ```
 
 ### Meet Cexy build system
-`cexy$` is a build system integrated with Cex, which helps to manage your project, run tests, find symbols and getting help. 
+`cexy$` is a build system integrated with Cex, which helps to manage your project, run tests, find symbols and getting help.
 
 
 ```sh
@@ -257,7 +257,7 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 * Alpine linux - (libc musl, gcc) on architectures x86_64, x86, aarch64, armhf, armv7, loongarch64, ppc64le, riscv64, and s390x (big-endian)
 * Windows (via MSYS2 build) - x64 (mingw64 + clang), libc mscrt/ucrt
 * Macos - x64 / arm64 (clang)
-- WASM - emscripten compiler 
+- WASM - emscripten compiler
 
 ### Resources
 * [GitHub Repo](https://github.com/alexveden/cex)
@@ -269,33 +269,33 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 
 Cex was designed as a thin base layer above core C language, with the followings goals in mind:
 
-* **Enhancing developer experience.** Most common things should be seamless as possible, without changing core language mechanics. Reducing boilerplate code, with improving readability and debugability. 
+* **Enhancing developer experience.** Most common things should be seamless as possible, without changing core language mechanics. Reducing boilerplate code, with improving readability and debuggability.
 * **Eliminating dependencies.** Cex is a single header, all-in-one language, with core tools for building, testing and debugging your project. You need only C compiler (clang or gcc), that's it. Build system is included, you can write your build logic in C.
 * **Cross-platform.** All Cex capabilities are cross-platform tested, and you don't need to figure out nuances of behavior of system API for different platforms.
 * **Self-sufficient build system.** CMake/Make/ShellScripts are dependencies, they essentially separate programming languages, it's a burden. Cex itself is a build system, with simple CLI and supports cross-platform builds, persistent configuration, build logic written in C (like in Zig).
-* **Scripting-flavor.** CEX designed to make common code patterns easy to work with, it combats with extra complexity, reducing mental overhead for writing code. New memory management and error handling make daily life way more easier.
+* **Scripting-flavor.** CEX designed to make common code patterns easy to work with, it combats with extra complexity, reducing mental overhead for writing code. New memory management and error handling make daily life way easier.
 * **Less is more and enough is enough.** Cex trying to add just enough new entities (types, namespaces, functions) to original C to make life easier, extend C functionality only when needed. Cex embraces conservatism of C, and it's goal to be a stable base layer for projects years ahead.
-* **Code quality tools.** Cex leverages existing compiler capabilities for making C code better. It includes sanitizers, lib fuzzers, and unit tests out of the box, letting your to focus on development.
+* **Code quality tools.** Cex leverages existing compiler capabilities for making C code better. It includes sanitizers, lib fuzzers, and unit tests out of the box, letting you focus on development.
 * **Long-term lifetime.** When a project is built with CEX, it carries all what's needed inside its repo, CEX header itself after 1.0 release will be maintained for ultimate backward compatibility. Ideally, it has to be API stable at SQLite project.
 
 ### Simplicity as a virtue
-C was a least common denominator for legacy and modern system software for decades. It's a simple language, but very hard to master. Cex tries to add thin layer of things, for making life a little bit easier, but without bringing to much complexity to the code.
+C was the least common denominator for legacy and modern system software for decades. It's a simple language, but very hard to master. Cex tries to add thin layer of things, for making life a little bit easier, but without bringing too much complexity to the code.
 
-It's challenging to make something simple by adding more stuff, which by definition adding a complexity. However, by adding stuff Cex reduces decision making burden, providing common code patterns, utility functions, and rethinking C experience. 
+It's challenging to make something simple by adding more stuff, which by definition adding a complexity. However, by adding stuff Cex reduces decision-making burden, providing common code patterns, utility functions, and rethinking C experience.
 
 For example:
 
 * Cex errors make vanilla C error handling obsolete. It's just one type with two states (error / no error), with unlimited options for errors variants. No more special enums, no more `-1 and errno`. Cex errors are easy to throw, easy to log, easy to handle.
-* Memory handling via allocators make all allocating function explicit. It's easier to reason about the code, easier to track lifetimes, easier to cleanup when using arenas and scopes. Also having standard allocators allows to make reusable code or use allocators for memory leaks debugging.
-* Namespaces mitigate remembering burden when we have dozens of functions with the same prefix, it's easier to type and follow by LSP suggestions. Using sub-namespaces allows to reduce mental overhead of picking right one. For example, `str.convert.` and `str.slice.` expand to specific sub-namespaces in LSP suggestions in CEX. Using namespaces feels like a decision tree, you branch step by step from upper namespace to sub-namespace to end function. It's feels much easier to work with `str.slice.remove_prefix` typing than remembering full function name `str_slice_remove_prefix.` 
+* Memory handling via allocators make all allocating function explicit. It's easier to reason about the code, easier to track lifetimes, easier to clean up when using arenas and scopes. Also having standard allocators allows to make reusable code or use allocators for memory leaks debugging.
+* Namespaces mitigate remembering burden when we have dozens of functions with the same prefix, it's easier to type and follow by LSP suggestions. Using sub-namespaces allows to reduce mental overhead of picking right one. For example, `str.convert.` and `str.slice.` expand to specific sub-namespaces in LSP suggestions in CEX. Using namespaces feels like a decision tree, you branch step by step from upper namespace to sub-namespace to end function. It's feels much easier to work with `str.slice.remove_prefix` typing than remembering full function name `str_slice_remove_prefix.`
 * Commonality of data collections. Cex has dynamic arrays and hashmaps, which can be handled as any other C array.Inspired by Python approach of applying of `len` and `for` to anything iterable, Cex also has `arr$len` and `for$each` which can be commonly used for any C/Cex static or dynamic array, hashmap or pointer+length data.
-* Cex built system might look like overkill (~~just use CMake~~) however with it you still practicing C/Cex, no extra dependency needed for building your project. Cex on the other hand doing its best to provide utility tools for building code, working with files, strings, and OS.
+* Cex built system might look like overkill (~~just use CMake~~) however, with it you still practicing C/Cex, no extra dependency needed for building your project. Cex on the other hand doing its best to provide utility tools for building code, working with files, strings, and OS.
 
 ### Making C cexy again
 
-Old kind C99 might look too outdated for the modern times, but we have C23 compilers nowadays with brilliant tooling like sanitizers and fuzzers included. This opens a new era of C, safer C. 
+Old kind C99 might look too outdated for the modern times, but we have C23 compilers nowadays with brilliant tooling like sanitizers and fuzzers included. This opens a new era of C, safer C.
 
-C looks like it's a perfect fit for unsafe low-level applications like OS kernels, drivers, math libraries. Doing higher level stuff was always miserable in C in different reasons. Cex is an attempt of bringing C on a little bit higher level. 
+C looks like it's a perfect fit for unsafe low-level applications like OS kernels, drivers, math libraries. Doing higher level stuff was always miserable in C in different reasons. Cex is an attempt of bringing C on a little bit higher level.
 
 #### Joy of C
 
@@ -310,7 +310,7 @@ Mission of CEX is to bring joy of the programming in C on the new level, to help
 What if self shooting in the foot is not a bad idea? Before you start imagining pistol or shotgun, hold off, let's start small... What if we could pick a toy gun with plastic bullets? What if we could stress test our code under different conditions and see what's happened? What happens when we pass NULL to that argument? What about buffer overflow?
 
 > [!CAUTION]
-> 
+>
 > CEX Principle: making by shaking.
 
 For making safe C code we must have tools for that, fortunately modern compilers already have them:
@@ -320,7 +320,7 @@ For making safe C code we must have tools for that, fortunately modern compilers
 3. Fuzzers - for some cases the variety of inputs is too large, so we could not cover all of them via unit testing. Fuzzers come to help with this issue, but also can be used in Deterministic Simulation Testing, or randomized testing. LibFuzzer is included in clang, or you can use AFL++ if you want.
 4. Assertions - placing asserts everywhere in your code is a big deal for a code quality, and long term early warning about possible system inconsistencies. They can be used not only at checking input of a function, but validating results, or even at intermediate stages.
 
-All of the tools above are available with `cex.h` out of the box, so adding new test via CLI never has been easier:
+All the tools above are available with `cex.h` out of the box, so adding new test via CLI never has been easier:
 
 ```sh
 # New test boilerplate
@@ -336,7 +336,7 @@ All of the tools above are available with `cex.h` out of the box, so adding new 
 
 #### Problems and solutions of C
 
-Every programming language has its own quirks, sharp edges, and workarounds. C is not an exception here. However, in my opinion, sanitizers made a revolution in C development. With modern compilers C is much safer than it used to be even 10 years ago. Fuzzers made another step above, especially if your program works a lot with user input. 
+Every programming language has its own quirks, sharp edges, and workarounds. C is not an exception here. However, in my opinion, sanitizers made a revolution in C development. With modern compilers C is much safer than it used to be even 10 years ago. Fuzzers made another step above, especially if your program works a lot with user input.
 
 
 | Problem | Solution |
@@ -372,7 +372,7 @@ Every programming language has its own quirks, sharp edges, and workarounds. C i
 
 #### How to improve C
 
-Cex was initially inspired by my Python experience, especially how very limited set of built-in types (str, list, dict, tuple, set + primitives) and simple semantics were able to produce huge ecosystem of Python nowadays. In my opinion, we don't need to have every hyped programming paradigm to be added to the C language to make it better. 
+Cex was initially inspired by my Python experience, especially how very limited set of built-in types (str, list, dict, tuple, set + primitives) and simple semantics were able to produce huge ecosystem of Python nowadays. In my opinion, we don't need to have every hyped programming paradigm to be added to the C language to make it better.
 
 However, we need some things to be productive in C that CEX tries to implement:
 
@@ -477,7 +477,7 @@ CEX provides several short aliases for primitive types and some extra types for 
 
 ### The problem of error handling in C
 
-C errors always were a mess due to historical reasons and because of ABI specifics. The main curse of C error is mixing values with errors, for example system specific calls return `-1` and set `errno` variable. Some return 0 on error, some NULL, sometimes is an enum, or `MAP_FAILED (which is (void*)-1)`. 
+C errors always were a mess due to historical reasons and because of ABI specifics. The main curse of C error is mixing values with errors, for example system specific calls return `-1` and set `errno` variable. Some return 0 on error, some NULL, sometimes is an enum, or `MAP_FAILED (which is (void*)-1)`.
 
 This convention on errors drains a lot of developer energy making him to keep searching docs and figuring out which return values of a function considered errors.
 
@@ -505,7 +505,7 @@ isize read_file(char* filename, char* buf, usize buf_size) {
     return bytes_read; /* <4> */
 }
 ```
-1. `errno` is set, but it hard to distinguish by which API call or function argument is failed. 
+1. `errno` is set, but it hard to distinguish by which API call or function argument is failed.
 2. Error message line is located not at the same place as it was reported, so the developer must go through code to check.
 3. `errno` is too broad and ambiguous for describing exact reason of failure.
 4. `foo` return value is mixing error `-1` and legitimate value of `bytes_read`. The situation gets worse if we need to use non integer return type of a function.
@@ -678,7 +678,7 @@ Main benefits of using CEX error handling system:
 7. Traceback support when chained via multiple functions
 
 ::: {.panel-tabset}
-#### CEX 
+#### CEX
 ```c
 Exception read_file(char* filename, char* buf, isize* out_buf_size) {
     e$assert(buff != NULL);  /* <1> */
@@ -729,7 +729,7 @@ In general, `e$` macros provide location logging (source file, line, function), 
 #### Returning the `Exc[eption]`
 Errors in CEX are just plain string pointers. If the `Exception` function returns `NULL` or `EOK` or `Error.ok` this is indication of successful execution, otherwise any other value is an error.
 
-Also you may return with `e$raise(error_to_return, format, ...)` macro, which prints location of the error in the code with message formatting.
+Also, you may return with `e$raise(error_to_return, format, ...)` macro, which prints location of the error in the code with message formatting.
 
 ```c
 Exception error_sample1(int a) {
@@ -752,7 +752,7 @@ Error handling in CEX supports two ways:
 
 ##### Silent handling example
 > [!NOTE]
-> 
+>
 > Avoid using e$raise() in called functions if you need silent error handling, use plain `return Error.*`
 
 ```c
@@ -789,7 +789,7 @@ Exception foo_silent(void) {
 ```
 
 > [!NOTE]
-> 
+>
 > `e$except_silent` will print error log when code runs under unit test or inside CEX build system, this helps a lot with debugging.
 
 ##### Loud handling with logging
@@ -804,7 +804,7 @@ There are special error handling macros for this purpose:
 4. `e$except_true(func()) { ... }` - error handling for functions returning non-zero code on error.
 5. `e$ret(func_call());` - runs the `Exception` type returning function `func_call()`,  and on error it logs the traceback and re-return the same return value. This is a main code shortcut and driver for all CEX tracebacks. Use it if you don't care about precise error handling and fine to return immediately on error.
 6. `e$goto(func_call(), goto_err_label);` - runs the `Exception` type function, and does `goto goto_err_label;`. This macro is useful for resource deallocation logic, and intended to use for typical C error handling pattern `goto fail`.
-7. `e$assert(condition)` or `e$assert(condition && "What's wrong")` or `e$assertf(condition, format, ...)`  - quick condition checking inside `Exception` functions, logs a error location + returns `Error.assert`. These asserts remain in release builds and do not affected by `NDEBUG` flag. 
+7. `e$assert(condition)` or `e$assert(condition && "What's wrong")` or `e$assertf(condition, format, ...)`  - quick condition checking inside `Exception` functions, logs an error location + returns `Error.assert`. These asserts remain in release builds and are not affected by the `NDEBUG` flag.
 
 ```c
 Exception foo_loud(int a) {
@@ -852,7 +852,7 @@ fail:
 
 #### Caveats
 
-Most of `e$excep_*` macros are backed by `for()` loop, so you have to be careful when you nest them inside outer loops and try to `break`/`continue` outer loop on error. 
+Most of `e$excep_*` macros are backed by `for()` loop, so you have to be careful when you nest them inside outer loops and try to `break`/`continue` outer loop on error.
 
 In my opinion using `e$except_` inside loops is generally bad idea, and you should consider:
 
@@ -970,14 +970,14 @@ Exception foo(int a) {
 ### Advanced topics
 #### Performance
 ##### Errors are pointers
-Using strings as error value carrier may look controversial at the first glance. However let's remember that strings in C are `char*`, and essentially `*` part means that it's a `size_t` integer value of a memory address. Therefore CEX approach is to have set of pre-defined and constant memory addresses that hold standard error values (see `Standard Error` section above).
+Using strings as error value carrier may look controversial at the first glance. However, let's remember that strings in C are `char*`, and essentially `*` part means that it's a `size_t` integer value of a memory address. Therefore, CEX approach is to have set of pre-defined and constant memory addresses that hold standard error values (see `Standard Error` section above).
 
 So for error handling we need to compare return value with `EOK|NULL|Error.ok` to check if error was returned or not. Then we check address of returned error and compare it with the address of the standard error.
 
 With this being said, performance of typical error handling in CEX is one assembly instruction that compares a register with `NULL` and one instruction for comparing **address** of an error with some other constant address when handling returned error type.
 
 > [!NOTE]
-> 
+>
 > CEX uses direct pointer comparison `if (err == Error.argument)`, instead of string content comparison `if(strcmp(err, "ArgumentError") == 0) /* << BAD */`
 
 ##### Branch predictor control
@@ -1041,7 +1041,7 @@ main(int argc, char** argv)
 Instead of doing `if` nesting, try an opposite approach, check an error and exit. In CEX you can also use `e$assert()` for a quick and dirty checking with one line.
 
 ::: {.panel-tabset}
-##### CEX 
+##### CEX
 ```c
 Exception
 app_main(int argc, char** argv)
@@ -1150,7 +1150,7 @@ fail:
 ## Memory management
 
 ### The problem of memory management in C
-C has a long-lasting history of memory management issues. Many modern languages proposed multiple solutions for these issues: RAII, borrow checkers, garbage collection, allocators, etc. All of them work and solve the memory problem to some extent, but sometimes adding new sets of problems in different places. 
+C has a long-lasting history of memory management issues. Many modern languages proposed multiple solutions for these issues: RAII, borrow checkers, garbage collection, allocators, etc. All of them work and solve the memory problem to some extent, but sometimes adding new sets of problems in different places.
 
 From my prospective, the root cause of the C memory problem is hidden memory allocation. When developer works with a function which does memory allocation, it's hard to remember its behavior without looking into source code or documentation. Absence of explicit indication of memory allocation lead to the flaws with memory handling, for example: memory leaks, use after free, or performance issues.
 
@@ -1164,7 +1164,7 @@ CEX tries to adopt allocator-centric approach to memory management, which help t
 * **Transparent memory management.** All memory operations are provided by `IAllocator` interface, which can be interchangeable allocator object of different type.
 * **Memory scoping**. When possible memory usage should be limited by scope, which naturally regulates lifetimes of allocated memory and automatically free it after exiting scope.
 * **UnitTest Friendly**. Allocators allowing implementation of additional levels of memory safety when run in unit test environment. For example, CEX allocators add special poisoned areas around allocated blocks, which trigger address sanitizer when this region accesses with user code. Allocators open door for a memory leak checks, or extra memory error simulations for better out-of-memory error handling.
-* **Standard and Temporary allocators**. Sometimes it's useful to have initialized allocator under your belt for short-lived temporary operations. CEX provides two global allocators by default: `mem$` - is a standard heap allocator using `malloc/realloc/free`, and `tmem$` - is dynamic arena allocator of small size (about 256k of per page).  
+* **Standard and Temporary allocators**. Sometimes it's useful to have initialized allocator under your belt for short-lived temporary operations. CEX provides two global allocators by default: `mem$` - is a standard heap allocator using `malloc/realloc/free`, and `tmem$` - is dynamic arena allocator of small size (about 256k of per page).
 
 #### Example
 This is a small example of key memory management concepts in CEX:
@@ -1199,7 +1199,7 @@ You can find more technical details about implementation below in this article.
 #### Allocators
 Allocators add many benefits into codebase design and development experience:
 
-* All memory allocating functions or objects become explicit, because they require `IAllocator` argument 
+* All memory allocating functions or objects become explicit, because they require `IAllocator` argument
 * Logic of the code become detached from memory model, the same dynamic array can be backed by heap, arena, or stack based static char buffer with the same allocator interface. The same piece of code may work on Linux OS or embedded device without changes to memory allocation model.
 * Allocators may add testing capabilities, i.e. simulating out-of-mem errors in unit tests, or adding memory checks or extra integrity checks of memory allocations
 * There are multiple memory allocation models (heap, arenas, temp allocation), so you can find the best type of allocator for your needs and use case.
@@ -1252,13 +1252,13 @@ Allocator scoping:
 #### Dynamic arenas
 Dynamic arenas using an array of dynamically allocated pages, each page has static size and allocated on heap. When you allocate memory on arena and there is enough room on page, the arena allocates this chunk of memory inside page (simply moving a pointer without real allocation). If your memory request is big enough, the arena creates new page while keeping all old pages untouched and manages new allocation on the new page.
 
-Arenas are designed to work with `mem$scope()`, this allowing you create temporary memory allocation, without worrying about cleanup. Once scope is left, the arena will deallocate all memory and return to the initial state. This approach allowing to use up to 32 levels of `mem$scope()` nesting. Essentially it is exact mechanism that fuels `tmem$` - temporary allocator in CEX.
+Arenas are designed to work with `mem$scope()`, allowing you to create temporary memory allocation, without worrying about cleanup. Once scope is left, the arena will deallocate all memory and return to the initial state. This approach allowing to use up to 32 levels of `mem$scope()` nesting. Essentially it is exact mechanism that fuels `tmem$` - temporary allocator in CEX.
 
 Working with arenas:
 
 ::: {.panel-tabset}
 
-##### Direct initialization 
+##### Direct initialization
 ```c
 IAllocator arena = AllocatorArena.create(4096); /*<1>*/
 u8* p = mem$malloc(arena, 100);  /* <2> */
@@ -1322,7 +1322,7 @@ mem$scope(tmem$, _) /* <1> */
 There are two general purpose allocators globally available out of the box for CEX:
 
 * `mem$` - is a heap allocator, the same old `malloc/free` type of allocation, with extra alignment support. In unit tests this allocator provides simple memory leak checks even without address sanitizer enabled.
-* `tmem$` - dynamic arena, with 256kb page size, used for short lived temporary operations, cleans up pages automatically at program exit. Does page allocation only at the first allocation, otherwise remain global static struct instance (about 128 bytes size). Thread safe, uses `thread_local`.
+* `tmem$` - dynamic arena, with 256kb page size, used for short-lived temporary operations, cleans up pages automatically at program exit. Does page allocation only at the first allocation, otherwise remain global static struct instance (about 128 bytes size). Thread safe, uses `thread_local`.
 
 
 #### Caveats
@@ -1348,7 +1348,7 @@ mem$scope(tmem$, _)
 4. You'll face use-after-free, which typically expressed use-after-poison in temp allocator.
 
 > [!TIP]
-> 
+>
 > CEX does its best to catch these cases in unit test mode, it will raise an assertion at the `mem$realloc` line with some meaningful error about this. Standard CEX collections like dynamic arrays `arr$` and hashmap `hm$` also get triggered when they need to resize in a different level of `mem$scope`.
 
 ##### Be careful with reallocations on arenas
@@ -1360,10 +1360,10 @@ When run in test mode (or specifically `#ifdef CEX_TEST` is true) the memory all
 1. Heap based allocator (`mem$`) starts tracking memory leaks, comparing number of allocations and frees.
 2. `mem$malloc()` - return uninitialized memory with `0xf7` byte pattern
 3. If Address Sanitizer is available all allocations for arenas and heap will be surrounded by poisoned areas. If you see use-after-poison errors, it's likely a sign of use-after-free or out of bounds access in `tmem$`. Try to switch your code to the `mem$` allocator if possible to triage the exact reason of the error.
-4. Allocators do sanity checks at the end of the each unit test case
+4. Allocators do sanity checks at the end of each unit test case
 
 ##### Be careful with break/continue
-`mem$scope/mem$arena` are macros backed by `for` loop, be careful when you use them inside loops and trying to `break/continue` outer loop. 
+`mem$scope/mem$arena` are macros backed by `for` loop, be careful when you use them inside loops and trying to `break/continue` outer loop.
 ```c
 // BAD!
 for(u32 i = 0; i < 10; i++){
@@ -1405,8 +1405,8 @@ On the other hand, it's totally fine to pre-allocate some capacity for your need
 
 #### When to use arena or heap allocator
 
-##### ArenaAllocator and `tmem$` use cases 
-ArenaAllocator works great when you need disposable memory for a temporary needs or you have limited boundaries in time and space for a program operation. For example, read file, process it, calculate stuff, close it, done.  
+##### ArenaAllocator and `tmem$` use cases
+ArenaAllocator works great when you need disposable memory for a temporary needs, or you have limited boundaries in time and space for a program operation. For example, read file, process it, calculate stuff, close it, done.
 
 Another great benefit of arenas is stability of memory pointers, once memory is allocated it sits there at the same place.
 
@@ -1425,7 +1425,7 @@ When you run CEX allocators in unit test code, they apply extra sanity check log
 * After each test CEX automatically performs `tmem$` sanity checks in order to find memory corruption
 
 > [!TIP]
-> 
+>
 > If you need to debug memory leaks for your code consider to use `mem$` (heap based) allocation, which utilizes ASAN memory leak tracking mechanisms.
 
 #### Out-of-bounds access and poisoning
@@ -1442,7 +1442,7 @@ mem$scope(tmem$, _)
 ```
 
 > [!NOTE]
-> 
+>
 > CEX convention to use `_` variable as temp allocator.
 
 #### Using heap allocator
@@ -1453,7 +1453,7 @@ uassert(p2 == NULL); // p2 set to NULL by mem$free()
 ```
 
 
-#### Opening new ArenaAllocator scope 
+#### Opening new ArenaAllocator scope
 
 ```c
 mem$arena(4096, arena)
@@ -1517,7 +1517,7 @@ Cex strings follow these principles:
 * Developer convenience - sometimes it's easier to allocate and make new formatted string on `tmem$` for example `str.fmt(_, "Hello: %s", "CEX")`, or use builtin pattern matching engine `str.match(arg[1], "command_*_(insert|delete|update))")`, or work with read-only slice representation of constant strings.
 
 
-> [!TIP] 
+> [!TIP]
 >
 > To get brief cheat sheet on functions list via Cex CLI type `./cex help str$` or `./cex help sbuf$`
 
@@ -1553,7 +1553,7 @@ Use `str` for general purpose string manipulation, this namespace typically retu
 
 ```
 
-### String slices 
+### String slices
 
 CEX has a special type and namespace for slices, which are dedicated struct of `(len, char*)` fields, which intended for working with parts of other strings, or can be a representation of a null-terminated string of full length.
 
@@ -1578,7 +1578,7 @@ str_s my_slice_buf = str.sbuf(buf, arr$len(buf));
 ```
 
 > [!NOTE]
-> 
+>
 > `str_s` types are always passed by value, it's a 16-byte struct, which fits 2 CPU registers on x64
 
 
@@ -1610,7 +1610,7 @@ str_s           str.slice.sub(str_s s, isize start, isize end);
 ```
 
 > [!NOTE]
-> 
+>
 > All Cex formatting functions (e.g. `io.printf()`, `str.fmt()`) support special format `%S` dedicated for string slices, allowing to work with slices naturally.
 
 ```c
@@ -1634,7 +1634,7 @@ if (!my_sub.buf) {/* OOPS error */}
 
 ### String conversions
 
-When working with strings, conversion from string into numerical types become very useful. Libc conversion functions are messy end error prone, CEX uses own implementation, with support for both `char*` and slices `str_s`. 
+When working with strings, conversion from string into numerical types become very useful. Libc conversion functions are messy end error-prone, CEX uses own implementation, with support for both `char*` and slices `str_s`.
 
 You may use one of the functions above or pick type-safe/generic macro `str$convert(str_or_slice, out_var_pointer)`
 
@@ -1692,7 +1692,7 @@ sbuf.destroy(&s);
 3. `s` variable of type `sbuf_c` is compatible with any `char*` routines, because it's an alias of `char*`
 
 > [!TIP]
-> 
+>
 > If you need one-shot format for string try to use `str.fmt(allocator, format, ...)` inside temporary allocator `mem$scope(tmem$, _)`
 
 #### `sbuf` namespace
@@ -1751,7 +1751,7 @@ Key requirements of the CEX data structures:
 * Support any item type including overaligned.
 
 ### Dynamic arrays
-Dynamic arrays (a.k.a vectors or lists) are designed specifically for developer convenience and based on ideas of Sean Barrett's STB DS.
+Dynamic arrays (a.k.a. vectors or lists) are designed specifically for developer convenience and based on ideas of Sean Barrett's STB DS.
 
 #### What is dynamic array in CEX
 Technically speaking it's a simple C pointer `T*`, where `T` is any generic type. The memory for that pointer is allocated by allocator, and its length is stored at some byte offset before the address of the dynamic array head.
@@ -1768,24 +1768,24 @@ With this type representation we can get some useful benefits:
 `arr$` is completely macro-driven namespace, with generic type support and safety checks.
 
 `arr$` API:
- 
-| Macro | Description |
-| -------------- | --------------- |
-| arr\$(T) | Macro type definition, just for indication that it's a dynamic array |
-| arr\$new(arr, allocator, kwargs...) | Initialization of the new instance of dynamic array | 
-| arr\$free(arr) | Dynamic array cleanup (if HeapAllocator was used) |
-| arr\$clear(arr) | Clearing dynamic array contents |
-| arr\$push(arr, item) | Adding new item to the end of array |
-| arr\$pushm(arr, item, item1, itemN) | Adding many new items to the end of array |
-| arr\$pusha(arr, other_arr, \[other_arr_len\]) | Adding many new item to the end of array |
-| arr\$pop(arr) | Returns last element and removes it |
-| arr\$at(arr, i) | Returns element at index with boundary checks for i |
-| arr\$last(arr) | Returns last element |
+
+| Macro | Description                                                             |
+| -------------- |-------------------------------------------------------------------------|
+| arr\$(T) | Macro type definition, just for indication that it's a dynamic array    |
+| arr\$new(arr, allocator, kwargs...) | Initialization of the new instance of dynamic array                     | 
+| arr\$free(arr) | Dynamic array cleanup (if HeapAllocator was used)                       |
+| arr\$clear(arr) | Clearing dynamic array contents                                         |
+| arr\$push(arr, item) | Adding new item to the end of array                                     |
+| arr\$pushm(arr, item, item1, itemN) | Adding many new items to the end of array                               |
+| arr\$pusha(arr, other_arr, \[other_arr_len\]) | Adding another array to the end of array                                |
+| arr\$pop(arr) | Returns last element and removes it                                     |
+| arr\$at(arr, i) | Returns element at index with boundary checks for i                     |
+| arr\$last(arr) | Returns last element                                                    |
 | arr\$del(arr, i) | Removes element at index (following data is moved at the i-th position) |
-| arr\$delswap(arr, i) | Removes element at index, the removed element is replaced by last one |
-| arr\$ins(arr, i, value) | Inserts element at index |
-| arr\$grow_check(arr, add_len) | Grows array by `add_len` if needed |
-| arr\$sort(arr, qsort_cmp) | Sorting array with `qsort` function |
+| arr\$delswap(arr, i) | Removes element at index, the removed element is replaced by last one   |
+| arr\$ins(arr, i, value) | Inserts element at index                                                |
+| arr\$grow_check(arr, add_len) | Grows array by `add_len` if needed                                      |
+| arr\$sort(arr, qsort_cmp) | Sorting array with `qsort` function                                     |
 
 
 #### Examples
@@ -1809,10 +1809,10 @@ for$each (v, arr) { /* <5> */
 arr$free(arr); /* <6> */
 ```
 
-1. Initialization and allocator 
+1. Initialization and allocator
 2. Adding single element
 3. Adding multiple elements via vargs.
-4. Adding arbitrary array, supports static arrays, dynamic CEX arrays or `int*`+arr_len 
+4. Adding arbitrary array, supports static arrays, dynamic CEX arrays or `int*`+arr_len
 5. Array iteration via `for$each` is common and compatible with all arrays in Cex (dynamic, static, pointer+len)
 6. Deallocating memory (only needed when HeapAllocator is used)
 
@@ -1888,9 +1888,9 @@ mem$scope(tmem$, _) /* <1> */
 
 Hashmaps (`hm$`) in CEX are backed by structs with `key` and `value` fields, essentially they are backed by plain dynamic arrays of structs (iterable values) with hash table part for implementing keys hashing.
 
-Hashmaps in CEX are also generic, you may use any type of keys or values. However, there are special handling for string keys (`char*`, or `str_s` CEX slices). Typically string keys are not copied by hashmap by default, and stored by reference, so you'll have to keep their allocation stable.
+Hashmaps in CEX are also generic, you may use any type of keys or values. However, there are special handling for string keys (`char*`, or `str_s` CEX slices). Typically, string keys are not copied by hashmap by default, and stored by reference, so you'll have to keep their allocation stable.
 
-Hashmap initialization is similar to the dynamic arrays, you should define type and call `hm$new`.
+Hashmap initialization is similar to the dynamic arrays, you should define a type and call `hm$new`.
 
 #### Array compatibility
 Hashmaps in CEX are backed by dynamic arrays, which leads to the following developer experience enhancements:
@@ -1905,7 +1905,7 @@ There are several ways for declaring hashmap types:
 1. Local function hashmap variables
 ```c
     hm$(char*, int) intmap = hm$new(intmap, mem$);
-    hm$(const char*, int) ap = hm$new(map, mem$);
+    hm$(const char*, int) map = hm$new(map, mem$);
     hm$(struct my_struct, int) map = hm$new(map, mem$);
 
 ```
@@ -1913,7 +1913,7 @@ There are several ways for declaring hashmap types:
 2. Global hashmaps with special types
 ```c
 
-// NOTE: struct must have .key and .value fields
+// NOTE: struct must have the .key and .value fields
 typedef struct
 {
     int key;
@@ -1931,7 +1931,7 @@ void my_func(hm$s(my_hm_struct)* map) {
     // NOTE: passing hashmap type, parameter
     int v = hm$get(*map, 1);
 
-    // NOTE: hm$set() may resize map, because of this we use `* map` argument, for keeping pointer valid!
+    // NOTE: hm$set() may resize map, because of this we use `* map` argument, for keeping the pointer valid!
     hm$set(*map, 3, 4);
 
     // Setting entire structure
@@ -1940,7 +1940,7 @@ void my_func(hm$s(my_hm_struct)* map) {
 
 ```
 
-3. Declaring hashmap as type
+3. Declaring hashmap as a type
 
 ```c
 typedef hm$(char*, int) MyHashMap;
@@ -1950,7 +1950,7 @@ struct my_hm_struct {
 };
 
 void foo(void) {
-    // Initialing  new variable
+    // Initializing a new variable
     MyHashMap map = hm$new(map, mem$);
     
     // Initialing hashmap as a member of struct
@@ -1979,7 +1979,7 @@ void foo(void) {
 #### Initialization params
 `hm$new` accepts optional params which may help you to adjust hashmap key behavior:
 
-* `.capacity=16` - initial capacity of the hashmap, will be rounded to closest power of 2 number
+* `.capacity=16` - initial capacity of the hashmap, will be rounded to the closest power of 2 number
 * `.seed=` - initial seed for hashing algorithm
 * `.copy_keys=false` - enabling copy of `char*` keys and storing them specifically in hashmap
 * `.copy_keys_arena_pgsize=0` - enabling using arena for `copy_keys` mode
@@ -2096,7 +2096,7 @@ test$case(test_hashmap_basic_iteration)
 
 ### Working with arrays
 
-Arrays are probably most used concept in any language, with C arrays may have many different forms. Unfortunately, the main problem of working with arrays in C is a specialization of methods and operations, each type of array may require special iteration macro, or function for getting array length or element.
+Arrays are probably the most used concept in any language, with C arrays may have many different forms. Unfortunately, the main problem of working with arrays in C is a specialization of methods and operations, each type of array may require special iteration macro, or function for getting array length or element.
 
 Collection types in C:
 
@@ -2111,10 +2111,10 @@ Cex tries to solve this by unification of all arrays operations around standard 
 
 #### `arr$len` unified length
 
-`arr$len(array)` macro is a ultimate tool for getting lengths of arrays in CEX. It supports: static arrays, char buffers, string literals, dynamic arrays of CEX `arr$` and hashmaps of CEX `hm$`. Also it's a NULL resilient macro, which returns 0 if `array` argument is NULL.
+`arr$len(array)` macro is an ultimate tool for getting lengths of arrays in CEX. It supports: static arrays, char buffers, string literals, dynamic arrays of CEX `arr$` and hashmaps of CEX `hm$`. Also, it's a NULL resilient macro, which returns 0 if `array` argument is NULL.
 
 > [!NOTE]
-> 
+>
 > Not all array pointers are supports by `arr$len` (only dynamic arrays or hashmaps are valid), however in debug mode `arr$len` will raise an assertion/ASAN crash if you passed wrong pointer type there.
 
 Example:
@@ -2198,7 +2198,7 @@ test$case(test_array_access)
 
 #### CEX way of iteration over arrays
 
-CEX introduces an unified `for$*` macros which helps with dealing with looping, these are typical patters for iteration:
+CEX introduces a unified `for$*` macros which helps with dealing with looping, these are typical patters for iteration:
 
 * `for$each(it, array, [array_len])` - iterates over array, `it` represents value of array item. `array_len` is optional and uses `arr$len(array)` by default, or you might explicitly set it for iterating over arbitrary C pointer+len arrays.
 * `for$eachp(it, array, [array_len])` - iterates over array, `it` represent a pointer to array item. `array_len` is inferred by default.
@@ -2445,9 +2445,9 @@ LSP Suggestions
 
 ### Sub-namespaces
 
-Sometimes libraries or namespaces can have dozens of functions, so it's more convenient to add extra level of namespacing. For example, CEX `str` namespace have many of functions which are grouped by functionality. `str.slice.` works with `str_s` types, `str.convert.` dealing with conversions, some functions take place in the root namespace, for example `str.find()`. 
+Sometimes libraries or namespaces can have dozens of functions, so it's more convenient to add extra level of namespacing. For example, CEX `str` namespace have many of functions which are grouped by functionality. `str.slice.` works with `str_s` types, `str.convert.` dealing with conversions, some functions take place in the root namespace, for example `str.find()`.
 
-Sub-namespaces allow to build mental model of code, and helping write function names as a decision tree. For example, if I need `str`, `.`, then I need deal with slice `slice`, `.`, then I have to find exact thing what I need.  
+Sub-namespaces allow to build mental model of code, and helping write function names as a decision tree. For example, if I need `str`, `.`, then I need deal with slice `slice`, `.`, then I have to find exact thing what I need.
 
 
 ::: {#fig-namespaces layout-ncol=3}
@@ -2472,7 +2472,7 @@ For example:  you need to add new `foo` namespace
 
 1. Create a pair of files with name prefix `src/foo.c` and `src/foo.h`
 2. You can create `static` functions `foo_fun1()`, `foo_fun2()`, `foo__bar__fun3()`, `foo__bar__fun4()`. These functions will be processed and wrapped into a `foo` namespace so you can
-access them via `foo.fun1()`, `foo.fun2()`, `foo.bar.fun3()`, `foo.bar.fun4()`
+   access them via `foo.fun1()`, `foo.fun2()`, `foo.bar.fun3()`, `foo.bar.fun4()`
 3. Run `./cex process src/foo.c`
 
 #### Requirements / caveats:
@@ -2491,7 +2491,7 @@ access them via `foo.fun1()`, `foo.fun2()`, `foo.bar.fun3()`, `foo.bar.fun4()`
 In my experience, it's helpful to distinguish between type of code (namespace) we are dealing with, nothing strict, just guidelines:
 
 1. Sometimes we need OOP-ish / object / class behavior, which wraps a `typedef struct MyClass_c`, with constructor `MyClass.create()` and destructor `MyClass.destroy(MyClass_c* self)`. This type of code should be placed into `MyClass.c/MyClass.h` files.
-2. Sometimes we need just a bunch of functions logically combined together and dealing with different set of types, then we should use lower case name `foo`, or `my_namespace`. For example, CEX `str` namespace. Also you may want to add `_c` suffix to the `typedef struct my_type_c` to indicate that it has a namespace code attached `my_type.some_func()`.
+2. Sometimes we need just a bunch of functions logically combined and dealing with different set of types, then we should use lower case name `foo`, or `my_namespace`. For example, CEX `str` namespace. Also, you may want to add `_c` suffix to the `typedef struct my_type_c` to indicate that it has a namespace code attached `my_type.some_func()`.
 
 #### CLI Commands
 
@@ -2512,10 +2512,10 @@ In my experience, it's helpful to distinguish between type of code (namespace) w
 ### Special notes
 
 #### Performance questions
-While namespaces are the static structures with pointers in them, they may be a cause of performance hit for calling functions without compiler optimization enabled (the same as C++ virtual functions hit). However, modern compilers are smart enough to replace function pointer dereferencing call with direct function call when `-O1` optimization is enabled. 
+While namespaces are the static structures with pointers in them, they may be a cause of performance hit for calling functions without compiler optimization enabled (the same as C++ virtual functions hit). However, modern compilers are smart enough to replace function pointer dereferencing call with direct function call when `-O1` optimization is enabled.
 
 #### Getting LSP help / goto definition
-CEX Namespaces work with `clangd` LSP server pretty well. However, LSP help functionality is limited, we can get only list of parameters for completion. 
+CEX Namespaces work with `clangd` LSP server pretty well. However, LSP help functionality is limited, we can get only list of parameters for completion.
 
 Go to definition works, but with some caveats. If you place cursor (`|`) at `KeyMap.cre|ate`  and do go to definition in LSP, it will jump onto `KeyMap` structure type. If you need to goto implementation place cursor like this `KeyM|ap.create`, and goto definition, it will jump on the `KeyMap` struct implementation inside `KeyMap.c` file. Then find `KeyMap_create` record and jump at it once again.
 
@@ -2526,7 +2526,7 @@ If you are going to make shared library (.so or .dll) probably CEX namespaces ar
 CEX has integrated build system `cexy$`, inspired by Zig-build and Tsoding's `nob.h`. It allows you to build your project without dealing with CMake/Make/Ninja/Meson dependencies. For small projects cexy has simplified mode when build is config-driven. For complex or cross-platform projects `cexy` enables low-level tools for running the compiler and building specific project assembly logic.
 
 ### How it works
-1. You need to create `cex.c` file, which is entry point for all building process and cexy tools. For the newer projects, if `cex.c` is not there, run the bootstrapping routine: 
+1. You need to create `cex.c` file, which is entry point for all building process and cexy tools. For the newer projects, if `cex.c` is not there, run the bootstrapping routine:
 
 ```sh
 cc -D CEX_NEW -x c ./cex.h -o ./cex
@@ -2554,12 +2554,12 @@ Now you can launch a sample program or run its unit tests.
 - Supports custom command runner
 - Supports build-mode configuration
 - Allows OS related operations with files, paths, command launching, etc
-- Adds support for external dependencies via pkg-config and vcpkg 
+- Adds support for external dependencies via pkg-config and vcpkg
 - UnitTest and Fuzzer runner
 - Fetches 3rd party code, updates `cex.h` itself or `cex lib` via git
 
 ### Simple-mode
-`cexy$` has built-in build routine for building/running/debugging apps, running unit tests and fuzzers. It can be configured using `#    define cexy$<config-constant-here>` in your `cex.c` file. 
+`cexy$` has built-in build routine for building/running/debugging apps, running unit tests and fuzzers. It can be configured using `#    define cexy$<config-constant-here>` in your `cex.c` file.
 
 > [!TIP] Getting cexy$ help about config variables
 > ```sh
@@ -2575,7 +2575,7 @@ Simple mode add several project structure constraints:
 
 1. Source code should be in `src/` directory
 2. If you have `myapp` application its `main()` function should be located at `src/myapp.c` or `src/myapp/main.c`
-3. Simple-mode uses unity build approach, so all your sources have to be included as `#include "src/foo.c"` in `src/myapp.c`. 
+3. Simple-mode uses unity build approach, so all your sources have to be included as `#include "src/foo.c"` in `src/myapp.c`.
 4. Simple-mode does not produce object files and does not do extra linking stage. It's intentional, and in my opinion is better for smaller/medium (<100k LOC) projects.
 
 ### Project configuration
@@ -2602,7 +2602,7 @@ You can change pre-defined cexy config with `./cex -D<YOUR_VAR> config`, it will
 #endif
 ```
 
-#### Step 2: apply new preset 
+#### Step 2: apply new preset
 ```sh
 # Check current config (CEX_DEBUG not set, using -O3 gcc/clang argument)
 ./cex config
@@ -2710,7 +2710,7 @@ Hello from CEX
 
 ### Dependency management
 
-Dependencies are always pain-points, it's against CEX philosophy but sometimes it's necessary evil.
+Dependencies are always pain-points, it's against CEX philosophy, but sometimes it's necessary evil.
 CEX has capabilities for using `pkgconf` compatible-utilities, and `vcpkg` framework. You may check `examples/` folder in `cex` GIT repo, it contains couple sample projects with dependencies. Windows OS dependencies is a hell, try to use MSYS2 or vcpkg.
 
 Currently `pkgconf/vcpkg` dependencies are supported in simple mode, or figure out how to integrate `cexy$pkgconf()` macro into your custom build yourself.
@@ -2746,7 +2746,7 @@ Here is excerpt of `libcurl+libzip` build for Linux+MacOS+windows:
 ```
 
 ### Cross-platform builds
-For compile time you may use platform specific constants, for example `#ifdef _WIN32` or you can set arbitrary config define that switching to platform logic (compile time). Also cex has `os.platform.` sub-namespace for runtime platform checks:
+For compile time you may use platform specific constants, for example `#ifdef _WIN32` or you can set arbitrary config define that switching to platform logic (compile time). Also, cex has `os.platform.` sub-namespace for runtime platform checks:
 
 ::: {.panel-tabset}
 
@@ -2810,10 +2810,10 @@ e$ret(os$cmda(args));
 
 ## Developer Tools
 
-CEX language is designed for improving developer experience with C, `./cex` CLI contains key tools for managing project, running apps, debugging, unit testing and fuzzing. 
+CEX language is designed for improving developer experience with C, `./cex` CLI contains key tools for managing project, running apps, debugging, unit testing and fuzzing.
 
 ### Sanitizers
-CEX enables sanitizers by default if they are supported by your OS and compiler. ASAN/UBSAN are extremely useful for catching bugs. Also CEX uses sanitizers for call stack printouts for `uassert()`. `clang` has the best sanitizer support across many platforms, `gcc` sanitizers are supported on Linux.
+CEX enables sanitizers by default if they are supported by your OS and compiler. ASAN/UBSAN are extremely useful for catching bugs. Also, CEX uses sanitizers for call stack printouts for `uassert()`. `clang` has the best sanitizer support across many platforms, `gcc` sanitizers are supported on Linux.
 
 Default sanitizer arguments:
 ```c
@@ -2823,7 +2823,7 @@ Default sanitizer arguments:
 ```
 
 ### Asserts
-I'm a big fan of "asserts everywhere" code style, which is also known design by contract, or TigerBeetle style, it has many names. Apparently, C asserts kinda work, but are huge pain for debugging without live debugger session. 
+I'm a big fan of "asserts everywhere" code style, which is also known design by contract, or TigerBeetle style, it has many names. Apparently, C asserts kinda work, but are huge pain for debugging without live debugger session.
 
 So `cex.h` has 2 types of asserts:
 
@@ -2852,12 +2852,12 @@ Exception read_file(char* filename, char* buf, isize* out_buf_size) {
 ```
 
 > [!NOTE]
-> 
+>
 > uassert() tracebacks only available if program was compiled with ASAN flags.
 
 
 ### Unit Testing Tool
-Each CEX test file is compiled as stand alone executable, this allow making specialized tests with mocks, experiment with parts of bigger project without fixing plethora of compiler errors, and do  a test driven development and debugging.
+Each CEX test file is compiled as stand alone executable, this allows making specialized tests with mocks, experiment with parts of bigger project without fixing plethora of compiler errors, and do  a test driven development and debugging.
 
 Create new test with: `./cex test create tests/test_file.c `, run it `./cex test run tests/test_file.c` or `./cex test run all`.
 
@@ -2937,9 +2937,9 @@ cex test run tests/test_file.c [--help]  - run test with passing arguments to th
 CEX has a fuzzers back-end, currently  `libfuzzer` - built-in in `clang` is preferable, but `AFL++` also works. CEX fuzzers are designed to hit directly in heart of the code, therefore it's easier to use `clang`, however CEX fuzzer API in CEX remain compatible with AFL as well.
 
 > [!NOTE]
-> 
+>
 > Try to split functionality across many small fuzz files for different aspects of your program. This will help to hit specific pain points easier.  Look into fuzz examples in CEX GIT repo in `fuzz/` folder.
- 
+
 #### Making new fuzzer test
 ```sh
 # Placing into fuzz/ directory is mandatory
@@ -3013,7 +3013,7 @@ CEX >
 ```
 
 ### Lines Of Code stats
-`./cex stats` calculates `.c/.h` lines of code and estimates assertion percentage as a code quality metric. 
+`./cex stats` calculates `.c/.h` lines of code and estimates assertion percentage as a code quality metric.
 
 ```sh
 
@@ -3063,7 +3063,7 @@ cex help --example cexy.utils.git_lib_fetch            - you can call it from yo
 
 ### Getting help for project
 
-`./cex help` is CLI command for getting help for your project, it works for CEX and your project as well. You can use it as symbol search: types, functions, files, examples and source code.  Also it supports CEX namespaces as struct interfaces and macro$namespaces as well.
+`./cex help` is CLI command for getting help for your project, it works for CEX and your project as well. You can use it as symbol search: types, functions, files, examples and source code.  Also, it supports CEX namespaces as struct interfaces and macro$namespaces as well.
 
 #### Help command
 
@@ -3098,7 +3098,7 @@ cex help --example str.find  - display random function use in codebase if exactl
 
 #### Getting language cheat-sheets
 
-All core namespaces in CEX have cheat-sheets with full members reference and examples. 
+All core namespaces in CEX have cheat-sheets with full members reference and examples.
 
 Just type:
 ```sh
@@ -3208,10 +3208,10 @@ Exception cexy__test__create(char* target, bool include_sample)
 ```
 
 ### Project management
-Using `./cex` CLI you could seed new project or add/run/debug/clean apps/fuzz/tests in existing project. 
+Using `./cex` CLI you could seed new project or add/run/debug/clean apps/fuzz/tests in existing project.
 
 > [!NOTE]
-> 
+>
 > Try `./cex app --help`, `./cex test --help`, `./cex fuzz --help` for more info. Also, this functionality may not work properly if you use custom build routines.
 
 #### Creating
@@ -3257,7 +3257,7 @@ Using `./cex` CLI you could seed new project or add/run/debug/clean apps/fuzz/te
 
 ### Getting help
 
-All core namespaces in CEX have cheat-sheets with full members reference and examples. 
+All core namespaces in CEX have cheat-sheets with full members reference and examples.
 
 Just type:
 ```sh
@@ -3323,7 +3323,7 @@ Just type:
 ## CEX lib
 
 ### Role of CEX lib
-CEX lib (see `lib/` folder in repo) is designed to be a collection of random tools and libraries that are not so frequently used. Currently it's in early alpha stage, API stability is not guaranteed, backward compatibility is not guaranteed. Feel free to contribute your ideas, if you think it could be useful.
+CEX lib (see `lib/` folder in repo) is designed to be a collection of random tools and libraries that are not so frequently used. Currently, it's in early alpha stage, API stability is not guaranteed, backward compatibility is not guaranteed. Feel free to contribute your ideas, if you think it could be useful.
 
 ### Installing libraries
 Installing and updating libs from the main CEX repo is pretty straightforward, and you can use:
@@ -3343,10 +3343,10 @@ cex libfetch --help                                    - more help
 
 CEX contains some code and ideas from the following projects, all of them licensed under MIT license (or Public Domain):
 
-1. [nob.h](https://github.com/tsoding/nob.h) - by Tsoding / Alexey Kutepov, MIT/Public domain, great idea of making self-contained build system, great youtube channel btw
-2. [stb_ds.h](https://github.com/nothings/stb/blob/master/stb_ds.h) - MIT/Public domain, by Sean Barrett, CEX arr$/hm$ are refactored versions of STB data structures, great idea 
+1. [nob.h](https://github.com/tsoding/nob.h) - by Tsoding / Alexey Kutepov, MIT/Public domain, great idea of making self-contained build system, great YouTube channel btw
+2. [stb_ds.h](https://github.com/nothings/stb/blob/master/stb_ds.h) - MIT/Public domain, by Sean Barrett, CEX arr$/hm$ are refactored versions of STB data structures, great idea
 3. [stb_sprintf.h](https://github.com/nothings/stb/blob/master/stb_sprintf.h) - MIT/Public domain, by Sean Barrett, I refactored it, fixed all UB warnings from UBSAN, added CEX specific formatting
-4. [minirent.h](https://github.com/tsoding/minirent) - Alexey Kutepov, MIT license, WIN32 compatibility lib 
+4. [minirent.h](https://github.com/tsoding/minirent) - Alexey Kutepov, MIT license, WIN32 compatibility lib
 5. [subprocess.h](https://github.com/sheredom/subprocess.h) - by Neil Henning, public domain, used in CEX as a daily driver for `os$cmd` and process communication
 6. [utest.h](https://github.com/sheredom/utest.h) - by Neil Henning, public domain, CEX test$ runner borrowed some ideas of macro magic for making declarative test cases
 7. [c3-lang](https://github.com/c3lang/c3c) - I borrowed some ideas about language features from C3, especially `mem$scope`, `mem$`/`tmem$` global allocators, scoped macros too.
