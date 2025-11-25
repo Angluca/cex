@@ -1,5 +1,18 @@
 # CEX Release Notes
 
+## 0.18.0
+2025-11-25
+
+### Changes / improvements
+- feat: Added static code analyzer support in CI (clang-tidy) for better code quality
+- feat: cexy build system generates `compile_flags.txt` unless it explicitly disabled `#define cexy$create_compile_flags 0`
+
+
+### Fixes
+- Fixed some possible null pointer dereferences
+- Fixed `clangd` "Too many errors emitted" diagnostic at the beginning of the code file
+- Fixed `clang-tidy` warnings
+
 ## 0.17.0
 2025-10-15
 

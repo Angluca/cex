@@ -185,6 +185,9 @@ cmd_custom_test(u32 argc, char** argv, void* user_ctx)
 ### Test suite
 CEX is tested on various platforms, compiler versions, sanitizers, and optimization flags, ensuring future compatibility and stability. Sanitizers and Valgrind verify the absence of memory leaks, buffer overflows, and undefined behavior. Additionally, tests with release flags confirm that compiler optimizations do not interfere with the code logic.
 
+The CEX codebase uses the `clang-tidy` static analyzer in its continuous integration (CI) pipeline. The build is configured to fail if any warnings are generated.
+
+
 | OS / Build type   | Valgrind |     UBSAN      |  ASAN | Release -O3 | Release -NDEBUG -O2 |
 |:----------|:---------:|:-------------:|:------:| :-----: | :-----: |
 | Linux Ubuntu 2204 x64 |   ✅ |✅ | ✅ |✅ |✅ |
