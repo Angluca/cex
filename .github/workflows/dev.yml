@@ -136,8 +136,8 @@ jobs:
         cex_preset: 
           - CEX_DEBUG
         runs-on:
-          - macos-13      # x86
-          - macos-latest  # arm64
+          - macos-15-intel      # x86
+          - macos-latest        # arm64
     steps:
       - name: Checkout cex
         uses: actions/checkout@v4
