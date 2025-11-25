@@ -272,7 +272,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        compiler: [clang"]
+        compiler: ["clang"]
 
     steps:
       - name: Checkout cex
