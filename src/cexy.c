@@ -1,7 +1,6 @@
 #if !defined(cex$enable_minimal)
 
 #include "all.h"
-#include "cex.h"
 #include "src/cex_base.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -477,8 +476,7 @@ cexy__test__make_target_pattern(char** target)
     if (target == NULL) {
         return e$raise(
             Error.argsparse,
-            "Invalid target: '%s', expected all or tests/test_some_file.c",
-            *target
+            "Invalid target: '(null)', expected all or tests/test_some_file.c"
         );
     }
     if (str.eq(*target, "all")) { *target = "tests/test_*.c"; }
