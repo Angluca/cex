@@ -293,6 +293,16 @@ jobs:
           echo "clang-tidy --version"
           clang-tidy --version
 
+      - name: cex initial build
+        run: |
+          ls -la  # as you would expect, you're in your workspace directory
+          echo "Priming cex tool"
+          cc -g ./cex.c -o ./cex 
+          echo "Compiled cex executable"
+          file ./cex
+          echo "CEX config"
+          ./cex config
+
       - name: clang-tidy checks
         run: |
           clang-tidy $(find ./src -name "*.c" -o -name "*.h")
