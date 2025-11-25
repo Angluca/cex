@@ -1,6 +1,6 @@
 #pragma once
 #if !defined(cex$enable_minimal) || defined(cex$enable_ds)
-#include "all.h"
+#include "cex_base.h"
 
 /**
 
@@ -241,15 +241,14 @@ struct _cexds__arr_new_kwargs_s
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
         uassertf(array != NULL, "arr$pusha: array is NULL");                                       \
         usize _arr_len_va[] = { array_len };                                                       \
-        (void)_arr_len_va;                                                                         \
         usize arr_len = (sizeof(_arr_len_va) > 0) ? _arr_len_va[0] : arr$len(array);               \
         uassert(arr_len < PTRDIFF_MAX && "negative length or overflow");                           \
         if (unlikely(!arr$grow_check(a, arr_len))) {                                               \
             uassert(false && "arr$pusha memory error");                                            \
             abort();                                                                               \
         }                                                                                          \
-        /* NOLINTEND */                                                                            \
         for (usize i = 0; i < arr_len; i++) { (a)[_cexds__header(a)->length++] = ((array)[i]); }   \
+        /* NOLINTEND */                                                                            \
     })
 
 /// Sort array with qsort() libc function
@@ -469,11 +468,11 @@ static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
     typeof((array)[0])* cex$tmpname(arr_arrp) = _cex__get_buf_addr(array);                         \
     usize cex$tmpname(arr_index) = 0;                                                              \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
-    /* NOLINTEND */                                                                                \
     for (typeof((array)[0]) it = { 0 };                                                            \
          (cex$tmpname(arr_index) < cex$tmpname(arr_length) &&                                      \
           ((it) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1));                              \
          cex$tmpname(arr_index)++)
+    /* NOLINTEND */                                                                                \
 
 
 /// Iterates over arrays `it` is iterated by **pointer**, array may be arr$/or static / or pointer,
@@ -487,10 +486,10 @@ static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
     typeof((array)[0])* cex$tmpname(arr_arrp) = _cex__get_buf_addr(array);                         \
     usize cex$tmpname(arr_index) = 0;                                                              \
-    /* NOLINTEND */                                                                                \
     for (typeof((array)[0])* it = cex$tmpname(arr_arrp);                                           \
          cex$tmpname(arr_index) < cex$tmpname(arr_length);                                         \
          cex$tmpname(arr_index)++, it++)
+    /* NOLINTEND */                                                                                \
 
 /*
  *                 HASH MAP

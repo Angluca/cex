@@ -2,6 +2,20 @@
 #if !defined(cex$enable_minimal) || defined(cex$enable_os)
 #include "all.h"
 
+
+#ifdef _WIN32
+#    define WIN32_LEAN_AND_MEAN
+#    include "windows.h"
+#    include <direct.h>
+#else
+#    include <dirent.h>
+#    include <fcntl.h>
+#    include <limits.h>
+#    include <sys/stat.h>
+#    include <sys/types.h>
+#    include <unistd.h>
+#endif
+
 /// Additional flags for os.cmd.create()
 typedef struct os_cmd_flags_s
 {

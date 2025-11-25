@@ -94,11 +94,10 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
 {
     static char hex[] = "0123456789abcdefxp";
     static char hexu[] = "0123456789ABCDEFXP";
-    char* bf;
+    char* bf = buf;
     char const* f;
     int tlen = 0;
 
-    bf = buf;
     f = fmt;
     for (;;) {
         i32 fw, pr, tz;

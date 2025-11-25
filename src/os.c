@@ -1,7 +1,5 @@
-#pragma once
 #if !defined(cex$enable_minimal) || defined(cex$enable_os)
-#include "all.c"
-#include "cex_base.h"
+#include "os.h"
 
 #ifndef _WIN32
 #    include <dirent.h>

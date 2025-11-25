@@ -1,7 +1,7 @@
 #pragma once
 
 #if !defined(cex$enable_minimal) || defined(cex$enable_str)
-#include "all.h"
+#include "cex_base.h"
 #include <assert.h>
 
 typedef char* sbuf_c;

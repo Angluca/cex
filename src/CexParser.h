@@ -1,7 +1,9 @@
 #pragma once
 
 #if !defined(cex$enable_minimal)
-#include "all.h"
+#include "cex_base.h"
+#include "sbuf.h"
+#include "ds.h"
 
 #define _CexTknList                                                                                \
     X(eof)                                                                                         \

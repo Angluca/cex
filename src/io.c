@@ -1,7 +1,6 @@
 #pragma once
 #if !defined(cex$enable_minimal) || defined(cex$enable_io)
 #include "all.h"
-#include "cex.h"
 #include "src/cex_base.h"
 #include <errno.h>
 #include <stdio.h>

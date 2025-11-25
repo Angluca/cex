@@ -2,6 +2,7 @@
 
 #include "CexParser.h"
 #include <ctype.h>
+#include "str.h"
 
 const char* CexTkn_str[] = {
 #define X(name) cex$stringize(name),
