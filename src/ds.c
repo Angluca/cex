@@ -774,7 +774,7 @@ _cexds__hminit(
             uassert(table->key_type == _CexDsKeyType__charptr && "Only char* keys supported");
         }
         table->copy_keys = copy_keys;
-        if (kwargs->copy_keys_arena_pgsize > 0) {
+        if (kwargs && kwargs->copy_keys_arena_pgsize > 0) {
             table->key_arena = AllocatorArena.create(kwargs->copy_keys_arena_pgsize);
         }
     }
