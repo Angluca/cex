@@ -244,8 +244,8 @@ jobs:
           cc --version
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
+          ./emsdk install 4.0.16
+          ./emsdk activate 4.0.16
 
       - name: cex initial build
         run: |
