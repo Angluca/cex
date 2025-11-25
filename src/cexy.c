@@ -19,10 +19,8 @@ cexy_build_self(int argc, char** argv, char* cex_source)
         bool has_darg_before_cmd = (argc > 1 && str.starts_with(argv[1], "-D"));
         (void)has_darg_before_cmd;
 
-#    ifndef cexy$no_compile_flags
-        if (os.path.exists("compile_flags.txt")) {
-            e$except (err, cexy.utils.make_compile_flags("compile_flags.txt", true, NULL)) {}
-        }
+#    if cexy$create_compile_flags
+        e$except (err, cexy.utils.make_compile_flags("compile_flags.txt", true, NULL)) {}
 #    endif
 
 #    ifdef _CEX_SELF_BUILD

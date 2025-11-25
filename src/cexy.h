@@ -36,6 +36,11 @@
 #        define cexy$src_dir "./src"
 #    endif
 
+#    ifndef cexy$create_compile_flags
+/// If 1 creates `compile_flags.txt` in project dir at every ./cex run, 0 - ignores creation (default: 1)
+#       define cexy$create_compile_flags 1
+#    endif
+
 #    ifndef cexy$cc_args_sanitizer
 #        if defined(_WIN32) || defined(MACOS_X) || defined(__APPLE__)
 #            if defined(__clang__)

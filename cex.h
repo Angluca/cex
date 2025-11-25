@@ -5151,6 +5151,11 @@ void _cex__codegen_indent(_cex__codegen_s* cg);
 #        define cexy$src_dir "./src"
 #    endif
 
+#    ifndef cexy$create_compile_flags
+/// If 1 creates `compile_flags.txt` in project dir at every ./cex run, 0 - ignores creation (default: 1)
+#       define cexy$create_compile_flags 1
+#    endif
+
 #    ifndef cexy$cc_args_sanitizer
 #        if defined(_WIN32) || defined(MACOS_X) || defined(__APPLE__)
 #            if defined(__clang__)
@@ -15058,10 +15063,8 @@ cexy_build_self(int argc, char** argv, char* cex_source)
         bool has_darg_before_cmd = (argc > 1 && str.starts_with(argv[1], "-D"));
         (void)has_darg_before_cmd;
 
-#    ifndef cexy$no_compile_flags
-        if (os.path.exists("compile_flags.txt")) {
-            e$except (err, cexy.utils.make_compile_flags("compile_flags.txt", true, NULL)) {}
-        }
+#    if cexy$create_compile_flags
+        e$except (err, cexy.utils.make_compile_flags("compile_flags.txt", true, NULL)) {}
 #    endif
 
 #    ifdef _CEX_SELF_BUILD
