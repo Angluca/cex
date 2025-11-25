@@ -232,7 +232,15 @@ extern const struct _CEX_Error_struct
 
 // NOTE: you may try to define our own fprintf
 #    define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                      \
-        cexsp__fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
+        cexsp__fprintf(                                                                            \
+            stream,                                                                                \
+            "%s ( %s:%d %s() ) " format,                                                           \
+            prefix,                                                                                \
+            filename,                                                                              \
+            line,                                                                                  \
+            func,                                                                                  \
+            ##__VA_ARGS__                                                                          \
+        )
 
 static inline bool
 __cex__fprintf_dummy(void)
@@ -447,7 +455,14 @@ void __sanitizer_print_stack_trace();
 #    define sanitizer_stack_trace() ((void)(0))
 #endif
 
-#ifdef NDEBUG
+#if defined(__clang_analyzer__)
+#    include <assert.h>
+#    define uassert(cond) assert(cond)
+#    define uassertf(cond, format, ...) assert(cond)
+#    define uassert_disable() ((void)0)
+#    define uassert_enable() ((void)0)
+#    define __cex_test_postmortem_exists() 0
+#elif defined(NDEBUG)
 #    define uassertf(cond, format, ...) ((void)(0))
 #    define uassert(cond) ((void)(0))
 #    define uassert_disable() ((void)0)
@@ -488,9 +503,7 @@ int __cex_test_uassert_enabled = 1;
                     "%s\n",                                                                        \
                     #A                                                                             \
                 );                                                                                 \
-                if (uassert_is_enabled()) {                                                        \
-                    cex$platform_panic();                                                       \
-                }                                                                                  \
+                if (uassert_is_enabled()) { cex$platform_panic(); }                                \
             }                                                                                      \
         })
 
@@ -506,9 +519,7 @@ int __cex_test_uassert_enabled = 1;
                     format "\n",                                                                   \
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
-                if (uassert_is_enabled()) {                                                        \
-                    cex$platform_panic();                                                       \
-                }                                                                                  \
+                if (uassert_is_enabled()) { cex$platform_panic(); }                                \
             }                                                                                      \
         })
 #endif
@@ -551,7 +562,7 @@ int __cex_test_uassert_enabled = 1;
 /// Produces a literal string of any text inside the (...)
 #define cex$stringize(...) _cex$stringize(__VA_ARGS__)
 
-/// makes a new variable with __cex__ prefix 
+/// makes a new variable with __cex__ prefix
 #define cex$varname(a, b) cex$concat3(__cex__, a, b)
 
 /// cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
@@ -626,13 +637,13 @@ int __cex_test_uassert_enabled = 1;
 #endif
 
 #if defined(__STDC_HOSTED__)
-    #if __STDC_HOSTED__ == 0
+#    if __STDC_HOSTED__ == 0
 /// Set to 1 if current platform is freestanding (no OS, or libc)
-        #define cex$is_freestanding 1
-    #else
-        #define cex$is_freestanding 0
-    #endif
+#        define cex$is_freestanding 1
+#    else
+#        define cex$is_freestanding 0
+#    endif
 #else
-    // If __STDC_HOSTED__ is not defined, we're likely freestanding
-    #define cex$is_freestanding 1
+// If __STDC_HOSTED__ is not defined, we're likely freestanding
+#    define cex$is_freestanding 1
 #endif

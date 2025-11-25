@@ -119,7 +119,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #endif
 
 #define cex$version_major 0
-#define cex$version_minor 18
+#define cex$version_minor 17
 #define cex$version_patch 0
 #define cex$version_date "2025-11-25"
 
@@ -418,7 +418,15 @@ extern const struct _CEX_Error_struct
 
 // NOTE: you may try to define our own fprintf
 #    define __cex__fprintf(stream, prefix, filename, line, func, format, ...)                      \
-        cexsp__fprintf(stream, "%s ( %s:%d %s() ) " format, prefix, filename, line, func, ##__VA_ARGS__)
+        cexsp__fprintf(                                                                            \
+            stream,                                                                                \
+            "%s ( %s:%d %s() ) " format,                                                           \
+            prefix,                                                                                \
+            filename,                                                                              \
+            line,                                                                                  \
+            func,                                                                                  \
+            ##__VA_ARGS__                                                                          \
+        )
 
 static inline bool
 __cex__fprintf_dummy(void)
@@ -633,7 +641,14 @@ void __sanitizer_print_stack_trace();
 #    define sanitizer_stack_trace() ((void)(0))
 #endif
 
-#ifdef NDEBUG
+#if defined(__clang_analyzer__)
+#    include <assert.h>
+#    define uassert(cond) assert(cond)
+#    define uassertf(cond, format, ...) assert(cond)
+#    define uassert_disable() ((void)0)
+#    define uassert_enable() ((void)0)
+#    define __cex_test_postmortem_exists() 0
+#elif defined(NDEBUG)
 #    define uassertf(cond, format, ...) ((void)(0))
 #    define uassert(cond) ((void)(0))
 #    define uassert_disable() ((void)0)
@@ -674,9 +689,7 @@ int __cex_test_uassert_enabled = 1;
                     "%s\n",                                                                        \
                     #A                                                                             \
                 );                                                                                 \
-                if (uassert_is_enabled()) {                                                        \
-                    cex$platform_panic();                                                       \
-                }                                                                                  \
+                if (uassert_is_enabled()) { cex$platform_panic(); }                                \
             }                                                                                      \
         })
 
@@ -692,9 +705,7 @@ int __cex_test_uassert_enabled = 1;
                     format "\n",                                                                   \
                     ##__VA_ARGS__                                                                  \
                 );                                                                                 \
-                if (uassert_is_enabled()) {                                                        \
-                    cex$platform_panic();                                                       \
-                }                                                                                  \
+                if (uassert_is_enabled()) { cex$platform_panic(); }                                \
             }                                                                                      \
         })
 #endif
@@ -737,7 +748,7 @@ int __cex_test_uassert_enabled = 1;
 /// Produces a literal string of any text inside the (...)
 #define cex$stringize(...) _cex$stringize(__VA_ARGS__)
 
-/// makes a new variable with __cex__ prefix 
+/// makes a new variable with __cex__ prefix
 #define cex$varname(a, b) cex$concat3(__cex__, a, b)
 
 /// cex$tmpname - internal macro for generating temporary variable names (unique__line_num)
@@ -812,15 +823,15 @@ int __cex_test_uassert_enabled = 1;
 #endif
 
 #if defined(__STDC_HOSTED__)
-    #if __STDC_HOSTED__ == 0
+#    if __STDC_HOSTED__ == 0
 /// Set to 1 if current platform is freestanding (no OS, or libc)
-        #define cex$is_freestanding 1
-    #else
-        #define cex$is_freestanding 0
-    #endif
+#        define cex$is_freestanding 1
+#    else
+#        define cex$is_freestanding 0
+#    endif
 #else
-    // If __STDC_HOSTED__ is not defined, we're likely freestanding
-    #define cex$is_freestanding 1
+// If __STDC_HOSTED__ is not defined, we're likely freestanding
+#    define cex$is_freestanding 1
 #endif
 
 
@@ -7630,7 +7641,7 @@ _cexds__hminit(
             uassert(table->key_type == _CexDsKeyType__charptr && "Only char* keys supported");
         }
         table->copy_keys = copy_keys;
-        if (kwargs->copy_keys_arena_pgsize > 0) {
+        if (kwargs && kwargs->copy_keys_arena_pgsize > 0) {
             table->key_arena = AllocatorArena.create(kwargs->copy_keys_arena_pgsize);
         }
     }
@@ -8848,7 +8859,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                         cexsp__cb_buf_clamp(i, lead[0]);
                         lead[0] -= (char)i;
                         while (i) {
-                            *bf++ = *sn++;
+                            *bf++ = *sn++; // NOLINT
                             --i;
                         }
                         cexsp__chk_cb_buf(1);
@@ -8905,15 +8916,8 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     i32 i;
                     cexsp__cb_buf_clamp(i, n);
                     n -= i;
-                    // disabled CEXSP__UNALIGNED
-                    // CEXSP__UNALIGNED(while (i >= 4) {
-                    //     *(u32 volatile*)bf = *(u32 volatile*)s;
-                    //     bf += 4;
-                    //     s += 4;
-                    //     i -= 4;
-                    // })
                     while (i) {
-                        *bf++ = *s++;
+                        *bf++ = *s++; // NOLINT
                         --i;
                     }
                     cexsp__chk_cb_buf(1);
@@ -9706,6 +9710,7 @@ cex_str_replace(char* s, char* old_sub, char* new_sub, IAllocator allc)
         current_pos += new_sub_len;
         start = found + old_sub_len;
     }
+    // NOLINTNEXTLINE
     strcpy(current_pos, start);
     new_str[new_str_len] = '\0';
     return new_str;
@@ -10062,6 +10067,7 @@ cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
     static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
     static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
 
+    // NOLINTNEXTLINE
     if (unlikely(!iterator->initialized)) {
         iterator->initialized = 1;
         // First run handling
@@ -11489,6 +11495,7 @@ cex_sbuf_append(sbuf_c* self, char* s)
     if (length + slen > capacity - 1) {
         e$except_silent (err, _sbuf__grow_buffer(self, length + slen)) { return err; }
     }
+    // NOLINTNEXTLINE
     memcpy((*self + length), s, slen);
     length += slen;
 
@@ -12033,6 +12040,7 @@ cex_io__file__save(char* path, char* contents)
     if (contents == NULL) { return Error.argument; }
 
     FILE* file;
+    // NOLINTNEXTLINE
     e$except_silent (err, cex_io_fopen(&file, path, "w")) { return err; }
 
     usize contents_len = strlen(contents);
@@ -12058,6 +12066,7 @@ cex_io__file__load(char* path, IAllocator allc)
         return NULL;
     }
     FILE* file;
+    // NOLINTNEXTLINE
     e$except_silent (err, cex_io_fopen(&file, path, "r")) { return NULL; }
 
     str_s out_content = (str_s){ 0 };
@@ -17002,6 +17011,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
         char* triplet[] = { cexy$vcpkg_triplet };
         char* vcpkg_root = cexy$vcpkg_root;
 
+        // NOLINTNEXTLINE
         if (arr$len(triplet) && triplet[0] != NULL && triplet[0][0] != '\0') {
             io.printf("* cexy$vcpkg_root           %s\n", (vcpkg_root) ? vcpkg_root : "Not set)");
             io.printf("* cexy$vcpkg_triplet        %s\n", triplet[0]);
@@ -17025,6 +17035,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
                 );
             } else {
                 io.printf("* cexy$pkgconf_libs         %s [%s]\n", "ERROR", err);
+                // NOLINTNEXTLINE
                 if (err == Error.runtime && arr$len(triplet) && triplet[0] != NULL) {
                     // pkg-conf failed to find lib it could be a missing .pc
                     io.printf(
@@ -19207,11 +19218,13 @@ const struct __cex_namespace__fuzz fuzz = {
 /*
 *                          src/cex_footer.c
 */
+/* NOLINTBEGIN */                                                                          \
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #elif defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
+/* NOLINTEND */                                                                            \
 
 /*
 ## Credits

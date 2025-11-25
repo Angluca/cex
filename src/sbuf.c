@@ -337,6 +337,7 @@ cex_sbuf_append(sbuf_c* self, char* s)
     if (length + slen > capacity - 1) {
         e$except_silent (err, _sbuf__grow_buffer(self, length + slen)) { return err; }
     }
+    // NOLINTNEXTLINE
     memcpy((*self + length), s, slen);
     length += slen;
 

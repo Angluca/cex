@@ -922,7 +922,7 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                         cexsp__cb_buf_clamp(i, lead[0]);
                         lead[0] -= (char)i;
                         while (i) {
-                            *bf++ = *sn++;
+                            *bf++ = *sn++; // NOLINT
                             --i;
                         }
                         cexsp__chk_cb_buf(1);
@@ -979,15 +979,8 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
                     i32 i;
                     cexsp__cb_buf_clamp(i, n);
                     n -= i;
-                    // disabled CEXSP__UNALIGNED
-                    // CEXSP__UNALIGNED(while (i >= 4) {
-                    //     *(u32 volatile*)bf = *(u32 volatile*)s;
-                    //     bf += 4;
-                    //     s += 4;
-                    //     i -= 4;
-                    // })
                     while (i) {
-                        *bf++ = *s++;
+                        *bf++ = *s++; // NOLINT
                         --i;
                     }
                     cexsp__chk_cb_buf(1);

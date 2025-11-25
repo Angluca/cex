@@ -1972,6 +1972,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
         char* triplet[] = { cexy$vcpkg_triplet };
         char* vcpkg_root = cexy$vcpkg_root;
 
+        // NOLINTNEXTLINE
         if (arr$len(triplet) && triplet[0] != NULL && triplet[0][0] != '\0') {
             io.printf("* cexy$vcpkg_root           %s\n", (vcpkg_root) ? vcpkg_root : "Not set)");
             io.printf("* cexy$vcpkg_triplet        %s\n", triplet[0]);
@@ -1995,6 +1996,7 @@ cexy__cmd__config(int argc, char** argv, void* user_ctx)
                 );
             } else {
                 io.printf("* cexy$pkgconf_libs         %s [%s]\n", "ERROR", err);
+                // NOLINTNEXTLINE
                 if (err == Error.runtime && arr$len(triplet) && triplet[0] != NULL) {
                     // pkg-conf failed to find lib it could be a missing .pc
                     io.printf(

@@ -476,6 +476,7 @@ cex_io__file__save(char* path, char* contents)
     if (contents == NULL) { return Error.argument; }
 
     FILE* file;
+    // NOLINTNEXTLINE
     e$except_silent (err, cex_io_fopen(&file, path, "w")) { return err; }
 
     usize contents_len = strlen(contents);
@@ -501,6 +502,7 @@ cex_io__file__load(char* path, IAllocator allc)
         return NULL;
     }
     FILE* file;
+    // NOLINTNEXTLINE
     e$except_silent (err, cex_io_fopen(&file, path, "r")) { return NULL; }
 
     str_s out_content = (str_s){ 0 };
