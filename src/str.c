@@ -197,6 +197,7 @@ cex_str_replace(char* s, char* old_sub, char* new_sub, IAllocator allc)
         current_pos += new_sub_len;
         start = found + old_sub_len;
     }
+    // NOLINTNEXTLINE
     strcpy(current_pos, start);
     new_str[new_str_len] = '\0';
     return new_str;
@@ -553,6 +554,7 @@ cex_str__slice__iter_split(str_s s, char* split_by, cex_iterator_s* iterator)
     static_assert(sizeof(*ctx) <= sizeof(iterator->_ctx), "ctx size overflow");
     static_assert(alignof(struct iter_ctx) <= alignof(usize), "cex_iterator_s _ctx misalign");
 
+    // NOLINTNEXTLINE
     if (unlikely(!iterator->initialized)) {
         iterator->initialized = 1;
         // First run handling
