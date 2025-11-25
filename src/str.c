@@ -1,7 +1,7 @@
 #pragma once
 #if !defined(cex$enable_minimal) || defined(cex$enable_str)
 #include "_sprintf.h"
-#include "all.c"
+#include "all.h"
 
 static inline int _cex_str__toupper(int c) {
     if ((unsigned)c - 'a' < 26) return c & 0x5f;
@@ -1172,7 +1172,6 @@ cex_str_fmt(IAllocator allc, char* format, ...)
         memcpy(ctx.buf, ctx.tmp, ctx.length);
         ctx.buf[ctx.length] = '\0';
     }
-    va_end(va);
     return ctx.buf;
 }
 
