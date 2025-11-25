@@ -1,3 +1,14 @@
+/*
+
+IMPORTANT NOTICE:
+
+This file is a part of CEX.C project build system, you don't need it for
+creating your own projects.  You need only cex.h file to start a project.
+
+Visit https://cex-c.org for more information
+
+*/
+
 #if __has_include("cex_config.h")
 // These settings can be set via `./cex -D CEX_WINE config` command
 #    include "cex_config.h"
