@@ -85,18 +85,19 @@ Use `cex -D config` to reset all project config flags to defaults
 /// disables float printing for io.printf/et al functions (code size reduction)
 // #define CEX_SPRINTF_NOFLOAT
 
+#include <assert.h>
+#include <ctype.h>
 #include <errno.h>
+#include <math.h>
 #include <stdalign.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <assert.h>
-
 
 #if defined(__APPLE__) || defined(__MACH__)
 // NOTE: Apple SDK defines sprintf as a macro, this messes str.sprintf() calls, because
@@ -109,10 +110,18 @@ Use `cex -D config` to reset all project config flags to defaults
 #    endif
 #endif
 
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wunused-function"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 #define cex$version_major 0
 #define cex$version_minor 17
 #define cex$version_patch 0
-#define cex$version_date "2025-10-15"
+#define cex$version_date "2025-11-25"
 
 
 
@@ -1478,15 +1487,14 @@ struct _cexds__arr_new_kwargs_s
         _cexds__arr_integrity(a, _CEXDS_ARR_MAGIC);                                                \
         uassertf(array != NULL, "arr$pusha: array is NULL");                                       \
         usize _arr_len_va[] = { array_len };                                                       \
-        (void)_arr_len_va;                                                                         \
         usize arr_len = (sizeof(_arr_len_va) > 0) ? _arr_len_va[0] : arr$len(array);               \
         uassert(arr_len < PTRDIFF_MAX && "negative length or overflow");                           \
         if (unlikely(!arr$grow_check(a, arr_len))) {                                               \
             uassert(false && "arr$pusha memory error");                                            \
             abort();                                                                               \
         }                                                                                          \
-        /* NOLINTEND */                                                                            \
         for (usize i = 0; i < arr_len; i++) { (a)[_cexds__header(a)->length++] = ((array)[i]); }   \
+        /* NOLINTEND */                                                                            \
     })
 
 /// Sort array with qsort() libc function
@@ -1706,11 +1714,11 @@ static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
     typeof((array)[0])* cex$tmpname(arr_arrp) = _cex__get_buf_addr(array);                         \
     usize cex$tmpname(arr_index) = 0;                                                              \
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
-    /* NOLINTEND */                                                                                \
     for (typeof((array)[0]) it = { 0 };                                                            \
          (cex$tmpname(arr_index) < cex$tmpname(arr_length) &&                                      \
           ((it) = cex$tmpname(arr_arrp)[cex$tmpname(arr_index)], 1));                              \
          cex$tmpname(arr_index)++)
+    /* NOLINTEND */                                                                                \
 
 
 /// Iterates over arrays `it` is iterated by **pointer**, array may be arr$/or static / or pointer,
@@ -1724,10 +1732,10 @@ static_assert(sizeof(cex_iterator_s) <= 64, "cex size");
     uassert(cex$tmpname(arr_length) < PTRDIFF_MAX && "negative length or overflow");               \
     typeof((array)[0])* cex$tmpname(arr_arrp) = _cex__get_buf_addr(array);                         \
     usize cex$tmpname(arr_index) = 0;                                                              \
-    /* NOLINTEND */                                                                                \
     for (typeof((array)[0])* it = cex$tmpname(arr_arrp);                                           \
          cex$tmpname(arr_index) < cex$tmpname(arr_length);                                         \
          cex$tmpname(arr_index)++, it++)
+    /* NOLINTEND */                                                                                \
 
 /*
  *                 HASH MAP
@@ -3491,6 +3499,20 @@ struct subprocess_s {
 *                          src/os.h
 */
 #if !defined(cex$enable_minimal) || defined(cex$enable_os)
+
+
+#ifdef _WIN32
+#    define WIN32_LEAN_AND_MEAN
+#    include "windows.h"
+#    include <direct.h>
+#else
+#    include <dirent.h>
+#    include <fcntl.h>
+#    include <limits.h>
+#    include <sys/stat.h>
+#    include <sys/types.h>
+#    include <unistd.h>
+#endif
 
 /// Additional flags for os.cmd.create()
 typedef struct os_cmd_flags_s
@@ -5753,21 +5775,6 @@ CEX_NAMESPACE struct __cex_namespace__fuzz fuzz;
 
 #if defined(CEX_IMPLEMENTATION) || defined(CEX_NEW)
 
-#include <ctype.h>
-#include <math.h>
-
-#ifdef _WIN32
-#    define WIN32_LEAN_AND_MEAN
-#    include "windows.h"
-#    include <direct.h>
-#else
-#    include <dirent.h>
-#    include <fcntl.h>
-#    include <limits.h>
-#    include <sys/stat.h>
-#    include <sys/types.h>
-#    include <unistd.h>
-#endif
 
 
 #define _cex_main_boilerplate \
@@ -8013,11 +8020,10 @@ cexsp__vsprintfcb(cexsp_callback_f* callback, void* user, char* buf, char const*
 {
     static char hex[] = "0123456789abcdefxp";
     static char hexu[] = "0123456789ABCDEFXP";
-    char* bf;
+    char* bf = buf;
     char const* f;
     int tlen = 0;
 
-    bf = buf;
     f = fmt;
     for (;;) {
         i32 fw, pr, tz;
@@ -10675,7 +10681,6 @@ cex_str_fmt(IAllocator allc, char* format, ...)
         memcpy(ctx.buf, ctx.tmp, ctx.length);
         ctx.buf[ctx.length] = '\0';
     }
-    va_end(va);
     return ctx.buf;
 }
 
@@ -15501,8 +15506,7 @@ cexy__test__make_target_pattern(char** target)
     if (target == NULL) {
         return e$raise(
             Error.argsparse,
-            "Invalid target: '%s', expected all or tests/test_some_file.c",
-            *target
+            "Invalid target: '(null)', expected all or tests/test_some_file.c"
         );
     }
     if (str.eq(*target, "all")) { *target = "tests/test_*.c"; }
@@ -19203,6 +19207,12 @@ const struct __cex_namespace__fuzz fuzz = {
 /*
 *                          src/cex_footer.c
 */
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
+
 /*
 ## Credits
 

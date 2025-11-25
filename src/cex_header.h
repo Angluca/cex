@@ -82,18 +82,19 @@ Use `cex -D config` to reset all project config flags to defaults
 /// disables float printing for io.printf/et al functions (code size reduction)
 // #define CEX_SPRINTF_NOFLOAT
 
+#include <assert.h>
+#include <ctype.h>
 #include <errno.h>
+#include <math.h>
 #include <stdalign.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <assert.h>
-
 
 #if defined(__APPLE__) || defined(__MACH__)
 // NOTE: Apple SDK defines sprintf as a macro, this messes str.sprintf() calls, because
@@ -104,6 +105,14 @@ Use `cex -D config` to reset all project config flags to defaults
 #    ifdef vsprintf
 #        undef vsprintf
 #    endif
+#endif
+
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wunused-function"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
 #define cex$version_major 0
