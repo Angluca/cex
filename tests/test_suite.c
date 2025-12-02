@@ -774,4 +774,113 @@ test$case(test_tassert_eq_mem)
 
     return EOK;
 }
+
+test$case(test_tassert_eq_string_multiline)
+{
+    char* s = "1234567890\nfoo\nbar\nbaz\nfuzz";
+    char* s2 = "1234567890\nfoo\nbar\nbazz\nfuz";
+    Exc e = _check_eq_str(s, s2, 99, _cex_test_eq_op__eq);
+
+    io.printf("Error: %s\n", e);
+    tassert(str.find(e, "strings are not equal"));
+    tassert(str.find(e, "A at line 003: `baz`"));
+    tassert(str.find(e, "B at line 003: `bazz`"));
+    tassert(str.find(e, "A at line 004: `fuzz`"));
+    tassert(str.find(e, "B at line 004: `fuz`"));
+
+    return EOK;
+}
+
+test$case(test_tassert_eq_string_multiline_a_shorter)
+{
+    char* s = "1234567890\nfoo\nbar\nbaz";
+    char* s2 = "1234567890\nfoo\nbar\nbaz\nfuz";
+    Exc e = _check_eq_str(s, s2, 99, _cex_test_eq_op__eq);
+
+    io.printf("Error: %s\n", e);
+    tassert(str.find(e, "strings are not equal"));
+    tassert(str.find(e, "A at line 004: (too short)"));
+    tassert(str.find(e, "B at line 004: `fuz`"));
+
+    return EOK;
+}
+
+test$case(test_tassert_eq_string_multiline_b_shorter)
+{
+    char* s = "1234567890\nfoo\nbar\nbaz\noops";
+    char* s2 = "1234567890\nfoo\nbar\nbaz";
+    Exc e = _check_eq_str(s, s2, 99, _cex_test_eq_op__eq);
+
+    io.printf("Error: %s\n", e);
+    tassert(str.find(e, "strings are not equal"));
+    tassert(str.find(e, "A at line 004: `oops`"));
+    tassert(str.find(e, "B at line 004: (too short)"));
+
+    return EOK;
+}
+
+test$case(test_tassert_eq_string_multiline_empty_a)
+{
+    char* s = "";
+    char* s2 = "1234567890\nfoo\nbar\nbazz\nfuz";
+    Exc e = _check_eq_str(s, s2, 99, _cex_test_eq_op__eq);
+
+    io.printf("Error: %s\n", e);
+    tassert(str.find(e, "strings are not equal"));
+    tassert(str.find(e, "A at line 001: (too short)"));
+
+    return EOK;
+}
+
+test$case(test_tassert_eq_string_multiline_empty_b)
+{
+    char* s = "1234567890\nfoo\nbar\nbazz\nfuz";
+    char* s2 = "";
+    Exc e = _check_eq_str(s, s2, 99, _cex_test_eq_op__eq);
+
+    io.printf("Error: %s\n", e);
+    tassert(str.find(e, "strings are not equal"));
+    tassert(str.find(e, "B at line 001: (too short)"));
+
+    return EOK;
+}
+
+test$case(test_tassert_eq_string_long_non_multiline)
+{
+    char* s = "1234567890foobarbazoops";
+    char* s2 = "1234567890foobarbaz";
+    Exc e = _check_eq_str(s, s2, 99, _cex_test_eq_op__eq);
+
+    io.printf("Error: %s\n", e);
+    tassert(str.find(e, "strings are not equal"));
+    tassert(str.find(e, "^"));
+
+    return EOK;
+}
+
+test$case(test_tassert_eq_string_long_non_multiline_middle)
+{
+    char* s =  "1234567890f0obarbaz12345";
+    char* s2 = "1234567890foobarbaz12345";
+    Exc e = _check_eq_str(s, s2, 99, _cex_test_eq_op__eq);
+
+    io.printf("Error: %s\n", e);
+    tassert(str.find(e, "strings are not equal"));
+    tassert(str.find(e, "^"));
+
+    return EOK;
+}
+
+test$case(test_tassert_eq_string_long_non_multiline_start)
+{
+    char* s =  "234567890fobarbaz12345";
+    char* s2 = "1234567890foobarbaz12345";
+    Exc e = _check_eq_str(s, s2, 99, _cex_test_eq_op__eq);
+
+    io.printf("Error: %s\n", e);
+    tassert(str.find(e, "strings are not equal"));
+    tassert(str.find(e, "^"));
+
+    return EOK;
+}
 test$main();

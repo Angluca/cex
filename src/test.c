@@ -1,12 +1,12 @@
 #include "all.h"
 #if !defined(cex$enable_minimal)
-#ifdef CEX_TEST
-#    include <math.h>
+#    ifdef CEX_TEST
+#        include <math.h>
 
-#ifdef _WIN32
-#    include <io.h>
-#    include <fcntl.h>
-#endif
+#        ifdef _WIN32
+#            include <fcntl.h>
+#            include <io.h>
+#        endif
 
 enum _cex_test_eq_op_e
 {
@@ -182,16 +182,75 @@ _check_eq_str(char* a, char* b, int line, enum _cex_test_eq_op_e op)
     }
     extern struct _cex_test_context_s _cex_test__mainfn_state;
     if (!passed) {
-        str.sprintf(
-            _cex_test__mainfn_state.str_buf,
-            CEX_TEST_AMSG_MAX_LEN - 1,
-            "%s:%d -> '%s' %s '%s'",
-            _cex_test__mainfn_state.suite_file,
-            line,
-            a,
-            ops,
-            b
-        );
+        usize a_len = str.len(a);
+        usize b_len = str.len(b);
+
+        if (a_len < 20 && b_len < 20) {
+            str.sprintf(
+                _cex_test__mainfn_state.str_buf,
+                CEX_TEST_AMSG_MAX_LEN - 1,
+                "%s:%d -> '%s' %s '%s'",
+                _cex_test__mainfn_state.suite_file,
+                line,
+                a,
+                ops,
+                b
+            );
+        } else {
+            mem$scope(tmem$, _)
+            {
+                u32 n_errors = 0;
+                sbuf_c errors = sbuf.create(CEX_TEST_AMSG_MAX_LEN, _);
+                arr$(char*) a_lines = str.split_lines(a, _);
+                arr$(char*) b_lines = str.split_lines(b, _);
+
+                for (u32 i = 0, j = 0; i < arr$len(a_lines) || j < arr$len(b_lines); i++, j++) {
+                    if (n_errors > 5) { break; }
+                    if (i < arr$len(a_lines) && j < arr$len(b_lines)) {
+                        char* al = a_lines[i];
+                        char* bl = b_lines[j];
+                        usize al_len = str.len(al);
+                        usize bl_len = str.len(bl);
+
+                        if (!str.eq(al, bl)) {
+                            sbuf.appendf(&errors, "\tA at line %03d: `%s`\n", i, al);
+                            sbuf.appendf(&errors, "\tB at line %03d: `%s`\n", j, bl);
+                            usize max_len = al_len > bl_len ? al_len : bl_len;
+                            usize min_len = al_len < bl_len ? al_len : bl_len;
+                            sbuf.appendf(&errors, "\t                ");
+                            for(usize z = 0; z < max_len; z++) {
+                                if (z < min_len && al[z] == bl[z]) {
+                                    sbuf.appendf(&errors, " ");
+                                } else {
+                                    sbuf.appendf(&errors, "^");
+                                    break;
+                                }
+                            }
+                            sbuf.appendf(&errors, "\n");
+                            n_errors++;
+                        }
+                    } else {
+                        if (i < arr$len(a_lines)) {
+                            sbuf.appendf(&errors, "\tA at line %03d: `%s`\n", i, a_lines[i]);
+                            sbuf.appendf(&errors, "\tB at line %03d: (too short)\n", i);
+                        } else {
+                            sbuf.appendf(&errors, "\tA at line %03d: (too short)\n", j);
+                            sbuf.appendf(&errors, "\tB at line %03d: `%s`\n", j, b_lines[j]);
+                        }
+                        n_errors++;
+                    }
+                }
+                str.sprintf(
+                    _cex_test__mainfn_state.str_buf,
+                    CEX_TEST_AMSG_MAX_LEN - 1,
+                    "%s:%d -> strings are not equal\n%s\n",
+                    _cex_test__mainfn_state.suite_file,
+                    line,
+                    errors
+
+                );
+            }
+        }
         return _cex_test__mainfn_state.str_buf;
     }
     return EOK;
@@ -283,12 +342,11 @@ cex_test_mute()
         io.rewind(ctx->out_stream);
         fflush(ctx->out_stream);
 
-#    ifdef _WIN32
+#        ifdef _WIN32
         _dup2(_fileno(ctx->out_stream), STDOUT_FILENO);
-#    else
+#        else
         dup2(fileno(ctx->out_stream), STDOUT_FILENO);
-#    endif
-
+#        endif
     }
 }
 static void __attribute__((noinline))
@@ -303,11 +361,11 @@ cex_test_unmute(Exc test_result)
         fflush(stdout);
         isize flen = io.file.size(ctx->out_stream);
         io.rewind(ctx->out_stream);
-#    ifdef _WIN32
+#        ifdef _WIN32
         _dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
-#    else
+#        else
         dup2(ctx->orig_stdout_fd, STDOUT_FILENO);
-#    endif
+#        endif
 
         if (test_result != EOK && flen > 1) {
             fflush(stdout);
@@ -371,11 +429,11 @@ cex_test_main_fn(int argc, char** argv)
         }
     }
 
-#    ifdef _WIN32
+#        ifdef _WIN32
     ctx->orig_stdout_fd = _dup(_fileno(stdout));
-#    else
+#        else
     ctx->orig_stdout_fd = dup(fileno(stdout));
-#    endif
+#        endif
 
     mem$scope(tmem$, _)
     {
@@ -416,9 +474,9 @@ cex_test_main_fn(int argc, char** argv)
             if (ctx->no_stdout_capture) { putc('\n', stderr); }
         }
 
-#    ifndef NDEBUG
+#        ifndef NDEBUG
         uassert_enable(); // unconditionally enable previously disabled asserts
-#    endif
+#        endif
         Exc err = EOK;
         AllocatorHeap_c* alloc_heap = (AllocatorHeap_c*)mem$;
         alloc_heap->stats.n_allocs = 0;
@@ -538,5 +596,5 @@ cex_test_main_fn(int argc, char** argv)
     }
     return ctx->tests_run == 0 || ctx->tests_failed > 0;
 }
-#endif // ifdef CEX_TEST
+#    endif // ifdef CEX_TEST
 #endif
