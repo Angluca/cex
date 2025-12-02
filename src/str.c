@@ -1288,6 +1288,13 @@ static arr$(char*) cex_str_split_lines(char* s, IAllocator allc)
                 cur++;
         }
     }
+    if (line_start <= cur) {
+        str_s line = { .buf = (char*)line_start, .len = cur - line_start };
+        if (line.len > 0){
+        char* tok = cex_str__slice__clone(line, allc);
+        arr$push(result, tok);
+        }
+    }
     return result;
 }
 

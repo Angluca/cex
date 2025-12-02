@@ -1943,7 +1943,7 @@ test$case(test_split_lines)
         };
         arr$(char*) res = str.split_lines(s.buf, _);
         tassert(res != NULL);
-        tassert_eq(arr$len(res), 3);
+        tassert_eq(arr$len(res), arr$len(expected));
 
         u32 nit = 0;
         for$each (v, res) {
@@ -1968,6 +1968,50 @@ test$case(test_split_lines)
             tassert_eq(v, expected[nit]);
             nit++;
         }
+    }
+
+    mem$scope(tmem$, _)
+    {
+        auto s = str.sstr("123\n456\r\n789");
+        char* expected[] = {
+            "123",
+            "456",
+            "789",
+        };
+        arr$(char*) res = str.split_lines(s.buf, _);
+        tassert(res != NULL);
+        tassert_eq(arr$len(res), 3);
+
+        u32 nit = 0;
+        for$each (v, res) {
+            tassert_eq(v, expected[nit]);
+            nit++;
+        }
+    }
+
+    mem$scope(tmem$, _)
+    {
+        auto s = str.sstr("123");
+        char* expected[] = {
+            "123",
+        };
+        arr$(char*) res = str.split_lines(s.buf, _);
+        tassert(res != NULL);
+        tassert_eq(arr$len(res), 1);
+
+        u32 nit = 0;
+        for$each (v, res) {
+            tassert_eq(v, expected[nit]);
+            nit++;
+        }
+    }
+
+    mem$scope(tmem$, _)
+    {
+        auto s = str.sstr("");
+        arr$(char*) res = str.split_lines(s.buf, _);
+        tassert(res != NULL);
+        tassert_eq(arr$len(res), 0);
     }
 
     return EOK;
