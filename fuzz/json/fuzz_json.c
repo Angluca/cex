@@ -10,15 +10,15 @@ int
 fuzz$case(const u8* data, usize size)
 {
     if (size == 0) { return -1; }
-    json_iter_c js;
+    jr_c js;
 
     // permissive mode
-    if (json.iter.create(&js, (char*)data, size, false)) { return 0; }
-    while (json.iter.next(&js)) {}
+    if (jr$new(&js, (char*)data, size, .strict_mode = false)) { return 0; }
+    while(_cex_json__reader__next(&js)) {}
 
     // strict mode
-    if (json.iter.create(&js, (char*)data, size, true)) { return 0; }
-    while (json.iter.next(&js)) {}
+    if (jr$new(&js, (char*)data, size, .strict_mode = true)) { return 0; }
+    while(_cex_json__reader__next(&js)) {}
 
     return 0;
 }

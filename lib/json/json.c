@@ -1,5 +1,41 @@
 #include "json.h"
 
+/* TEMP MACROS - for private implementation*/
+#define $scope_obj (1 << 1)
+#define $scope_arr (1 << 2)
+#define $scope_has_items (1 << 3)
+#define $scope_has_key (1 << 4)
+#define $last_scope(jw)                                                                            \
+    ((jw)->scope_depth && (jw)->scope_stack[(jw)->scope_depth - 1])                                \
+        ? (jw)->scope_stack[(jw)->scope_depth - 1]                                                 \
+        : 0
+
+#define $print(format, ...) /* temp macro */                                                       \
+    ({                                                                                             \
+        if (jw->error == EOK) {                                                                    \
+            if (jw->buf) {                                                                         \
+                Exc err = sbuf.appendf(&jw->buf, format, __VA_ARGS__);                             \
+                if (unlikely(err != EOK && jw->error == EOK)) { jw->error = err; }                 \
+            } else if (jw->stream) {                                                               \
+                io.fprintf(jw->stream, format, __VA_ARGS__);                                       \
+            }                                                                                      \
+        }                                                                                          \
+    })
+
+#define $printva() /* temp macro! */                                                               \
+    if (jw->error == EOK) {                                                                        \
+        va_list va;                                                                                \
+        va_start(va, format);                                                                      \
+        if (jw->buf) {                                                                             \
+            Exc err = sbuf.appendfva(&jw->buf, format, va);                                        \
+            if (unlikely(err != EOK && jw->error != EOK)) { jw->error = err; }                     \
+        } else if (jw->stream) {                                                                   \
+            int result = cexsp__vfprintf(jw->stream, format, va);                                  \
+            if (result == -1) { jw->error = Error.io; }                                            \
+        }                                                                                          \
+        va_end(va);                                                                                \
+    }
+
 #define $next_tok() /* TEMP MACRO */                                                               \
     ({                                                                                             \
         cex_token_s _tok = CexParser.next_token(&it->_impl.lexer);                                 \
@@ -24,29 +60,34 @@
  * @return
  */
 Exception
-cex_json__iter__create(json_iter_c* it, char* content, usize content_len, bool strict_mode)
+_cex_json__reader__create(jr_c* it, char* content, usize content_len, jr_kw* kwargs)
 {
     uassert(it != NULL);
     if (content == NULL) { return Error.argument; }
-    *it = (json_iter_c){
+
+    bool strict_mode = false;
+    if (kwargs != NULL) { strict_mode = kwargs->strict_mode; }
+
+    *it = (jr_c){
         ._impl = {
             .strict_mode = strict_mode,
             .lexer = CexParser.create(content, content_len, false),
         },
     };
     if (it->_impl.lexer.content == it->_impl.lexer.content_end) { return Error.empty; }
+    _cex_json__reader__next(it);
     return EOK;
 }
 
 /**
- * @brief Make step inside JSON object or array scope (json.iter.next() starts emitting this scope)
+ * @brief Make step inside JSON object or array scope (_cex_json__reader__next() starts emitting this scope)
  *
  * @param it
  * @param expected_type Expected scope type (for sanity checks)
  * @return
  */
 Exception
-cex_json__iter__step_in(json_iter_c* it, JsonType_e expected_type)
+_cex_json__reader__step_in(jr_c* it, JsonType_e expected_type)
 {
     if (unlikely(it->error != EOK)) { goto error; }
     if (unlikely(it->_impl.scope_depth >= sizeof(it->_impl.scope_stack) - 1)) {
@@ -60,18 +101,18 @@ cex_json__iter__step_in(json_iter_c* it, JsonType_e expected_type)
 
     if (it->type == JsonType__obj) {
         uassert(it->_impl.curr_token == CexTkn__lbrace);
-        it->_impl.scope_stack[it->_impl.scope_depth] = '{';
+        it->_impl.scope_stack[it->_impl.scope_depth] = $scope_obj;
         it->_impl.scope_depth++;
     } else if (it->type == JsonType__arr) {
         uassert(it->_impl.curr_token == CexTkn__lbracket);
-        it->_impl.scope_stack[it->_impl.scope_depth] = '[';
+        it->_impl.scope_stack[it->_impl.scope_depth] = $scope_arr;
         it->_impl.scope_depth++;
     } else {
-        // return json.iter.next(it);
+        // return _cex_json__reader__next(it);
         it->error = "Stepping in is only for objects or arrays";
         goto error;
     }
-    // json.iter.next() is going to check if we step in or skipping whole block
+    // _cex_json__reader__next() is going to check if we step in or skipping whole block
     it->_impl.prev_token = it->_impl.curr_token;
     it->_impl.curr_token = CexTkn__unk;
     it->_impl.has_items = false;
@@ -84,40 +125,40 @@ error:
     return it->error;
 }
 
-/**
- * @brief Early step out from JSON scope (you must immediately break the loop/func after step out)
- *
- * After calling step out, next call of `json.iter.next()` will return outer scope item,
- * make sure that you also break the loop or exiting parsing function for current scope.
- *
- * @param it
- * @return
- */
-Exception
-cex_json__iter__step_out(json_iter_c* it)
-{
-    if (unlikely(it->_impl.scope_depth == 0)) {
-        it->error = "Bad scope/level for step out";
-        return it->error;
-    }
-    u32 scope_depth_initial = it->_impl.scope_depth - 1;
-    while (it->_impl.scope_depth > scope_depth_initial && json.iter.next(it)) {}
-    return it->error;
-}
+// /**
+//  * @brief Early step out from JSON scope (you must immediately break the loop/func after step out)
+//  *
+//  * After calling step out, next call of `_cex_json__reader__next()` will return outer scope item,
+//  * make sure that you also break the loop or exiting parsing function for current scope.
+//  *
+//  * @param it
+//  * @return
+//  */
+// Exception
+// cex_json__reader__step_out(jr_c* it)
+// {
+//     if (unlikely(it->_impl.scope_depth == 0)) {
+//         it->error = "Bad scope/level for step out";
+//         return it->error;
+//     }
+//     u32 scope_depth_initial = it->_impl.scope_depth - 1;
+//     while (it->_impl.scope_depth > scope_depth_initial && _cex_json__reader__next(it)) {}
+//     return it->error;
+// }
 
 static Exc
-_cex_json__iter__skip(json_iter_c* it)
+_cex_json__reader__skip(jr_c* it)
 {
     // Simulate full step-in/next sequence for all nested stuff (because it serves as syntax check)
     u32 scope_depth_initial = it->_impl.scope_depth;
-    if (json.iter.step_in(it, it->type)) { return it->error; }
+    if (_cex_json__reader__step_in(it, it->type)) { return it->error; }
 
     while (it->_impl.scope_depth > scope_depth_initial) {
-        if (!json.iter.next(it) && it->error) { break; }
+        if (!_cex_json__reader__next(it) && it->error) { break; }
         switch (it->type) {
             case JsonType__arr:
             case JsonType__obj:
-                if (json.iter.step_in(it, it->type)) { return it->error; }
+                if (_cex_json__reader__step_in(it, it->type)) { return it->error; }
             default:
                 break;
         }
@@ -125,14 +166,44 @@ _cex_json__iter__skip(json_iter_c* it)
     return it->error;
 }
 
-/**
- * @brief Get next JSON item for a scope
- *
- * @param it
- * @return false - on end of file, error, or json.iter.step_in() scope
- */
+str_s _cex_json__reader__get_scope(jr_c* it, JsonType_e scope_type) {
+    uassert(scope_type == JsonType__arr || scope_type == JsonType__obj);
+
+    str_s result = { 0 };
+    if (unlikely(it->error != EOK)) { return result; }
+
+    if (unlikely(it->type != scope_type)) {
+        if (scope_type == JsonType__arr) {
+            it->error = "Expected array scope";
+        } else {
+            it->error = "Expected object scope";
+        }
+        return result;
+    }
+
+    uassert(it->_impl.curr_token == CexTkn__lbrace || it->_impl.curr_token == CexTkn__lbracket);
+
+    char* cur = it->_impl.lexer.cur - 1;
+    uassert(cur >= it->_impl.lexer.content);
+
+    if(_cex_json__reader__skip(it) == EOK){
+        char* last_cur = it->_impl.lexer.cur;
+        uassert(last_cur > cur);
+        uassert(last_cur < it->_impl.lexer.content_end);
+        uassert(it->type == JsonType__eos);
+        if (last_cur > cur) {
+            // NOTE: we must have at least something in result,
+            // valid .buf with .len=0, may lead to full text parse
+            // if the jr$new()
+            result = (str_s){.buf = cur, .len = last_cur - cur};
+        }
+    }
+
+    return result;
+}
+
 bool
-cex_json__iter__next(json_iter_c* it)
+_cex_json__reader__next(jr_c* it)
 {
     if (unlikely(it->error != EOK)) { goto error; }
     it->key = (str_s){ 0 };
@@ -141,7 +212,7 @@ cex_json__iter__next(json_iter_c* it)
             it->_impl.curr_token == CexTkn__lbrace || it->_impl.curr_token == CexTkn__lbracket
         )) {
         // User didn't step into object/array, skipping it
-        if (_cex_json__iter__skip(it) != EOK) { goto error; }
+        if (_cex_json__reader__skip(it) != EOK) { goto error; }
     }
 
     cex_token_s t = $next_tok();
@@ -154,7 +225,7 @@ cex_json__iter__next(json_iter_c* it)
         }
     }
     if (it->_impl.scope_depth > 0) {
-        if (it->_impl.scope_stack[it->_impl.scope_depth - 1] == '{') {
+        if (it->_impl.scope_stack[it->_impl.scope_depth - 1] == $scope_obj) {
             // OBJECT: {"foo": "bar"}
             switch (t.type) {
                 case CexTkn__comma: {
@@ -166,10 +237,22 @@ cex_json__iter__next(json_iter_c* it)
                     t = $next_tok();
                     if (t.type == CexTkn__rbrace) {
                         goto parse_generic;
-                    } else if (t.type != CexTkn__string) {
+                    } else if (t.type != CexTkn__string && t.type != CexTkn__ident &&
+                               t.type != CexTkn__char) {
                         goto error_unexpected;
                     }
                     fallthrough(); // we get another key: value
+                }
+                case CexTkn__char:
+                case CexTkn__ident: {
+                    // NOTE: it->_impl.curr_token != CexTkn__string because of fallthrough()
+                    if (t.type != CexTkn__string && it->_impl.strict_mode &&
+                        (it->_impl.prev_token == CexTkn__comma ||
+                         it->_impl.prev_token == CexTkn__unk)) {
+                        it->error = "Keys without double quotes (strict mode)";
+                        goto error;
+                    }
+                    fallthrough();
                 }
                 case CexTkn__string: {
                     // Getting key of a object
@@ -177,6 +260,7 @@ cex_json__iter__next(json_iter_c* it)
                     t = $next_tok();
                     if (t.type != CexTkn__colon) { goto error_unexpected; }
                     t = $next_tok();
+                    if (t.type == CexTkn__rbrace) { goto error_unexpected; }
                     it->_impl.has_items = true;
                     goto parse_generic; // parsing value
                 }
@@ -184,7 +268,7 @@ cex_json__iter__next(json_iter_c* it)
                     goto parse_generic;
                 }
             }
-        } else if (it->_impl.scope_stack[it->_impl.scope_depth - 1] == '[') {
+        } else if (it->_impl.scope_stack[it->_impl.scope_depth - 1] == $scope_arr) {
             // ARRAY: ["foo", "bar"]
             switch (t.type) {
                 case CexTkn__rbracket: {
@@ -224,12 +308,12 @@ parse_generic:
         }
         case CexTkn__rbrace: {
             if (it->_impl.scope_depth > 0 &&
-                it->_impl.scope_stack[it->_impl.scope_depth - 1] == '{') {
+                it->_impl.scope_stack[it->_impl.scope_depth - 1] & $scope_obj) {
                 if (it->_impl.strict_mode && it->_impl.prev_token == CexTkn__comma) {
                     it->error = "Ending comma in object";
                     goto error;
                 }
-                it->_impl.scope_stack[it->_impl.scope_depth - 1] = '\0';
+                it->_impl.scope_stack[it->_impl.scope_depth - 1] = 0;
                 it->_impl.scope_depth--;
                 it->type = JsonType__eos;
                 it->val = (str_s){ 0 };
@@ -241,12 +325,12 @@ parse_generic:
         }
         case CexTkn__rbracket: {
             if (it->_impl.scope_depth > 0 &&
-                it->_impl.scope_stack[it->_impl.scope_depth - 1] == '[') {
+                it->_impl.scope_stack[it->_impl.scope_depth - 1] & $scope_arr) {
                 if (it->_impl.strict_mode && it->_impl.prev_token == CexTkn__comma) {
                     it->error = "Ending comma in array";
                     goto error;
                 }
-                it->_impl.scope_stack[it->_impl.scope_depth - 1] = '\0';
+                it->_impl.scope_stack[it->_impl.scope_depth - 1] = 0;
                 it->_impl.scope_depth--;
                 it->type = JsonType__eos;
                 it->val = (str_s){ 0 };
@@ -335,242 +419,171 @@ error:
     goto end;
 }
 
-#define $print(format, ...) /* temp macro */                                                       \
-    ({                                                                                             \
-        if (jb->error == EOK) {                                                                    \
-            Exc err = sbuf.appendf(&jb->buf, format, __VA_ARGS__);                                 \
-            if (unlikely(err != EOK && jb->error == EOK)) { jb->error = err; }                     \
-        }                                                                                          \
-    })
-
-#define $printva() /* temp macro! */                                                               \
-    if (jb->error == EOK) {                                                                        \
-        va_list va;                                                                                \
-        va_start(va, format);                                                                      \
-        Exc err = sbuf.appendfva(&jb->buf, format, va);                                            \
-        if (unlikely(err != EOK && jb->error != EOK)) { jb->error = err; }                         \
-        va_end(va);                                                                                \
-    }
-
-
 void
-_cex__jsonbuf_indent(json_buf_c* jb)
+_cex_json_writer_indent(jw_c* jw, bool last_item)
 {
-    if (unlikely(jb->error != EOK)) { return; }
-    for (u32 i = 0; i < jb->indent; i++) { $print(" ", ""); }
+    if (unlikely(jw->error != EOK)) { return; }
+    if (jw->scope_depth && jw->scope_stack[jw->scope_depth - 1] & $scope_has_items) {
+        if (!last_item) { $print(", ", ""); }
+        if (jw->indent_width) { $print("\n", ""); }
+    } else {
+        if (!last_item) {
+            if (jw->indent_width && jw->scope_depth) { $print("\n", ""); }
+        } else {
+            // skipping indent for empty obj/arr -> {} or []
+            return;
+        }
+    }
+    for (u32 i = 0; i < jw->indent; i++) { $print(" ", ""); }
 }
 
 /**
  * @brief Create JSON buffer/builder container used with json$buf / json$fmt / json$kstr macros
  *
- * @param jb
+ * @param jw
  * @param capacity initial capacity of buffer (will be resized if not enough)
  * @param indent JSON indentation (0 - to produce minified version)
  * @param allc allocator for buffer
  * @return
  */
 Exception
-cex_json__buf__create(json_buf_c* jb, u32 capacity, u8 indent, IAllocator allc)
+_cex_json__writer__create(jw_c* jw, jw_kw* kwargs)
 {
-    e$assert(jb != NULL);
-    e$assert(allc != NULL);
+    uassert(jw != NULL);
+    uassert(kwargs != NULL);
 
-    *jb = (json_buf_c){
-        .indent_width = indent,
-        .buf = sbuf.create(capacity, allc),
+    if (kwargs->buf == NULL && kwargs->stream == NULL) { return "Empty buf and stream kwargs"; }
+    if (kwargs->buf != NULL && kwargs->stream != NULL) {
+        return "buf and stream kwargs are mutually exclusive";
+    }
+
+    *jw = (jw_c){
+        .indent_width = kwargs->indent,
+        .buf = kwargs->buf,
+        .stream = kwargs->stream,
     };
+
     return EOK;
 }
 
-/**
- * @brief Destroy JSON buffer instance (not necessary to call if initialized on tmem$ allocator)
- *
- * @param jb
- */
 void
-cex_json__buf__destroy(json_buf_c* jb)
+_cex_json__writer__print(jw_c* jw, char* format, ...)
 {
-    if (jb != NULL) {
-        if (jb->buf != NULL) { sbuf.destroy(&jb->buf); }
-        memset(jb, 0, sizeof(*jb));
-    }
-}
+    u8 last_scope = $last_scope(jw);
+    if (!(last_scope & $scope_has_key)) { _cex_json_writer_indent(jw, false); }
 
-/**
- * @brief Get JSON buffer contents (NULL if any error occurred)
- *
- * @param jb
- * @return
- */
-char*
-cex_json__buf__get(json_buf_c* jb)
-{
-    if (jb->error != EOK) {
-        return NULL;
-    } else {
-        return jb->buf;
-    }
-}
-
-/**
- * @brief Check if there is any error in JSON buffer
- *
- * @param jb
- * @return
- */
-Exception
-cex_json__buf__validate(json_buf_c* jb)
-{
-    return jb->error;
-}
-
-void
-_cex_json__buf__clear(json_buf_c* jb)
-{
-    uassert(jb);
-    uassert(jb->buf != NULL && "uninitialized or already destroyed");
-
-    sbuf.clear(&jb->buf);
-    jb->indent = 0;
-    jb->error = EOK;
-    if (jb->scope_depth > 0) {
-        jb->scope_depth = 0;
-        memset(jb->scope_stack, 0, sizeof(jb->scope_stack));
-    }
-}
-
-void
-_cex_json__buf__print(json_buf_c* jb, char* format, ...)
-{
-    _cex__jsonbuf_indent(jb);
     $printva();
+
+    if (jw->scope_depth && jw->scope_stack[jw->scope_depth - 1]) {
+        jw->scope_stack[jw->scope_depth - 1] |= $scope_has_items;
+        jw->scope_stack[jw->scope_depth - 1] &= ~$scope_has_key;
+    }
 }
 
 void
-_cex_json__buf__print_item(json_buf_c* jb, char* format, ...)
+_cex_json__writer__print_item(jw_c* jw, char* format, ...)
+{
+    u8 last_scope = $last_scope(jw);
+    // if (!(last_scope & $scope_has_key)) { _cex_json_writer_indent(jw, false); }
+
+    if (!(last_scope & $scope_has_key)) {
+        uassertf(!(last_scope & $scope_obj), "Writing jw$val() without setting jw$key() before");
+        _cex_json_writer_indent(jw, false);
+    }
+
+    // if (!(last_scope & $scope_has_key) && (last_scope & $scope_has_items)) {
+    // _cex_json_writer_indent(jw, false); }
+    $printva();
+    if (jw->scope_depth && jw->scope_stack[jw->scope_depth - 1]) {
+        jw->scope_stack[jw->scope_depth - 1] |= $scope_has_items;
+        jw->scope_stack[jw->scope_depth - 1] &= ~$scope_has_key;
+    }
+}
+
+void
+_cex_json__writer__print_key(jw_c* jw, char* format, ...)
 {
     uassertf(
-        jb->scope_depth > 0 && jb->scope_stack[jb->scope_depth - 1] == '[',
-        "Expected to be in json array scope"
-    );
-    _cex__jsonbuf_indent(jb);
-    $printva();
-    $print(",%s", (jb->indent_width > 0) ? "\n" : " ");
-}
-
-void
-_cex_json__buf__print_key(json_buf_c* jb, char* key, char* format, ...)
-{
-    uassertf(
-        jb->scope_depth > 0 && jb->scope_stack[jb->scope_depth - 1] == '{',
+        jw->scope_depth > 0 && jw->scope_stack[jw->scope_depth - 1] & $scope_obj,
         "Expected to be in json object scope"
     );
-    _cex__jsonbuf_indent(jb);
-    $print("\"%s\": ", key);
+    _cex_json_writer_indent(jw, false);
+    $print("\"", "");
     $printva();
-    $print(",%s", (jb->indent_width > 0) ? "\n" : " ");
+    $print("\": ", "");
+    if (jw->scope_depth && jw->scope_stack[jw->scope_depth - 1]) {
+        jw->scope_stack[jw->scope_depth - 1] |= $scope_has_items;
+        jw->scope_stack[jw->scope_depth - 1] |= $scope_has_key;
+    }
 }
 
-json_buf_c*
-_cex__jsonbuf_print_scope_enter(json_buf_c* jb, JsonType_e scope_type)
+jw_c*
+_cex_json__writer__print_scope_enter(jw_c* jw, JsonType_e scope_type, bool should_indent)
 {
-    usize slen = sbuf.len(&jb->buf);
-    if (slen && jb->buf[slen - 1] == '\n') { _cex__jsonbuf_indent(jb); }
+    (void)should_indent;
+    u8 last_scope = $last_scope(jw);
+
+    if (!(last_scope & $scope_has_key)) {
+        uassertf(
+            !(last_scope & $scope_obj),
+            "Entering jw$scope() value without setting jw$key() before"
+        );
+        if (last_scope & $scope_has_items) { _cex_json_writer_indent(jw, false); }
+    }
+
     if (scope_type == JsonType__obj) {
-        $print("%c%s", '{', (jb->indent_width > 0) ? "\n" : "");
-        if (jb->scope_depth <= sizeof(jb->scope_stack) - 1) {
-            jb->scope_stack[jb->scope_depth] = '{';
-            jb->scope_depth++;
+        $print("%c", '{');
+        if (jw->scope_depth <= sizeof(jw->scope_stack) - 1) {
+            jw->scope_stack[jw->scope_depth] = $scope_obj;
+            jw->scope_depth++;
         } else {
-            jb->error = "Scope overflow";
+            jw->error = "Scope overflow";
         }
     } else if (scope_type == JsonType__arr) {
-        $print("%c%s", '[', (jb->indent_width > 0) ? "\n" : "");
-        if (jb->scope_depth <= sizeof(jb->scope_stack) - 1) {
-            jb->scope_stack[jb->scope_depth] = '[';
-            jb->scope_depth++;
+        $print("%c", '[');
+        if (jw->scope_depth <= sizeof(jw->scope_stack) - 1) {
+            jw->scope_stack[jw->scope_depth] = $scope_arr;
+            jw->scope_depth++;
         } else {
-            jb->error = "Scope overflow";
+            jw->error = "Scope overflow";
         }
     } else {
         unreachable();
     }
-    jb->indent += jb->indent_width;
-    return jb;
+    jw->indent += jw->indent_width;
+    jw->scope_stack[jw->scope_depth - 1] &= ~$scope_has_key;
+    return jw;
 }
 
 void
-_cex__jsonbuf_print_scope_exit(json_buf_c** jbptr)
+_cex_json__writer__print_scope_exit(jw_c** jwptr)
 {
-    uassert(*jbptr != NULL);
-    json_buf_c* jb = *jbptr;
+    uassert(*jwptr != NULL);
+    jw_c* jw = *jwptr;
 
-    if (jb->indent >= jb->indent_width) { jb->indent -= jb->indent_width; }
-    if (jb->scope_depth > 0) {
-        // Removing last comma
-        usize slen = sbuf.len(&jb->buf);
-        if (slen > 0) {
-            bool has_new_line = false;
-            for (u32 i = slen; --i > 0;) {
-                char c = jb->buf[i];
-                switch (c) {
-                    case '\n':
-                        has_new_line = true;
-                        break;
-                    case ' ':
-                    case '\t':
-                    case '\r':
-                        break; // skip whitespace
-                    case ',':
-                        sbuf.shrink(&jb->buf, i);
-                        if (has_new_line) {
-                            e$except_silent (err, sbuf.append(&jb->buf, "\n")) {
-                                if (jb->error == EOK) { jb->error = err; }
-                            }
-                        }
-                        goto loop_break;
-                    default:
-                        goto loop_break;
-                }
-            }
-        }
-    loop_break:
-        _cex__jsonbuf_indent(jb);
+    if (jw->indent >= jw->indent_width) { jw->indent -= jw->indent_width; }
+    if (jw->scope_depth > 0) {
+        _cex_json_writer_indent(jw, true);
 
-        $print(
-            "%c%s%s",
-            (jb->scope_stack[jb->scope_depth - 1] == '[') ? ']' : '}',
-            (jb->scope_depth > 1) ? "," : "",
-            (jb->indent_width > 0) ? "\n" : ""
-        );
-        jb->scope_depth--;
+        $print("%c", (jw->scope_stack[jw->scope_depth - 1] & $scope_arr) ? ']' : '}');
+        jw->scope_depth--;
     } else {
-        jb->error = "Scope overflow";
+        jw->error = "Scope overflow";
     }
+}
+
+Exception
+_cex_json__writer__validate(jw_c* jw)
+{
+    if (jw == NULL) { return Error.argument; }
+    return jw->error;
 }
 
 #undef $next_tok /* TEMP MACRO */
 #undef $print
 #undef $printva
-
-const struct __cex_namespace__json json = {
-    // Autogenerated by CEX
-    // clang-format off
-
-
-    .buf = {
-        .create = cex_json__buf__create,
-        .destroy = cex_json__buf__destroy,
-        .get = cex_json__buf__get,
-        .validate = cex_json__buf__validate,
-    },
-
-    .iter = {
-        .create = cex_json__iter__create,
-        .next = cex_json__iter__next,
-        .step_in = cex_json__iter__step_in,
-        .step_out = cex_json__iter__step_out,
-    },
-
-    // clang-format on
-};
+#undef $scope_obj
+#undef $scope_arr
+#undef $scope_has_items
+#undef $scope_has_key
+#undef $last_scope

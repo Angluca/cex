@@ -121,7 +121,7 @@ Use `cex -D config` to reset all project config flags to defaults
 #define cex$version_major 0
 #define cex$version_minor 18
 #define cex$version_patch 0
-#define cex$version_date "2025-12-02"
+#define cex$version_date "2025-12-03"
 
 
 
@@ -5576,6 +5576,7 @@ typedef struct CexParser_c
     char* cur;         // current cursor in the source
     char* content_end; // last pointer of the source
     u32 line;          // current cursor line relative to content beginning
+    u32 col;           // current cursor column relative to start of the line
     bool fold_scopes;  // count all {} / () / [] as a single token CexTkn_*_block
 } CexParser_c;
 
@@ -16421,7 +16422,7 @@ _cexy__colorize_ansi(str_s token, str_s exact_match, char current_char)
 
         // CEX style type suffix
         if (str.slice.ends_with(token, str$s("_s")) || str.slice.ends_with(token, str$s("_e")) ||
-            str.slice.ends_with(token, str$s("_c"))) {
+            str.slice.ends_with(token, str$s("_c")) || str.slice.ends_with(token, str$s("_kw"))) {
             return types[2];
         }
 
@@ -16567,7 +16568,7 @@ _cexy__display_full_info(
                     } else if (it->type == CexTkn__typedef) {
                         if (it->name.buf[base_name.len] != '_') { continue; }
                         if (!(str.slice.ends_with(it->name, str$s("_c")) ||
-                              str.slice.ends_with(it->name, str$s("_s")))) {
+                              str.slice.ends_with(it->name, str$s("_s")) || str.slice.ends_with(it->name, str$s("_kw")))) {
                             continue;
                         }
                     } else if (it->type == CexTkn__cex_module_struct) {
@@ -18286,7 +18287,8 @@ const char* CexTkn_str[] = {
     ({                                                                                             \
         char res = '\0';                                                                           \
         if ((lx->cur < lx->content_end)) {                                                         \
-            if (*lx->cur == '\n') { lx->line++; }                                                  \
+            if (*lx->cur == '\n') { lx->line++; lx->col = 0;}                                                  \
+            lx->col++;\
             res = *(lx->cur++);                                                                    \
         }                                                                                          \
         res;                                                                                       \
